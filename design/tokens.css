@@ -286,7 +286,7 @@ body {
 }
 
 /* Every numeric run is an LTR island inside RTL text. Without isolation,
-   "250.00 ر.س" and "2d 04:11:38" reorder their punctuation. */
+   "250.00 SAR" and "2d 04:11:38" reorder their punctuation. */
 .num, bdi.num {
   font-family: var(--f-num);
   font-variant-numeric: var(--num-feat);

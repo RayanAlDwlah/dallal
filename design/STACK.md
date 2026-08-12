@@ -5,13 +5,15 @@
 | Field | Value |
 |---|---|
 | Document | Front-end stack decision |
-| Version | 0.1 — **proposed, needs whole-team sign-off** |
+| Version | **1.0 — APPROVED / FINAL** (whole-team sign-off 2026-08-12) |
 | Date | 2026-08-12 |
 | Author | Mohammed (`m7ya505`) — owns `S0-07`, `S0-08`, `S0-09` |
 | Constrains | [ARCHITECTURE.md](../ARCHITECTURE.md) §6.1, §18.5 · [PRD.md](../PRD.md) NFR-PERF-01/02, NFR-USA-06 |
 | Related | [DESIGN_SYSTEM.md](DESIGN_SYSTEM.md) · [tokens.css](tokens.css) |
 
-> **This is a global-configuration and entry-point decision.** TEAM.md §11 and Rule 14 make it a whole-team change that must be announced and agreed **before** anyone builds on it, not discovered in a merge conflict.
+> **APPROVED by the whole team on 2026-08-12** under TEAM.md Rule 14. Next.js (App Router) is the framework, React 19 the UI library, TypeScript strict the language, Tailwind CSS v4 the styling layer, deployed on Vercel against Supabase. **No framework change may be made without a new team decision recorded here.**
+>
+> Installed versions are pinned and recorded in `docs/scaffold-notes.md` §1.
 
 ---
 
@@ -199,10 +201,10 @@ export const num = IBM_Plex_Sans({
 
 ---
 
-## 7. Open items
+## 7. Open items — closed 2026-08-12
 
-1. **Whole-team sign-off** on Next.js as the framework — TEAM.md Rule 14.
-2. **Vite's role confirmed as Vitest only**, so nobody expects a Vite app bundler.
+1. ~~Whole-team sign-off on Next.js~~ — ✅ **APPROVED 2026-08-12.**
+2. ~~Vite's role~~ — ✅ **Confirmed: Vitest only.** Vite is never the app bundler.
 3. **Font licence and `tnum` verification** (§5).
-4. **Version pinning** recorded in the `S0-07` issue.
+4. ~~Version pinning~~ — ✅ **Recorded** in `docs/scaffold-notes.md` §1.
 5. Record the outcome in `S0-07`; `ARCHITECTURE.md` §24 deliberately left framework choice to the team, so no architecture change is needed — only a note that the choice was made.

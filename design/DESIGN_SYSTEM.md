@@ -44,7 +44,7 @@ It also carries requirements no primitive library gets for free:
 
 **Relationship to the PRD.** `PRD.md` §4.2 lists "non-English-speaking users as a served segment" as not targeted, and §19.7 excludes **multi-language support**. Neither forbids Arabic — they forbid *translation infrastructure* and a second locale. A single-language Arabic product is fully compatible with both, and matches a Saudi platform named دلّال pricing in SAR.
 
-**Action still outstanding:** the team has agreed, so per TEAM.md Rule 16 and PRD §21.3 the decision must be **recorded in `PRD.md`** — §4.2 and §19.7 reworded, and a line added to the decision register (§21.1). Until that edit lands, this file is the only place the decision exists.
+**✅ Recorded 2026-08-12.** The decision now lives in `PRD.md` as **BR-41** (Arabic RTL), **BR-42** (Western digits, LTR isolation) and **§1.2**, with **Q16** in the decision register. §4.2, §19.7 and A-U10 were reconciled. `PRD.md` is the source of truth; this file describes how the decision is rendered.
 
 **What stays English:** the four repository documents, code, identifiers, commit messages, and this file.
 
@@ -56,7 +56,7 @@ It also carries requirements no primitive library gets for free:
 | **Never apply `letter-spacing` to Arabic** | Arabic letters join. Tracking breaks the joins and the word renders as loose disconnected glyphs. There is deliberately no `--tracking-*` token in `tokens.css` |
 | **Never rely on `text-transform: uppercase`** | Arabic has no case. Eyebrow labels are differentiated by weight, size and colour instead |
 | **More leading than a Latin scale** | Arabic ascenders, descenders and optional diacritics need roughly 15% more line-height. The `--lh-*` tokens are already set for Arabic |
-| **Isolate every numeric run** with `<bdi>` or `dir="ltr"` | Numerals are Western Arabic (0–9) and therefore LTR islands inside RTL text. Without isolation `250.00 ر.س` and `2د 04:11:38` reorder their punctuation. The `.num` class in `tokens.css` does this |
+| **Isolate every numeric run** with `<bdi>` or `dir="ltr"` | Numerals are Western Arabic (0–9) and therefore LTR islands inside RTL text. Without isolation `250.00 SAR` and `2د 04:11:38` reorder their punctuation. The `.num` class in `tokens.css` does this |
 | **Mirror directional icons only** | Back arrows, chevrons, progress arrows mirror. A clock, a checkmark, and the **price-rise `▲`** do not — `▲` is vertical and mirroring it would be a bug |
 
 ### 2.2 Numerals — **PROPOSED**
@@ -134,16 +134,18 @@ Money is never sized from `--t-*`. Keeping the scales separate is what makes NFR
 
 **Every price uses `tabular-nums` and is wrapped in `<bdi class="num">`.** In bid history the amounts sit in a column and must align on the decimal; a proportional `1` against a `0` breaks the column and makes a rising sequence hard to scan. The `bdi` is what keeps the currency suffix and the decimal point on the correct side inside RTL text.
 
-### 5.2 The SAR format — **PROPOSED, confirm in S0-12**
+### 5.2 The SAR format — **FINAL, approved 2026-08-12**
 
-> **Format: `1,250.00 ر.س`** — grouped thousands, **always two decimals**, a normal space, then the Arabic currency suffix. Written in markup as `<bdi class="num">1,250.00</bdi> ر.س`.
+> **Format: `1,250.00 SAR`** — grouped thousands, **always two decimals**, a normal space, then the Latin indicator `SAR`. Written in markup as `<bdi class="num">1,250.00</bdi> SAR`.
+>
+> Produced by **one formatter only**: `formatSar()` in `lib/money.ts`. No component formats a price itself.
 
 Two decisions inside that:
 
-1. **Always two decimals.** NFR-DAT-08 requires that the same amount never appears formatted two ways. Since bids of `100.01 ر.س` are valid (BR-32, no increment), showing `100 ر.س` elsewhere would be two formats for one currency. Always-two-decimals is the only self-consistent choice. The PRD's prose examples (`Starting Price: 100 SAR`) illustrate the label, not the format.
-2. **`ر.س` rather than the Latin `SAR`.** FR-CREATE-13 requires a *consistent currency indicator*; in an Arabic interface that indicator is `ر.س`. This is a rendering of the requirement, not a departure from it — but it is a visible product string, so it needs recording.
+1. **Always two decimals.** NFR-DAT-08 requires that the same amount never appears formatted two ways. Since bids of `100.01 SAR` are valid (BR-32, no increment), showing `100 SAR` elsewhere would be two formats for one currency. Always-two-decimals is the only self-consistent choice. The PRD's prose examples (`Starting Price: 100 SAR`) illustrate the label, not the format.
+2. **The Latin `SAR`, not `SAR`.** This document originally proposed `SAR`. The team **decided against it on 2026-08-12**: `FR-CREATE-13` writes the indicator as `SAR` literally, and one Latin indicator keeps the client formatter byte-identical to the server's across a mixed-script interface. Recorded as **BR-43**. `SAR` must not appear as a price indicator anywhere.
 
-**Both need Rayan's agreement as part of S0-12** — he owns bid amounts and current-price correctness; this document proposes only the display half.
+**Agreed with Rayan as part of S0-12 on 2026-08-12.** He owns bid amounts and current-price correctness; the display half is settled here and mirrored in `docs/contracts/S0-12-money.md` §7. Grouping was added to that contract by the same decision — see its amendment block.
 
 The term **"Demo Points" is prohibited** (PRD §19.0). Prices are SAR.
 
@@ -175,7 +177,7 @@ Ownership follows [TEAM.md](../TEAM.md) §11's split of the auction detail page.
 |---|---|---|
 | **Button** | primary · secondary · ghost · danger; `sm` `md` `lg`; hover, active, focus, disabled, loading | Full width below 480 px. Loading state keeps the label and disables submit — it must be impossible to double-submit a bid or an auction (EC-21) |
 | **Text input** | rest, focus, error, disabled | Error state pairs a red border **and** a message; never border alone |
-| **Amount input** | as above, plus a `ر.س` affix on the inline-end and tabular figures | Numeric keypad on mobile. The input's own content is LTR while the label is RTL. Never auto-corrects or rounds the user's entry (FR-BID-17) |
+| **Amount input** | as above, plus a `SAR` affix on the inline-end and tabular figures | Numeric keypad on mobile. The input's own content is LTR while the label is RTL. Never auto-corrects or rounds the user's entry (FR-BID-17) |
 | **Form field** | label, optional hint, error | Reports **every** failing field at once and preserves entered values (FR-CREATE-12) |
 | **Card** | rest, hover, link | The listing card is built on it |
 | **Alert** | info · success · error · **race** | `race` is the concurrency-loss variant — brass, not red |
@@ -205,15 +207,15 @@ This is the component most likely to be got wrong, so it is specified tightly.
 
 ```text
 سعر البداية
-100.00 ر.س
-لا توجد مزايدات · أول مزايدة بمبلغ 100.00 ر.س بالضبط مقبولة
+100.00 SAR
+لا توجد مزايدات · أول مزايدة بمبلغ 100.00 SAR بالضبط مقبولة
 ```
 
 **One or more bids** — the amount is a *threshold*, and the next bid must beat it (BR-28):
 
 ```text
 المزايدة الحالية
-250.00 ر.س
+250.00 SAR
 4 مزايدات · المتصدر: عمر
 ```
 
@@ -223,8 +225,8 @@ The matching hint in the bid panel:
 
 | State | Hint | Boundary |
 |---|---|---|
-| No bids | **المزايدة تبدأ من 100.00 ر.س** | inclusive |
-| Has bids | **أدخل مبلغاً أكبر من 250.00 ر.س** | exclusive |
+| No bids | **المزايدة تبدأ من 100.00 SAR** | inclusive |
+| Has bids | **أدخل مبلغاً أكبر من 250.00 SAR** | exclusive |
 
 The two hints use different verbs — تبدأ من versus أكبر من — so the inclusive/exclusive difference survives even when the numbers happen to look similar (NFR-USA-11).
 
@@ -351,7 +353,7 @@ design/
 **Open items before this is binding:**
 
 1. **Arabic RTL** (§2) — **agreed.** Remaining work is documentary: reword `PRD.md` §4.2 and §19.7 and add the decision to the register (§21.1).
-2. **SAR display format** — `1,250.00 ر.س`, always two decimals (§5.2). Needs Rayan's agreement in **S0-12**.
+2. ~~SAR display format needs agreement~~ — ✅ **FINAL: `1,250.00 SAR`**, always two decimals, grouped, Latin indicator (§5.2, PRD BR-43). Agreed in **S0-12** on 2026-08-12.
 3. **Western vs Arabic-Indic numerals** (§2.2) — proposed Western.
 4. **Colour direction** — the green/brass pairing is a proposal. Retuning it means editing `tokens.css` and nothing else.
 5. **Detail page component split** — §8.2's ownership column must match what Mohammed and Rayan actually agree in **S0-13**.

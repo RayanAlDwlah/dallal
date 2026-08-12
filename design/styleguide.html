@@ -490,7 +490,7 @@ td code{ font-family:var(--f-mono); font-size:12px; direction:ltr; unicode-bidi:
             <div class="cap">المزايدة الحالية</div>
             <div class="val">
               <bdi class="num" id="heroVal">250.00</bdi>
-              <span class="cur">ر.س</span>
+              <span class="cur">SAR</span>
               <span class="delta" id="heroDelta">▲ <bdi class="num" id="heroDeltaVal">0.00</bdi></span>
             </div>
             <div class="sub"><span id="heroCount">4</span> مزايدات · المتصدر: <span id="heroLead">عمر</span></div>
@@ -521,7 +521,7 @@ td code{ font-family:var(--f-mono); font-size:12px; direction:ltr; unicode-bidi:
               <tr><td><strong>ممنوع</strong> <code>letter-spacing</code> على النص العربي</td><td>الحروف العربية متّصلة؛ التباعد يفكّ الوصل ويحوّل الكلمة إلى حروف منفصلة. لا يوجد توكن <code>--tracking-*</code> لهذا السبب</td></tr>
               <tr><td><strong>ممنوع</strong> الاعتماد على <code>text-transform:uppercase</code></td><td>لا يوجد حالة أحرف في العربية. التمييز يكون بالوزن والحجم واللون</td></tr>
               <tr><td>ارتفاع سطر أكبر بنحو ١٥٪ من المقياس اللاتيني</td><td>الصعود والنزول والتشكيل يحتاجون مساحة. توكنات <code>--lh-*</code> مضبوطة للعربية أصلاً</td></tr>
-              <tr><td>اعزل كل رقم بـ <code>&lt;bdi class="num"&gt;</code></td><td>الأرقام لاتينية أي جزر LTR داخل نص RTL. بدون عزل تنقلب علامات <code>250.00 ر.س</code> و <code>2د 04:11:38</code></td></tr>
+              <tr><td>اعزل كل رقم بـ <code>&lt;bdi class="num"&gt;</code></td><td>الأرقام لاتينية أي جزر LTR داخل نص RTL. بدون عزل تنقلب علامات <code>250.00 SAR</code> و <code>2د 04:11:38</code></td></tr>
               <tr><td>اعكس الأيقونات الاتجاهية فقط</td><td>سهم الرجوع والشيفرون ينعكسان. الساعة وعلامة الصح و<strong>سهم ارتفاع السعر ▲</strong> لا تنعكس — الأخير رأسي وعكسه خطأ</td></tr>
             </tbody>
           </table>
@@ -529,7 +529,7 @@ td code{ font-family:var(--f-mono); font-size:12px; direction:ltr; unicode-bidi:
         <div class="dd">
           <div class="yes">
             <h4>صحيح</h4>
-            <div>السعر: <bdi class="num">1,250.00</bdi> ر.س — الرقم معزول، العلامة العشرية في مكانها.</div>
+            <div>السعر: <bdi class="num">1,250.00</bdi> SAR — الرقم معزول، العلامة العشرية في مكانها.</div>
             <div>الوقت: <bdi class="num">2د 04:11:38</bdi></div>
           </div>
           <div class="no">
@@ -601,11 +601,11 @@ td code{ font-family:var(--f-mono); font-size:12px; direction:ltr; unicode-bidi:
         <div class="trace"><code>NFR-DAT-08</code><code>FR-CREATE-13</code><code>BR-33</code><code>S0-12</code></div>
       </div>
       <div class="spec col">
-        <div style="font-size:var(--money-lg);font-weight:700"><bdi class="num">1,250.00</bdi> ر.س</div>
+        <div style="font-size:var(--money-lg);font-weight:700"><bdi class="num">1,250.00</bdi> SAR</div>
         <ul style="display:flex;flex-direction:column;gap:var(--s-2)" class="note">
-          <li>— فواصل آلاف، و<strong>خانتان عشريتان دائماً</strong>. مزايدة بـ <bdi class="num">100.01</bdi> ر.س صحيحة (لا يوجد حدّ أدنى للزيادة)، فعرض <bdi class="num">100</bdi> ر.س في مكان آخر يعني صيغتين لعملة واحدة.</li>
+          <li>— فواصل آلاف، و<strong>خانتان عشريتان دائماً</strong>. مزايدة بـ <bdi class="num">100.01</bdi> SAR صحيحة (لا يوجد حدّ أدنى للزيادة)، فعرض <bdi class="num">100</bdi> SAR في مكان آخر يعني صيغتين لعملة واحدة.</li>
           <li>— أرقام لاتينية (0–9) لا هندية (٠–٩): هي وحدها التي تملك أرقاماً جدولية موثوقة في خطوط النظام، والسجل يجب أن يُقرأ كتسلسل تصاعدي.</li>
-          <li>— اللاحقة <strong>ر.س</strong> خارج عزل الرقم، بمسافة عادية.</li>
+          <li>— اللاحقة <strong>SAR</strong> خارج عزل الرقم، بمسافة عادية.</li>
           <li>— <strong>لا يوجد حدّ أقصى للسعر.</strong> المبلغ الكبير يُعرض صحيحاً ولا يُرفض ولا يكسر التخطيط.</li>
           <li>— مصطلح «نقاط تجريبية» ممنوع. الأسعار بالريال — ريال محاكى، لكنه ريال.</li>
         </ul>
@@ -678,9 +678,9 @@ td code{ font-family:var(--f-mono); font-size:12px; direction:ltr; unicode-bidi:
             <label for="f3">مبلغ المزايدة</label>
             <div class="amount">
               <input id="f3" inputmode="decimal" value="260.00" />
-              <span class="affix">ر.س</span>
+              <span class="affix">SAR</span>
             </div>
-            <span class="hint">أدخل مبلغاً أكبر من <bdi class="num">250.00</bdi> ر.س</span>
+            <span class="hint">أدخل مبلغاً أكبر من <bdi class="num">250.00</bdi> SAR</span>
           </div>
         </div>
         <p class="note">حقل المبلغ: التسمية عربية RTL بينما محتوى الحقل LTR، واللاحقة على الطرف الداخلي. <strong>لا يصحّح ولا يقرّب إدخال المستخدم أبداً</strong> (<code style="font-family:var(--f-mono);direction:ltr;unicode-bidi:isolate">FR-BID-17</code>). ونموذج الإنشاء يعرض <strong>كل</strong> الحقول الفاشلة دفعة واحدة مع حفظ ما أدخله المستخدم (<code style="font-family:var(--f-mono);direction:ltr;unicode-bidi:isolate">FR-CREATE-12</code>).</p>
@@ -689,9 +689,9 @@ td code{ font-family:var(--f-mono); font-size:12px; direction:ltr; unicode-bidi:
       <div class="entry">
         <div class="entry-head"><h3>التنبيهات</h3><span class="owner">أربع نبرات</span></div>
         <div class="spec col">
-          <div class="alert ok"><span class="ic">✓</span><div>قُبلت مزايدتك بمبلغ <bdi class="num">260.00</bdi> ر.س. أنت المتصدّر الآن.</div></div>
-          <div class="alert bad"><span class="ic">✕</span><div>مزايدتك يجب أن تكون أكبر من <bdi class="num">250.00</bdi> ر.س.</div></div>
-          <div class="alert race"><span class="ic">↺</span><div>زايد أحدهم قبلك — السعر الحالي أصبح <bdi class="num">260.00</bdi> ر.س. جرّب مبلغاً أعلى.</div></div>
+          <div class="alert ok"><span class="ic">✓</span><div>قُبلت مزايدتك بمبلغ <bdi class="num">260.00</bdi> SAR. أنت المتصدّر الآن.</div></div>
+          <div class="alert bad"><span class="ic">✕</span><div>مزايدتك يجب أن تكون أكبر من <bdi class="num">250.00</bdi> SAR.</div></div>
+          <div class="alert race"><span class="ic">↺</span><div>زايد أحدهم قبلك — السعر الحالي أصبح <bdi class="num">260.00</bdi> SAR. جرّب مبلغاً أعلى.</div></div>
           <div class="alert"><span class="ic">i</span><div>سجّل الدخول لتتمكّن من المزايدة. سنعيدك إلى هذا المزاد بعد الدخول.</div></div>
         </div>
         <p class="note">نبرة <strong>«سبقك أحدهم»</strong> نحاسية لا حمراء: المستخدم لم يخطئ، خسر سباقاً فقط. تمييزها عن مزايدة منخفضة مطلب صريح (<code style="font-family:var(--f-mono);direction:ltr;unicode-bidi:isolate">SC-18</code> ، <code style="font-family:var(--f-mono);direction:ltr;unicode-bidi:isolate">EC-01</code>).</p>
@@ -726,24 +726,24 @@ td code{ font-family:var(--f-mono); font-size:12px; direction:ltr; unicode-bidi:
         <div class="spec">
           <div class="price start">
             <div class="cap">سعر البداية</div>
-            <div class="val"><bdi class="num">100.00</bdi> <span class="cur">ر.س</span></div>
-            <div class="sub">لا توجد مزايدات · أول مزايدة بمبلغ <bdi class="num">100.00</bdi> ر.س بالضبط <strong>مقبولة</strong></div>
+            <div class="val"><bdi class="num">100.00</bdi> <span class="cur">SAR</span></div>
+            <div class="sub">لا توجد مزايدات · أول مزايدة بمبلغ <bdi class="num">100.00</bdi> SAR بالضبط <strong>مقبولة</strong></div>
           </div>
           <div class="price current">
             <div class="cap">المزايدة الحالية</div>
-            <div class="val"><bdi class="num">250.00</bdi> <span class="cur">ر.س</span></div>
+            <div class="val"><bdi class="num">250.00</bdi> <span class="cur">SAR</span></div>
             <div class="sub"><bdi class="num">4</bdi> مزايدات · المتصدر: عمر</div>
           </div>
         </div>
         <p class="note">الكتلتان <strong>مختلفتان بصرياً لا بالتسمية فقط</strong>: كتلة البداية هادئة بحدّ متقطّع، وكتلة المزايدة الحالية تحمل الأخضر وعدد المزايدات. يجب ألّا يضطر المستخدم للقراءة بتمعّن ليعرف أي قاعدة تنطبق عليه — الأولى شاملة (≥) والثانية حصرية (&gt;).</p>
         <div class="dd">
           <div class="yes"><h4>التلميح الصحيح</h4>
-            <div>بلا مزايدات: <strong>المزايدة تبدأ من <bdi class="num">100.00</bdi> ر.س</strong></div>
-            <div>مع مزايدات: <strong>أدخل مبلغاً أكبر من <bdi class="num">250.00</bdi> ر.س</strong></div>
+            <div>بلا مزايدات: <strong>المزايدة تبدأ من <bdi class="num">100.00</bdi> SAR</strong></div>
+            <div>مع مزايدات: <strong>أدخل مبلغاً أكبر من <bdi class="num">250.00</bdi> SAR</strong></div>
             <div>فعلان مختلفان، فيبقى الفرق واضحاً حتى لو تشابه الرقمان.</div>
           </div>
           <div class="no"><h4>خطأ</h4>
-            <div>«الحد الأدنى: <bdi class="num">250.00</bdi> ر.س» في الحالتين.</div>
+            <div>«الحد الأدنى: <bdi class="num">250.00</bdi> SAR» في الحالتين.</div>
             <div>صيغة واحدة لقاعدتين مختلفتين تجعل المستخدم يُرفض دون أن يفهم لماذا.</div>
           </div>
         </div>
@@ -775,8 +775,8 @@ td code{ font-family:var(--f-mono); font-size:12px; direction:ltr; unicode-bidi:
             <div class="state">مسجّل دخول · ليس المالك · نشط</div>
             <div class="field">
               <label for="bid">مبلغ المزايدة</label>
-              <div class="amount"><input id="bid" inputmode="decimal" value="255.00" /><span class="affix">ر.س</span></div>
-              <span class="hint" id="minHint">أدخل مبلغاً أكبر من <bdi class="num" id="minVal">250.00</bdi> ر.س</span>
+              <div class="amount"><input id="bid" inputmode="decimal" value="255.00" /><span class="affix">SAR</span></div>
+              <span class="hint" id="minHint">أدخل مبلغاً أكبر من <bdi class="num" id="minVal">250.00</bdi> SAR</span>
             </div>
             <button class="btn" type="button">أضف مزايدة</button>
           </div>
@@ -793,7 +793,7 @@ td code{ font-family:var(--f-mono); font-size:12px; direction:ltr; unicode-bidi:
             <div class="state">أي زائر · منتهي</div>
             <div class="outcome win">
               <div class="title">🎉 فزت بهذا المزاد!</div>
-              <div class="final"><bdi class="num">400.00</bdi> ر.س</div>
+              <div class="final"><bdi class="num">400.00</bdi> SAR</div>
               <div style="font-size:var(--t-sm)">الحالة: منتهي</div>
             </div>
           </div>
@@ -822,7 +822,7 @@ td code{ font-family:var(--f-mono); font-size:12px; direction:ltr; unicode-bidi:
           <div class="outcome">
             <div class="title">انتهى المزاد</div>
             <div>الفائز: <strong>محمد</strong></div>
-            <div class="final"><bdi class="num">400.00</bdi> ر.س</div>
+            <div class="final"><bdi class="num">400.00</bdi> SAR</div>
           </div>
           <div class="outcome none">
             <div class="title">انتهى المزاد بلا مزايدات</div>
@@ -845,7 +845,7 @@ td code{ font-family:var(--f-mono); font-size:12px; direction:ltr; unicode-bidi:
             <div class="thumb">صورة المنتج</div>
             <div class="body">
               <div class="name">ساعة جيب نحاسية</div>
-              <div class="p"><bdi class="num">250.00</bdi> ر.س</div>
+              <div class="p"><bdi class="num">250.00</bdi> SAR</div>
               <div style="font-size:var(--t-xs);color:var(--c-text-3)">المزايدة الحالية</div>
               <div class="row"><span class="pill active">نشط</span><span class="cd soon"><span class="t">00:08:12</span></span></div>
             </div>
@@ -854,7 +854,7 @@ td code{ font-family:var(--f-mono); font-size:12px; direction:ltr; unicode-bidi:
             <div class="thumb">صورة المنتج</div>
             <div class="body">
               <div class="name">آلة كاتبة قديمة</div>
-              <div class="p"><bdi class="num">100.00</bdi> ر.س</div>
+              <div class="p"><bdi class="num">100.00</bdi> SAR</div>
               <div style="font-size:var(--t-xs);color:var(--c-text-3)">سعر البداية · لا مزايدات</div>
               <div class="row"><span class="pill active">نشط</span><span class="cd"><span class="t">2د 04:11</span></span></div>
             </div>

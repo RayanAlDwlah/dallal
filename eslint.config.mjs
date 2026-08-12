@@ -8,12 +8,12 @@ import nextTypescript from "eslint-config-next/typescript";
  */
 const eslintConfig = [
   {
-    // design/ is Mohammed's design-system reference material. It imports
-    // @/lib/* and packages the minimal scaffold does not install, so it is
-    // not part of the compiled application yet. Excluded from lint and from
-    // tsconfig until S0-09 brings those components into components/.
-    // See docs/scaffold-notes.md.
-    ignores: ["design/**", ".next/**", "node_modules/**", "next-env.d.ts"],
+    // The temporary design/ exclusion from S0-07 is GONE. S0-09 migrated the
+    // design components into lib/ and components/, and the S0-12 money
+    // decision unblocked the rest, so every .tsx in the repository — including
+    // design/components/bidding/bid-panel.tsx — is now type-checked and
+    // linted. See docs/design-system-notes.md.
+    ignores: [".next/**", "node_modules/**", "next-env.d.ts"],
   },
 
   ...coreWebVitals,

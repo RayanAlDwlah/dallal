@@ -7,8 +7,22 @@
 | Author | Mohammed — [`@m7ya505`](https://github.com/m7ya505) |
 | Branch | `feature/mohammed-auctions` |
 | Date | 2026-08-12 |
-| Status | ⏸ **Analysis only — awaiting team sign-off** |
+| Status | ✅ **All three decided 2026-08-12 — retained as the decision record** |
 | Blocks | `lib/money.ts` · `Money` · `PriceBlock` · `Amount input` · all price UI |
+
+> # ✅ ALL THREE DECIDED — 2026-08-12
+>
+> This document is now a **historical record of the analysis**, kept because it explains *why* each decision went the way it did. The `ر.س` and `1250.00 SAR` variants below are **rejected options preserved verbatim** — they are not live alternatives.
+>
+> | | Outcome | Recorded in |
+> |---|---|---|
+> | **A** money | Representation: `numeric` + exact decimal **string**. Format: **`1,250.00 SAR`** | `PRD.md` BR-43 · `S0-12-money.md` §0 · `lib/money.ts` |
+> | **B** stack | **APPROVED** — Next.js 16 · React 19 · TS strict · Tailwind v4 · Vercel · Supabase | `design/STACK.md` v1.0 |
+> | **C** Arabic/RTL | **Arabic, right-to-left, single-locale.** English not a required interface language | `PRD.md` BR-41 · BR-42 · §1.2 · Q16 |
+>
+> Superseded status: the recommendation in A.7 chose option **(a)** `1250.00 SAR`; the team chose **(b)** `1,250.00 SAR` — grouping added, Latin suffix kept.
+
+---
 
 > **This document decides nothing.** It states three open questions, what each source document currently requires, the technical consequences of each option, and a labelled recommendation. **No implementation has been written for any of them.**
 >

@@ -1,6 +1,6 @@
 import { cn } from "@/lib/cn";
 import { Money } from "@/components/ui/money";
-import { formatSar, SAR_SUFFIX, type AuctionPrice, type Sar } from "@/lib/money";
+import { formatSar, formatSarWithSuffix, type AuctionPrice, type Sar } from "@/lib/money";
 
 /**
  * TWO components, not one component with two labels.
@@ -55,7 +55,7 @@ export function PriceBlock({
 }
 
 /** Quieter: a dashed rule, muted caption. The amount is an invitation. */
-function StartingPrice({ startingPrice, className }: { startingPrice: Sar; className?: string }) {
+export function StartingPrice({ startingPrice, className }: { startingPrice: Sar; className?: string }) {
   return (
     <section
       aria-label="سعر البداية"
@@ -67,7 +67,7 @@ function StartingPrice({ startingPrice, className }: { startingPrice: Sar; class
       <h2 className="text-xs font-bold text-ink-3">سعر البداية</h2>
       <Money amount={startingPrice} size="hero" />
       <p className="text-sm text-ink-2">
-        لا توجد مزايدات · أول مزايدة بمبلغ {formatSar(startingPrice)} {SAR_SUFFIX} بالضبط{" "}
+        لا توجد مزايدات · أول مزايدة بمبلغ {formatSarWithSuffix(startingPrice)} بالضبط{" "}
         <strong className="text-ink">مقبولة</strong>
       </p>
     </section>
@@ -75,7 +75,7 @@ function StartingPrice({ startingPrice, className }: { startingPrice: Sar; class
 }
 
 /** Louder: brand ground, bid count, live region. The amount is a threshold. */
-function CurrentBid({
+export function CurrentBid({
   currentPrice,
   bidCount,
   leadingBidder,
@@ -106,7 +106,7 @@ function CurrentBid({
             {/* Vertical, so it must NOT mirror in RTL — no icon-directional here. */}
             <span aria-hidden="true">▲</span>
             <bdi className="num">{formatSar(lastRaise)}</bdi>
-            <span className="sr-only">ارتفع السعر بمقدار {formatSar(lastRaise)} {SAR_SUFFIX}</span>
+            <span className="sr-only">ارتفع السعر بمقدار {formatSarWithSuffix(lastRaise)}</span>
           </span>
         ) : null}
       </div>

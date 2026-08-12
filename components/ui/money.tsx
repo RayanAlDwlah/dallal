@@ -32,7 +32,7 @@ export interface MoneyProps {
  *    strictly increasing history is scannable (FR-BID-15).
  *  - `<bdi>` isolates the Latin digits inside RTL text. Without it the decimal
  *    point and the suffix reorder (DESIGN_SYSTEM.md §2.1). The suffix sits
- *    OUTSIDE the isolate, which is what keeps `1,250.00 ر.س` in that order.
+ *    OUTSIDE the isolate, which is what keeps `1,250.00 SAR` in that order.
  */
 export function Money({ amount, size = "md", suffix = true, className }: MoneyProps) {
   return (

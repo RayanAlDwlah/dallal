@@ -34,7 +34,11 @@
 
 ## 2. ⛔ تعارض حقيقي — تمثيل المبلغ (S0-12)
 
-> ### توقّفت ولم أُنشئ `lib/money.ts`. هذا قرار فريق لا قرار تنفيذ.
+> ### ✅ حُسم 2026-08-12 — `lib/money.ts` أُنشئ
+>
+> القرار النهائي: التمثيل **سلسلة عشرية دقيقة** (لا هللات)، والصيغة **`1,250.00 SAR`** — مجمّعة، خانتان عشريتان، لاحقة لاتينية. مسجّل في `PRD.md` BR-43 و`S0-12-money.md` §0.
+>
+> ما يلي محفوظ **كسجل للنقاش**، لا كخيارات مفتوحة.
 
 `design/lib/money.ts` (تصميم محمد) و`docs/contracts/S0-12-money.md` (عقد ريان، على فرعه) **يتناقضان جوهريًا**:
 
@@ -66,24 +70,23 @@ design/components/auction/price-block.tsx يعتمد على money.tsx
 
 ---
 
-## 3. الاستثناء المؤقت — ضاق ولم يُرفع
+## 3. ✅ الاستثناء المؤقت — رُفع بالكامل
 
-`tsconfig.json` و`eslint.config.mjs` ما زالا يستثنيان `design/**`، **لكن سببه تغيّر جذريًا**:
+استثناء `design/**` من `tsconfig.json` و`eslint.config.mjs` **لم يعد موجودًا**. كل ملف `.tsx` في المستودع يخضع الآن للفحص النوعي والـlint — **بما فيها ملف ريان** `design/components/bidding/bid-panel.tsx`، الذي يُصرَّف نظيفًا مقابل `lib/money.ts` الجديد.
 
-| قبل (S0-07) | الآن (S0-09) |
-|---|---|
-| «الاعتماديات غير موجودة» — `cn`, `cva`, `clsx` كلها مفقودة | ✅ **حُلَّت.** ثبّتت الحزم ونُقلت الملفات |
-| كل `design/` غير قابل للتصريف | الباقي **ثلاثة ملفات محجوبة على S0-12** + ملف ريان |
-
-**ما نُقل فعليًا** (بـ `git mv`، والسجل محفوظ):
+**ما نُقل** (بـ `git mv`، السجل محفوظ):
 
 ```text
-design/lib/cn.ts                     → lib/cn.ts
-design/components/ui/button.tsx      → components/ui/button.tsx
-design/components/auction/countdown.tsx → components/auction/countdown.tsx
+design/lib/cn.ts                          → lib/cn.ts
+design/components/ui/button.tsx           → components/ui/button.tsx
+design/components/auction/countdown.tsx   → components/auction/countdown.tsx
+design/components/ui/money.tsx            → components/ui/money.tsx
+design/components/auction/price-block.tsx → components/auction/price-block.tsx
 ```
 
-**يُرفع الاستثناء بالكامل** حين يُحسم `S0-12` وتُدمج ملفات المبلغ. ملف ريان `bid-panel.tsx` **لم يُلمس** — ملكه.
+**ما حُذف:** `design/lib/money.ts` — نواته على `bigint` سُحبت بقرار S0-12، وحلّ محله `lib/money.ts` بحساب السلاسل. السجل يحفظه.
+
+**ما بقي في `design/`:** `DESIGN_SYSTEM.md` · `STACK.md` · `styleguide.html` · `tokens.css` (مرجع) · `components/bidding/bid-panel.tsx` (**ملك ريان، لم يُلمس**).
 
 ---
 
@@ -102,6 +105,8 @@ design/components/auction/countdown.tsx → components/auction/countdown.tsx
 | `Skeleton` | line · block · card | `aria-hidden` |
 | `EmptyState` | title · description · action | FR-LIST-08 |
 | `ImageFrame` | loaded · placeholder | EC-18 — الصورة المفقودة لا تُعطّل المزاد |
+| `AmountInput` | rest · error · لاحقة `SAR` | §8.1 — سلسلة لا رقم · **لا سقف ولا حدّ طول** (BR-21) · لا تصحيح تلقائي (FR-BID-17) |
+| `Money` *(منقول)* | 4 مقاسات · لاحقة اختيارية | مسار العرض الوحيد لأي سعر (NFR-DAT-08) |
 
 ### 4.2 الهيكل — `components/layout/`
 
@@ -110,6 +115,8 @@ design/components/auction/countdown.tsx → components/auction/countdown.tsx
 ### 4.3 المزادات — `components/auction/`
 
 `Countdown` *(منقول)* — عرض فقط، والوقت النهائي ثابت لا يُمدّد (BR-36).
+
+`PriceBlock` *(منقول)* — مع `StartingPrice` و`CurrentBid` مُصدَّرين. **مكوّنان لا مكوّن بحالتين**: بلا مزايدات السعر الابتدائي **شامل** (BR-29)، ومع مزايدات السعر الحالي **حصري** (BR-03). العرض فقط — القيمة يكتبها ريان (ARCHITECTURE §9.4).
 
 ---
 
@@ -171,19 +178,23 @@ design/components/auction/countdown.tsx → components/auction/countdown.tsx
 
 ## 7. ما لم يُبنَ عمدًا
 
-`components/bidding/**` (ريان) · `lib/supabase/**` (عبدالرحمن) · `lib/money.ts` (§2) · `Amount input` (§2) · أي استعلام أو مخطط أو RLS · أي شاشة من قائمة **«لا تُبنَ أبدًا»** في `DESIGN_SYSTEM.md` §11.
+`components/bidding/**` (ريان) · `lib/supabase/**` (عبدالرحمن) · أي استعلام أو مخطط أو RLS أو SQL · أي منطق مزايدة أو تحقق أو ريلتايم أو تحديد فائز · أي شاشة من قائمة **«لا تُبنَ أبدًا»** في `DESIGN_SYSTEM.md` §11 · أي شغل `AUC-*`.
 
 **`S0-13`** — تقسيم صفحة التفاصيل إلى ملفات فارغة مملوكة — **لم يُنفَّذ**: بند منفصل يحتاج تنسيق محمد وريان.
 
 ---
 
-## 8. يحتاج موافقة الفريق
+## 8. ✅ الموافقات — وردت 2026-08-12
 
-| # | البند |
-|---|---|
-| 1 | **تعارض `S0-12`** (§2) — يحجب المبلغ وكل ما يعتمد عليه |
-| 2 | **`STACK.md` ما زال `0.1 — proposed`** — Next.js يحتاج توقيع الثلاثة |
-| 3 | **العربية كلغة الواجهة** — `DESIGN_SYSTEM.md` §2 يقول إن الفريق اتفق، لكن القرار **لم يُسجَّل في `PRD.md`** بعد كما تقتضي القاعدة 16 |
-| 4 | **صفحات عبدالرحمن المؤقتة** (§5) — يستبدلها |
+| # | البند | الحالة |
+|---|---|---|
+| 1 | **تمثيل المبلغ S0-12** | ✅ سلسلة عشرية دقيقة · `1,250.00 SAR` — `PRD.md` BR-43 · `S0-12-money.md` §0 |
+| 2 | **الحزمة التقنية** | ✅ `design/STACK.md` v1.0 — APPROVED |
+| 3 | **العربية RTL** | ✅ `PRD.md` BR-41 · BR-42 · §1.2 · Q16 |
+| 4 | **صفحات عبدالرحمن المؤقتة** | ⏳ ما زالت قائمة — يستبدلها هو |
+
+### 8.1 بند واحد يحتاج قرار ريان الهندسي
+
+الصيغة المعتمدة تتطلب فواصل ألفية، و`to_char` **يبقى ممنوعًا** في عقده (يُنتج سقف عرض). فالتجميع على الخادم يحتاج تنفيذًا غير محدود العرض. الخياران مطروحان في `S0-12-money.md` §0.1 — **والقرار له**. النصف العميلي منفَّذ في الحالتين.
 
 </div>
