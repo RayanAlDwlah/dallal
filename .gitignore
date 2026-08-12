@@ -39,3 +39,7 @@ test-results/
 # Misc
 .cache/
 .turbo/
+
+# Session working files — never merged to main
+HANDOFF.md
+docs/_wip/
