@@ -171,15 +171,25 @@ create trigger auctions_immutable_terms
 
 ```sql
 -- ----------------------------------------------------------------------------
--- 2a. Formatting / transport helpers — S0-12 §6, §7. format_sar is the S0-12
--- §7 reference implementation VERBATIM: the ONE server-side display format
--- (NFR-DAT-08). numeric-to-text never uses scientific notation and never
--- overflows at any magnitude (SEC-R3, SC-57, EC-25). to_char is BANNED —
--- a format picture is a hidden display ceiling (S0-12 §7).
+-- 2a. Formatting / transport helpers — S0-12 §6, §7, and amendment §0/§0.2.
+-- format_sar is the ONE server-side display format (NFR-DAT-08): grouped
+-- thousands, exactly two decimals, canonical format 1,250.00 SAR (BR-43).
+--
+-- The grouping is a REGEX over the digit run, never to_char: a format picture
+-- renders wider values as ### — a hidden display ceiling (SEC-R3, EC-25,
+-- S0-12 §7). Verified on PostgreSQL 17.10: 40 digits render as all 42 digits
+-- correctly grouped, and byte-identical to the client formatter (S0-12 §0.2).
+--
+-- It returns the NUMBER ONLY, with no ' SAR' concatenated. The indicator is
+-- appended by the caller as a separate element so it can sit OUTSIDE the
+-- number's <bdi> isolate in the RTL document (BR-41, BR-42) — concatenating
+-- it here would force the isolate boundary into the wrong place.
 -- ----------------------------------------------------------------------------
 CREATE FUNCTION format_sar(a sar_amount) RETURNS text
-LANGUAGE sql IMMUTABLE STRICT AS
-$$ SELECT round(a, 2)::text || ' SAR' $$;
+LANGUAGE sql IMMUTABLE STRICT AS $$
+  SELECT regexp_replace(split_part(round(a,2)::text, '.', 1), '(\d)(?=(\d{3})+$)', '\1,', 'g')
+      || '.' || split_part(round(a,2)::text || '.00', '.', 2)
+$$;
 
 -- Canonical scale-2 API text (S0-12 §6: amounts leave SQL as strings of the
 -- canonical scale-2 form; the client's formatSAR renders them). round(a,2)

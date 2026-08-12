@@ -10,6 +10,13 @@
 The whole migration — domain, three tables, `place_bid`, `format_sar`, four triggers,
 RLS policies, grants, the public view — **applied with no error and no edit**.
 
+> **Re-verified after the `S0-12` §0 amendment.** `format_sar` was rewritten for grouped
+> thousands (`1,250.00`, `BR-43`) using a width-unbounded regex rather than `to_char`, and
+> no longer concatenates the indicator so it can sit outside the `<bdi>` isolate. The
+> migration re-applied cleanly, the acceptance suite is still 17/17, concurrency is still
+> exactly one acceptance per round, and `format_sar` emits all 42 digits at 40-digit
+> magnitude with no `#`. **Nothing below changed as a result of that edit.**
+
 ---
 
 ## 1. Acceptance suite — 17/17

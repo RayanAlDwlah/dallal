@@ -269,21 +269,26 @@ are **not** mine or yours to settle in a DM:
    says changes are a document revision agreed by all three of us — never a code change.
    One-line revision needed.
 
-3. **The money format.** `S0-12` §7 mandates `1250.00 SAR` — Western digits, no thousands
-   separators. Your `money.ts` emits `1,250.00 ر.س`. Two formatters that disagree breaks
-   `NFR-DAT-08` outright. For what it is worth I checked the PRD before writing this:
-   `BR-33` defines the **currency** as SAR, not the glyph, and neither `PRD.md` nor
-   `ARCHITECTURE.md` mentions thousands separators or digit set anywhere — so `ر.س` does
-   not violate the PRD, only `S0-12` §7. And `S0-12` §7's own rationale names the
-   *unresolved Arabic-RTL decision* as the reason it chose Western/`SAR`, with an explicit
-   escape clause. **I think your version is the right one and the contract should move**,
-   but it is a team decision and it is tangled with the RTL question below.
+3. ~~**The money format.**~~ **Resolved while this document was being written** — `S0-12`
+   §0 sets the canonical format to `1,250.00 SAR` and `PRD` `BR-43` records it. I had
+   briefly proposed `ر.س` and was wrong: I amended three PRD locations for the RTL
+   decision and missed `FR-CREATE-13`, which names the indicator explicitly. Your version
+   amended it. **Adopted as-is, and my competing edit is withdrawn** — `PRD.md` on this
+   branch is now byte-identical to `main`, so the RTL amendment reaches `main` through
+   your commit, not through a conflicting one of mine.
 
-**And one thing that is squarely my fault to have left verbal:** the interface is Arabic
-RTL. That was decided, told to you, and **never written down** — `PRD.md` still says
-English-only in §4.2 and assumption `A-U10`, and **Abdulrahman was never told at all**
-while holding 14 UI issues. A PR fixing the PRD and the `S0-12` §7 format together is
-coming, with both of you as required reviewers. Apologies — that one is on me.
+   I have answered the engineering question §0.1 left open, in **§0.2**: option **(ii)**,
+   mirrored grouping — chosen because the width-unbounded server implementation it was
+   priced at now exists and was measured. `to_char`'s ceiling reproduced (`###,###,###,###.##`),
+   the regex form emits all 42 digits at 40-digit magnitude, and the golden byte-identity
+   test against your `lib/money.ts` passes on 11 fixtures including one above 2⁵³.
+
+**And one thing that was squarely my fault:** the Arabic-RTL decision was made verbally
+and left unwritten, so `PRD.md` went on telling every Claude session the opposite while
+Abdulrahman held 14 UI issues and had never been told. You two fixed it before I did, and
+more completely — `§1.2` + `BR-41`/`BR-42`/`BR-43` + the `Q16` resolution is the right
+shape, and it is what this contract now cites. Apologies for the duplicated effort; the
+cause was mine.
 
 ---
 

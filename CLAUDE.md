@@ -44,8 +44,9 @@ If you find a contradiction between documents, **surface it**. Do not silently p
 
 ## 3. The interface is Arabic, right-to-left
 
-`NFR-USA-12`, `A-U10`. Every user-facing string is Arabic; the document is `lang="ar"`
-`dir="rtl"`.
+`BR-41`, `BR-42`, `PRD §1.2`, `A-U10` (`Q16`). Every user-facing string is Arabic; the
+document is `lang="ar"` `dir="rtl"`, set **once** at the root and never overridden per
+component.
 
 - Use **logical** CSS properties — `margin-inline-start`, `ps-*`/`pe-*`/`ms-*`/`me-*`/
   `start-*`/`end-*`. Never physical `left`/`right` for layout that should mirror.
@@ -79,9 +80,11 @@ rejected on sight.
    PostgreSQL `numeric` accepts `NaN`, and `NaN > 0` and `NaN = round(NaN,2)` are both
    true. An accepted `NaN` bid makes the auction permanently unwinnable.
 5. **More than two decimals is REJECTED, never rounded.**
-6. **One formatter per tier, byte-identical.** Same amount, same string, everywhere.
-   Format: grouped digits, exactly two decimals, indicator `ر.س`. Never `SAR`, never
-   "Demo Points", never a second currency.
+6. **One formatter, byte-identical wherever it exists.** Same amount, same string,
+   everywhere. The canonical format is **`1,250.00 SAR`** (`BR-43`, `FR-CREATE-13`,
+   `S0-12` §0): grouped thousands, exactly two decimals, one space, the **Latin** `SAR`
+   indicator. Never `ر.س`, never "Demo Points", never a second currency, and never a
+   second formatter — `styleguide.html` and demo pages included.
 
 ---
 

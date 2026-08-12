@@ -188,7 +188,7 @@ The platform serves one class of human — a registered individual — who moves
 | Business buyers / procurement | Need invoicing, purchase orders, tax handling — out of scope |
 | Anonymous / guest bidders | Every bid must be attributable to an authenticated identity (see *Business Rules* BR-01) |
 | Users requiring a native mobile app | Dalal is a website (§1.1). Mobile users are served by a responsive web interface in their mobile browser |
-| Users who cannot read Arabic | The interface is Arabic, right-to-left (NFR-USA-12, A-U10). Multi-language support remains out of scope (§19.7) — the MVP has one language, not two |
+| Non-English-speaking users as a served segment | Multi-language support is out of scope |
 
 ### 4.3 Is a dedicated Admin role required for the MVP?
 
@@ -1576,7 +1576,6 @@ Targets are deliberately modest and matched to an MVP; the point is that they ar
 | NFR-USA-08 | Interactive controls are keyboard-accessible and have visible focus states. |
 | NFR-USA-09 | Text and interactive elements meet WCAG 2.1 AA contrast requirements. |
 | NFR-USA-10 | Real-time changes are communicated by more than color alone, so they are perceivable by color-blind users. |
-| NFR-USA-12 | **The interface is Arabic with a right-to-left layout.** The document declares `lang="ar"` and `dir="rtl"`; every user-facing string is Arabic. This is the product's single language — it is not a translation layer, and multi-language support stays out of scope (§19.7, A-U10). Four rules make it hold: **(a)** layout uses logical, direction-relative CSS properties (inline-start/inline-end) rather than physical left/right, so nothing needs mirroring by hand; **(b)** numbers, prices and countdowns use Western digits (0–9) and are wrapped in a bidirectional isolate so the decimal point, the SAR indicator and the surrounding Arabic text cannot reorder; **(c)** the SAR indicator renders per NFR-DAT-08's single format, on the same side of the amount everywhere; **(d)** any Latin-script content a user supplies — a product name, a display name — is isolated so it cannot flip the direction of the line that contains it. |
 
 ### 17.8 Maintainability & testability
 
@@ -1902,7 +1901,7 @@ Assumptions the team is making. **Every assumption that once required confirmati
 | A-U7 | The same person may be both a seller and a bidder; no separate account types are needed. | |
 | A-U8 | Users understand basic auction concepts (bidding, outbidding, closing time) without a tutorial. | |
 | A-U9 | **Decided:** users may forget their passwords, and the MVP provides a self-service reset (M24). This assumption is retired. | Resolved |
-| A-U10 | **Decided:** the interface is **Arabic, right-to-left** (NFR-USA-12). One language is sufficient for all users in the MVP period — that language is Arabic rather than English. This changes the language; it does **not** add a second one, so multi-language support stays out of scope (§19.7). This assumption is retired. | Resolved |
+| A-U10 | English is sufficient for all users in the MVP period. | |
 
 ### 20.2 About auctions
 

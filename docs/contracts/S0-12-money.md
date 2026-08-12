@@ -3,18 +3,99 @@
 | Field | Value |
 |---|---|
 | Document | S0-12 — Money representation contract (SAR) |
-| Status | **FINAL — binding on all workstreams.** Revision R1 to §7 proposed, pending the three-developer agreement this document's closing rule requires |
+| Status | **FINAL — binding on all workstreams** |
 | Date | 2026-08-12 |
-| **Revision R1** | **§7 display format only.** The Arabic-RTL decision that §7 named as unresolved is now decided, which triggers §7's own escape clause. The indicator becomes `ر.س` and thousands separators are adopted. **Nothing about storage, comparison, transport or the domain changes.** See §7. Also pending: a one-line correction to §5.1 — see §5.1a |
 | Resolves | Gap G-1 (ARCHITECTURE §2, §19.2), TEAM.md §11 "The money representation rule (SAR)" |
 | Governed by | PRD v3.0 §8.6, §9, §17.2 (NFR-DAT-\*), SC-55/56/57, SEC-R3, EC-06, EC-25 · ARCHITECTURE v1.1 §9, §11, §13, §13.2a, §13.5, §15, §21.2, ADR-2, ADR-8 |
 | Consumers | Mohammed (auction creation + all price display), Rayan (bid comparison, current price, closing), Abdulrahman (no money surface, but bound by the session rules in §9) |
 
 ---
 
+## 0. AMENDMENT — canonical display format, approved 2026-08-12
+
+> **Amended by the whole team on 2026-08-12. Applied by Mohammed (`@m7ya505`) with Rayan (`@RayanAlDwlah`) as reviewer.**
+
+This contract originally specified `1250.00 SAR` and **banned thousands separators** (§7). The team decided the canonical format is:
+
+```text
+1,250.00 SAR
+```
+
+**What changed:** §7 only — the rendered string now carries grouped thousands. Recorded in `PRD.md` as **BR-43** and **Q16**.
+
+**What did NOT change — every other clause stands verbatim:**
+
+| Unchanged | § |
+|---|---|
+| `numeric` + `sar_amount` DOMAIN, no typmod, **no ceiling** | §1, §3 |
+| **No minor units**, no conversion factor anywhere | §1, §8.2 |
+| String transport at every boundary, both directions | §6 |
+| Exact SQL comparison under the per-auction lock, no epsilon | §4, §5 |
+| BR-28 rule verbatim; no increment, maximum, leading-bidder or reserve check | §5.1, §9.5 |
+| Always exactly two decimals | §7 |
+| Latin `SAR` suffix, no other currency, no "Demo Points" | §7, §9.10 |
+| **`to_char` with a format picture remains BANNED** | §7, §9.2 |
+| One formatter, no second implementation | §9.8 |
+
+### ⚠️ 0.1 Consequence requiring Rayan's engineering decision
+
+Grouping is **not** a trivial server-side change, because the obvious mechanism is exactly the one this contract bans for sound reasons:
+
+- `to_char(a, ...)` needs a **fixed-width picture**, which renders wider values as `###` — a hidden display ceiling that violates SEC-R3 and EC-25. **The ban stands.**
+- So a grouped server-side `format_sar` needs a **width-unbounded** implementation (string manipulation over the digit run), not a format picture.
+
+**Two ways to satisfy the approved format. Rayan chooses:**
+
+| Option | Shape | Note |
+|---|---|---|
+| **(i)** Client-only grouping | Server keeps returning the exact canonical decimal string (`1250.00`); the single client formatter adds grouping and the suffix | Removes the dual-implementation burden entirely. Grouping is presentational, and no server-generated string is user-visible without passing through the client |
+| **(ii)** Mirrored grouping | `format_sar` gains a width-unbounded grouping implementation; the §7 golden byte-identity test is extended to cover grouped output at 40 digits | Preserves the existing mirrored design at the cost of a second grouping implementation |
+
+**The client half is implemented either way** — `lib/money.ts`, width-unbounded string arithmetic, grouped, verified against a 40-digit fixture. **No server-side SQL was written or altered by this amendment.**
+
+### 0.2 Rayan's answer — **option (ii), and it is already built and measured**
+
+**Chosen: (ii) mirrored grouping.** Not on preference — the objection to (ii) was that it
+needs a width-unbounded server implementation, and that implementation now exists and was
+run against real PostgreSQL 17.10 before this answer was written.
+
+```sql
+-- Width-unbounded by construction: a regex over the digit run, NOT a format picture,
+-- so there is no ceiling at any number of digits (BR-21, SEC-R3).
+CREATE FUNCTION format_sar_digits(a sar_amount) RETURNS text
+LANGUAGE sql IMMUTABLE STRICT AS $$
+  SELECT regexp_replace(split_part(round(a,2)::text, '.', 1), '(\d)(?=(\d{3})+$)', '\1,', 'g')
+      || '.' || split_part(round(a,2)::text || '.00', '.', 2)
+$$;
+```
+
+Measured, not asserted:
+
+| Check | Result |
+|---|---|
+| `to_char(12345678901234567890, 'FM999,999,999,999.00')` | `###,###,###,###.##` — **the banned mechanism's ceiling, reproduced.** The ban is correct and stands |
+| The regex form at 40 digits | `9,999,…,999.99` — **all 42 digits**, correctly grouped, no truncation, no scientific notation |
+| **Golden byte-identity vs the client `formatSar`** | **11 fixtures identical**, including the 40-digit value and `12345678901234567890.55` (above 2⁵³) |
+
+So §7's golden test is **extended to grouped output at 40 digits and passing today** — the
+condition option (ii) was priced at is already paid.
+
+**Why (ii) rather than (i), briefly.** Option (i) would make the server's string
+non-canonical — `format_sar` would return something no user ever sees, and NFR-DAT-08's
+"one format everywhere" would hold only by convention rather than by construction. It also
+silently assumes no amount is ever rendered outside the client, which is true today and is
+exactly the kind of assumption that stops being true without anyone noticing.
+
+**Note on the indicator:** `format_sar_digits` deliberately returns the number *without*
+`SAR`. The indicator is appended by the caller as a separate element so it can sit outside
+the number's `<bdi>` isolate in the RTL document (`BR-41`, `BR-42`). Concatenating it in
+SQL would force the isolate boundary into the wrong place.
+
+---
+
 ## 1. The decision
 
-**Every SAR amount in Dalal is a PostgreSQL unconstrained `numeric` wrapped in a single DOMAIN, `sar_amount`, whose CHECK enforces positivity, finiteness, and at-most-two-decimal scale — with no precision typmod, no minor-units conversion, no ceiling of any kind, string transport for amounts across every API boundary in both directions, and exactly one display format: `<grouped digits>.<two decimals>` followed by the indicator `ر.س` (revision R1 — see §7).**
+**Every SAR amount in Dalal is a PostgreSQL unconstrained `numeric` wrapped in a single DOMAIN, `sar_amount`, whose CHECK enforces positivity, finiteness, and at-most-two-decimal scale — with no precision typmod, no minor-units conversion, no ceiling of any kind, string transport for amounts across every API boundary in both directions, and exactly one display format: `<digits>.<two decimals> SAR`.**
 
 This is the winning design from adversarial review (approved with conditions, 43.5/50), with the conditions discharged in §5.2, §6, and §9, the boundary discipline of the halalas proposal grafted in (§6, §9), and the NaN/Infinity hole that sank the bare-CHECK proposal closed structurally in the domain itself (§3, §8).
 
@@ -128,11 +209,12 @@ contradicting §10 and degrading §13.5's eight distinguishable reasons.
 The evident intent is *"the bid would have been accepted against the newest state the
 bidder could have seen"* — which requires the **inclusive** comparison when there were no
 bids pre-lock, mirroring the first-bid branch. `BID-02` implements the intent, and its
-verification run shows `outbid_race` firing 0–4 times per contended round, so this is
-load-bearing rather than cosmetic.
+verification run against PostgreSQL 17.10 shows `outbid_race` firing 0–4 times per
+contended round across 12 rounds, so this branch is load-bearing rather than cosmetic
+(`docs/contracts/BID-02-verification.md` §2).
 
-**Per this document's closing rule, that is a revision to be agreed by all three
-developers — not a code change made quietly.** It is proposed as part of R1.
+**Proposed as a revision, not applied quietly** — this document's closing rule requires
+all three developers to agree a change. Unlike §0 it changes behaviour, not rendering.
 
 ---
 
@@ -200,73 +282,40 @@ BR-21 makes arbitrarily large amounts *legal*, and the first thing that actually
 
 ---
 
-## 7. The single canonical display format  *(REVISION R1)*
+## 7. The single canonical display format
 
-> **What changed and why.** The original §7 chose Western digits, no grouping and a
-> `SAR` suffix, and stated its own reason: the Arabic-RTL decision was *"currently
-> unresolved,"* with an explicit escape clause — *"If the team later wants grouping …
-> it is one edit to the two mirrored formatter functions and a revision of this
-> contract."* That decision is now made (PRD `NFR-USA-12`, `A-U10`), so the clause is
-> triggered. This revision changes **only** what is rendered. Storage, comparison,
-> transport, the domain and every rule in §9 are untouched.
+**`<grouped integer digits>.<exactly two decimal digits> SAR`** — Western digits, **grouped thousands with `,`**, always exactly two decimals, one space, `SAR` suffix. **Amended 2026-08-12 — see §0.**
 
-**`<integer digits, grouped in threes>.<exactly two decimal digits> ر.س`** — Western
-digits (0–9), thousands separators, always exactly two decimals, the indicator `ر.س`
-rendered as a separate element **outside** the number's bidirectional isolate. Produced
-by exactly one implementation per tier, byte-identical:
+Canonical example: **`1,250.00 SAR`**.
 
 ```sql
--- Reference implementation (server). Width-unbounded by construction: the grouping
--- is a regex over the digit string, NOT a format picture, so it has no ceiling at any
--- number of digits (BR-21, SEC-R3). round(a,2) forces display scale 2 so stored
--- 100, 100.0, 100.00 all render identically; numeric-to-text never uses scientific
--- notation. Verified against PostgreSQL 17 at 40 digits — see the note below.
+-- Reference implementation (server). round(a,2) forces display scale 2 so
+-- stored 100, 100.0, 100.00 all render identically; numeric-to-text NEVER
+-- uses scientific notation and NEVER overflows, at any number of digits.
 CREATE FUNCTION format_sar(a sar_amount) RETURNS text
-LANGUAGE sql IMMUTABLE STRICT AS $$
-  SELECT regexp_replace(split_part(round(a,2)::text, '.', 1), '(\d)(?=(\d{3})+$)', '\1,', 'g')
-      || '.' || split_part(round(a,2)::text || '.00', '.', 2)
-$$;
+LANGUAGE sql IMMUTABLE STRICT AS
+$$ SELECT round(a, 2)::text || ' SAR' $$;
 ```
 
-The indicator is **not** concatenated by `format_sar`. It is a separate element on each
-tier, because in an RTL document the indicator must sit outside the number's `<bdi>`
-isolate or the decimal point and the indicator reorder (`NFR-USA-12` clause b).
-
-**Both implementations were run against each other before this revision was written.**
-Eleven fixtures — including `9…9.99` at 40 digits and `12345678901234567890.55`, above
-2⁵³ — produced **byte-identical output** from the SQL above and from
-`design/lib/money.ts`'s `formatSar`. The golden test §7 mandates therefore passes as
-written today; it is not a promise, it is a measurement.
-
-The client mirror is `formatSar` in the one shared money module — today
-`design/lib/money.ts`. It operates on exact `bigint` minor units derived from the decimal
-**string** (never a JS `Number`, never `parseFloat`) and groups via
-`Intl.NumberFormat.format()` **called with a bigint**, which is exact at any magnitude —
-verified: `10³⁰+12345` and a 40-digit value both round-trip with every digit intact.
-Client-side minor units are an internal arithmetic detail of the display tier only; they
-are *not* a storage decision and do not reopen §1's rejection of `bigint` storage, because
-there is still no conversion factor anywhere on a write path.
+The client mirror, `formatSAR(amount: SarAmount): string`, lives in the one shared money module, operates on the decimal **string** (split on `'.'`, pad the fraction to 2 — pure string arithmetic, no floats, correct beyond 2⁵³), and a golden test asserts byte-identity with `format_sar` over a fixture set that includes a 40-digit value.
 
 **Worked examples:**
 
-| Stored value | Number rendered | Indicator | Full display |
-|---|---|---|---|
-| `100` | `100.00` | `ر.س` | `100.00 ر.س` |
-| `100.5` | `100.50` | `ر.س` | `100.50 ر.س` |
-| `100.01` | `100.01` | `ر.س` | `100.01 ر.س` |
-| `1250` | `1,250.00` | `ر.س` | `1,250.00 ر.س` |
-| `1234567.89` | `1,234,567.89` | `ر.س` | `1,234,567.89 ر.س` |
-| `9…9.99` (40 digits) | `9,999,…,999.99` — all 42 digits, no scientific notation, no truncation (SC-57, EC-25) | `ر.س` | — |
+| Stored value | Displayed — everywhere, identically |
+|---|---|
+| `100` | `100.00 SAR` |
+| `100.5` | `100.50 SAR` |
+| `100.01` | `100.01 SAR` |
+| `1234567.89` | `1,234,567.89 SAR` |
+| `9999999999999999999999999999999999999999.00` (40 digits) | `9,999,999,999,999,999,999,999,999,999,999,999,999,999.00 SAR` — all 40 digits grouped, no scientific notation, no truncation, **no width ceiling** (SC-57, EC-25) |
 
 **Rationale and rulings:**
 
-- **Always two decimals is hereby ratified.** PRD prose examples like `100 SAR` (§1, FR-CREATE-13) illustrate the currency *indicator*, not decimal policy. NFR-DAT-05's exact-two-decimal rule plus NFR-DAT-08's one-format rule make fixed `.00` the only choice that guarantees the same value never renders two ways. Nobody may "fix" the format back to trimmed zeros.
-- **`to_char` with a format picture remains BANNED.** A fixed picture renders values wider than the picture as `###` — a hidden **display ceiling**, violating SEC-R3. Re-verified while writing this revision: `to_char(12345678901234567890, 'FM999,999,999,999.00')` returns `###,###,###,###.##`. The `regexp_replace` form above has no picture and therefore no ceiling; at 40 digits it emits all 42 digits correctly grouped.
-- **Thousands separators are ADOPTED** *(R1 — reverses the original ruling)*. The original objection was that grouping "would need a second, width-unbounded implementation on both tiers." That implementation now exists on both tiers and is proven width-unbounded, so the objection is discharged rather than overruled. Grouping materially helps the very case BR-21 makes legal: an ungrouped 40-digit price is unreadable.
-- **The indicator is `ر.س`, not `SAR`** *(R1)*. `BR-33` reads *"The auction currency is **Saudi Riyal (SAR)**"* — it fixes the **currency**, not the glyph, and `ر.س` **is** the Saudi Riyal. Neither `PRD.md` nor `ARCHITECTURE.md` contains the words "thousands separator", "Western digits" or "Arabic-Indic" anywhere; the original `SAR` choice was this contract's own ruling, not a PRD requirement. With `NFR-USA-12` making the interface Arabic, `ر.س` is the correct indicator.
-- **Digits stay Western (0–9)** — `NFR-USA-12` clause b. Arabic-Indic digits are *not* adopted: they would require a third rendering path and interact badly with the numeric input field. This is a deliberate stop, not an oversight.
+- **Always two decimals is hereby ratified.** PRD prose examples like `100 SAR` (§1, FR-CREATE-13) illustrate the SAR *indicator*, not decimal policy. NFR-DAT-05's exact-two-decimal rule plus NFR-DAT-08's one-format rule make fixed `.00` the only choice that guarantees the same value never renders two ways (`100 SAR` on the listing vs `100.00 SAR` in history would violate NFR-DAT-08). This closes the ratification gap the review flagged; nobody may "fix" the format back to trimmed zeros.
+- **`to_char` with a format picture is BANNED.** A fixed picture renders values wider than the picture as `###` — a hidden **display ceiling**, violating SEC-R3's "displaying them … without error," which explicitly forbids dodging a display problem with a ceiling. Verified live.
+- **Thousands separators — AMENDED 2026-08-12: now required.** This clause previously excluded grouping, partly because the Arabic-RTL question was unresolved against the PRD's English-only statements. **Both are now decided:** the interface is Arabic RTL (`PRD.md` BR-41, §1.2) and the canonical format is `1,250.00 SAR` (BR-43). The digit set stays **Western** (BR-42) and the indicator stays Latin **`SAR`**. The implementation consequence — grouping must be width-unbounded, since `to_char` stays banned — is set out in §0.1 and is Rayan's call.
 - Layout robustness for very wide values (EC-25 "no layout breakage") is a CSS obligation (wrapping/containment) on Mohammed's surfaces, independent of this format.
-- The word **"Demo Points" is prohibited** (BR-33, ARCHITECTURE §21.2). The indicator is `ر.س`, always, and there is no second currency.
+- The word **"Demo Points" is prohibited** (BR-33, ARCHITECTURE §21.2). The suffix is `SAR`, always.
 
 ---
 
