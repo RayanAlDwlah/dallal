@@ -13,14 +13,53 @@ wins. Supabase (PostgreSQL 17) + Next.js on Vercel. It is a **demonstration** �
 amounts are simulated and **no money changes hands**. There is no payment, no purchase, no
 shipping, no messaging, no admin interface.
 
-| Area | Owner | GitHub |
-|---|---|---|
-| Auth, profiles, platform setup | Abdulrahman | `@Dem4t` |
-| Auction records, creation, listing, detail, design system | Mohammed | `@m7ya505` |
-| Bidding, current price, closing, winner, realtime | Rayan | `@RayanAlDwlah` |
+### Ownership is split by **responsibility, not by file**
 
-**Do not write code you do not own.** If a task needs a change in someone else's area,
-say so and stop — do not implement it helpfully.
+The line is **presentation vs. behaviour**, not feature area. A single component routinely
+contains both, and each half has a different owner.
+
+| Responsibility | Owner | GitHub |
+|---|---|---|
+| **All presentation** — every screen, layout, component, visual state, the design system | Mohammed | `@m7ya505` |
+| **Bidding behaviour** — validation, submission, the atomic operation, concurrency, current-price correctness, realtime bidding behaviour, closing, winner determination, bid recording and order | Rayan | `@RayanAlDwlah` |
+| **Authentication and identity behaviour and data** — auth logic, session, authorization, identity data | Abdulrahman | `@Dem4t` |
+
+Mohammed's presentation ownership is total: auction screens, the bid panel, bid history,
+the outcome and winner views, and the login / registration / password-reset / profile
+screens. Layout, typography, spacing, colour, motion, responsive behaviour, loading, empty
+and error states, and the presentation side of accessibility are all his.
+
+### What this means in practice
+
+- **Mohammed may restyle a component that contains Rayan's bidding logic**, or
+  Abdulrahman's auth logic, as long as **behaviour and contracts are unchanged**.
+- **Mohammed must not** change bid validation, bid calculation, concurrency behaviour,
+  realtime behaviour, closing logic, winner determination, or bid-recording semantics —
+  nor any authentication behaviour or identity data logic.
+- **Rayan may implement bidding behaviour inside a component Mohammed presents**, but must
+  not redesign that presentation without coordinating with Mohammed first.
+
+### The rule for an AI session — read this before you stop
+
+**Do not write code you do not own.** That rule is unchanged; the boundary it points at
+has moved.
+
+Before refusing a task, decide which half it touches:
+
+- **Presentation-only change on Mohammed's task** → he owns it. **Do not block it merely
+  because the file also contains someone else's business logic.** Implement the visual
+  change, preserve the existing behaviour exactly, rewrite no business rule, alter no
+  contract, move no data ownership.
+- **The change requires altering another owner's behaviour or data** → **stop and ask that
+  owner.** Say so plainly; do not implement it helpfully.
+
+File-level ownership statements elsewhere in the repository do not override this model.
+
+> **Status of this amendment.** Recorded here by the project owner. As of this commit
+> `TEAM.md`, `GITHUB_PLAN.md` and `ARCHITECTURE.md` still describe the older feature-area
+> split — `GITHUB_PLAN.md` in particular still assigns the bidding UI issues (`BID-06`,
+> `BID-07`, `BID-10`, `BID-18`) to Rayan. Where they disagree with this section on
+> **ownership**, this section governs. They remain authoritative on everything else, per §2.
 
 ---
 
