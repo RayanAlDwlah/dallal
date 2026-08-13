@@ -113,7 +113,13 @@ export function CurrentBid({
 
       <p className="text-sm text-ink-2">
         <bdi className="num">{bidCount}</bdi> مزايدات
-        {leadingBidder ? <> · المتصدر: {leadingBidder}</> : null}
+        {/* A display name is user-supplied and may be Latin or mixed-script.
+            Unisolated, it reorders the separator and the label around it. */}
+        {leadingBidder ? (
+          <>
+            {" · "}المتصدر: <bdi>{leadingBidder}</bdi>
+          </>
+        ) : null}
       </p>
     </section>
   );

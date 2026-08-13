@@ -968,9 +968,33 @@ td code{ font-family:var(--f-mono); font-size:12px; direction:ltr; unicode-bidi:
     btn.textContent = 'المظهر: ' + label[m];
   });
 
-  /* ---- money format: one function, used everywhere ---- */
-  function sar(n) {
-    return n.toLocaleString('en-US', { minimumFractionDigits: 2, maximumFractionDigits: 2 });
+  /* ---- money: the SAME string logic as lib/money.ts ----------------------
+     A second formatter is "rejected on sight" (CLAUDE.md §4.6) and S0-12 §9.8
+     names this file explicitly. It is ported rather than imported because the
+     style guide is a standalone document with no build step.
+
+     No Number, no toLocaleString, no arithmetic. That is what keeps
+     12,345,678,901,234,567,890.55 exact — Number would corrupt it past 2^53,
+     which BR-21 / SEC-R3 / EC-25 forbid. The last step of the demo below
+     renders exactly that amount, so the property is visible, not asserted. */
+  function trimLeadingZeros(digits) {
+    var t = digits.replace(/^0+/, '');
+    return t === '' ? '0' : t;
+  }
+  function group(whole) {
+    var digits = trimLeadingZeros(whole), out = '';
+    for (var i = 0; i < digits.length; i += 1) {
+      if (i > 0 && (digits.length - i) % 3 === 0) { out += ','; }
+      out += digits[i];
+    }
+    return out;
+  }
+  /** `"1250"` or `"1250.5"` → `"1,250.00"`. Exact at any width. */
+  function formatSar(amount) {
+    var dot = amount.indexOf('.');
+    var whole = dot === -1 ? amount : amount.slice(0, dot);
+    var frac = dot === -1 ? '00' : amount.slice(dot + 1).padEnd(2, '0');
+    return group(whole) + '.' + frac;
   }
 
   /* ---- countdown ---- */
@@ -984,9 +1008,28 @@ td code{ font-family:var(--f-mono); font-size:12px; direction:ltr; unicode-bidi:
     cd.parentElement.className = left <= 60 ? 'cd final' : (left <= 600 ? 'cd soon' : 'cd');
   }, 1000);
 
-  /* ---- the signature moment: an incoming accepted bid ---- */
-  var price   = 250,
-      bidders = ['ليلى', 'مها', 'خالد', 'نورة', 'سعد'],
+  /* ---- the signature moment: an incoming accepted bid --------------------
+     Driven by a fixed sequence of exact decimal strings. No arithmetic on an
+     amount and no x100 factor — S0-12 §8.2 states there is no conversion
+     factor anywhere in the system, and `Math.round(x * 100) / 100` is exactly
+     that factor. A style guide gains nothing from randomness, and this removes
+     every float from the file.
+
+     The sequence is strictly increasing by construction, so the demo also
+     honours RT-X5: the price can never appear to move downward. The final
+     step is deliberately past 2^53 — it is the amount a Number-based
+     formatter corrupts, and here it renders exactly (BR-21, EC-25). */
+  var SEQUENCE = [
+    { price: '287.50', raise: '37.50' },
+    { price: '301.25', raise: '13.75' },
+    { price: '340.00', raise: '38.75' },
+    { price: '399.99', raise: '59.99' },
+    { price: '1250.00', raise: '850.01' },
+    { price: '12345678901234567890.55', raise: '12345678901234566640.55' }
+  ];
+  var stepIndex = 0;
+
+  var bidders = ['ليلى', 'مها', 'خالد', 'نورة', 'سعد'],
       count   = 4,
       block   = document.getElementById('heroPrice'),
       valEl   = document.getElementById('heroVal'),
@@ -999,19 +1042,16 @@ td code{ font-family:var(--f-mono); font-size:12px; direction:ltr; unicode-bidi:
       timer;
 
   document.getElementById('simulate').addEventListener('click', function () {
-    var step = Math.round((5 + Math.random() * 45) * 100) / 100;
-    var next = Math.round((price + step) * 100) / 100;
+    if (stepIndex >= SEQUENCE.length) { return; }   // sequence exhausted
+    var next = SEQUENCE[stepIndex];
     var who  = bidders[count % bidders.length];
+    stepIndex++; count++;
 
-    // The price never moves downward — a later, lower arrival is ignored.
-    if (next <= price) { return; }
-    price = next; count++;
-
-    valEl.textContent  = sar(price);
-    dVal.textContent   = sar(step);
+    valEl.textContent  = formatSar(next.price);
+    dVal.textContent   = formatSar(next.raise);
     cntEl.textContent  = count;
     leadEl.textContent = who;
-    minVal.textContent = sar(price);
+    minVal.textContent = formatSar(next.price);
 
     block.classList.remove('flash');
     void block.offsetWidth;              // restart the animation
@@ -1025,7 +1065,7 @@ td code{ font-family:var(--f-mono); font-size:12px; direction:ltr; unicode-bidi:
 
     var li = document.createElement('li');
     li.className = 'top enter';
-    li.innerHTML = '<span class="amt">' + sar(price) + '</span>' +
+    li.innerHTML = '<span class="amt">' + formatSar(next.price) + '</span>' +
                    '<span class="who"></span>' +
                    '<span class="mark">الأعلى</span>' +
                    '<span class="when">الآن</span>';

@@ -54,7 +54,12 @@ export function Countdown({ endsAt, serverNow, className }: CountdownProps) {
     return () => window.clearInterval(id);
   }, [endsAt, serverNow]);
 
-  const absolute = new Intl.DateTimeFormat("ar-SA", {
+  // `ar-SA` alone resolves numberingSystem to "arab" and renders ٢٠/٠٨/٢٠٢٦.
+  // BR-42 requires Western digits, and this string is not incidental: it is
+  // both the sr-only announcement and the entire visible value once the
+  // auction has ended. `-u-nu-latn` is the whole fix; `-ca-gregory` is not
+  // added because the calendar already resolves to gregory.
+  const absolute = new Intl.DateTimeFormat("ar-SA-u-nu-latn", {
     dateStyle: "medium",
     timeStyle: "short",
   }).format(new Date(endsAt));
