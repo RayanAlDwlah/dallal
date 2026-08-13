@@ -46,3 +46,4 @@ test-results/
 # Session working files — never merged to main
 HANDOFF.md
 docs/_wip/
+.vercel
