@@ -129,7 +129,7 @@ rejected on sight.
 
 ---
 
-## 5. Bidding — four checks that must NOT exist
+## 5. Bidding — three checks that must NOT exist
 
 `ARCHITECTURE §13.2a`. Adding any of these is **a bug**, not an improvement. They were
 deliberately removed and their **absence is the requirement**:
@@ -137,10 +137,32 @@ deliberately removed and their **absence is the requirement**:
 - ❌ **no bid increment / minimum raise** — `+0.01` is as valid as `+1000` (`BR-32`)
 - ❌ **no maximum / reserve price** (`BR-21`, `BR-35`)
 - ❌ **no leading-bidder rejection** — being the current leader is never grounds to reject (`BR-24`)
-- ❌ **no anti-sniping / time extension**
 
 Also absent by design: no auction cancel, no auction edit, no draft state. `status` has
 exactly two values — `active` and `ended`.
+
+### Anti-sniping DOES exist — this list used to say it did not
+
+**`BR-36` was reversed on 2026-08-13** by the project owner, with both other developers
+agreeing. This bullet used to read *"❌ no anti-sniping / time extension"*. It is gone
+because the feature is real:
+
+> A bid **accepted** in the **final 15 seconds** extends `end_time` by **exactly 30
+> seconds**, repeating, to a **hard cap of 20 extensions**.
+
+If a document you are reading says the end time is fixed and never extended, **it is stale
+— this section governs**, and say so rather than reverting the code to match it. The
+mechanism is in `supabase/migrations/20260814000000_bid15_closing_and_extension.sql`.
+
+Four properties are not negotiable and each is asserted in `tests/bidding/closing.sql`:
+
+- the **cap is a `CHECK` constraint**, not an `if`. Without it a contested auction never
+  ends, never finalizes, and never has a winner
+- `end_time` moves **forward only, in 30-second quanta, only inside `place_bid`**, and only
+  together with `extension_count + 1`. Every other shape raises
+- a **rejected** bid never extends — otherwise an ineligible bidder holds an auction open
+  forever with bids that never count
+- **at the cap a late bid is still accepted.** The cap ends the extending, not the bidding
 
 **Two more rules that look like details and are not:**
 

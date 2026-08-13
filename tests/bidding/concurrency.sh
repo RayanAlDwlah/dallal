@@ -66,4 +66,63 @@ if [ "$failures" -eq 0 ]; then
 else
   echo "BID-20: FAIL — $failures of $ROUNDS rounds violated an invariant"
 fi
+
+# ============================================================================
+# BID-15 under the same contention — the extension inside a lock queue.
+#
+# The extension trigger takes `FOR UPDATE` on a row its own transaction already
+# holds and then updates it. Re-entrant, no new lock, no new lock ORDER, so it
+# cannot deadlock — by reasoning. This project's rule is that reasoning about
+# concurrency is what gets measured, not what gets trusted, so it is measured.
+#
+# Distinct rising amounts, unlike the rounds above: several bids are accepted,
+# so several extension opportunities occur inside one lock queue.
+#
+# What is asserted is only what is deterministic. "extension_count == accepted"
+# is NOT: the first accepted bid pushes end_time 30 s out, which puts the next
+# one outside the 15-second window, so how many extend depends on real timing.
+# These four hold regardless:
+#   1. every submission gets a definitive answer — nothing deadlocked or hung
+#   2. end_time == original + 30 s x extension_count — the quantum survives
+#      contention; no interleaving produces a 29- or 60-second step
+#   3. at least one extension happened — the window was genuinely exercised
+#   4. extensions <= acceptances — no bid extended twice, no rejection extended
+# ============================================================================
+echo
+printf 'BID-15 — %s simultaneous bidders inside the final 15 seconds\n\n' "$WORKERS"
+
+ext_auction=$($PSQL -c "insert into public.auctions
+    (owner_id, status, end_time, starting_price, current_price)
+  values ('$OWNER', 'active', clock_timestamp() + interval '10 seconds', 100, 100)
+  returning id;")
+t0=$($PSQL -c "select end_time from public.auctions where id='$ext_auction';")
+
+out=/tmp/bid15-extension
+for i in $(seq 1 "$WORKERS"); do
+  ( $PSQL -c "select set_config('request.jwt.claims',
+                json_build_object('sub','00000000-0000-0000-0000-0000000000b$i')::text, false);
+              select public.place_bid('$ext_auction', '$((100 + i * 10))')::text;" | tail -1 ) &
+done > "$out" 2>&1
+wait
+
+accepted=$(grep -c '"accepted": true' "$out")
+answered=$(grep -c 'accepted' "$out")
+rows=$($PSQL -c "select count(*) from public.bids where auction_id='$ext_auction';")
+ext=$($PSQL -c "select extension_count from public.auctions where id='$ext_auction';")
+quantum=$($PSQL -c "select (end_time = timestamptz '$t0' + extension_count * interval '30 seconds')
+                    from public.auctions where id='$ext_auction';")
+
+verdict=OK
+[ "$answered" = "$WORKERS" ] || verdict='FAIL a submission got no answer (deadlock?)'
+[ "$rows" = "$accepted" ]    || verdict='FAIL history != acceptances'
+[ "$quantum" = t ]           || verdict='FAIL end_time is not original + 30s x count'
+[ "$ext" -ge 1 ]             || verdict='FAIL nothing extended — the window was not exercised'
+[ "$ext" -le "$accepted" ]   || verdict='FAIL more extensions than accepted bids'
+[ "$verdict" = OK ]          || failures=$((failures + 1))
+
+printf 'extension  accepted=%s history=%s answered=%s | extensions=%s quantum_exact=%s  %s\n' \
+  "$accepted" "$rows" "$answered" "$ext" "$quantum" "$verdict"
+
+echo
+[ "$verdict" = OK ] && echo "BID-15 contention: PASS" || echo "BID-15 contention: $verdict"
 exit "$failures"

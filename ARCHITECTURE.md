@@ -60,7 +60,7 @@ Architecture v1.0 reported six conflicts between `PRD.md` and `TEAM.md`, all cau
 | **C-2** | **Password reset was a Must Have with no task and no owner** | TEAM.md v2.0 adds **tasks A-20 → A-25** under Abdulrahman, adds it to his responsibilities in §3, and adds a **Password Reset** row to the ownership matrix (§6). **Primary ownership unchanged — authentication remains Abdulrahman's** | ✅ Resolved |
 | **C-3** | No password-reset row in the ownership matrix | Added, owned by Abdulrahman | ✅ Resolved |
 | **C-4** | TEAM.md deferred Mohammed's M-03 and M-20/M-21 pending Q1, Q3, Q5, Q12 | All four closed. TEAM.md §13.2 now carries a decision table: **7-day maximum duration, SAR with no ceiling, no cancellation, no editing, no reserve, active-only listing** | ✅ Resolved |
-| **C-5** | TEAM.md deferred Rayan's R-03 and R-17 pending Q4, Q6, Q7, Q14 | All four closed. TEAM.md §13.3 now carries a decision table: **no increment, first bid may equal starting price, fixed end time, leading bidder may re-bid** | ✅ Resolved |
+| **C-5** | TEAM.md deferred Rayan's R-03 and R-17 pending Q4, Q6, Q7, Q14 | All four closed. TEAM.md §13.3 now carries a decision table: **no increment, first bid may equal starting price, ~~fixed end time~~ *(Q7 reversed 2026-08-13 — see BR-36 as amended)*, leading bidder may re-bid** | ✅ Resolved |
 | **C-6** | Team Rule 16 and Risk 4 cited "15 unresolved, six blocking" | Rule 16 replaced with the PRD-as-source-of-truth rule; Risk 4 rewritten; `needs-decision` label removed and replaced with `verify` for **technical** items only | ✅ Resolved |
 | **G-1** | TEAM.md never mentioned currency, so SAR had no owner | TEAM.md §11 adds **The money representation rule (SAR)** — one representation, Mohammed owns input and display, Rayan owns bid and current-price correctness, both use the same PRD-defined representation, and **no developer may invent a different one**. Added to Sprint 0 as **S0-12** | ✅ Resolved |
 
@@ -72,14 +72,14 @@ Eight product decisions were closed in PRD v3.0 after this document's first vers
 |---|---|---|
 | **Q5 — duration 5 min to 7 days** *(changed from 30 days)* | Creation validation bound. Also shortens the maximum lifetime of an un-editable, un-cancellable listing | §12.4 |
 | **Q2 — no reserve price** | **Simplifies winner determination.** No hidden threshold, no third close outcome | §15.7 |
-| **Q7 — no anti-sniping** | **Materially simplifies closing.** The end time is static, so a scheduled sweep never has to cope with a moving target | §15 |
+| **Q7 — ~~no anti-sniping~~ REVERSED 2026-08-13** | The simplification is withdrawn. The end time now moves: an accepted bid in the final 15 s adds 30 s, capped at 20 (PRD BR-36 as amended). The sweep copes because it re-reads `end_time` under a row lock on every pass and never caches a deadline | §15, BID-15 |
 | **Q8 — no email verification** | Removes a registration state. **Does not remove the email-delivery dependency** — password reset still needs it | §10.2, §10.3 |
 | **Q11 — unique display names** | A uniqueness constraint on the profile record; a new registration failure path | §9.3, §10.2 |
 | **Q10 — public bid history** | Confirms anonymous read access to bids as designed. No change | §11.2 |
 | **Q13 — active-only listing** | The listing query filters to Active. Ended auctions stay readable by direct link | §9.6 *(new)* |
 | **Q14 — leading bidder may re-bid** | **No new rule in the bid operation** — leading status is simply never checked | §13.2 |
 
-**None of these invalidated an architectural decision.** Every ADR in §20 stands. Two decisions — no reserve and no anti-sniping — make the design simpler than v1.0 assumed it might need to be.
+**None of these invalidated an architectural decision.** Every ADR in §20 stands. One of them — no reserve — makes the design simpler than v1.0 assumed it might need to be. The other, no anti-sniping, **was reversed on 2026-08-13** (PRD BR-36 as amended); the simplification it bought is gone, and BID-15 pays for it explicitly rather than pretending the end time is still static.
 
 ## 3. Requirements extracted from the source documents
 
@@ -107,7 +107,8 @@ What follows is the architecturally-significant subset. Every row traces to a PR
 | **No email verification** | A user registers and can immediately bid; no verification step, no unverified state (BR-37) | Removes a registration state. **Does not remove the email dependency** — reset still needs a reachable mailbox — §10.3 |
 | **Unique display names** | Display names unique across all accounts (BR-39) | A uniqueness constraint on the profile record, with a registration failure path — §9.3, §10.2 |
 | **Duration bounds** | 5 minutes to 7 days inclusive, from creation, by server time (BR-38) | Creation validation bound — §12.4 |
-| **No reserve, no anti-sniping** | Highest valid bid wins regardless of amount (BR-35); end time never extends (BR-36) | **Simplifies closing and winner determination.** The end time is static and there is no third close outcome — §15 |
+| **No reserve** | Highest valid bid wins regardless of amount (BR-35) | **Simplifies winner determination.** There is no third close outcome — §15 |
+| **Anti-sniping** *(amended 2026-08-13)* | An accepted bid in the final 15 s extends the end by 30 s, capped at 20 extensions (BR-36 as amended) | **The end time is no longer static.** Closing must re-read it, never cache it, and realtime must propagate it — §15.2, BID-15 |
 | **Active-only listing** | The main listing shows Active auctions only; ended remain reachable by direct link (FR-LIST-05, FR-LIST-05a) | A filter on the listing read, not a data-lifecycle change — §9.6 |
 
 ### 3.2 Lifecycle the architecture must implement
@@ -1017,11 +1018,11 @@ This is already how §13 step 4 works. **Therefore a delay in flipping the statu
 
 That separation is what allows a scheduled sweep rather than a per-auction timer.
 
-**Two finalized decisions make this materially simpler than it could have been:**
+**One finalized decision makes this simpler than it could have been. The other was reversed:**
 
-| Decision | Why it simplifies closing |
+| Decision | Effect on closing |
 |---|---|
-| **No anti-sniping — the end time is fixed** (BR-36) | The sweep is never chasing a moving target. An auction's end time is written once at creation and never changes, so "which auctions have expired" is a stable question. A dynamic end time would have required the sweep to re-evaluate deadlines that shift while it runs, and would have required propagating end-time changes over realtime |
+| ~~**No anti-sniping — the end time is fixed** (BR-36)~~ **REVERSED 2026-08-13** | This paragraph used to read *"the sweep is never chasing a moving target."* It is now. The end time moves — 30 seconds per accepted bid inside the final 15, capped at 20 extensions (BR-36 as amended). What makes that survivable is that **no component ever caches a deadline**: the sweep re-reads `end_time` inside the row lock on every pass, and `place_bid` step 4 was already comparing `clock_timestamp()` against the freshly-locked row rather than anything remembered. The costs the original decision was avoiding are real and are now paid: the countdown moves, and realtime must carry `end_time` changes. The **20-extension cap** is what keeps the moving target bounded — the sweep is chasing something that provably stops |
 | **No reserve price** (BR-35) | Winner determination has exactly two outcomes — a winner, or no bids — rather than three. There is no "ended, reserve not met, no winner despite bids" case to record, display, or explain to three different viewers |
 
 ### 15.3 Design — three triggers, one idempotent operation
@@ -1112,7 +1113,7 @@ Three outcomes, defined in advance so nobody improvises:
 |---|---|
 | Highest valid bid wins (BR-06) | Read from the recorded bid history inside the finalization transaction |
 | **No reserve price** (BR-35) | **No threshold check.** The highest bid wins whatever its amount. There are exactly two outcomes — a winner, or no bids — never a third |
-| **End time is the one recorded at creation** (BR-36) | No extension logic. The deadline evaluated at close is the deadline written at creation (SC-74) |
+| **End time may have been extended** (BR-36 as amended 2026-08-13) | The deadline evaluated at close is the **current** `end_time`, read inside the finalization lock — not the one written at creation. Extension logic exists: an accepted bid in the final 15 s adds 30 s, capped at 20 (SC-74/74a/74b/74c). Finalization does not implement it; it only must never assume the value is the original |
 | Ties (FR-END-06) | Earlier-ordered bid wins. In practice unreachable — §13 prevents equal accepted bids — but defined so the outcome is total |
 | Zero bids (BR-09, EC-05) | Ends with **no winner and no final price**. A normal path, not an error. Must not block or delay finalization |
 | Exactly once, idempotent (BR-17) | The already-Ended check in step 2 |
@@ -1469,7 +1470,7 @@ Five platform assumptions in this document must be **confirmed against the actua
 | **7** | **Password reset introduces the only external delivery dependency**, and it is in the critical path for account recovery | Medium | Confirm delivery works in every environment where it is exercised (V-3) |
 | **8** | **Shared preview database causes cross-branch interference** (§18.4 option A) | Medium | Coordinate schema changes as TEAM.md §11 already requires; evaluate option B if it becomes painful |
 | **9** | ~~TEAM.md is stale relative to the PRD~~ — **RESOLVED.** TEAM.md v2.0 and PRD v3.0 are synchronized; all six conflicts and gap G-1 are closed (§2) | — | Keep the three documents in step. A change to one may require a change to the others |
-| **10** | **A developer re-adds a check the product deliberately removed** — a bid increment, a price ceiling, a leading-bidder block, a reserve, an anti-sniping extension, an email-verification step | Medium — would silently contradict a finalized product decision | §13.2a lists exactly what the bid operation must **not** check. PRD SD-05 and TEAM.md §26 list what nobody may build. Worth an explicit check at code review |
+| **10** | **A developer re-adds a check the product deliberately removed** — a bid increment, a price ceiling, a leading-bidder block, a reserve, an email-verification step. **Or the mirror image, now that BR-36 is amended: a developer *removes* the anti-sniping extension** because a document they read still says the end time is fixed | Medium — would silently contradict a finalized product decision | §13.2a lists exactly what the bid operation must **not** check. PRD SD-05 and TEAM.md §26 list what nobody may build. **`CLAUDE.md` §5 carries the BR-36 amendment and governs any document that still disagrees.** Worth an explicit check at code review |
 
 ---
 
