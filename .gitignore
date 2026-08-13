@@ -40,6 +40,9 @@ test-results/
 .cache/
 .turbo/
 
+# Claude Code local settings
+.claude/
+
 # Session working files — never merged to main
 HANDOFF.md
 docs/_wip/

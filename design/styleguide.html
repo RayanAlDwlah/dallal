@@ -1,0 +1,1080 @@
+<title>دلّال — نظام التصميم</title>
+
+<style>
+/* ==========================================================================
+   Dalal Design System — living style guide (RTL)
+   Tokens are a verbatim copy of design/tokens.css. Edit there first.
+   ========================================================================== */
+
+:root{
+  color-scheme: light dark;
+
+  --c-ground:#F4F6F4; --c-surface:#FFFFFF; --c-sunk:#EDF0ED;
+  --c-rule:#DCE1DC;   --c-rule-strong:#C3CBC4;
+
+  --c-text:#131A16;   --c-text-2:#4F5A54;  --c-text-3:#66716B;
+
+  --c-brand:#0F6B4F;  --c-brand-hover:#0B563F; --c-brand-weak:#E4F0EA;
+  --c-brand-line:#B7D6C7; --c-brand-text:#0B5540; --c-on-brand:#FFFFFF;
+
+  --c-urge:#B4611A;   --c-urge-hover:#944E13;  --c-urge-weak:#FBEEE1;
+  --c-urge-line:#E8C8A5;  --c-urge-text:#8A4A11; --c-on-urge:#FFFFFF;
+
+  --c-stop:#B3261E;   --c-stop-hover:#921C16;  --c-stop-weak:#FCEAE8;
+  --c-stop-line:#EFC0BB;  --c-stop-text:#98201A; --c-on-stop:#FFFFFF;
+
+  --c-calm:#5A6570;   --c-calm-weak:#EEF0F2;   --c-calm-line:#D3D8DC;
+  --c-calm-text:#4A545E;  --c-on-calm:#FFFFFF;
+
+  --c-focus:#0F6B4F;
+  --focus-ring:0 0 0 2px var(--c-surface),0 0 0 4px var(--c-focus);
+
+  --e-1:0 1px 2px rgba(19,26,22,.06),0 1px 1px rgba(19,26,22,.04);
+  --e-2:0 2px 4px rgba(19,26,22,.06),0 8px 16px rgba(19,26,22,.07);
+  --e-3:0 4px 8px rgba(19,26,22,.07),0 16px 32px rgba(19,26,22,.10);
+
+  --f-ui:"SF Arabic","Segoe UI","Noto Sans Arabic","Noto Naskh Arabic","Geeza Pro",Tahoma,system-ui,sans-serif;
+  --f-num:"SF Arabic","Segoe UI","Noto Sans Arabic",Tahoma,system-ui,sans-serif;
+  --f-mono:ui-monospace,"SF Mono","Cascadia Mono","Segoe UI Mono",Menlo,Consolas,monospace;
+  --num-feat:tabular-nums lining-nums;
+
+  --t-xs:12px;  --lh-xs:18px;
+  --t-sm:13px;  --lh-sm:21px;
+  --t-base:15px;--lh-base:26px;
+  --t-md:17px;  --lh-md:29px;
+  --t-lg:20px;  --lh-lg:32px;
+  --t-xl:24px;  --lh-xl:36px;
+  --t-2xl:30px; --lh-2xl:44px;
+  --t-3xl:38px; --lh-3xl:52px;
+
+  --money-hero:44px; --money-hero-lh:50px;
+  --money-lg:26px;   --money-lg-lh:34px;
+  --money-md:19px;   --money-md-lh:26px;
+  --money-sm:15px;   --money-sm-lh:22px;
+
+  --s-1:4px; --s-2:8px; --s-3:12px; --s-4:16px; --s-5:20px;
+  --s-6:24px;--s-7:32px;--s-8:40px;--s-9:48px;--s-10:64px;
+
+  --r-sm:6px; --r-md:10px; --r-lg:14px; --r-pill:999px;
+
+  --dur-1:120ms; --dur-2:200ms; --dur-3:320ms;
+  --ease:cubic-bezier(.2,.7,.3,1);
+
+  --measure:60ch; --page-max:1180px; --tap-min:44px;
+}
+
+@media (prefers-color-scheme: dark){
+  :root:not([data-theme="light"]){
+    --c-ground:#0D1210; --c-surface:#141A17; --c-sunk:#1B2320;
+    --c-rule:#28322D;   --c-rule-strong:#3A4640;
+    --c-text:#E7ECE9;   --c-text-2:#A2AEA8;  --c-text-3:#87938C;
+    --c-brand:#35A87C;  --c-brand-hover:#47BC8F; --c-brand-weak:#10241C;
+    --c-brand-line:#1F4A38; --c-brand-text:#6FCBA4; --c-on-brand:#04160F;
+    --c-urge:#D98A3E;   --c-urge-hover:#E89E56;  --c-urge-weak:#2A1D0E;
+    --c-urge-line:#56391A;  --c-urge-text:#E8A868; --c-on-urge:#221201;
+    --c-stop:#D9544A;   --c-stop-hover:#E86D63;  --c-stop-weak:#2A1512;
+    --c-stop-line:#57241F;  --c-stop-text:#F08B82; --c-on-stop:#200504;
+    --c-calm:#8B96A0;   --c-calm-weak:#1B2226;   --c-calm-line:#333D45;
+    --c-calm-text:#9BA6B0;  --c-on-calm:#0C1114;
+    --c-focus:#6FCBA4;
+    --e-1:0 1px 2px rgba(0,0,0,.40);
+    --e-2:0 2px 4px rgba(0,0,0,.40),0 8px 16px rgba(0,0,0,.34);
+    --e-3:0 4px 8px rgba(0,0,0,.44),0 16px 32px rgba(0,0,0,.40);
+  }
+}
+:root[data-theme="dark"]{
+  --c-ground:#0D1210; --c-surface:#141A17; --c-sunk:#1B2320;
+  --c-rule:#28322D;   --c-rule-strong:#3A4640;
+  --c-text:#E7ECE9;   --c-text-2:#A2AEA8;  --c-text-3:#87938C;
+  --c-brand:#35A87C;  --c-brand-hover:#47BC8F; --c-brand-weak:#10241C;
+  --c-brand-line:#1F4A38; --c-brand-text:#6FCBA4; --c-on-brand:#04160F;
+  --c-urge:#D98A3E;   --c-urge-hover:#E89E56;  --c-urge-weak:#2A1D0E;
+  --c-urge-line:#56391A;  --c-urge-text:#E8A868; --c-on-urge:#221201;
+  --c-stop:#D9544A;   --c-stop-hover:#E86D63;  --c-stop-weak:#2A1512;
+  --c-stop-line:#57241F;  --c-stop-text:#F08B82; --c-on-stop:#200504;
+  --c-calm:#8B96A0;   --c-calm-weak:#1B2226;   --c-calm-line:#333D45;
+  --c-calm-text:#9BA6B0;  --c-on-calm:#0C1114;
+  --c-focus:#6FCBA4;
+  --e-1:0 1px 2px rgba(0,0,0,.40);
+  --e-2:0 2px 4px rgba(0,0,0,.40),0 8px 16px rgba(0,0,0,.34);
+  --e-3:0 4px 8px rgba(0,0,0,.44),0 16px 32px rgba(0,0,0,.40);
+}
+@media (prefers-reduced-motion: reduce){
+  :root{ --dur-1:0ms; --dur-2:0ms; --dur-3:0ms; }
+}
+
+/* ---- base --------------------------------------------------------------- */
+*,*::before,*::after{ box-sizing:border-box; }
+html{ direction:rtl; }
+body{
+  margin:0; background:var(--c-ground); color:var(--c-text);
+  font-family:var(--f-ui); font-size:var(--t-base); line-height:var(--lh-base);
+  letter-spacing:0; -webkit-text-size-adjust:100%;
+}
+h1,h2,h3,h4,p,ul,ol,figure{ margin:0; }
+ul{ padding:0; list-style:none; }
+a{ color:var(--c-brand-text); text-underline-offset:3px; }
+:where(a,button,input,select,textarea,[tabindex]):focus-visible{
+  outline:none; box-shadow:var(--focus-ring); border-radius:var(--r-sm);
+}
+
+.num,bdi.num{
+  font-family:var(--f-num); font-variant-numeric:var(--num-feat);
+  font-feature-settings:"tnum" 1,"lnum" 1; direction:ltr; unicode-bidi:isolate;
+}
+
+/* ---- layout ------------------------------------------------------------- */
+.page{ max-width:var(--page-max); margin-inline:auto; padding:var(--s-5); }
+.shell{ display:grid; gap:var(--s-8); grid-template-columns:1fr; }
+@media (min-width:1000px){
+  .shell{ grid-template-columns:200px 1fr; align-items:start; gap:var(--s-10); }
+  .rail{ position:sticky; top:var(--s-5); }
+}
+.rail ol{ margin:0; padding:0; list-style:none; display:flex; flex-direction:column; gap:var(--s-1);
+  border-inline-start:1px solid var(--c-rule); }
+.rail a{
+  display:block; padding:var(--s-2) var(--s-3); font-size:var(--t-sm); line-height:var(--lh-sm);
+  color:var(--c-text-2); text-decoration:none; border-inline-start:2px solid transparent;
+  margin-inline-start:-1px;
+}
+.rail a:hover{ color:var(--c-text); border-inline-start-color:var(--c-rule-strong); }
+.rail .rail-head{
+  font-size:var(--t-xs); color:var(--c-text-3); padding-inline:var(--s-3);
+  padding-block-end:var(--s-2);
+}
+
+.main{ display:flex; flex-direction:column; gap:var(--s-9); min-width:0; }
+
+/* ---- masthead ----------------------------------------------------------- */
+.mast{ display:flex; flex-direction:column; gap:var(--s-5);
+  padding-block-end:var(--s-7); border-block-end:1px solid var(--c-rule); }
+.mast-top{ display:flex; flex-wrap:wrap; align-items:baseline; gap:var(--s-3); }
+.wordmark{ font-size:var(--t-3xl); line-height:var(--lh-3xl); font-weight:800; }
+.wordmark span{ color:var(--c-brand-text); }
+.mast-meta{ display:flex; flex-wrap:wrap; gap:var(--s-2); margin-inline-start:auto; }
+.mast p{ color:var(--c-text-2); max-width:var(--measure); font-size:var(--t-md);
+  line-height:var(--lh-md); }
+
+.tag{
+  display:inline-flex; align-items:center; gap:var(--s-1);
+  font-size:var(--t-xs); line-height:var(--lh-xs); padding:var(--s-1) var(--s-2);
+  border:1px solid var(--c-rule); border-radius:var(--r-pill); color:var(--c-text-2);
+  background:var(--c-surface);
+}
+
+/* ---- sections ----------------------------------------------------------- */
+.sec{ display:flex; flex-direction:column; gap:var(--s-5); scroll-margin-top:var(--s-5); }
+.sec-head{ display:flex; flex-direction:column; gap:var(--s-2);
+  padding-block-end:var(--s-3); border-block-end:1px solid var(--c-rule); }
+.sec-head h2{ font-size:var(--t-xl); line-height:var(--lh-xl); font-weight:700;
+  text-wrap:balance; }
+.sec-head p{ color:var(--c-text-2); max-width:var(--measure); }
+.eyebrow{ font-size:var(--t-xs); line-height:var(--lh-xs); font-weight:700;
+  color:var(--c-brand-text); }
+
+/* traceability chips — real information: which PRD ids the block satisfies */
+.trace{ display:flex; flex-wrap:wrap; gap:var(--s-1); }
+.trace code{
+  font-family:var(--f-mono); font-size:11px; padding:2px var(--s-2);
+  background:var(--c-sunk); color:var(--c-text-3); border-radius:var(--r-sm);
+  direction:ltr; unicode-bidi:isolate;
+}
+
+.entry{ display:flex; flex-direction:column; gap:var(--s-3); }
+.entry-head{ display:flex; flex-wrap:wrap; align-items:baseline; gap:var(--s-2); }
+.entry-head h3{ font-size:var(--t-md); line-height:var(--lh-md); font-weight:700; }
+.owner{ font-size:var(--t-xs); color:var(--c-text-3); }
+
+.spec{
+  background:var(--c-surface); border:1px solid var(--c-rule); border-radius:var(--r-lg);
+  padding:var(--s-5); display:flex; flex-wrap:wrap; gap:var(--s-4); align-items:flex-start;
+}
+.spec.col{ flex-direction:column; }
+.note{ font-size:var(--t-sm); line-height:var(--lh-sm); color:var(--c-text-2);
+  max-width:var(--measure); }
+.note strong{ color:var(--c-text); }
+
+.grid{ display:grid; gap:var(--s-4); grid-template-columns:repeat(auto-fill,minmax(210px,1fr)); }
+
+/* ---- colour ------------------------------------------------------------- */
+.swatch{ border:1px solid var(--c-rule); border-radius:var(--r-md); overflow:hidden;
+  background:var(--c-surface); }
+.chip{ height:72px; display:flex; align-items:flex-end; padding:var(--s-2);
+  font-size:var(--t-xs); }
+.swatch dl{ margin:0; padding:var(--s-3); display:flex; flex-direction:column; gap:2px; }
+.swatch dt{ font-weight:700; font-size:var(--t-sm); }
+.swatch dd{ margin:0; font-size:var(--t-xs); color:var(--c-text-3); }
+.swatch dd code{ font-family:var(--f-mono); direction:ltr; unicode-bidi:isolate; }
+
+/* ---- type specimens ----------------------------------------------------- */
+.typerow{ display:flex; flex-wrap:wrap; align-items:baseline; gap:var(--s-4);
+  padding-block:var(--s-3); border-block-end:1px solid var(--c-rule); width:100%; }
+.typerow:last-child{ border-block-end:none; }
+.typerow .label{ font-size:var(--t-xs); color:var(--c-text-3); min-width:120px;
+  font-family:var(--f-mono); direction:ltr; unicode-bidi:isolate; }
+
+/* ---- buttons ------------------------------------------------------------ */
+.btn{
+  --btn-bg:var(--c-brand); --btn-fg:var(--c-on-brand); --btn-bd:var(--c-brand);
+  display:inline-flex; align-items:center; justify-content:center; gap:var(--s-2);
+  min-height:var(--tap-min); padding:0 var(--s-5);
+  font-family:inherit; font-size:var(--t-base); font-weight:600; line-height:1;
+  color:var(--btn-fg); background:var(--btn-bg); border:1px solid var(--btn-bd);
+  border-radius:var(--r-md); cursor:pointer;
+  transition:background var(--dur-1) var(--ease), color var(--dur-1) var(--ease),
+             border-color var(--dur-1) var(--ease);
+}
+.btn:hover{ --btn-bg:var(--c-brand-hover); --btn-bd:var(--c-brand-hover); }
+.btn.sm{ min-height:36px; padding:0 var(--s-3); font-size:var(--t-sm); }
+.btn.lg{ min-height:52px; padding:0 var(--s-6); font-size:var(--t-md); }
+.btn.secondary{ --btn-bg:var(--c-surface); --btn-fg:var(--c-text); --btn-bd:var(--c-rule-strong); }
+.btn.secondary:hover{ --btn-bg:var(--c-sunk); --btn-bd:var(--c-text-3); }
+.btn.ghost{ --btn-bg:transparent; --btn-fg:var(--c-brand-text); --btn-bd:transparent; }
+.btn.ghost:hover{ --btn-bg:var(--c-brand-weak); --btn-bd:var(--c-brand-weak); }
+.btn.danger{ --btn-bg:var(--c-stop); --btn-fg:var(--c-on-stop); --btn-bd:var(--c-stop); }
+.btn.danger:hover{ --btn-bg:var(--c-stop-hover); --btn-bd:var(--c-stop-hover); }
+.btn[disabled]{ opacity:.45; cursor:not-allowed; }
+.btn.loading{ cursor:progress; }
+.btn.loading::before{
+  content:""; inline-size:14px; block-size:14px; border-radius:50%;
+  border:2px solid currentColor; border-block-start-color:transparent;
+  animation:spin 700ms linear infinite;
+}
+@keyframes spin{ to{ transform:rotate(360deg); } }
+@media (prefers-reduced-motion: reduce){ .btn.loading::before{ animation:none; opacity:.5; } }
+
+/* ---- fields ------------------------------------------------------------- */
+.field{ display:flex; flex-direction:column; gap:var(--s-2); min-inline-size:240px; flex:1 1 240px; }
+.field > label{ font-size:var(--t-sm); font-weight:600; }
+.input{
+  min-height:var(--tap-min); padding:0 var(--s-3);
+  font-family:inherit; font-size:var(--t-base); color:var(--c-text);
+  background:var(--c-surface); border:1px solid var(--c-rule-strong);
+  border-radius:var(--r-sm); inline-size:100%;
+}
+.input::placeholder{ color:var(--c-text-3); }
+.input:focus-visible{ border-color:var(--c-brand); }
+.field.error .input{ border-color:var(--c-stop); }
+.hint{ font-size:var(--t-sm); line-height:var(--lh-sm); color:var(--c-text-2); }
+.err{ font-size:var(--t-sm); line-height:var(--lh-sm); color:var(--c-stop-text);
+  display:flex; gap:var(--s-1); align-items:flex-start; }
+
+/* amount input: RTL label, LTR value, currency affix on the inline-end */
+.amount{ display:flex; align-items:stretch; border:1px solid var(--c-rule-strong);
+  border-radius:var(--r-sm); background:var(--c-surface); overflow:hidden; }
+.amount:focus-within{ border-color:var(--c-brand); }
+.amount input{
+  flex:1; min-height:var(--tap-min); padding:0 var(--s-3); border:0; background:transparent;
+  color:var(--c-text); font-family:var(--f-num); font-size:var(--money-md);
+  font-variant-numeric:var(--num-feat); direction:ltr; text-align:start;
+}
+.amount input:focus{ outline:none; }
+.amount .affix{
+  display:flex; align-items:center; padding-inline:var(--s-3);
+  background:var(--c-sunk); color:var(--c-text-2); font-size:var(--t-sm);
+  border-inline-start:1px solid var(--c-rule);
+}
+
+/* ---- pills -------------------------------------------------------------- */
+.pill{
+  display:inline-flex; align-items:center; gap:var(--s-2);
+  padding:var(--s-1) var(--s-3); border-radius:var(--r-pill);
+  font-size:var(--t-sm); font-weight:600; line-height:var(--lh-sm);
+  border:1px solid transparent;
+}
+.pill::before{ content:""; inline-size:7px; block-size:7px; border-radius:50%;
+  background:currentColor; flex:none; }
+.pill.active{ background:var(--c-brand-weak); color:var(--c-brand-text); border-color:var(--c-brand-line); }
+.pill.ended{ background:var(--c-calm-weak); color:var(--c-calm-text); border-color:var(--c-calm-line); }
+.pill.ended::before{ border-radius:1px; }         /* shape, not colour alone */
+.pill.leading{ background:var(--c-brand-weak); color:var(--c-brand-text); border-color:var(--c-brand-line); }
+.pill.outbid{ background:var(--c-urge-weak); color:var(--c-urge-text); border-color:var(--c-urge-line); }
+.pill.outbid::before{ clip-path:polygon(50% 100%,0 0,100% 0); border-radius:0; }
+
+/* ---- price blocks ------------------------------------------------------- */
+.price{
+  display:flex; flex-direction:column; gap:var(--s-1);
+  padding:var(--s-4) var(--s-5); border-radius:var(--r-lg);
+  border:1px solid var(--c-rule); background:var(--c-surface); flex:1 1 280px;
+}
+.price .cap{ font-size:var(--t-xs); font-weight:700; color:var(--c-text-3); }
+.price .val{
+  font-family:var(--f-num); font-variant-numeric:var(--num-feat);
+  font-size:var(--money-hero); line-height:var(--money-hero-lh); font-weight:700;
+  display:flex; align-items:baseline; gap:var(--s-2); flex-wrap:wrap;
+  overflow-wrap:anywhere;
+}
+.price .val .cur{ font-family:var(--f-ui); font-size:var(--t-lg); font-weight:600;
+  color:var(--c-text-2); }
+.price .sub{ font-size:var(--t-sm); line-height:var(--lh-sm); color:var(--c-text-2); }
+
+.price.start{ border-style:dashed; }
+.price.start .cap{ color:var(--c-text-3); }
+.price.current{ border-color:var(--c-brand-line); background:var(--c-brand-weak); }
+.price.current .cap{ color:var(--c-brand-text); }
+.price.current .val{ color:var(--c-brand-text); }
+.price.current .val .cur{ color:var(--c-brand-text); opacity:.75; }
+
+.delta{
+  font-family:var(--f-ui); font-size:var(--t-sm); font-weight:700;
+  color:var(--c-brand-text); display:inline-flex; align-items:center; gap:2px;
+  opacity:0; transition:opacity var(--dur-2) var(--ease);
+}
+.delta.on{ opacity:1; }
+.price.flash{ animation:flash var(--dur-3) var(--ease); }
+@keyframes flash{ 0%{ background:var(--c-brand-line); } 100%{ background:var(--c-brand-weak); } }
+
+/* ---- countdown ---------------------------------------------------------- */
+.cd{ display:inline-flex; align-items:center; gap:var(--s-2);
+  font-size:var(--t-sm); color:var(--c-text-2); }
+.cd .t{ font-family:var(--f-num); font-variant-numeric:var(--num-feat);
+  font-size:var(--money-md); font-weight:700; color:var(--c-text);
+  direction:ltr; unicode-bidi:isolate; }
+.cd.soon .t,.cd.soon{ color:var(--c-urge-text); }
+.cd.final .t,.cd.final{ color:var(--c-urge-text); }
+.cd.final .t{ animation:pulse 1s steps(2,jump-none) infinite; }
+.cd.over .t,.cd.over{ color:var(--c-calm-text); }
+@keyframes pulse{ 0%{ opacity:1; } 100%{ opacity:.55; } }
+@media (prefers-reduced-motion: reduce){ .cd.final .t{ animation:none; } }
+
+/* ---- alerts ------------------------------------------------------------- */
+.alert{
+  display:flex; gap:var(--s-3); padding:var(--s-3) var(--s-4);
+  border-radius:var(--r-md); border:1px solid var(--c-rule);
+  background:var(--c-sunk); font-size:var(--t-base); line-height:var(--lh-base);
+  inline-size:100%;
+}
+.alert .ic{ flex:none; font-weight:700; font-family:var(--f-num); }
+.alert.ok{ background:var(--c-brand-weak); border-color:var(--c-brand-line); color:var(--c-brand-text); }
+.alert.bad{ background:var(--c-stop-weak); border-color:var(--c-stop-line); color:var(--c-stop-text); }
+.alert.race{ background:var(--c-urge-weak); border-color:var(--c-urge-line); color:var(--c-urge-text); }
+
+/* ---- history ------------------------------------------------------------ */
+.hist{ inline-size:100%; border:1px solid var(--c-rule); border-radius:var(--r-md);
+  overflow:hidden; background:var(--c-surface); }
+.hist li{ display:flex; align-items:center; gap:var(--s-3);
+  padding:var(--s-3) var(--s-4); border-block-end:1px solid var(--c-rule); }
+.hist li:last-child{ border-block-end:none; }
+.hist .amt{ font-family:var(--f-num); font-variant-numeric:var(--num-feat);
+  font-size:var(--money-sm); font-weight:700; direction:ltr; unicode-bidi:isolate;
+  min-inline-size:9ch; }
+.hist .who{ flex:1; min-inline-size:0; overflow:hidden; text-overflow:ellipsis;
+  white-space:nowrap; }
+.hist .when{ font-family:var(--f-num); font-size:var(--t-xs); color:var(--c-text-3);
+  direction:ltr; unicode-bidi:isolate; }
+.hist .top{ background:var(--c-brand-weak); }
+.hist .top .amt{ color:var(--c-brand-text); }
+.hist .mark{ font-size:var(--t-xs); font-weight:700; color:var(--c-brand-text); }
+.hist .enter{ animation:enter var(--dur-3) var(--ease); }
+@keyframes enter{ from{ opacity:0; transform:translateY(-8px); } }
+
+/* ---- outcome ------------------------------------------------------------ */
+.outcome{ inline-size:100%; padding:var(--s-5); border-radius:var(--r-lg);
+  border:1px solid var(--c-rule); background:var(--c-surface);
+  display:flex; flex-direction:column; gap:var(--s-2); }
+.outcome .title{ font-size:var(--t-lg); line-height:var(--lh-lg); font-weight:700; }
+.outcome .final{ font-family:var(--f-num); font-variant-numeric:var(--num-feat);
+  font-size:var(--money-lg); line-height:var(--money-lg-lh); font-weight:700;
+  direction:ltr; unicode-bidi:isolate; }
+.outcome.win{ border-color:var(--c-brand-line); background:var(--c-brand-weak); color:var(--c-brand-text); }
+.outcome.none{ border-color:var(--c-calm-line); background:var(--c-calm-weak); color:var(--c-calm-text); }
+
+/* ---- connection --------------------------------------------------------- */
+.conn{ display:inline-flex; align-items:center; gap:var(--s-2); font-size:var(--t-sm); }
+.conn .dot{ inline-size:8px; block-size:8px; border-radius:50%; flex:none; }
+.conn.live{ color:var(--c-brand-text); } .conn.live .dot{ background:var(--c-brand); }
+.conn.retry{ color:var(--c-urge-text); } .conn.retry .dot{ background:var(--c-urge); }
+.conn.off{ color:var(--c-calm-text); }  .conn.off .dot{ background:var(--c-calm); border-radius:1px; }
+
+/* ---- auction card ------------------------------------------------------- */
+.acard{ border:1px solid var(--c-rule); border-radius:var(--r-lg); overflow:hidden;
+  background:var(--c-surface); box-shadow:var(--e-1); display:flex; flex-direction:column; }
+.acard .thumb{ aspect-ratio:4/3; background:
+  repeating-linear-gradient(45deg,var(--c-sunk) 0 10px,var(--c-ground) 10px 20px);
+  display:flex; align-items:center; justify-content:center; color:var(--c-text-3);
+  font-size:var(--t-sm); }
+.acard .body{ padding:var(--s-4); display:flex; flex-direction:column; gap:var(--s-2); }
+.acard .name{ font-weight:700; font-size:var(--t-md); line-height:var(--lh-md); }
+.acard .p{ font-family:var(--f-num); font-variant-numeric:var(--num-feat);
+  font-size:var(--money-md); line-height:var(--money-md-lh); font-weight:700;
+  color:var(--c-brand-text); direction:ltr; unicode-bidi:isolate; }
+.acard .row{ display:flex; align-items:center; justify-content:space-between;
+  gap:var(--s-2); flex-wrap:wrap; }
+
+/* ---- skeleton / empty --------------------------------------------------- */
+.skel{ background:var(--c-sunk); border-radius:var(--r-sm); block-size:14px; }
+.skel.b{ block-size:96px; border-radius:var(--r-md); }
+.empty{ inline-size:100%; text-align:center; padding:var(--s-8) var(--s-5);
+  border:1px dashed var(--c-rule-strong); border-radius:var(--r-lg);
+  color:var(--c-text-2); display:flex; flex-direction:column; gap:var(--s-3);
+  align-items:center; }
+
+/* ---- bid panel ---------------------------------------------------------- */
+.panel{ inline-size:100%; max-inline-size:420px; padding:var(--s-4);
+  border:1px solid var(--c-rule); border-radius:var(--r-lg); background:var(--c-surface);
+  display:flex; flex-direction:column; gap:var(--s-3); }
+.panel .state{ font-size:var(--t-xs); font-weight:700; color:var(--c-text-3); }
+.panel .owner-msg,.panel .guest-msg{ font-size:var(--t-sm); line-height:var(--lh-sm);
+  color:var(--c-text-2); }
+
+/* ---- do / don't --------------------------------------------------------- */
+.dd{ display:grid; gap:var(--s-4); grid-template-columns:1fr; inline-size:100%; }
+@media (min-width:720px){ .dd{ grid-template-columns:1fr 1fr; } }
+.dd > div{ padding:var(--s-4); border-radius:var(--r-md); border:1px solid var(--c-rule);
+  display:flex; flex-direction:column; gap:var(--s-2); font-size:var(--t-sm);
+  line-height:var(--lh-sm); }
+.dd .yes{ border-color:var(--c-brand-line); background:var(--c-brand-weak); }
+.dd .no{ border-color:var(--c-stop-line); background:var(--c-stop-weak); }
+.dd h4{ margin:0; font-size:var(--t-sm); font-weight:700; }
+.dd .yes h4{ color:var(--c-brand-text); } .dd .no h4{ color:var(--c-stop-text); }
+
+/* ---- never list --------------------------------------------------------- */
+.never{ display:flex; flex-wrap:wrap; gap:var(--s-2); }
+.never span{ font-size:var(--t-sm); padding:var(--s-1) var(--s-3);
+  border-radius:var(--r-pill); background:var(--c-stop-weak); color:var(--c-stop-text);
+  border:1px solid var(--c-stop-line); }
+
+/* ---- table -------------------------------------------------------------- */
+.tablewrap{ inline-size:100%; overflow-x:auto; }
+table{ border-collapse:collapse; inline-size:100%; font-size:var(--t-sm); min-inline-size:520px; }
+th,td{ text-align:start; padding:var(--s-2) var(--s-3); border-block-end:1px solid var(--c-rule); }
+th{ font-weight:700; color:var(--c-text-2); font-size:var(--t-xs); }
+td code{ font-family:var(--f-mono); font-size:12px; direction:ltr; unicode-bidi:isolate;
+  color:var(--c-text-3); }
+
+.foot{ border-block-start:1px solid var(--c-rule); padding-block-start:var(--s-5);
+  color:var(--c-text-3); font-size:var(--t-sm); line-height:var(--lh-sm);
+  display:flex; flex-direction:column; gap:var(--s-2); }
+</style>
+
+<div class="page" lang="ar">
+<div class="shell">
+
+  <nav class="rail" aria-label="أقسام الدليل">
+    <div class="rail-head">الأقسام</div>
+    <ol>
+      <li><a href="#rtl">قواعد الاتجاه</a></li>
+      <li><a href="#color">الألوان</a></li>
+      <li><a href="#type">الطباعة</a></li>
+      <li><a href="#money">صيغة المبلغ</a></li>
+      <li><a href="#space">المسافات والحركة</a></li>
+      <li><a href="#primitives">العناصر الأساسية</a></li>
+      <li><a href="#auction">مكوّنات المزاد</a></li>
+      <li><a href="#live">التحديث المباشر</a></li>
+      <li><a href="#responsive">الاستجابة</a></li>
+      <li><a href="#never">ما لا يُبنى</a></li>
+    </ol>
+  </nav>
+
+  <main class="main">
+
+    <header class="mast">
+      <div class="mast-top">
+        <div class="wordmark">دلّال <span>· نظام التصميم</span></div>
+        <div class="mast-meta">
+          <span class="tag">v0.2</span>
+          <span class="tag">RTL</span>
+          <button class="tag" id="theme" type="button">المظهر: تلقائي</button>
+        </div>
+      </div>
+      <p>
+        نظام واجهة عربي من اليمين إلى اليسار لمنصّة مزادات مباشرة. مبني على
+        <strong>PRD v3.0</strong> — كل مكوّن هنا مرتبط بمعرّف متطلّب، والسعر هو
+        بطل الصفحة لأن <code style="font-family:var(--f-mono);direction:ltr;unicode-bidi:isolate">NFR-USA-04</code>
+        يفرض ذلك.
+      </p>
+      <div class="spec col">
+        <div class="eyebrow">اللحظة المميّزة للمنتج</div>
+        <div style="display:flex;flex-wrap:wrap;gap:var(--s-4);inline-size:100%;align-items:stretch">
+          <div class="price current" id="heroPrice">
+            <div class="cap">المزايدة الحالية</div>
+            <div class="val">
+              <bdi class="num" id="heroVal">250.00</bdi>
+              <span class="cur">SAR</span>
+              <span class="delta" id="heroDelta">▲ <bdi class="num" id="heroDeltaVal">0.00</bdi></span>
+            </div>
+            <div class="sub"><span id="heroCount">4</span> مزايدات · المتصدر: <span id="heroLead">عمر</span></div>
+          </div>
+          <div style="display:flex;flex-direction:column;gap:var(--s-3);justify-content:center;flex:1 1 240px">
+            <div class="cd soon"><span>يتبقّى</span><span class="t" id="cdHero">00:09:41</span></div>
+            <div class="conn live"><span class="dot"></span> مباشر</div>
+            <button class="btn" type="button" id="simulate">محاكاة مزايدة واردة</button>
+            <p class="note">اضغط الزر ولاحظ أن المبلغ الذي كتبته في لوحة المزايدة أدناه <strong>لا يُمسح</strong> ولا يتغيّر التركيز.</p>
+          </div>
+        </div>
+      </div>
+    </header>
+
+    <!-- ================= RTL ================= -->
+    <section class="sec" id="rtl">
+      <div class="sec-head">
+        <div class="eyebrow">الأساس</div>
+        <h2>قواعد الاتجاه — غير قابلة للتفاوض</h2>
+        <p>الاتجاه يُضبط مرة واحدة على <code style="font-family:var(--f-mono);direction:ltr;unicode-bidi:isolate">&lt;html dir="rtl"&gt;</code> ولا يُتجاوز على مستوى المكوّن أبداً.</p>
+      </div>
+      <div class="spec col">
+        <div class="tablewrap">
+          <table>
+            <thead><tr><th>القاعدة</th><th>السبب</th></tr></thead>
+            <tbody>
+              <tr><td>استخدم الخصائص المنطقية: <code>margin-inline-start</code> ، <code>inset-inline-end</code> ، <code>text-align:start</code></td><td>الخصائص الفيزيائية <code>left/right</code> تكسر الانعكاس بصمت. المنطقية تُكتب مرة وتعمل في الاتجاهين</td></tr>
+              <tr><td><strong>ممنوع</strong> <code>letter-spacing</code> على النص العربي</td><td>الحروف العربية متّصلة؛ التباعد يفكّ الوصل ويحوّل الكلمة إلى حروف منفصلة. لا يوجد توكن <code>--tracking-*</code> لهذا السبب</td></tr>
+              <tr><td><strong>ممنوع</strong> الاعتماد على <code>text-transform:uppercase</code></td><td>لا يوجد حالة أحرف في العربية. التمييز يكون بالوزن والحجم واللون</td></tr>
+              <tr><td>ارتفاع سطر أكبر بنحو ١٥٪ من المقياس اللاتيني</td><td>الصعود والنزول والتشكيل يحتاجون مساحة. توكنات <code>--lh-*</code> مضبوطة للعربية أصلاً</td></tr>
+              <tr><td>اعزل كل رقم بـ <code>&lt;bdi class="num"&gt;</code></td><td>الأرقام لاتينية أي جزر LTR داخل نص RTL. بدون عزل تنقلب علامات <code>250.00 SAR</code> و <code>2د 04:11:38</code></td></tr>
+              <tr><td>اعكس الأيقونات الاتجاهية فقط</td><td>سهم الرجوع والشيفرون ينعكسان. الساعة وعلامة الصح و<strong>سهم ارتفاع السعر ▲</strong> لا تنعكس — الأخير رأسي وعكسه خطأ</td></tr>
+            </tbody>
+          </table>
+        </div>
+        <div class="dd">
+          <div class="yes">
+            <h4>صحيح</h4>
+            <div>السعر: <bdi class="num">1,250.00</bdi> SAR — الرقم معزول، العلامة العشرية في مكانها.</div>
+            <div>الوقت: <bdi class="num">2د 04:11:38</bdi></div>
+          </div>
+          <div class="no">
+            <h4>خطأ</h4>
+            <div style="letter-spacing:.08em">تباعد الأحرف يفكّ وصل الكلمة العربية</div>
+            <div>رقم بلا عزل داخل جملة عربية تنقلب فيه العلامات.</div>
+          </div>
+        </div>
+      </div>
+    </section>
+
+    <!-- ================= COLOUR ================= -->
+    <section class="sec" id="color">
+      <div class="sec-head">
+        <div class="eyebrow">الأساس</div>
+        <h2>الألوان</h2>
+        <p>ستّ قيم تحمل النظام كله. الأخضر يعني «حيّ ومؤكَّد»، النحاسي يعني «يحتاج انتباهك الآن»، والأحمر مخصّص للرفض والخطأ فقط.</p>
+        <div class="trace"><code>NFR-USA-09</code><code>NFR-USA-10</code></div>
+      </div>
+      <div class="grid">
+        <div class="swatch"><div class="chip" style="background:var(--c-ground);color:var(--c-text-3)">الأرضية</div>
+          <dl><dt>ورق</dt><dd>خلفية الصفحة — رمادي مائل للأخضر، مختار لا موروث</dd><dd><code>--c-ground</code></dd></dl></div>
+        <div class="swatch"><div class="chip" style="background:var(--c-text);color:var(--c-surface)">الحبر</div>
+          <dl><dt>حبر</dt><dd>النص الأساسي</dd><dd><code>--c-text</code></dd></dl></div>
+        <div class="swatch"><div class="chip" style="background:var(--c-brand);color:var(--c-on-brand)">أخضر دلّال</div>
+          <dl><dt>أخضر دلّال</dt><dd>الهوية، الإجراء الأساسي، مباشر، قُبلت المزايدة، فُزت</dd><dd><code>--c-brand</code></dd></dl></div>
+        <div class="swatch"><div class="chip" style="background:var(--c-urge);color:var(--c-on-urge)">نحاسي</div>
+          <dl><dt>نحاسي</dt><dd>الانتباه: تمّت المزايدة عليك، يوشك على الانتهاء، الاتصال متعثّر</dd><dd><code>--c-urge</code></dd></dl></div>
+        <div class="swatch"><div class="chip" style="background:var(--c-stop);color:var(--c-on-stop)">رفض</div>
+          <dl><dt>رفض</dt><dd>المزايدات المرفوضة والأخطاء — <strong>لا شيء غير ذلك</strong></dd><dd><code>--c-stop</code></dd></dl></div>
+        <div class="swatch"><div class="chip" style="background:var(--c-calm);color:var(--c-on-calm)">رمادي أردوازي</div>
+          <dl><dt>أردوازي</dt><dd>منتهٍ، نهائي، بلا مزايدات. الانتهاء ليس خطأ</dd><dd><code>--c-calm</code></dd></dl></div>
+      </div>
+      <p class="note"><strong>لا تحمل الحالة باللون وحده.</strong> كل شارة تحمل كلمة، وكل تغيّر سعر يحمل سهماً، وكل خطأ يحمل جملة. النصّ على خلفية ملوّنة يستخدم توكن <code style="font-family:var(--f-mono);direction:ltr;unicode-bidi:isolate">-text</code> لا توكن التعبئة — المتحقَّق منه لمعيار AA هو الأول فقط.</p>
+    </section>
+
+    <!-- ================= TYPE ================= -->
+    <section class="sec" id="type">
+      <div class="sec-head">
+        <div class="eyebrow">الأساس</div>
+        <h2>الطباعة</h2>
+        <p>خطوط النظام فقط — بيئة النشر تحجب شبكات الخطوط، والاحتياطي الصامت أسوأ من مقياس مدروس. تُحلّ الحزمة إلى خط عربي حقيقي على كل منصّة.</p>
+        <div class="trace"><code>NFR-USA-04</code><code>NFR-DAT-08</code></div>
+      </div>
+      <div class="spec col">
+        <div class="typerow"><span class="label">--t-3xl / 38</span><span style="font-size:var(--t-3xl);line-height:var(--lh-3xl);font-weight:800">مزاد مباشر</span></div>
+        <div class="typerow"><span class="label">--t-xl / 24</span><span style="font-size:var(--t-xl);line-height:var(--lh-xl);font-weight:700">تفاصيل المزاد</span></div>
+        <div class="typerow"><span class="label">--t-md / 17</span><span style="font-size:var(--t-md);line-height:var(--lh-md)">ساعة جيب نحاسية أصلية بحالة ممتازة</span></div>
+        <div class="typerow"><span class="label">--t-base / 15</span><span>نصّ الوصف العادي، وهو مقاس القراءة الافتراضي في المنتج.</span></div>
+        <div class="typerow"><span class="label">--t-sm / 13</span><span style="font-size:var(--t-sm);color:var(--c-text-2)">نصّ مساعد وتلميحات الحقول</span></div>
+        <div class="typerow"><span class="label">--t-xs / 12</span><span style="font-size:var(--t-xs);color:var(--c-text-3)">بيانات وصفية وطوابع زمنية</span></div>
+      </div>
+      <div class="spec col">
+        <div class="eyebrow">مقياس المال منفصل عن مقياس النص</div>
+        <div class="typerow"><span class="label">--money-hero / 44</span><bdi class="num" style="font-size:var(--money-hero);line-height:var(--money-hero-lh);font-weight:700">1,250.00</bdi><span style="color:var(--c-text-2)">سعر صفحة التفاصيل</span></div>
+        <div class="typerow"><span class="label">--money-lg / 26</span><bdi class="num" style="font-size:var(--money-lg);font-weight:700">1,250.00</bdi><span style="color:var(--c-text-2)">المبلغ النهائي في لافتة النتيجة</span></div>
+        <div class="typerow"><span class="label">--money-md / 19</span><bdi class="num" style="font-size:var(--money-md);font-weight:700">1,250.00</bdi><span style="color:var(--c-text-2)">سعر بطاقة القائمة</span></div>
+        <div class="typerow"><span class="label">--money-sm / 15</span><bdi class="num" style="font-size:var(--money-sm);font-weight:700">1,250.00</bdi><span style="color:var(--c-text-2)">صفّ سجل المزايدات</span></div>
+        <p class="note">المال لا يُقاس أبداً من <code style="font-family:var(--f-mono);direction:ltr;unicode-bidi:isolate">--t-*</code>. فصل المقياسين هو ما يجعل بروز السعر صحيحاً <strong>بالبنية</strong> لا بالتقدير في كل صفحة. وكل رقم يستخدم <code style="font-family:var(--f-mono);direction:ltr;unicode-bidi:isolate">tabular-nums</code> لأن المبالغ تقف في عمود ويجب أن تتحاذى على العلامة العشرية.</p>
+      </div>
+    </section>
+
+    <!-- ================= MONEY ================= -->
+    <section class="sec" id="money">
+      <div class="sec-head">
+        <div class="eyebrow">قاعدة واحدة</div>
+        <h2>صيغة المبلغ</h2>
+        <p>صيغة واحدة في كل المنتج: القائمة، التفاصيل، حقل المزايدة، السجل، النتائج.</p>
+        <div class="trace"><code>NFR-DAT-08</code><code>FR-CREATE-13</code><code>BR-33</code><code>S0-12</code></div>
+      </div>
+      <div class="spec col">
+        <div style="font-size:var(--money-lg);font-weight:700"><bdi class="num">1,250.00</bdi> SAR</div>
+        <ul style="display:flex;flex-direction:column;gap:var(--s-2)" class="note">
+          <li>— فواصل آلاف، و<strong>خانتان عشريتان دائماً</strong>. مزايدة بـ <bdi class="num">100.01</bdi> SAR صحيحة (لا يوجد حدّ أدنى للزيادة)، فعرض <bdi class="num">100</bdi> SAR في مكان آخر يعني صيغتين لعملة واحدة.</li>
+          <li>— أرقام لاتينية (0–9) لا هندية (٠–٩): هي وحدها التي تملك أرقاماً جدولية موثوقة في خطوط النظام، والسجل يجب أن يُقرأ كتسلسل تصاعدي.</li>
+          <li>— اللاحقة <strong>SAR</strong> خارج عزل الرقم، بمسافة عادية.</li>
+          <li>— <strong>لا يوجد حدّ أقصى للسعر.</strong> المبلغ الكبير يُعرض صحيحاً ولا يُرفض ولا يكسر التخطيط.</li>
+          <li>— مصطلح «نقاط تجريبية» ممنوع. الأسعار بالريال — ريال محاكى، لكنه ريال.</li>
+        </ul>
+        <div class="alert"><span class="ic">؟</span><div>مقترح بانتظار موافقة ريان ضمن <strong>S0-12</strong> — هو يملك صحّة مبالغ المزايدة والسعر الحالي، وهذا المستند يقترح شقّ العرض فقط.</div></div>
+      </div>
+    </section>
+
+    <!-- ================= SPACE ================= -->
+    <section class="sec" id="space">
+      <div class="sec-head">
+        <div class="eyebrow">الأساس</div>
+        <h2>المسافات والزوايا والحركة</h2>
+      </div>
+      <div class="spec col">
+        <div class="tablewrap">
+          <table>
+            <thead><tr><th>المقياس</th><th>القيم</th><th>ملاحظة</th></tr></thead>
+            <tbody>
+              <tr><td>المسافة</td><td><code>4 · 8 · 12 · 16 · 20 · 24 · 32 · 40 · 48 · 64</code></td><td>رتّب المجموعات بـ <code>gap</code> لا بهوامش فردية — <code>gap</code> محايد اتجاهياً</td></tr>
+              <tr><td>الزوايا</td><td><code>6</code> حقول · <code>10</code> أزرار وبطاقات · <code>14</code> ألواح · <code>999</code> شارات</td><td>الزوايا غير المتناظرة تستخدم <code>border-start-start-radius</code></td></tr>
+              <tr><td>الظلال</td><td><code>--e-1 · --e-2 · --e-3</code></td><td>رأسية بلا إزاحة أفقية، فلا تحتاج انعكاساً. صفحة التفاصيل تستخدم <code>--e-1</code> فقط</td></tr>
+              <tr><td>الحركة</td><td><code>120ms</code> ضغط · <code>200ms</code> دخول · <code>320ms</code> وميض السعر</td><td>الانزلاق يأتي من <code>inline-end</code>. عند <code>prefers-reduced-motion</code> تصبح كلها <code>0ms</code></td></tr>
+            </tbody>
+          </table>
+        </div>
+      </div>
+    </section>
+
+    <!-- ================= PRIMITIVES ================= -->
+    <section class="sec" id="primitives">
+      <div class="sec-head">
+        <div class="eyebrow">S0-09 · يملكها محمد</div>
+        <h2>العناصر الأساسية</h2>
+        <p>تُبنى مرة واحدة قبل أي عمل على الميزات، حتى لا ينتهي المنتج بثلاث لغات بصرية.</p>
+        <div class="trace"><code>S0-09</code><code>TEAM §11</code></div>
+      </div>
+
+      <div class="entry">
+        <div class="entry-head"><h3>الأزرار</h3><span class="owner">أساسي · ثانوي · شفّاف · خطر</span></div>
+        <div class="spec">
+          <button class="btn" type="button">أضف مزايدة</button>
+          <button class="btn secondary" type="button">إلغاء</button>
+          <button class="btn ghost" type="button">عرض السجل</button>
+          <button class="btn danger" type="button">حذف</button>
+          <button class="btn" type="button" disabled>معطّل</button>
+          <button class="btn loading" type="button" disabled>جارٍ الإرسال</button>
+        </div>
+        <div class="spec">
+          <button class="btn sm" type="button">صغير</button>
+          <button class="btn" type="button">متوسط</button>
+          <button class="btn lg" type="button">كبير</button>
+        </div>
+        <p class="note">أقل ارتفاع <bdi class="num">44</bdi>px، وعرض كامل تحت <bdi class="num">480</bdi>px. حالة التحميل <strong>تُبقي النصّ وتعطّل الإرسال</strong> — يجب أن يستحيل إرسال مزاد أو مزايدة مرّتين (<code style="font-family:var(--f-mono);direction:ltr;unicode-bidi:isolate">EC-21</code>).</p>
+      </div>
+
+      <div class="entry">
+        <div class="entry-head"><h3>الحقول</h3><span class="owner">عادي · خطأ · حقل المبلغ</span></div>
+        <div class="spec">
+          <div class="field">
+            <label for="f1">اسم المنتج</label>
+            <input class="input" id="f1" type="text" value="ساعة جيب نحاسية" />
+            <span class="hint">من ٣ إلى ١٠٠ حرف</span>
+          </div>
+          <div class="field error">
+            <label for="f2">وصف المنتج</label>
+            <input class="input" id="f2" type="text" value="قصير" aria-invalid="true" aria-describedby="e2" />
+            <span class="err" id="e2"><span>✕</span> الوصف يجب أن يكون ١٠ أحرف على الأقل. أدخلتَ ٥.</span>
+          </div>
+          <div class="field">
+            <label for="f3">مبلغ المزايدة</label>
+            <div class="amount">
+              <input id="f3" inputmode="decimal" value="260.00" />
+              <span class="affix">SAR</span>
+            </div>
+            <span class="hint">أدخل مبلغاً أكبر من <bdi class="num">250.00</bdi> SAR</span>
+          </div>
+        </div>
+        <p class="note">حقل المبلغ: التسمية عربية RTL بينما محتوى الحقل LTR، واللاحقة على الطرف الداخلي. <strong>لا يصحّح ولا يقرّب إدخال المستخدم أبداً</strong> (<code style="font-family:var(--f-mono);direction:ltr;unicode-bidi:isolate">FR-BID-17</code>). ونموذج الإنشاء يعرض <strong>كل</strong> الحقول الفاشلة دفعة واحدة مع حفظ ما أدخله المستخدم (<code style="font-family:var(--f-mono);direction:ltr;unicode-bidi:isolate">FR-CREATE-12</code>).</p>
+      </div>
+
+      <div class="entry">
+        <div class="entry-head"><h3>التنبيهات</h3><span class="owner">أربع نبرات</span></div>
+        <div class="spec col">
+          <div class="alert ok"><span class="ic">✓</span><div>قُبلت مزايدتك بمبلغ <bdi class="num">260.00</bdi> SAR. أنت المتصدّر الآن.</div></div>
+          <div class="alert bad"><span class="ic">✕</span><div>مزايدتك يجب أن تكون أكبر من <bdi class="num">250.00</bdi> SAR.</div></div>
+          <div class="alert race"><span class="ic">↺</span><div>زايد أحدهم قبلك — السعر الحالي أصبح <bdi class="num">260.00</bdi> SAR. جرّب مبلغاً أعلى.</div></div>
+          <div class="alert"><span class="ic">i</span><div>سجّل الدخول لتتمكّن من المزايدة. سنعيدك إلى هذا المزاد بعد الدخول.</div></div>
+        </div>
+        <p class="note">نبرة <strong>«سبقك أحدهم»</strong> نحاسية لا حمراء: المستخدم لم يخطئ، خسر سباقاً فقط. تمييزها عن مزايدة منخفضة مطلب صريح (<code style="font-family:var(--f-mono);direction:ltr;unicode-bidi:isolate">SC-18</code> ، <code style="font-family:var(--f-mono);direction:ltr;unicode-bidi:isolate">EC-01</code>).</p>
+      </div>
+
+      <div class="entry">
+        <div class="entry-head"><h3>التحميل والحالة الفارغة</h3></div>
+        <div class="spec">
+          <div style="display:flex;flex-direction:column;gap:var(--s-2);flex:1 1 240px">
+            <div class="skel b"></div><div class="skel" style="inline-size:70%"></div><div class="skel" style="inline-size:40%"></div>
+          </div>
+          <div class="empty" style="flex:1 1 260px">
+            <div style="font-weight:700;color:var(--c-text)">لا توجد مزادات نشطة الآن</div>
+            <div>كن أول من ينشر مزاداً.</div>
+            <button class="btn secondary" type="button">أنشئ مزاداً</button>
+          </div>
+        </div>
+      </div>
+    </section>
+
+    <!-- ================= AUCTION ================= -->
+    <section class="sec" id="auction">
+      <div class="sec-head">
+        <div class="eyebrow">مكوّنات المجال</div>
+        <h2>مكوّنات المزاد</h2>
+        <p>الملكية تتبع تقسيم صفحة التفاصيل في <strong>TEAM §11</strong>. لا أحد يحرّر ملفات الآخر.</p>
+      </div>
+
+      <div class="entry">
+        <div class="entry-head"><h3>كتلتا السعر</h3><span class="owner">محمد يبني المنطقة · ريان يزوّد القيمة</span></div>
+        <div class="trace"><code>FR-DETAIL-05</code><code>FR-DETAIL-06</code><code>BR-13</code><code>BR-28</code><code>BR-29</code><code>NFR-USA-11</code></div>
+        <div class="spec">
+          <div class="price start">
+            <div class="cap">سعر البداية</div>
+            <div class="val"><bdi class="num">100.00</bdi> <span class="cur">SAR</span></div>
+            <div class="sub">لا توجد مزايدات · أول مزايدة بمبلغ <bdi class="num">100.00</bdi> SAR بالضبط <strong>مقبولة</strong></div>
+          </div>
+          <div class="price current">
+            <div class="cap">المزايدة الحالية</div>
+            <div class="val"><bdi class="num">250.00</bdi> <span class="cur">SAR</span></div>
+            <div class="sub"><bdi class="num">4</bdi> مزايدات · المتصدر: عمر</div>
+          </div>
+        </div>
+        <p class="note">الكتلتان <strong>مختلفتان بصرياً لا بالتسمية فقط</strong>: كتلة البداية هادئة بحدّ متقطّع، وكتلة المزايدة الحالية تحمل الأخضر وعدد المزايدات. يجب ألّا يضطر المستخدم للقراءة بتمعّن ليعرف أي قاعدة تنطبق عليه — الأولى شاملة (≥) والثانية حصرية (&gt;).</p>
+        <div class="dd">
+          <div class="yes"><h4>التلميح الصحيح</h4>
+            <div>بلا مزايدات: <strong>المزايدة تبدأ من <bdi class="num">100.00</bdi> SAR</strong></div>
+            <div>مع مزايدات: <strong>أدخل مبلغاً أكبر من <bdi class="num">250.00</bdi> SAR</strong></div>
+            <div>فعلان مختلفان، فيبقى الفرق واضحاً حتى لو تشابه الرقمان.</div>
+          </div>
+          <div class="no"><h4>خطأ</h4>
+            <div>«الحد الأدنى: <bdi class="num">250.00</bdi> SAR» في الحالتين.</div>
+            <div>صيغة واحدة لقاعدتين مختلفتين تجعل المستخدم يُرفض دون أن يفهم لماذا.</div>
+          </div>
+        </div>
+      </div>
+
+      <div class="entry">
+        <div class="entry-head"><h3>شارة الحالة والعدّاد</h3><span class="owner">محمد</span></div>
+        <div class="trace"><code>FR-DETAIL-07</code><code>FR-DETAIL-08</code><code>RT-P3</code><code>BR-36</code></div>
+        <div class="spec">
+          <span class="pill active">نشط</span>
+          <span class="pill ended">منتهي</span>
+          <span class="pill leading">أنت المتصدّر</span>
+          <span class="pill outbid">تمّت المزايدة عليك</span>
+        </div>
+        <div class="spec">
+          <div class="cd"><span>يتبقّى</span><span class="t">2د 04:11:38</span></div>
+          <div class="cd soon"><span>يتبقّى</span><span class="t">00:08:12</span></div>
+          <div class="cd final"><span>ينتهي الآن</span><span class="t">00:00:43</span></div>
+          <div class="cd over"><span>انتهى في</span><span class="t">2026-08-12 21:40</span></div>
+        </div>
+        <p class="note">الشارات تحمل <strong>شكلاً</strong> كما تحمل لوناً: «نشط» دائرة، «منتهي» مربّع، «تمّت المزايدة عليك» مثلّث — فتُقرأ الحالة دون تمييز ألوان. العدّاد يعدّ في المتصفّح من <strong>وقت الانتهاء الآتي من الخادم</strong> وهو عرض فقط لا يقرّر شيئاً، ولا يقفز أبداً لأن وقت الانتهاء ثابت ولا يُمدَّد.</p>
+      </div>
+
+      <div class="entry">
+        <div class="entry-head"><h3>لوحة المزايدة — أربع حالات</h3><span class="owner">ريان · تُركَّب داخل هيكل محمد</span></div>
+        <div class="trace"><code>FR-DETAIL-14</code><code>FR-DETAIL-15</code><code>FR-DETAIL-16</code><code>FR-DETAIL-17</code><code>SC-07</code></div>
+        <div class="spec" style="align-items:stretch">
+          <div class="panel">
+            <div class="state">مسجّل دخول · ليس المالك · نشط</div>
+            <div class="field">
+              <label for="bid">مبلغ المزايدة</label>
+              <div class="amount"><input id="bid" inputmode="decimal" value="255.00" /><span class="affix">SAR</span></div>
+              <span class="hint" id="minHint">أدخل مبلغاً أكبر من <bdi class="num" id="minVal">250.00</bdi> SAR</span>
+            </div>
+            <button class="btn" type="button">أضف مزايدة</button>
+          </div>
+          <div class="panel">
+            <div class="state">زائر غير مسجّل · نشط</div>
+            <p class="guest-msg">سجّل الدخول للمزايدة على هذا المزاد. سنعيدك إلى هنا بعد الدخول — <strong>ولن يُنقل مبلغك</strong>، تُدخله من جديد.</p>
+            <button class="btn secondary" type="button">تسجيل الدخول</button>
+          </div>
+          <div class="panel">
+            <div class="state">مالك المزاد · نشط</div>
+            <p class="owner-msg">لا يمكنك المزايدة على مزادك. هذا يحمي عدالة السعر لكل من يزايد.</p>
+          </div>
+          <div class="panel">
+            <div class="state">أي زائر · منتهي</div>
+            <div class="outcome win">
+              <div class="title">🎉 فزت بهذا المزاد!</div>
+              <div class="final"><bdi class="num">400.00</bdi> SAR</div>
+              <div style="font-size:var(--t-sm)">الحالة: منتهي</div>
+            </div>
+          </div>
+        </div>
+        <p class="note">أربع حالات صريحة لا سلسلة شروط — <code style="font-family:var(--f-mono);direction:ltr;unicode-bidi:isolate">SC-07</code> اختبار مصفوفة. عند الانتهاء <strong>تختفي أداة المزايدة تماماً</strong> وتحلّ لافتة النتيجة مكانها.</p>
+      </div>
+
+      <div class="entry">
+        <div class="entry-head"><h3>سجل المزايدات</h3><span class="owner">ريان · عام للجميع</span></div>
+        <div class="trace"><code>BR-40</code><code>FR-BID-23</code><code>FR-DETAIL-10</code><code>SC-75</code></div>
+        <div class="spec col">
+          <ul class="hist" id="hist">
+            <li class="top"><span class="amt">250.00</span><span class="who">عمر</span><span class="mark">الأعلى</span><span class="when">21:31</span></li>
+            <li><span class="amt">180.50</span><span class="who">ليلى</span><span class="when">21:24</span></li>
+            <li><span class="amt">120.00</span><span class="who">عمر</span><span class="when">21:12</span></li>
+            <li><span class="amt">100.00</span><span class="who">مها</span><span class="when">21:05</span></li>
+          </ul>
+          <p class="note">مرئي <strong>للزوّار غير المسجّلين</strong>. أسماء العرض فقط — <strong>لا بريد إلكتروني أبداً، في أي مكان، بما في ذلك حِزم التحديث المباشر</strong>. المبالغ جدولية فيُقرأ التصاعد بنظرة، والأحدث في الأعلى مع وسم واضح للأعلى.</p>
+        </div>
+      </div>
+
+      <div class="entry">
+        <div class="entry-head"><h3>لافتة النتيجة ومؤشّر الاتصال</h3><span class="owner">ريان</span></div>
+        <div class="trace"><code>FR-END-14</code><code>FR-END-16</code><code>BR-09</code><code>SC-67</code><code>FR-RT-11</code></div>
+        <div class="spec col">
+          <div class="outcome">
+            <div class="title">انتهى المزاد</div>
+            <div>الفائز: <strong>محمد</strong></div>
+            <div class="final"><bdi class="num">400.00</bdi> SAR</div>
+          </div>
+          <div class="outcome none">
+            <div class="title">انتهى المزاد بلا مزايدات</div>
+            <div>لا يوجد فائز ولا سعر نهائي. هذه نتيجة طبيعية وليست خطأ.</div>
+          </div>
+          <div class="spec" style="border:none;padding:0;background:transparent">
+            <span class="conn live"><span class="dot"></span> مباشر</span>
+            <span class="conn retry"><span class="dot"></span> جارٍ إعادة الاتصال…</span>
+            <span class="conn off"><span class="dot"></span> التحديث المباشر غير متاح</span>
+          </div>
+        </div>
+        <p class="note">اللافتة <strong>لا تعرض أي خطوة تالية</strong> — لا دفع، لا تواصل، لا شحن. عرض النتيجة هو نهاية المنتج. ونبرة الاتصال إخبارية لا مقلقة: «التحديث المباشر غير متاح» لا «انقطع الاتصال!».</p>
+      </div>
+
+      <div class="entry">
+        <div class="entry-head"><h3>بطاقة القائمة</h3><span class="owner">محمد</span></div>
+        <div class="trace"><code>FR-LIST-02</code><code>FR-LIST-03</code><code>FR-LIST-05</code></div>
+        <div class="grid">
+          <article class="acard">
+            <div class="thumb">صورة المنتج</div>
+            <div class="body">
+              <div class="name">ساعة جيب نحاسية</div>
+              <div class="p"><bdi class="num">250.00</bdi> SAR</div>
+              <div style="font-size:var(--t-xs);color:var(--c-text-3)">المزايدة الحالية</div>
+              <div class="row"><span class="pill active">نشط</span><span class="cd soon"><span class="t">00:08:12</span></span></div>
+            </div>
+          </article>
+          <article class="acard">
+            <div class="thumb">صورة المنتج</div>
+            <div class="body">
+              <div class="name">آلة كاتبة قديمة</div>
+              <div class="p"><bdi class="num">100.00</bdi> SAR</div>
+              <div style="font-size:var(--t-xs);color:var(--c-text-3)">سعر البداية · لا مزايدات</div>
+              <div class="row"><span class="pill active">نشط</span><span class="cd"><span class="t">2د 04:11</span></span></div>
+            </div>
+          </article>
+        </div>
+        <p class="note">البطاقة تُسمّي السعر صراحة: «المزايدة الحالية» أو «سعر البداية · لا مزايدات». <strong>القائمة الرئيسية تعرض المزادات النشطة فقط</strong> — المزاد المنتهي يغادرها ويبقى متاحاً برابط مباشر.</p>
+      </div>
+    </section>
+
+    <!-- ================= LIVE ================= -->
+    <section class="sec" id="live">
+      <div class="sec-head">
+        <div class="eyebrow">اللحظة المميّزة</div>
+        <h2>معالجة التحديث المباشر</h2>
+        <p>المواصفة الوحيدة التي لا تنقلها ورقة مكوّنات ساكنة. جرّبها بالزر أعلى الصفحة أو هنا.</p>
+        <div class="trace"><code>FR-RT-03</code><code>FR-RT-06</code><code>FR-RT-07</code><code>FR-RT-10</code><code>RT-X1</code><code>RT-X5</code><code>NFR-USA-10</code></div>
+      </div>
+      <div class="spec col">
+        <ol style="display:flex;flex-direction:column;gap:var(--s-2);padding-inline-start:var(--s-5);list-style:decimal">
+          <li>قيمة السعر <strong>تتلاشى إلى المبلغ الجديد</strong> خلال <bdi class="num">320</bdi>ms.</li>
+          <li>يظهر <strong>سهم ▲ ومقدار الفرق</strong> بجانبها <bdi class="num">4</bdi> ثوانٍ ثم يتلاشى. السهم هو القناة غير اللونية — <strong>وهو رأسي فلا ينعكس في RTL</strong>.</li>
+          <li>خلفية الكتلة تومض بالأخضر الخفيف ثم تهدأ.</li>
+          <li>الصفّ الجديد <strong>ينزلق إلى أعلى السجل</strong> ويفقد الصفّ السابق وسم «الأعلى».</li>
+          <li>يُعاد حساب تلميح الحد الأدنى.</li>
+        </ol>
+        <div class="dd">
+          <div class="yes"><h4>يحدث دائماً</h4>
+            <div>المبلغ الذي كتبه المستخدم <strong>لا يُمسح ولا يُغيَّر</strong>.</div>
+            <div>التركيز <strong>لا ينتقل</strong>، والتمرير <strong>لا يتحرّك</strong>.</div>
+            <div>لو تجاوز السعر الجديد ما كتبه، تظهر ملاحظة سطرية — <strong>وإدخاله يُترك كما هو</strong>.</div>
+            <div>عند <code>prefers-reduced-motion</code> تصبح الخطوتان ١ و٣ تبديلاً فورياً، وتبقى ٢ و٤ و٥ — ولهذا لم يُحمَّل المعنى على الحركة أصلاً.</div>
+          </div>
+          <div class="no"><h4>لا يحدث أبداً</h4>
+            <div>السعر <strong>لا يتحرّك للأسفل أبداً</strong>. الوصول المتأخّر الأعلى يفوز دائماً.</div>
+            <div>لا نافذة منبثقة، لا سرقة تركيز، لا تمرير تلقائي.</div>
+            <div>التسليم المكرّر لنفس التحديث <strong>بلا أي أثر مرئي</strong> — لا صفّ مكرّر ولا سعر خاطئ.</div>
+            <div>التحديث المباشر <strong>لا يقرّر صحّة مزايدة</strong> أبداً. هو عرض، والخادم هو الحَكَم.</div>
+          </div>
+        </div>
+      </div>
+    </section>
+
+    <!-- ================= RESPONSIVE ================= -->
+    <section class="sec" id="responsive">
+      <div class="sec-head">
+        <div class="eyebrow">الأساس</div>
+        <h2>الاستجابة</h2>
+        <p><bdi class="num">375</bdi>px هي <strong>الطبقة الأساسية</strong> لا نقطة توقّف مضافة لاحقاً.</p>
+        <div class="trace"><code>NFR-USA-06</code><code>SC-49</code><code>INT-06</code><code>EC-25</code></div>
+      </div>
+      <div class="spec col">
+        <div class="tablewrap">
+          <table>
+            <thead><tr><th>العرض</th><th>التخطيط</th></tr></thead>
+            <tbody>
+              <tr><td><bdi class="num">375–639</bdi></td><td>عمود واحد، أزرار بعرض كامل. ترتيب صفحة التفاصيل: صورة ← حالة وعدّاد ← <strong>السعر</strong> ← لوحة المزايدة ← وصف المنتج ← السجل</td></tr>
+              <tr><td><bdi class="num">640–1023</bdi></td><td>القائمة عمودان. التفاصيل تبقى عموداً واحداً، والسعر ولوحة المزايدة فوق الطيّة</td></tr>
+              <tr><td><bdi class="num">≥ 1024</bdi></td><td>القائمة ثلاثة أعمدة. التفاصيل تنقسم: الصورة والمحتوى على <code>inline-start</code>، وشريط لاصق على <code>inline-end</code> يحمل السعر والعدّاد ولوحة المزايدة والسجل</td></tr>
+            </tbody>
+          </table>
+        </div>
+        <ul class="note" style="display:flex;flex-direction:column;gap:var(--s-2)">
+          <li>— لا تمرير أفقي للصفحة إطلاقاً. المحتوى العريض يمرّر داخل حاويته.</li>
+          <li>— <strong>المبلغ الكبير جداً لا يكسر التخطيط.</strong> كتل المال تحدّ حجم خطها وتسمح بالالتفاف بدل الفيضان. وممنوع إدخال سقف للسعر لتفادي مشكلة تخطيط — عالج القيمة.</li>
+          <li>— السعر وأداة المزايدة يُدرَكان دون تمرير على شاشة <bdi class="num">375×812</bdi>.</li>
+        </ul>
+      </div>
+    </section>
+
+    <!-- ================= NEVER ================= -->
+    <section class="sec" id="never">
+      <div class="sec-head">
+        <div class="eyebrow">تدقيق INT-08</div>
+        <h2>ما لا يُبنى أبداً</h2>
+        <p>إن وُجد مكوّن لأيٍّ من هذه، فالتدقيق قد سقط أصلاً. كلٌّ منها قرار منتج نهائي، لا سهو يُصحَّح في الكود.</p>
+        <div class="trace"><code>SD-05</code><code>SC-67</code><code>SC-58</code><code>SC-59</code><code>TEAM §26</code></div>
+      </div>
+      <div class="spec col">
+        <div class="never">
+          <span>شاشة تعديل مزاد</span><span>زرّ إلغاء أو حالة «ملغى»</span><span>حقل سعر احتياطي</span>
+          <span>مُدرِج زيادة (+5 / +10 / +50)</span><span>سقف للسعر أو للمزايدة</span><span>تمديد الوقت ضد القنص</span>
+          <span>شاشة تفعيل البريد</span><span>واجهة مشرف</span><span>دفع أو سلّة أو بطاقة أو محفظة</span>
+          <span>استرداد أو شحن أو تسليم</span><span>محادثة أو تواصل مع البائع</span><span>مزادات منتهية في القائمة الرئيسية</span>
+          <span>مصطلح «نقاط تجريبية»</span>
+        </div>
+        <p class="note">شاشتا الفائز والبائع تحديداً <strong>لا تعرضان أي خطوة تالية</strong> — لا زرّ ولا تسمية ولا تلميح يوحي بدفع أو استلام أو تواصل أو توصيل. النتيجة هي نهاية المسار.</p>
+      </div>
+    </section>
+
+    <footer class="foot">
+      <div><strong>دلّال — نظام التصميم v0.2.</strong> المصدر: <code style="font-family:var(--f-mono);direction:ltr;unicode-bidi:isolate">design/tokens.css</code> و <code style="font-family:var(--f-mono);direction:ltr;unicode-bidi:isolate">design/DESIGN_SYSTEM.md</code>. عدّل التوكنات هناك أولاً، ثم انقلها إلى هذه الصفحة.</div>
+      <div>بنود مفتوحة: صيغة المبلغ بانتظار <strong>S0-12</strong> · تقسيم صفحة التفاصيل بانتظار <strong>S0-13</strong> · توثيق قرار العربية في <code style="font-family:var(--f-mono);direction:ltr;unicode-bidi:isolate">PRD §4.2 / §19.7 / §21.1</code>.</div>
+    </footer>
+
+  </main>
+</div>
+</div>
+
+<script>
+(function () {
+  /* ---- theme: demonstrates the three-state rule ---- */
+  var order = ['auto', 'light', 'dark'];
+  var label = { auto: 'تلقائي', light: 'فاتح', dark: 'داكن' };
+  var i = 0;
+  var btn = document.getElementById('theme');
+  btn.addEventListener('click', function () {
+    i = (i + 1) % order.length;
+    var m = order[i];
+    if (m === 'auto') { document.documentElement.removeAttribute('data-theme'); }
+    else { document.documentElement.setAttribute('data-theme', m); }
+    btn.textContent = 'المظهر: ' + label[m];
+  });
+
+  /* ---- money: the SAME string logic as lib/money.ts ----------------------
+     A second formatter is "rejected on sight" (CLAUDE.md §4.6) and S0-12 §9.8
+     names this file explicitly. It is ported rather than imported because the
+     style guide is a standalone document with no build step.
+
+     No Number, no toLocaleString, no arithmetic. That is what keeps
+     12,345,678,901,234,567,890.55 exact — Number would corrupt it past 2^53,
+     which BR-21 / SEC-R3 / EC-25 forbid. The last step of the demo below
+     renders exactly that amount, so the property is visible, not asserted. */
+  function trimLeadingZeros(digits) {
+    var t = digits.replace(/^0+/, '');
+    return t === '' ? '0' : t;
+  }
+  function group(whole) {
+    var digits = trimLeadingZeros(whole), out = '';
+    for (var i = 0; i < digits.length; i += 1) {
+      if (i > 0 && (digits.length - i) % 3 === 0) { out += ','; }
+      out += digits[i];
+    }
+    return out;
+  }
+  /** `"1250"` or `"1250.5"` → `"1,250.00"`. Exact at any width. */
+  function formatSar(amount) {
+    var dot = amount.indexOf('.');
+    var whole = dot === -1 ? amount : amount.slice(0, dot);
+    var frac = dot === -1 ? '00' : amount.slice(dot + 1).padEnd(2, '0');
+    return group(whole) + '.' + frac;
+  }
+
+  /* ---- countdown ---- */
+  var left = 9 * 60 + 41;
+  var cd = document.getElementById('cdHero');
+  function two(n) { return String(n).padStart(2, '0'); }
+  setInterval(function () {
+    if (left > 0) { left--; }
+    var h = Math.floor(left / 3600), m = Math.floor((left % 3600) / 60), s = left % 60;
+    cd.textContent = two(h) + ':' + two(m) + ':' + two(s);
+    cd.parentElement.className = left <= 60 ? 'cd final' : (left <= 600 ? 'cd soon' : 'cd');
+  }, 1000);
+
+  /* ---- the signature moment: an incoming accepted bid --------------------
+     Driven by a fixed sequence of exact decimal strings. No arithmetic on an
+     amount and no x100 factor — S0-12 §8.2 states there is no conversion
+     factor anywhere in the system, and `Math.round(x * 100) / 100` is exactly
+     that factor. A style guide gains nothing from randomness, and this removes
+     every float from the file.
+
+     The sequence is strictly increasing by construction, so the demo also
+     honours RT-X5: the price can never appear to move downward. The final
+     step is deliberately past 2^53 — it is the amount a Number-based
+     formatter corrupts, and here it renders exactly (BR-21, EC-25). */
+  var SEQUENCE = [
+    { price: '287.50', raise: '37.50' },
+    { price: '301.25', raise: '13.75' },
+    { price: '340.00', raise: '38.75' },
+    { price: '399.99', raise: '59.99' },
+    { price: '1250.00', raise: '850.01' },
+    { price: '12345678901234567890.55', raise: '12345678901234566640.55' }
+  ];
+  var stepIndex = 0;
+
+  var bidders = ['ليلى', 'مها', 'خالد', 'نورة', 'سعد'],
+      count   = 4,
+      block   = document.getElementById('heroPrice'),
+      valEl   = document.getElementById('heroVal'),
+      delta   = document.getElementById('heroDelta'),
+      dVal    = document.getElementById('heroDeltaVal'),
+      cntEl   = document.getElementById('heroCount'),
+      leadEl  = document.getElementById('heroLead'),
+      hist    = document.getElementById('hist'),
+      minVal  = document.getElementById('minVal'),
+      timer;
+
+  document.getElementById('simulate').addEventListener('click', function () {
+    if (stepIndex >= SEQUENCE.length) { return; }   // sequence exhausted
+    var next = SEQUENCE[stepIndex];
+    var who  = bidders[count % bidders.length];
+    stepIndex++; count++;
+
+    valEl.textContent  = formatSar(next.price);
+    dVal.textContent   = formatSar(next.raise);
+    cntEl.textContent  = count;
+    leadEl.textContent = who;
+    minVal.textContent = formatSar(next.price);
+
+    block.classList.remove('flash');
+    void block.offsetWidth;              // restart the animation
+    block.classList.add('flash');
+    delta.classList.add('on');
+    clearTimeout(timer);
+    timer = setTimeout(function () { delta.classList.remove('on'); }, 4000);
+
+    var old = hist.querySelector('.top');
+    if (old) { old.classList.remove('top'); var mk = old.querySelector('.mark'); if (mk) { mk.remove(); } }
+
+    var li = document.createElement('li');
+    li.className = 'top enter';
+    li.innerHTML = '<span class="amt">' + formatSar(next.price) + '</span>' +
+                   '<span class="who"></span>' +
+                   '<span class="mark">الأعلى</span>' +
+                   '<span class="when">الآن</span>';
+    li.querySelector('.who').textContent = who;
+    hist.prepend(li);
+    while (hist.children.length > 6) { hist.lastElementChild.remove(); }
+
+    // Deliberately absent: no focus change, no scroll, and the bid input is
+    // never read or written here. FR-RT-06 / RT-X2.
+  });
+})();
+</script>
