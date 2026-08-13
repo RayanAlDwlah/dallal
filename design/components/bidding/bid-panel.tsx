@@ -15,8 +15,14 @@ import {
 } from "@/lib/money";
 
 /**
- * OWNER: Rayan. Mounted inside Mohammed's detail-page shell, which passes the
- * auction id and nothing else. Mohammed does not edit this file (TEAM.md §11).
+ * PRESENTATION: Mohammed. BEHAVIOUR: Rayan (TEAM.md §6, §11 — amended
+ * 2026-08-12; the ownership line is presentation vs. logic, not feature area).
+ *
+ * Mohammed builds and styles this panel. Everything it *decides* still belongs
+ * to Rayan and arrives through props: `submitBid` performs the submission,
+ * `BidResult` carries which of the eight rejection reasons applies, and the
+ * current price is a value Rayan owns. This component must never re-derive any
+ * of that — Rayan reviews any change to how his semantics are presented.
  *
  * Two design decisions worth defending:
  *
