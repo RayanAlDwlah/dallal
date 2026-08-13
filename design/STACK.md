@@ -82,14 +82,16 @@ app/
 ├── page.tsx                   auction listing        (Mohammed)
 ├── auctions/[id]/page.tsx     auction detail shell   (Mohammed)
 ├── auctions/new/page.tsx      create auction         (Mohammed)
-├── (auth)/…                   register · login · reset · profile (Abdulrahman)
+├── (auth)/…                   register · login · reset · profile (Mohammed builds;
+│                              Abdulrahman owns the flows behind them)
 components/
 ├── ui/                        S0-09 primitives       (Mohammed)
 │   button.tsx · field.tsx · amount-input.tsx · alert.tsx · card.tsx
 │   status-pill.tsx · skeleton.tsx · empty-state.tsx
 ├── auction/                   (Mohammed)
 │   auction-card.tsx · price-block.tsx · countdown.tsx · product-content.tsx
-└── bidding/                   (Rayan — Mohammed does not edit these)
+└── bidding/                   (Mohammed builds; Rayan owns the behaviour —
+    │                          TEAM.md §6/§11, amended 2026-08-12)
     bid-panel.tsx · bid-history.tsx · outcome-banner.tsx · connection-indicator.tsx
 lib/
 ├── cn.ts                      class merge
@@ -159,7 +161,7 @@ Every price, countdown and timestamp is a Latin-digit run inside Arabic text. Wi
 
 ## 5. Fonts — an upgrade over the style guide
 
-`DESIGN_SYSTEM.md` §5 specifies system font stacks. That constraint came from the **artifact/CSP environment**, which blocks font CDNs. **The real application has no such constraint** and should self-host proper faces through `next/font`, which subsets them and serves them from the same origin with zero layout shift.
+`DESIGN_SYSTEM.md` §5 specifies system font stacks. That constraint came from the **artifact/CSP environment**, which blocks font CDNs. **The real application has no such constraint** and should self-host proper faces through `next/font`, which serves them from the same origin with zero layout shift.
 
 **Two faces, one superfamily:**
 
@@ -170,24 +172,41 @@ Every price, countdown and timestamp is a Latin-digit run inside Arabic text. Wi
 
 Giving money its own family is not decoration — it **guarantees column alignment** in bid history (FR-BID-15's strictly-increasing sequence has to be scannable), and it removes the risk of the Arabic face's digits lacking `tnum`.
 
-```ts
-// app/fonts.ts
-import { IBM_Plex_Sans_Arabic, IBM_Plex_Sans } from 'next/font/google';
+**Loaded with `next/font/local`, not `next/font/google`.** The Google loader fetches `fonts.googleapis.com` *during `next build`*, so any build host that cannot reach it fails the entire build — which is exactly how the first Vercel deployment of this branch broke (`Failed to fetch IBM Plex Sans from Google Fonts`, exit 1). The font files instead arrive as ordinary dependencies via `npm ci`, so the build makes no third-party network call and the exact bytes are pinned in `package-lock.json`:
 
-export const ui = IBM_Plex_Sans_Arabic({
-  subsets: ['arabic', 'latin'],
-  weight: ['400', '500', '600', '700'],
+| Package | Version | Licence |
+|---|---|---|
+| `@fontsource/ibm-plex-sans-arabic` | 5.3.0 | OFL-1.1 |
+| `@fontsource/ibm-plex-sans` | 5.3.0 | OFL-1.1 |
+
+```ts
+// app/fonts.ts — abridged; one `src` entry per weight
+import localFont from 'next/font/local';
+
+export const ui = localFont({
+  src: [
+    { path: '../node_modules/@fontsource/ibm-plex-sans-arabic/files/ibm-plex-sans-arabic-arabic-400-normal.woff2',
+      weight: '400', style: 'normal' },
+    // …500, 600, 700
+  ],
   variable: '--font-ui',
   display: 'swap',
 });
 
-export const num = IBM_Plex_Sans({
-  subsets: ['latin'],
-  weight: ['500', '600', '700'],
+export const num = localFont({
+  src: [
+    { path: '../node_modules/@fontsource/ibm-plex-sans/files/ibm-plex-sans-latin-500-normal.woff2',
+      weight: '500', style: 'normal' },
+    // …600, 700
+  ],
   variable: '--font-num',
   display: 'swap',
 });
 ```
+
+**One subset per weight, deliberately.** `next/font/local` emits an `@font-face` per `src` entry with **no `unicode-range`**, so two entries sharing a weight and style shadow one another instead of combining by coverage. `ui` therefore carries the **Arabic** subset only — the interface is Arabic — and every Latin numeral run is already routed to `num` by the `.num` utility. Anything Latin that does appear under `font-ui` falls through the stack in `app/globals.css`.
+
+The variable contract is unchanged: `app/layout.tsx` still applies `ui.variable` / `num.variable`, and `--font-ui` / `--font-num` in `app/globals.css` are untouched.
 
 **Verify before committing:** confirm the numeral face actually exposes `tnum` in the shipped subset. If it does not, fall back to a face that does. This is a small technical check of the same kind as ARCHITECTURE §22's spikes.
 
