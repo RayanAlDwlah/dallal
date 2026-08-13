@@ -33,6 +33,27 @@ declare
   b2    uuid := '00000000-0000-0000-0000-0000000000b2';
   a uuid; r jsonb; big text;
 begin
+  -- S0-12 §5.2 / §8.3: p_amount is TEXT, and every malformed_amount assertion below
+  -- silently depends on it. With a `numeric` parameter PostgREST casts BEFORE the
+  -- function body runs, so the BEGIN/EXCEPTION block can never catch 22P02 or 22003
+  -- and 'abc' surfaces as a raw error leaking internals (SEC-T3, FR-SEC-16).
+  --
+  -- Pinned here because the failure is invisible from the other direction: those
+  -- assertions would hard-ERROR rather than FAIL, and a money parameter typed `text`
+  -- looks wrong at a glance, so "tightening" it is a plausible future refactor.
+  perform pg_temp.chk('S0-12 §5.2 place_bid signature is (uuid, text)',
+                      -- string_agg, not a bare scalar subquery: adding a numeric
+                      -- OVERLOAD rather than replacing the function would make a
+                      -- scalar subquery raise 21000 and abort this block, which
+                      -- reports as an aborted run instead of a clean FAIL. This
+                      -- renders the extra signature into the mismatch instead.
+                      (select string_agg(pg_get_function_identity_arguments(p.oid),
+                                         ' | ' order by p.oid)
+                         from pg_catalog.pg_proc p
+                         join pg_catalog.pg_namespace n on n.oid = p.pronamespace
+                        where n.nspname = 'public' and p.proname = 'place_bid'),
+                      'p_auction_id uuid, p_amount text');
+
   insert into public.auctions (owner_id, status, end_time, starting_price, current_price)
   values (owner, 'active', now() + interval '1 hour', 100, 100) returning id into a;
 
