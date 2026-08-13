@@ -47,6 +47,52 @@ and committed; nothing secret goes in it.
    supabase db diff --linked        # what the remote has that the repo does not
    ```
 
+   > **`db diff --linked` is failing right now — 2026-08-13, CLI 2.114.0.** It builds
+   > the shadow database and applies both migrations correctly, then dies inside
+   > Supabase's own diffing service:
+   >
+   > ```
+   > Diffing schemas...
+   > error diffing schema: Error: timeout exceeded when trying to connect
+   >   at .../@supabase/pg-delta/1.0.0-alpha.33/dist/core/catalog.model.js
+   > PGDELTA_SCRIPT_ERROR
+   > ```
+   >
+   > Reproduced twice, minutes apart. It is **server-side and not ours** — note the
+   > `alpha` version of `pg-delta`. It worked earlier the same day, so it may well come
+   > back on its own; try it before assuming it is still broken.
+   >
+   > **Until it does, do not read the failure as "no drift".** Ask the catalog directly
+   > — it names what is actually there instead of what changed, which is the better
+   > question anyway:
+   >
+   > ```sql
+   > select
+   >   (select string_agg(tablename, ', ' order by tablename)
+   >      from pg_tables where schemaname = 'public')                            as tables,
+   >   (select string_agg(p.proname, ', ' order by p.proname)
+   >      from pg_proc p join pg_namespace n on n.oid = p.pronamespace
+   >     where n.nspname = 'public')                                             as functions,
+   >   (select string_agg(t.typname, ', ' order by t.typname)
+   >      from pg_type t join pg_namespace n on n.oid = t.typnamespace
+   >     where n.nspname = 'public' and t.typtype = 'd')                         as domains,
+   >   (select string_agg(c.relname, ', ' order by c.relname)
+   >      from pg_class c join pg_namespace n on n.oid = c.relnamespace
+   >     where n.nspname = 'public' and c.relkind = 'v')                         as views;
+   > ```
+   >
+   > On both projects that must return exactly:
+   >
+   > | | |
+   > |---|---|
+   > | tables | `auctions, bids, profiles` |
+   > | functions | `auctions_guard_update, bid_reject, bids_are_append_only, bids_only_via_place_bid, format_sar, handle_new_user, place_bid, rls_auto_enable, sar_text` |
+   > | domains | `sar_amount` |
+   > | views | `bid_history` |
+   >
+   > `rls_auto_enable` is Supabase's, not ours — same function the diff has always
+   > reported. Everything else is the two committed migrations. Anything extra is real.
+
 3. Open a PR. `main` is protected and this is a schema change — it gets an
    approval like everything else.
 
@@ -125,6 +171,11 @@ and `dallal-prod` has them too despite never having been touched.
 That one function is now the **only** thing `supabase db diff --linked` reports,
 and it will keep reporting it forever. It is not our drift. Ignore that entry
 and read the rest — if anything else appears, that is real.
+
+**When it reports anything at all**, that is: the command started failing
+server-side later the same day. See the note under "Making a change" step 2 for
+the error and for the catalog query to use instead. Both projects were
+re-checked that way afterwards and match the table above.
 
 ## Advisors — what is expected, so a new WARN stands out
 
