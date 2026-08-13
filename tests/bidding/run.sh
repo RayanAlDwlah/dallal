@@ -23,15 +23,28 @@ trap '[ -n "${KEEP:-}" ] || docker rm -f "$CONTAINER" >/dev/null 2>&1; rm -rf "$
 
 command -v docker >/dev/null || { echo "docker is required"; exit 1; }
 docker info >/dev/null 2>&1 || { echo "the docker daemon is not running"; exit 1; }
-command -v python3 >/dev/null || { echo "python3 is required (lib/contract-sync.py)"; exit 1; }
-
-MIGRATION="$HERE/../../supabase/migrations/20260812120000_bid02_bid_acceptance.sql"
+ROOT="$(cd "$HERE/../.." && pwd)"
+MIGRATION="$ROOT/supabase/migrations/20260812120000_bid02_bid_acceptance.sql"
+CONTRACT="$ROOT/docs/contracts/BID-02-bid-operation.md"
 
 # The migration is committed AND printed in the contract. Two copies of one
 # artefact drift, and a suite that applies its own copy keeps passing while they
 # do. So: assert they are identical, then apply the committed one.
 echo "==> checking the migration against docs/contracts/BID-02-bid-operation.md"
-python3 "$HERE/lib/contract-sync.py" "$WORK" || exit 1
+awk -v out="$WORK" -f "$HERE/lib/contract-sync.awk" "$CONTRACT" || exit 1
+if ! diff -u "$WORK/expected.sql" "$MIGRATION" > "$WORK/drift.diff"; then
+  echo
+  echo "    DRIFT — the committed migration is no longer the contract."
+  echo "      contract:  docs/contracts/BID-02-bid-operation.md (first 3 sql blocks)"
+  echo "      migration: supabase/migrations/$(basename "$MIGRATION")"
+  sed -n '3,40p' "$WORK/drift.diff" | sed 's/^/      /'
+  echo
+  echo "    These are one artefact in two places. Change both, or change the"
+  echo "    contract and regenerate. The suite will not run against a copy."
+  exit 1
+fi
+echo "    migration == contract, no drift"
+rm -f "$WORK/expected.sql" "$WORK/drift.diff"   # proven; not shipped into the container
 
 echo "==> starting PostgreSQL 17"
 docker rm -f "$CONTAINER" >/dev/null 2>&1

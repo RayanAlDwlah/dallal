@@ -6,10 +6,14 @@
 KEEP=1 ./tests/bidding/run.sh   # leave the container up to poke at
 ```
 
-Needs **Docker** and **`python3`** (`lib/contract-sync.py` asserts the committed
-migration is still character-for-character the SQL printed in
-`docs/contracts/BID-02-bid-operation.md` before anything is applied). Nothing
-else — no Supabase account, no network, no credentials, no npm dependency.
+**Needs Docker. That is the whole list** — no `python3`, no Supabase account, no
+network, no credentials, no npm dependency. `awk` and `diff` do the contract
+check and both ship with the shell you are already running.
+
+> It used to need `python3` too. @Dem4t reported on PR #1 that he does not have
+> it, so the suite did not run on his machine — while PR #5 asks him to review a
+> migration whose only evidence *is* this suite. A runner one of three developers
+> cannot execute is not a runner. `lib/extract-sql.py` → `lib/contract-sync.awk`.
 
 ---
 
@@ -81,7 +85,7 @@ not a copy of it, so the suite proves the artefact that would ship.
 
 The fourth block — V-1's seed — is **not** in the migration and never will be: it
 writes `auth.users` directly with reserved UUIDs, which the product never does.
-`lib/contract-sync.py` extracts it for the test run and applies it separately.
+`lib/contract-sync.awk` extracts it for the test run and applies it separately.
 
 **Committing it does not settle who owns the shape.** `S0-11` — the auction
 record contract — is still awaiting Mohammed's sign-off, and `BID-02` §1c
@@ -90,8 +94,8 @@ branch, in a PR blocked on both, so they can review the exact bytes rather than 
 description of them. Until those are ticked, this migration is a proposal that
 runs, not a decision.
 
-`contract-sync.py` refuses to run the suite if the two copies ever diverge —
-that is the whole reason it still exists.
+`contract-sync.awk` + a `diff` refuse to run the suite if the two copies ever
+diverge, printing the offending lines. That is the whole reason it exists.
 
 ## Scope
 
