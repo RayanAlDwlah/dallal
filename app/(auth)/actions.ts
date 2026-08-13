@@ -5,6 +5,7 @@ import { redirect } from "next/navigation";
 import { revalidatePath } from "next/cache";
 
 import { createClient } from "@/lib/supabase/server";
+import { siteOrigin } from "@/lib/auth/site-url";
 import {
   normalizeDisplayName,
   safeNextPath,
@@ -221,10 +222,20 @@ export async function requestPasswordResetAction(
   const emailError = validateEmail(email);
   if (emailError) return { fieldErrors: { email: emailError } };
 
-  const headerList = await headers();
-  const host = headerList.get("x-forwarded-host") ?? headerList.get("host");
-  const proto = headerList.get("x-forwarded-proto") ?? "https";
-  const origin = `${proto}://${host}`;
+  const origin = siteOrigin(await headers());
+  if (!origin) {
+    /*
+     * Distinct from the confirmation below, and that is fine: this answer does
+     * not vary with the address, so it discloses nothing about who has an
+     * account (FR-AUTH-27). Silently returning the success notice while no mail
+     * can be sent would be worse — the user would wait for an email that was
+     * never going to arrive.
+     */
+    return {
+      error:
+        "تعذّر إرسال رابط الاستعادة لأن إعداد عنوان الموقع (SITE_URL) غير مضبوط في هذه البيئة. أبلغ الفريق.",
+    };
+  }
 
   const supabase = await createClient();
   await supabase.auth.resetPasswordForEmail(email, {
