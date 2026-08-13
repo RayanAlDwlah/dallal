@@ -23,6 +23,7 @@ trap '[ -n "${KEEP:-}" ] || docker rm -f "$CONTAINER" >/dev/null 2>&1; rm -rf "$
 
 command -v docker >/dev/null || { echo "docker is required"; exit 1; }
 docker info >/dev/null 2>&1 || { echo "the docker daemon is not running"; exit 1; }
+command -v python3 >/dev/null || { echo "python3 is required (lib/extract-sql.py)"; exit 1; }
 
 echo "==> extracting SQL from docs/contracts/BID-02-bid-operation.md"
 python3 "$HERE/lib/extract-sql.py" "$WORK" || exit 1

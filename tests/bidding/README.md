@@ -6,7 +6,10 @@
 KEEP=1 ./tests/bidding/run.sh   # leave the container up to poke at
 ```
 
-Needs Docker. Nothing else — no Supabase account, no network, no credentials.
+Needs **Docker** and **`python3`** (the SQL is extracted from
+`docs/contracts/BID-02-bid-operation.md` by `lib/extract-sql.py`, so the contract
+stays the single source and cannot drift from what is tested). Nothing else — no
+Supabase account, no network, no credentials, no npm dependency.
 
 ---
 

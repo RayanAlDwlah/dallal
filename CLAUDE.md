@@ -55,11 +55,13 @@ Before refusing a task, decide which half it touches:
 
 File-level ownership statements elsewhere in the repository do not override this model.
 
-> **Status of this amendment.** Recorded here by the project owner. As of this commit
-> `TEAM.md`, `GITHUB_PLAN.md` and `ARCHITECTURE.md` still describe the older feature-area
-> split — `GITHUB_PLAN.md` in particular still assigns the bidding UI issues (`BID-06`,
-> `BID-07`, `BID-10`, `BID-18`) to Rayan. Where they disagree with this section on
-> **ownership**, this section governs. They remain authoritative on everything else, per §2.
+> **Status of this amendment.** Recorded here by the project owner in `5b5e698`. It was
+> propagated into `TEAM.md`, `GITHUB_PLAN.md`, `ARCHITECTURE.md` and `README.md` in
+> `ea0d861` — including the per-issue behaviour/presentation split for the bidding UI
+> issues (`BID-06`, `BID-07`, `BID-10`, `BID-18`), whose presentation half is Mohammed's
+> and whose behaviour half stays with Rayan. Should any document still disagree with this
+> section on **ownership**, this section governs; they remain authoritative on everything
+> else, per §2.
 
 ---
 
