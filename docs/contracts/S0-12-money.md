@@ -53,6 +53,44 @@ Grouping is **not** a trivial server-side change, because the obvious mechanism 
 
 **The client half is implemented either way** — `lib/money.ts`, width-unbounded string arithmetic, grouped, verified against a 40-digit fixture. **No server-side SQL was written or altered by this amendment.**
 
+### 0.2 Rayan's answer — **option (ii), and it is already built and measured**
+
+**Chosen: (ii) mirrored grouping.** Not on preference — the objection to (ii) was that it
+needs a width-unbounded server implementation, and that implementation now exists and was
+run against real PostgreSQL 17.10 before this answer was written.
+
+```sql
+-- Width-unbounded by construction: a regex over the digit run, NOT a format picture,
+-- so there is no ceiling at any number of digits (BR-21, SEC-R3).
+CREATE FUNCTION format_sar_digits(a sar_amount) RETURNS text
+LANGUAGE sql IMMUTABLE STRICT AS $$
+  SELECT regexp_replace(split_part(round(a,2)::text, '.', 1), '(\d)(?=(\d{3})+$)', '\1,', 'g')
+      || '.' || split_part(round(a,2)::text || '.00', '.', 2)
+$$;
+```
+
+Measured, not asserted:
+
+| Check | Result |
+|---|---|
+| `to_char(12345678901234567890, 'FM999,999,999,999.00')` | `###,###,###,###.##` — **the banned mechanism's ceiling, reproduced.** The ban is correct and stands |
+| The regex form at 40 digits | `9,999,…,999.99` — **all 42 digits**, correctly grouped, no truncation, no scientific notation |
+| **Golden byte-identity vs the client `formatSar`** | **11 fixtures identical**, including the 40-digit value and `12345678901234567890.55` (above 2⁵³) |
+
+So §7's golden test is **extended to grouped output at 40 digits and passing today** — the
+condition option (ii) was priced at is already paid.
+
+**Why (ii) rather than (i), briefly.** Option (i) would make the server's string
+non-canonical — `format_sar` would return something no user ever sees, and NFR-DAT-08's
+"one format everywhere" would hold only by convention rather than by construction. It also
+silently assumes no amount is ever rendered outside the client, which is true today and is
+exactly the kind of assumption that stops being true without anyone noticing.
+
+**Note on the indicator:** `format_sar_digits` deliberately returns the number *without*
+`SAR`. The indicator is appended by the caller as a separate element so it can sit outside
+the number's `<bdi>` isolate in the RTL document (`BR-41`, `BR-42`). Concatenating it in
+SQL would force the isolate boundary into the wrong place.
+
 ---
 
 ## 1. The decision
@@ -158,6 +196,27 @@ END IF;
 --   no leading-bidder check   (BR-24, FR-BID-04 — leading is never grounds for rejection)
 --   no reserve check          (BR-35 — none exists)
 ```
+
+### 5.1a Correction required — the `outbid_race` branch as written is wrong
+
+**The `ELSIF v_amount > v_price_before_lock` line above cannot reproduce this document's
+own worked trace in §10.** Take the raced case §10 Bid 2 describes: a first bid of `100`
+against a 100 SAR starting price, which loses the lock race. Pre-lock state had no bids,
+so `v_price_before_lock = 100.00`, and `100.00 > 100.00` is **false** — the branch falls
+through to `not_above_current` and reports a genuine race as a plain too-low bid,
+contradicting §10 and degrading §13.5's eight distinguishable reasons.
+
+The evident intent is *"the bid would have been accepted against the newest state the
+bidder could have seen"* — which requires the **inclusive** comparison when there were no
+bids pre-lock, mirroring the first-bid branch. `BID-02` implements the intent, and its
+verification run against PostgreSQL 17.10 shows `outbid_race` firing 0–4 times per
+contended round across 12 rounds, so this branch is load-bearing rather than cosmetic
+(`docs/contracts/BID-02-verification.md` §2).
+
+**Proposed as a revision, not applied quietly** — this document's closing rule requires
+all three developers to agree a change. Unlike §0 it changes behaviour, not rendering.
+
+---
 
 `v_price_before_lock` is `current_price` read by the function itself immediately before acquiring the lock — the race/too-low distinction (ARCHITECTURE §13.5, last row) is decided **entirely server-side**. No client-supplied "seen price" parameter exists, so distinguishability does not degrade for direct callers (SC-43), and no client input ever influences validity (BR-08).
 

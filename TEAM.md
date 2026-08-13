@@ -116,8 +116,8 @@ feature/abdulrahman-auth
 - User identity (the internal identifier and the public display name, which **must be unique** — PRD BR-39)
 - User profile (the minimal profile defined in the PRD)
 - Authentication-related authorization — "is this request from a signed-in user, and which user?"
-- Authentication UI (register form, login form, logout control, signed-in indicator, **password reset screens**)
-- Profile UI
+- Authentication **behaviour** behind the register, login, logout, signed-in-indicator and **password reset** screens — what they do, not how they look. Mohammed owns their presentation
+- Profile **data and identity behaviour**. Mohammed owns the profile screen's presentation
 
 ### What Abdulrahman does *not* own
 
@@ -174,8 +174,8 @@ feature/mohammed-auctions
 ### What Mohammed does *not* own
 
 - The **current price value** — that is derived from bid history and owned by Rayan (PRD BR-13). Mohammed owns the *place on the page where the price appears*; Rayan owns *what the number is and when it changes*.
-- The **bidding panel** inside the auction detail page — Rayan owns that component.
-- The **winner and final price values** — Rayan determines them; Mohammed's seller view displays them.
+- The **behaviour inside the bidding panel** — submission, validation, accept/reject semantics and their realtime updates are Rayan's. Mohammed owns how that panel looks.
+- The **winner and final price values** — Rayan determines them; Mohammed presents them.
 - **Closing the auction** — the automatic Active → Ended transition is Rayan's (PRD §8.8). Mohammed displays the resulting status.
 
 > **This is the most important boundary in the project.** The auction detail page is where all three workstreams meet. See §11 for the rule that keeps it from becoming a permanent merge conflict.
@@ -208,20 +208,20 @@ feature/rayan-bidding
 - Server-side bid validation (all rules in PRD §9)
 - Minimum valid bid behavior
 - Current price — the value itself and every update to it
-- Bid history — recording and display
+- Bid history — **recording, ordering and correctness**. Mohammed presents the list
 - Realtime bid updates
 - Realtime auction status updates
 - Concurrent bidding behavior and correctness
 - Auction expiration handling and the automatic close
 - Winner determination
-- Winner display
-- All bidding-related UI (bid input, submit control, accept/reject feedback, bid history list, outcome banner)
+- The **winner and final-price values**, and when they become visible. Mohammed presents them
+- **All bidding-related behaviour** — what the bid input accepts, what submission does, which rejection reason is returned and why, what the history contains and in what order, and what the outcome states are. **Mohammed owns the presentation of every one of those surfaces** (bid input, submit control, accept/reject feedback, bid history list, outcome banner); Rayan owns what they do
 
 ### What Rayan does *not* own
 
 - The auction record itself — he reads it, Mohammed owns it.
 - User identity and sessions — he consumes them, Abdulrahman owns them.
-- The auction detail page shell and product content — Mohammed owns the page; Rayan owns the bidding components mounted inside it.
+- The auction detail page shell and product content — Mohammed owns the page **and all presentation on it**; Rayan owns the bidding **behaviour** inside it.
 
 ### Ownership rule
 
@@ -239,24 +239,24 @@ Rayan's workstream delivers PRD sections §8.6 (Bidding), §8.7 + §13 (Realtime
 
 | Feature | Owner | Supporting Member | Note |
 |---|---|---|---|
-| Registration | Abdulrahman | — | Includes display-name uniqueness (BR-39) |
+| Registration | Abdulrahman | Mohammed | Abdulrahman owns the behaviour, including display-name uniqueness (BR-39); Mohammed owns the screen |
 | Login | Abdulrahman | — | |
 | Logout | Abdulrahman | — | |
 | **Password Reset** | **Abdulrahman** | — | *Added in v2.0* — PRD M24, FR-AUTH-25 → 31. The MVP's only outbound email |
-| User Profile | Abdulrahman | — | Unique display name; email never public |
+| User Profile | Abdulrahman | Mohammed | Abdulrahman owns the data and identity behaviour — unique display name, email never public; Mohammed owns the screen |
 | Authentication State | Abdulrahman | Rayan | Rayan consumes it for every bid |
 | Auction Creation | Mohammed | Abdulrahman | Needs authenticated identity as the owner |
 | Product Images | Mohammed | — | |
 | Auction Listing | Mohammed | Rayan | *Adjusted* — listing shows current price, which Rayan owns |
-| Auction Details | Mohammed | Rayan | Shared page: Mohammed owns the shell, Rayan owns the bidding panel |
+| Auction Details | Mohammed | Rayan | Shared page: Mohammed owns the shell **and all presentation on it, bidding panel included**; Rayan owns the bidding behaviour inside it |
 | Auction Lifecycle | Mohammed | Rayan | Mohammed displays state; Rayan drives the Active → Ended transition |
 | Bidding | Rayan | Abdulrahman | Needs identity to attribute the bid |
 | Bid Validation | Rayan | Mohammed | *Adjusted* — validation reads auction status, end time, and owner from Mohammed |
-| Bid History | Rayan | Mohammed | Displayed on Mohammed's detail page |
+| Bid History | Rayan | Mohammed | Rayan owns what is recorded and its order (`bids.id`, never `created_at`); Mohammed owns how the list is presented |
 | Realtime Updates | Rayan | Mohammed | Broadcast is scoped to an auction; Mohammed's pages host the live regions |
 | Auction Ending | Rayan | Mohammed | Rayan closes it; Mohammed's UI reflects the ended state |
 | Winner Determination | Rayan | Mohammed | Rayan computes it from bid history |
-| Winner Display | Rayan | Mohammed | Rayan owns the outcome component; Mohammed's seller view consumes it |
+| Winner Display | Mohammed | Rayan | **Reversed** — Mohammed owns the outcome and winner presentation; Rayan owns the values it shows and when they become visible |
 | **Current Price (value)** | **Rayan** | **Mohammed** | *Added* — see the note below; this was the biggest ambiguity in the baseline matrix |
 | **Session / identity contract** | **Abdulrahman** | **Mohammed, Rayan** | *Added* — the shape both consumers depend on |
 
@@ -275,6 +275,33 @@ Primary ownership is unchanged from the baseline. Two supporting-member changes 
 
 > Ownership does **not** mean a developer is forbidden from touching another area.
 > It means **one developer is responsible for the functionality, and other developers coordinate with that owner before changing it.**
+
+### The axis is presentation vs. behaviour, not file
+
+A single component routinely contains both, and each half has a different owner. **Never
+read ownership as ownership of a whole file.**
+
+| Responsibility | Owner |
+|---|---|
+| **All presentation** — every screen, layout, component, visual state, the design system | **Mohammed** |
+| **Bidding behaviour** — validation, submission, the atomic operation, concurrency, current-price correctness, realtime bidding behaviour, closing, winner determination, bid recording and order | **Rayan** |
+| **Authentication and identity behaviour and data** — auth logic, session, authorization, identity and profile data | **Abdulrahman** |
+
+Mohammed's presentation ownership is total: auction screens, the bid panel, bid history,
+the outcome and winner views, and the login / registration / password-reset / profile
+screens — layout, typography, spacing, colour, motion, responsive behaviour, and the
+loading, empty, error and 404 states.
+
+**What each may do in a file the other half of which is not theirs:**
+
+| | May change | Must preserve exactly | Must not do |
+|---|---|---|---|
+| **Mohammed** | presentation in any component | the behaviour and its contracts | redesign, rewrite or refactor another owner's business logic unless that owner asks |
+| **Rayan** | bidding behaviour in any component | Mohammed's presentation | restyle or redesign the UI unless Mohammed asks |
+| **Abdulrahman** | auth/identity behaviour in any component | Mohammed's presentation | redesign the UI unless Mohammed asks |
+
+This does **not** weaken the boundary. Changing another owner's behaviour or data still
+means stop and ask them — the boundary simply runs through files rather than between them.
 
 **In practice this means:**
 
@@ -459,7 +486,7 @@ These are the files where two or more developers will collide. Each has a design
 | **Application entry point** | Root component, app bootstrap, providers | **Whole team, Mohammed coordinates** | Should be touched rarely and only by agreement. All three of you will need something registered here — do it once, together, in Sprint 0. |
 | **Environment configuration** | Environment variable names, the example env file | **Whole team** | Add your variable to the example file; announce it in the group. **Never commit real secrets or a populated `.env` file** (Rule 9/10 in §23). |
 | **Money representation (SAR)** | How a price is stored, compared, and formatted | **Shared — one agreed representation, no exceptions** | See the dedicated rule below. |
-| **The auction detail page** | The single highest-traffic shared file | **Mohammed owns the page; Rayan owns the bidding components inside it** | See the dedicated rule below. |
+| **The auction detail page** | The single highest-traffic shared file | **Mohammed owns the page and all presentation on it; Rayan owns the bidding behaviour inside it** | See the dedicated rule below. |
 
 ### The money representation rule (SAR)
 
@@ -498,11 +525,11 @@ The auction detail page is where all three workstreams meet. Left as one file, i
 | Product name, description, image, seller display name | Mohammed |
 | Auction status label and countdown display | Mohammed |
 | **Current price display region** | Mohammed builds the region — **Rayan supplies the value and its updates** |
-| **Bid input, submit control, accept/reject feedback** | Rayan |
-| **Bid history list** | Rayan |
-| **Outcome / winner banner** | Rayan |
+| **Bid input, submit control, accept/reject feedback** | Mohammed presents — **Rayan owns what it accepts, what submission does, and which rejection reason is returned** |
+| **Bid history list** | Mohammed presents — **Rayan owns what is recorded and its order** |
+| **Outcome / winner banner** | Mohammed presents — **Rayan owns the outcome values and when they become visible** |
 
-Mohammed's page mounts Rayan's components and passes them the auction ID. Neither developer edits the other's component files. **Agree this split in Sprint 0 and create the empty component files immediately** — so both developers have a file of their own to work in from their very first commit.
+Mohammed's page mounts Rayan's components and passes them the auction ID. The split is **by responsibility, not by file** (CLAUDE.md §1): Mohammed may change presentation in any of these components provided behaviour and contracts are unchanged, and Rayan may implement bidding behaviour inside a component Mohammed presents — but neither rewrites the other's half without asking. **Agree this split in Sprint 0 and create the empty component files immediately** — so both developers have a file of their own to work in from their very first commit.
 
 ---
 
@@ -742,7 +769,7 @@ Do these first, in the first working session:
 
 1. **A-02 — the identity contract** (Abdulrahman). Unblocks Mohammed and Rayan.
 2. **M-01 — the auction record fields** (Mohammed, agreed with Rayan). Unblocks bid validation and closing.
-3. **M-14 + S0-8 — the detail page shell and component split** (Mohammed + Rayan). Unblocks all of Rayan's UI and prevents the project's worst recurring merge conflict.
+3. **M-14 + S0-8 — the detail page shell and component split** (Mohammed + Rayan). Unblocks all of Rayan's bidding work and prevents the project's worst recurring merge conflict.
 
 Everything else can proceed in parallel.
 
@@ -1190,7 +1217,7 @@ Recorded honestly so the team can watch for them. The structure is sound; these 
 
 | # | Risk | Why it matters | Mitigation |
 |---|---|---|---|
-| **1** | **Rayan's workstream is significantly larger than the other two** | It contains bidding, all validation, realtime, concurrency correctness, automatic closing, and winner determination — including every correctness-critical requirement in the PRD (BR-11, BR-12, FR-END-10). Abdulrahman's workstream is the smallest and the least blocked. | Watch this from week one. **When Abdulrahman finishes authentication, he should move to support Rayan** — realistically on bid history display, rejection messaging, or the winner display components. Reassigning a slice of Rayan's UI work to Abdulrahman is a reasonable adjustment and does not change primary ownership of the bidding logic. |
+| **1** | **Rayan's workstream is significantly larger than the other two** | It contains bidding, all validation, realtime, concurrency correctness, automatic closing, and winner determination — including every correctness-critical requirement in the PRD (BR-11, BR-12, FR-END-10). Abdulrahman's workstream is the smallest and the least blocked. | Watch this from week one. **When Abdulrahman finishes authentication, he should move to support whichever half is behind** — presentation work is routed through Mohammed, who owns all of it (CLAUDE.md §1); bidding behaviour is routed through Rayan — realistically rejection-reason wiring, bid recording and order, or closing and winner determination. Helping does not change primary ownership of either half. |
 | **2** | **The auction detail page is a three-way shared surface** | All three workstreams render on it. Left as one file, it conflicts on nearly every merge. | The component split in §11, created as empty files in Sprint 0 (S0-8). Do this before anyone writes page code, not after the first painful conflict. |
 | **3** | **Current price sits across an ownership boundary** | Rayan owns the value; Mohammed owns where it appears — on two different pages. Ambiguity here produces two competing sources of truth and a price that disagrees between listing and detail. | The added matrix row in §6 and PRD BR-13: the price is **always** derived from bid history. Mohammed never computes it, only displays it. |
 | **4** | **~~PRD Open Questions block Must Have work~~ — RESOLVED.** All fifteen product decisions are final (PRD §21.1); no workstream waits on a product answer. **The residual risk is different: a developer encountering something the PRD genuinely does not cover, and inventing an answer in code.** | Team Rule 16. Raise it with the team; it gets recorded in the PRD, then built. Note that **technical** platform verifications (ARCHITECTURE.md §22) are a separate category and must not be treated as product questions |
@@ -1279,7 +1306,7 @@ Supabase
 | Who owns identity / "current user"? | Abdulrahman |
 | Who owns the auction record? | Mohammed |
 | Who owns the price, bids, realtime, and the winner? | Rayan |
-| Who owns the auction detail page? | Mohammed owns the shell; Rayan owns the bidding components inside it |
+| Who owns the auction detail page? | Mohammed owns the shell and all presentation on it, bidding panel included; Rayan owns the bidding behaviour inside it |
 | I need something from another area | Ask the owner. Do not build your own. |
 | I need to edit another owner's file | Message them first, then tag them as reviewer |
 | I hit a conflict | Find the owner → talk → resolve together → owner verifies. Never blind "ours"/"theirs". |
