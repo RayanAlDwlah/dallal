@@ -260,9 +260,9 @@ Sprint 0 is **shared foundation work, not a fourth workstream.** Every Issue has
 | ID | Title | Owner | Labels | Depends on | Description & Acceptance Criteria |
 |---|---|---|---|---|---|
 | **S0-10** | **Publish the identity contract** | **Abdulrahman** — `Dem4t` | `type:foundation` `area:auth` `priority:critical` | S0-04 | **Description:** TEAM.md task **A-02**, ARCHITECTURE §10.4 — **the single highest-priority task on the team.** Define how any part of the app obtains "the current user", and publish it to Mohammed and Rayan. Must define **two distinct things** and mark clearly which is which.<br>**AC:** **(1) client-side session state** — is someone signed in, and their display name — documented and marked **UX only, never an authorization decision** · **(2) server-side verified identity** — the authenticated user identifier as the database sees it — documented and marked **authoritative** · it is unambiguous which to use for auction ownership (FR-CREATE-02) and bid attribution (FR-BID-01) · both Mohammed and Rayan confirm in writing they can build against it · **this is a contract, not an implementation — it can be agreed and published before the auth code is finished** |
-| **S0-11** | **Agree the auction record contract** | **Mohammed** — `m7ya505` | `type:foundation` `area:auction` `priority:critical` | S0-07 | **Description:** TEAM.md task **M-01**, ARCHITECTURE §10.3 — agree the auction fields Rayan's bid validation reads and the fields Rayan writes at close. Agreed jointly with Rayan; **Mohammed owns the auction record** (TEAM.md §4).<br>**AC:** the six read fields are defined and frozen: auction id, owner, status, end time, starting price, current price · the four fields Rayan writes at close are agreed: status, final price, winner, close time · it is explicit that **Rayan writes current price on each accepted bid and nothing else** (ARCHITECTURE §10.3) · Rayan confirms bid validation can be built against it · renaming or removing any of the six requires telling Rayan first |
+| **S0-11** | **Agree the auction record contract** | **Mohammed** — `m7ya505` | `type:foundation` `area:auction` `priority:critical` | S0-07 | **Description:** TEAM.md task **M-01**, TEAM.md §10.3 and ARCHITECTURE §9.3–§9.4 — agree the auction fields Rayan's bid validation reads and the fields Rayan writes at close. Agreed jointly with Rayan; **Mohammed owns the auction record** (TEAM.md §4).<br>**AC:** the six read fields are defined and frozen: auction id, owner, status, end time, starting price, current price · the four fields Rayan writes at close are agreed: status, final price, winner, close time · it is explicit that **Rayan writes current price on each accepted bid and nothing else** (ARCHITECTURE §9.3–§9.4) · Rayan confirms bid validation can be built against it · renaming or removing any of the six requires telling Rayan first |
 | **S0-12** | **Agree the SAR money representation** | **Rayan** — `RayanAlDwlah` | `type:foundation` `area:shared` `priority:critical` | None | **Description:** TEAM.md §11 "The money representation rule (SAR)" and §12 **S0-12**. One representation for storing, comparing, and formatting prices. **Assigned to Rayan as primary because the correctness-critical half — exact comparison in the bid operation — is his**; Mohammed is a required reviewer because he owns creation input and display. Neither may proceed with a different representation.<br>**AC:** storage/comparison representation agreed — **exact decimal, two places, never floating point** (NFR-DAT-05) · **no maximum** — large values handled correctly, never rejected for size (BR-21, SEC-R3) · one display format agreed for listing, detail, bid input, history, and results (NFR-DAT-08) · currency is **SAR** and values are **simulated** (BR-33) · the term **"Demo Points" is prohibited** · Mohammed has reviewed and confirmed · recorded where both can find it |
-| **S0-13** | **Split the auction detail page into owned components** | **Mohammed** — `m7ya505` | `type:foundation` `area:shared` `priority:critical` | S0-08 | **Description:** TEAM.md §11 and §12 **S0-8** — the project's worst recurring merge-conflict risk. Create the **empty component files** now, per the ownership split, so both developers have a file of their own from their first commit. Agreed jointly with Rayan.<br>**AC:** **Mohammed's** files exist and are empty: page shell + data loading, product content, status label + countdown, current-price **display region** · **Rayan's** files exist and are empty: bid input + submit + feedback, bid history list, outcome/winner banner · the page mounts Rayan's components and passes the auction id · **neither developer edits the other's component files** · the split is recorded in the README or a code comment so it survives the sprint |
+| **S0-13** | **Split the auction detail page into owned components** | **Mohammed** — `m7ya505` | `type:foundation` `area:shared` `priority:critical` | S0-08 | **Description:** TEAM.md §11 and §12 **S0-8** — the project's worst recurring merge-conflict risk. Create the **empty component files** now, per the ownership split, so both developers have a file of their own from their first commit. Agreed jointly with Rayan.<br>**AC:** **Mohammed's** files exist and are empty: page shell + data loading, product content, status label + countdown, current-price **display region** · **Rayan's** files exist and are empty: bid input + submit + feedback, bid history list, outcome/winner banner · the page mounts Rayan's components and passes the auction id · **the split is by responsibility, not by file** (CLAUDE.md §1) — the empty files are still created per this list, but Mohammed may change presentation in any of them provided behaviour and contracts are unchanged · the split is recorded in the README or a code comment so it survives the sprint |
 | **S0-14** | **Update TEAM.md §19 label list to the namespaced scheme** | **Rayan** — `RayanAlDwlah` | `type:foundation` `documentation` `priority:medium` | S0-03 | **Description:** TEAM.md §19 lists flat labels (`auth`, `verify`, …); this plan uses `area:*` / `type:*` (§1.5). Align the document with reality rather than leaving a discrepancy.<br>**AC:** TEAM.md §19 lists the actual labels · the `verify` → `type:verification` mapping is preserved, including the note that it is for **technical** items only and that `needs-decision` does not exist · no product decision is altered |
 
 ### 3.5 Sprint 0 exit criteria
@@ -331,6 +331,16 @@ V-5 ──blocks──► nothing formally, but slows EVERY developer's loop
 
 *All 14 Issues in this section are assigned in GitHub to **`Dem4t`**.*
 
+> **Presentation within these Issues belongs to Mohammed** (TEAM.md §7). Abdulrahman owns
+> authentication and identity **behaviour and data** — credentials, session, authorization,
+> display-name uniqueness (`BR-39`), the reset token flow. Mohammed owns the **screens**:
+> register, login, logout control, signed-in indicator, password-reset screens and the
+> profile view, including their loading, empty and error states.
+>
+> This affects `AUTH-02`→`AUTH-05` and `AUTH-08` most directly. **Tag Mohammed on the
+> presentation half** rather than building it alone. Abdulrahman's behaviour ownership is
+> unchanged, and Mohammed must not alter it.
+
 Every Issue carries `area:auth`. Shared traceability: TEAM.md §3, §13.1 · ARCHITECTURE §10, §11.2.
 
 | ID | Title | Labels | Depends on | Traceability | Acceptance Criteria |
@@ -362,6 +372,16 @@ Every Issue carries `area:auth`. Shared traceability: TEAM.md §3, §13.1 · ARC
 
 *All 19 Issues in this section are assigned in GitHub to **`m7ya505`**.*
 
+> **Mohammed additionally owns all presentation product-wide** (TEAM.md §7) — not only the
+> auction surfaces in this milestone, but the bidding surfaces in §7 (`BID-06`, `BID-07`,
+> `BID-10`, `BID-18`) and the auth and profile screens in §5. Those Issues stay assigned to
+> their behaviour owners; Mohammed is tagged on the presentation half.
+>
+> **He must not alter the behaviour in them:** no change to bid validation, bid
+> calculation, concurrency, realtime behaviour, closing, winner determination or bid
+> recording semantics, and no change to authentication behaviour or identity data. If a
+> presentation change requires one, **stop and ask that owner**.
+
 Every Issue carries `area:auction`. Shared traceability: TEAM.md §4, §13.2 · ARCHITECTURE §12, §16, §9.6.
 
 | ID | Title | Labels | Depends on | Traceability | Acceptance Criteria |
@@ -376,7 +396,7 @@ Every Issue carries `area:auction`. Shared traceability: TEAM.md §4, §13.2 · 
 | **AUC-08** | Publication and immutability | `type:feature` `priority:critical` | AUC-02, AUC-07 | **BR-30, BR-31** · FR-CREATE-24→29 · **SC-58, SC-59** · TEAM M-09 | Auction becomes **Active immediately**; current price = starting price; empty history · appears in the listing at once · user lands on its detail page · **no edit control, screen, or route exists** (SC-58) · **no cancel control, rule, or route exists; no `Cancelled` state is reachable** (SC-59) · **no persisted Draft** |
 | **AUC-09** | Auction listing — **active auctions only** | `type:feature` `priority:critical` | AUC-08, S0-09, **V-4** | **FR-LIST-05, 05a, 06** · FR-LIST-01→03, 08→13 · **SC-71** · US-08 · TEAM M-10, M-12, M-13 · ARCH §9.6 | Public, no authentication required · **only Active auctions appear; an ended auction never appears** (SC-71) · ordered **soonest end time first** · each entry shows thumbnail, name, **current price in SAR** labelled as current bid or starting price, status, time remaining · empty state with a create prompt when signed in · **no bidder identities or emails** · usable with 100 auctions inside NFR-PERF-01's 3 s · responsive at 375 px |
 | **AUC-10** | Listing countdown and leave-on-end behavior | `type:feature` `priority:high` | AUC-09 | **FR-LIST-05b** · FR-LIST-04 · TEAM M-11 | Countdown runs continuously without a page refresh · **when an auction ends it leaves the listing, and the transition does not look like a page error** (FR-LIST-05b) · **ended auctions remain reachable by direct link with full outcome and history** (FR-LIST-05a, FR-END-12) |
-| **AUC-11** | Auction detail page shell and component mount points | `type:feature` `priority:critical` | **S0-13**, S0-09 | PRD §8.5 · FR-DETAIL-01 · TEAM M-14 · **TEAM §11 page split** | Page shell, layout, and auction data loading · **mounts Rayan's components and passes the auction id** · **Mohammed does not edit Rayan's component files** · public, no authentication required · responsive at 375 px · **one of Mohammed's first tasks so Rayan has somewhere to mount** (TEAM §14) |
+| **AUC-11** | Auction detail page shell and component mount points | `type:feature` `priority:critical` | **S0-13**, S0-09 | PRD §8.5 · FR-DETAIL-01 · TEAM M-14 · **TEAM §11 page split** | Page shell, layout, and auction data loading · **mounts Rayan's components and passes the auction id** · **Mohammed owns the presentation inside those components and may change it; he must leave their bidding behaviour exactly as it is** (TEAM.md §7) · public, no authentication required · responsive at 375 px · **one of Mohammed's first tasks so Rayan has somewhere to mount** (TEAM §14) |
 | **AUC-12** | Detail page product content and seller identity | `type:feature` `priority:high` | AUC-11 | FR-DETAIL-02→04, 13 · TEAM M-15 | Full name; full description with line breaks preserved; image at evaluable size with placeholder fallback · **seller's display name shown, never their email** (FR-DETAIL-13) |
 | **AUC-13** | Detail page status and countdown | `type:feature` `priority:high` | AUC-11 | FR-DETAIL-07, 08 · TEAM M-16 | Status shown explicitly · live countdown updating at least once per second, **derived from the server-supplied end time** (RT-P3) · absolute end time shown in the viewer's local timezone with the zone explicit (NFR-USA-07) · **the end time never changes — there is no anti-sniping extension** (BR-36) |
 | **AUC-14** | Current price display region | `type:feature` `priority:high` | AUC-11, S0-12 | FR-DETAIL-05, 06 · **BR-13** · TEAM M-17 · **ARCH §9.4** | Current price is the **most visually prominent element** on the page (NFR-USA-04) · shown in SAR using the agreed format · distinguishes `Starting price: 100 SAR (no bids yet)` from `Current bid: 250 SAR` · makes clear a first bid of exactly the starting price is acceptable (BR-29) · **Mohammed builds the region; Rayan supplies the value and its updates — Mohammed never computes the price** (ARCH §9.4) |
@@ -397,6 +417,21 @@ Every Issue carries `area:auction`. Shared traceability: TEAM.md §4, §13.2 · 
 **Assignee:** Rayan — GitHub **`RayanAlDwlah`** · **Branch:** `feature/rayan-bidding` · **Ownership:** TEAM.md §5, unchanged · **21 Issues**
 
 *All 21 Issues in this section are assigned in GitHub to **`RayanAlDwlah`**. **Rayan is and remains the primary owner of the entire bidding and realtime domain** — see §7.1 on the support model, which transfers no ownership.*
+
+> **Presentation within these Issues belongs to Mohammed** (TEAM.md §7). The split is
+> behaviour vs. presentation, not Issue vs. Issue: on the surfaces below, Rayan owns what
+> happens and Mohammed owns how it looks. Both are needed to close the Issue, so **tag
+> Mohammed on the presentation half** rather than building it alone.
+>
+> | Issue | Rayan owns | Mohammed owns |
+> |---|---|---|
+> | `BID-06` | which minimum applies and the inclusive/exclusive distinction (`NFR-USA-11`) | how the hint is rendered |
+> | `BID-07` | what is recorded and its order (`bids.id`, never `created_at`) | the history list's presentation |
+> | `BID-10` | that an update never clears a typed amount, steals focus or scrolls (`SC-22`) | how the change is made visually noticeable |
+> | `BID-18` | the winner and final-price values and when they become visible | the outcome and winner presentation |
+>
+> `BID-01`→`BID-05`, `BID-08`, `BID-09`, `BID-11`→`BID-17`, `BID-19`→`BID-21` are behaviour
+> and testing — **wholly Rayan's, unchanged.**
 
 Shared traceability: TEAM.md §5, §13.3 · ARCHITECTURE §13, §14, §15, ADR-2, ADR-9.
 
@@ -596,7 +631,7 @@ Do these first, in the first working session:
 
 1. **S0-10 — identity contract** (Abdulrahman). Unblocks Mohammed and Rayan. **The single highest-priority task on the team** (TEAM §14).
 2. **S0-11 — auction record contract** (Mohammed, agreed with Rayan). Unblocks all bid validation and closing.
-3. **S0-13 — detail page component split** (Mohammed with Rayan). Unblocks Rayan's UI and prevents the project's worst recurring merge conflict.
+3. **S0-13 — detail page component split** (Mohammed with Rayan). Unblocks Rayan's bidding work and prevents the project's worst recurring merge conflict.
 
 Plus **S0-12 (SAR)**, which depends on nothing and can be agreed on day one.
 
@@ -678,7 +713,7 @@ The component boundaries from TEAM.md §11 are respected exactly; **no ownership
 
 | Shared surface | Prevention | Issue |
 |---|---|---|
-| **Auction detail page** — the three-way collision | Split into separately owned **empty component files** on day one. Mohammed owns shell, product content, status/countdown, price display region; Rayan owns bid control, history, outcome banner. Neither edits the other's files | **S0-13** |
+| **Auction detail page** — the three-way collision | Split into separately owned **empty component files** on day one. Mohammed owns all presentation on the page — shell, product content, status/countdown, price display region, and the presentation of the bid control, history and outcome banner; Rayan owns their behaviour and the values they show. By responsibility, not by file (CLAUDE.md §1) | **S0-13** |
 | Routing | One structure, additive edits only | **S0-08** |
 | Shared UI primitives | Built once by Mohammed; others extend, never rewrite | **S0-09** |
 | Entry point / providers | Established once in Sprint 0; touched rarely and by agreement | **S0-07** |

@@ -1,0 +1,307 @@
+/* ==========================================================================
+   Dalal — Design Tokens  v0.2 (RTL-first)
+   Proposed for Sprint 0 / S0-09, S0-12
+   --------------------------------------------------------------------------
+   The single source of truth for colour, type, space, radius, elevation and
+   motion in the Dalal web application.
+
+   DIRECTION
+   ---------
+   Dalal is an ARABIC, RIGHT-TO-LEFT interface. `dir="rtl"` is set once on
+   <html> and never overridden per-component. Consequences that are NOT
+   optional:
+
+     * Use CSS LOGICAL PROPERTIES everywhere. `margin-inline-start`, not
+       `margin-left`. `inset-inline-end`, not `right`. `text-align: start`,
+       not `left`. `border-inline-start`, not `border-left`.
+     * NEVER apply letter-spacing to Arabic text. Arabic letters join; tracking
+       breaks the joins and renders the word as disconnected glyphs. There is
+       no --tracking-* token for that reason.
+     * Arabic has no uppercase. `text-transform` is a no-op, so eyebrow labels
+       are differentiated by weight, size and colour instead.
+     * Arabic needs more leading than Latin. The line-height tokens below are
+       set for Arabic, not carried over from a Latin scale.
+     * Numerals are Western Arabic (0-9) and therefore LTR runs inside RTL
+       text. Every price, countdown and timestamp must be isolated with
+       <bdi> or dir="ltr" or the surrounding punctuation reorders.
+
+   Rules of use
+   ------------
+   1. Components read tokens. Components never hard-code a hex, px or ms.
+   2. Never redefine a colour inside a media query or [data-theme] block in
+      component CSS. Only this file's :root blocks do that.
+   3. Three theme states are supported and all three must work:
+        - bare :root                  -> light palette (the default)
+        - prefers-color-scheme: dark  -> dark palette, unless the user
+                                         explicitly chose light
+        - [data-theme="dark"|"light"] -> explicit choice always wins
+   4. Semantic names, not decorative ones. `--c-urge` not `--c-orange`.
+
+   Traceability: NFR-USA-04, NFR-USA-06, NFR-USA-08, NFR-USA-09, NFR-USA-10,
+   NFR-USA-11, NFR-DAT-08, RT-X1..X5, TEAM.md §11 (shared UI primitives).
+   ========================================================================== */
+
+:root {
+  color-scheme: light dark;
+
+  /* --- Ground & surfaces ------------------------------------------------ */
+  --c-ground:        #F4F6F4;  /* page background — a paper neutral biased green */
+  --c-surface:       #FFFFFF;  /* cards, panels, sheets */
+  --c-sunk:          #EDF0ED;  /* wells: bid history body, skeletons */
+  --c-rule:          #DCE1DC;  /* hairlines, dividers, input borders */
+  --c-rule-strong:   #C3CBC4;  /* hovered/focused borders, table heads */
+
+  /* --- Text ------------------------------------------------------------- */
+  --c-text:          #131A16;  /* primary */
+  --c-text-2:        #4F5A54;  /* secondary, labels, helper text */
+  --c-text-3:        #66716B;  /* muted — timestamps, meta. AA at 15px+ */
+
+  /* --- Dalal green: brand, live, confirmed, won -------------------------- */
+  --c-brand:         #0F6B4F;
+  --c-brand-hover:   #0B563F;
+  --c-brand-weak:    #E4F0EA;
+  --c-brand-line:    #B7D6C7;
+  --c-brand-text:    #0B5540;  /* brand colour used AS text on light ground */
+  --c-on-brand:      #FFFFFF;  /* text/icons on a --c-brand fill */
+
+  /* --- Brass: attention, urgency, outbid, ending soon -------------------- */
+  --c-urge:          #B4611A;
+  --c-urge-hover:    #944E13;
+  --c-urge-weak:     #FBEEE1;
+  --c-urge-line:     #E8C8A5;
+  --c-urge-text:     #8A4A11;
+  --c-on-urge:       #FFFFFF;
+
+  /* --- Reject: rejected bids and errors ONLY ----------------------------- */
+  --c-stop:          #B3261E;
+  --c-stop-hover:    #921C16;
+  --c-stop-weak:     #FCEAE8;
+  --c-stop-line:     #EFC0BB;
+  --c-stop-text:     #98201A;
+  --c-on-stop:       #FFFFFF;
+
+  /* --- Slate: ended / terminal / deliberately de-energised --------------- */
+  --c-calm:          #5A6570;
+  --c-calm-weak:     #EEF0F2;
+  --c-calm-line:     #D3D8DC;
+  --c-calm-text:     #4A545E;
+  --c-on-calm:       #FFFFFF;
+
+  /* --- Focus ------------------------------------------------------------ */
+  --c-focus:         #0F6B4F;
+  --focus-ring:      0 0 0 2px var(--c-surface), 0 0 0 4px var(--c-focus);
+
+  /* --- Elevation -------------------------------------------------------- */
+  --e-1: 0 1px 2px rgba(19, 26, 22, .06), 0 1px 1px rgba(19, 26, 22, .04);
+  --e-2: 0 2px 4px rgba(19, 26, 22, .06), 0 8px 16px rgba(19, 26, 22, .07);
+  --e-3: 0 4px 8px rgba(19, 26, 22, .07), 0 16px 32px rgba(19, 26, 22, .10);
+
+  /* --- Type families ---------------------------------------------------- */
+  /* No webfonts: the CSP environment blocks font CDNs and a silent fallback
+     is worse than a considered system stack. These stacks resolve to a real
+     Arabic face on every target platform:
+       Apple    -> SF Arabic / Geeza Pro
+       Windows  -> Segoe UI (Arabic) / Tahoma
+       Android  -> Noto Naskh Arabic / Noto Sans Arabic                    */
+  --f-ui:   "SF Arabic", "Segoe UI", "Noto Sans Arabic", "Noto Naskh Arabic",
+            "Geeza Pro", Tahoma, system-ui, sans-serif;
+
+  /* Numerals, amounts, countdowns, timestamps. Same family, but always with
+     tabular lining figures so columns align. See --num-feat below. */
+  --f-num:  "SF Arabic", "Segoe UI", "Noto Sans Arabic", Tahoma, system-ui,
+            sans-serif;
+
+  /* Token names and values in documentation only. Never in product UI. */
+  --f-mono: ui-monospace, "SF Mono", "Cascadia Mono", "Segoe UI Mono",
+            Menlo, Consolas, monospace;
+
+  --num-feat: tabular-nums lining-nums;
+
+  /* --- Type scale ------------------------------------------------------- */
+  /* Line heights are set for Arabic: ascenders, descenders and optional
+     diacritics need roughly 15% more leading than the Latin equivalent. */
+  --t-xs:    12px;  --lh-xs:   18px;
+  --t-sm:    13px;  --lh-sm:   21px;
+  --t-base:  15px;  --lh-base: 26px;
+  --t-md:    17px;  --lh-md:   29px;
+  --t-lg:    20px;  --lh-lg:   32px;
+  --t-xl:    24px;  --lh-xl:   36px;
+  --t-2xl:   30px;  --lh-2xl:  44px;
+  --t-3xl:   38px;  --lh-3xl:  52px;
+
+  /* Money has its own scale. A price is never sized off the text scale —
+     NFR-USA-04 makes the current price the most prominent element on the
+     auction detail page, and that has to be true by construction.
+     These are Latin numerals, so they keep tight Latin leading. */
+  --money-hero: 44px;  --money-hero-lh: 50px;  /* detail page current price */
+  --money-lg:   26px;  --money-lg-lh:   34px;  /* outcome banner final bid   */
+  --money-md:   19px;  --money-md-lh:   26px;  /* listing card price         */
+  --money-sm:   15px;  --money-sm-lh:   22px;  /* bid history row            */
+
+  /* NOTE: there is deliberately no --tracking-* token. Letter-spacing breaks
+     Arabic letter joining. Latin numerals may take a tiny optical tracking
+     locally, never a shared token. */
+
+  /* --- Space (4px base) -------------------------------------------------- */
+  --s-1:  4px;  --s-2:  8px;  --s-3: 12px;  --s-4: 16px;  --s-5: 20px;
+  --s-6: 24px;  --s-7: 32px;  --s-8: 40px;  --s-9: 48px;  --s-10: 64px;
+
+  /* --- Radius ----------------------------------------------------------- */
+  --r-sm:   6px;
+  --r-md:  10px;
+  --r-lg:  14px;
+  --r-pill: 999px;
+
+  /* --- Motion ----------------------------------------------------------- */
+  --dur-1: 120ms;   /* hover, press */
+  --dur-2: 200ms;   /* enter/leave  */
+  --dur-3: 320ms;   /* price flash  */
+  --ease:  cubic-bezier(.2, .7, .3, 1);
+
+  /* --- Layout ----------------------------------------------------------- */
+  --measure:   60ch;    /* running Arabic prose */
+  --page-max: 1120px;
+  --tap-min:   44px;    /* NFR-USA-06 / NFR-USA-08 minimum hit target */
+}
+
+/* System preference is dark, and the viewer has NOT explicitly chosen light */
+@media (prefers-color-scheme: dark) {
+  :root:not([data-theme="light"]) {
+    --c-ground:      #0D1210;
+    --c-surface:     #141A17;
+    --c-sunk:        #1B2320;
+    --c-rule:        #28322D;
+    --c-rule-strong: #3A4640;
+
+    --c-text:        #E7ECE9;
+    --c-text-2:      #A2AEA8;
+    --c-text-3:      #87938C;
+
+    --c-brand:       #35A87C;
+    --c-brand-hover: #47BC8F;
+    --c-brand-weak:  #10241C;
+    --c-brand-line:  #1F4A38;
+    --c-brand-text:  #6FCBA4;
+    --c-on-brand:    #04160F;
+
+    --c-urge:        #D98A3E;
+    --c-urge-hover:  #E89E56;
+    --c-urge-weak:   #2A1D0E;
+    --c-urge-line:   #56391A;
+    --c-urge-text:   #E8A868;
+    --c-on-urge:     #221201;
+
+    --c-stop:        #D9544A;
+    --c-stop-hover:  #E86D63;
+    --c-stop-weak:   #2A1512;
+    --c-stop-line:   #57241F;
+    --c-stop-text:   #F08B82;
+    --c-on-stop:     #200504;
+
+    --c-calm:        #8B96A0;
+    --c-calm-weak:   #1B2226;
+    --c-calm-line:   #333D45;
+    --c-calm-text:   #9BA6B0;
+    --c-on-calm:     #0C1114;
+
+    --c-focus:       #6FCBA4;
+
+    --e-1: 0 1px 2px rgba(0, 0, 0, .40);
+    --e-2: 0 2px 4px rgba(0, 0, 0, .40), 0 8px 16px rgba(0, 0, 0, .34);
+    --e-3: 0 4px 8px rgba(0, 0, 0, .44), 0 16px 32px rgba(0, 0, 0, .40);
+  }
+}
+
+/* Explicit dark choice wins even when the OS is light */
+:root[data-theme="dark"] {
+  --c-ground:      #0D1210;
+  --c-surface:     #141A17;
+  --c-sunk:        #1B2320;
+  --c-rule:        #28322D;
+  --c-rule-strong: #3A4640;
+
+  --c-text:        #E7ECE9;
+  --c-text-2:      #A2AEA8;
+  --c-text-3:      #87938C;
+
+  --c-brand:       #35A87C;
+  --c-brand-hover: #47BC8F;
+  --c-brand-weak:  #10241C;
+  --c-brand-line:  #1F4A38;
+  --c-brand-text:  #6FCBA4;
+  --c-on-brand:    #04160F;
+
+  --c-urge:        #D98A3E;
+  --c-urge-hover:  #E89E56;
+  --c-urge-weak:   #2A1D0E;
+  --c-urge-line:   #56391A;
+  --c-urge-text:   #E8A868;
+  --c-on-urge:     #221201;
+
+  --c-stop:        #D9544A;
+  --c-stop-hover:  #E86D63;
+  --c-stop-weak:   #2A1512;
+  --c-stop-line:   #57241F;
+  --c-stop-text:   #F08B82;
+  --c-on-stop:     #200504;
+
+  --c-calm:        #8B96A0;
+  --c-calm-weak:   #1B2226;
+  --c-calm-line:   #333D45;
+  --c-calm-text:   #9BA6B0;
+  --c-on-calm:     #0C1114;
+
+  --c-focus:       #6FCBA4;
+
+  --e-1: 0 1px 2px rgba(0, 0, 0, .40);
+  --e-2: 0 2px 4px rgba(0, 0, 0, .40), 0 8px 16px rgba(0, 0, 0, .34);
+  --e-3: 0 4px 8px rgba(0, 0, 0, .44), 0 16px 32px rgba(0, 0, 0, .40);
+}
+
+/* Motion is decoration everywhere except the price flash, which carries
+   meaning (RT-X1). Where motion is removed, the meaning must survive — which
+   is why the flash is always paired with a ▲ arrow and a text label
+   (NFR-USA-10: never colour or motion alone). */
+@media (prefers-reduced-motion: reduce) {
+  :root { --dur-1: 0ms; --dur-2: 0ms; --dur-3: 0ms; }
+}
+
+/* ==========================================================================
+   Base — the minimum every page needs. Everything else is a component.
+   ========================================================================== */
+
+*, *::before, *::after { box-sizing: border-box; }
+
+html { direction: rtl; }
+
+body {
+  margin: 0;
+  background: var(--c-ground);          /* never transparent */
+  color: var(--c-text);
+  font-family: var(--f-ui);
+  font-size: var(--t-base);
+  line-height: var(--lh-base);
+  letter-spacing: 0;                     /* Arabic joining — do not change */
+  -webkit-text-size-adjust: 100%;
+}
+
+/* Every numeric run is an LTR island inside RTL text. Without isolation,
+   "250.00 SAR" and "2d 04:11:38" reorder their punctuation. */
+.num, bdi.num {
+  font-family: var(--f-num);
+  font-variant-numeric: var(--num-feat);
+  font-feature-settings: "tnum" 1, "lnum" 1;
+  direction: ltr;
+  unicode-bidi: isolate;
+}
+
+:where(a, button, input, select, textarea, [tabindex]):focus-visible {
+  outline: none;
+  box-shadow: var(--focus-ring);
+  border-radius: var(--r-sm);
+}
+
+/* Icons that encode direction must mirror; icons that encode a real-world
+   object or a vertical direction must NOT. The price-rise arrow is vertical
+   and never mirrors. */
+[dir="rtl"] .icon-directional { transform: scaleX(-1); }

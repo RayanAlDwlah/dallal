@@ -43,6 +43,24 @@ Dalal is a web-based product that lets any registered user publish an item as a 
 
 **"Mobile responsive" means the website must work well on a mobile browser** (NFR-USA-06, SC-49). It does **not** mean a mobile application is being built. Every requirement in this document describes behavior in a browser. There is no app shell, no store submission, no device build, and no native platform code anywhere in the MVP.
 
+### 1.2 Interface language — **Arabic, right-to-left**
+
+> **Dalal's interface language is Arabic, rendered right-to-left. The MVP is a single-locale Arabic product.**
+
+*(Decided by the team 2026-08-12; formerly Q16. See BR-41 and §21.1.)*
+
+| | |
+|---|---|
+| Interface language | **Arabic** — every user-facing string |
+| Text direction | **Right-to-left.** `dir="rtl"` is set once on the document root and never overridden per component |
+| Numerals | **Western Arabic digits (0–9)**, isolated as LTR runs inside RTL text (BR-42) |
+| Currency indicator | **`SAR`** — Latin, per FR-CREATE-13 and BR-43 |
+| English | **Not a required MVP interface language.** No English UI is built or maintained |
+
+**Single-locale is not multi-language.** Excluding *multiple* languages (§19.7) says nothing about *which* single language the product speaks. Dalal speaks one language, Arabic, and therefore needs **no translation infrastructure, no locale switcher, and no second string catalogue** — which is exactly what §19.7 excludes and continues to exclude.
+
+**What stays English:** this document and the other repository documents, source code, identifiers, commit messages, and database object names. Those are engineering artifacts, not interface.
+
 The defining characteristic of the product is **live price movement**. When any bidder places a valid bid, every other person currently viewing that auction sees the new price, the new leading bidder, and the updated bid history appear on their screen within a couple of seconds, without refreshing or clicking anything. That shared, simultaneous experience is what separates an auction from a listing site, and it is the core of the MVP.
 
 The MVP delivers one complete, trustworthy loop:
@@ -188,7 +206,7 @@ The platform serves one class of human — a registered individual — who moves
 | Business buyers / procurement | Need invoicing, purchase orders, tax handling — out of scope |
 | Anonymous / guest bidders | Every bid must be attributable to an authenticated identity (see *Business Rules* BR-01) |
 | Users requiring a native mobile app | Dalal is a website (§1.1). Mobile users are served by a responsive web interface in their mobile browser |
-| Non-English-speaking users as a served segment | Multi-language support is out of scope |
+| Users requiring an English interface | **The MVP interface is Arabic (§1.2, BR-41).** English is not a required interface language. This excludes an English UI, not English-speaking people |
 
 ### 4.3 Is a dedicated Admin role required for the MVP?
 
@@ -490,7 +508,7 @@ Requirements are numbered `FR-<area>-<n>` and are written to be individually tes
 - **FR-CREATE-10a** The permitted duration range is therefore **5 minutes to 7 days inclusive**, measured from creation time using server time (FR-CREATE-11). An end time outside this range must be rejected with a specific message naming the permitted range (BR-38).
 - **FR-CREATE-11** Server-side validation must use server time, not client-supplied time, for all end-time checks.
 - **FR-CREATE-12** If any field fails validation, the auction must not be created, and every failing field must be reported with a specific message in a single response. The user's entered values must be preserved.
-- **FR-CREATE-13** The platform operates in a single currency: **Saudi Riyal (SAR)**. Every price — starting price, current price, bid amounts, final winning bid — must be displayed with a consistent `SAR` indicator, for example `100 SAR`, `250 SAR`, `400 SAR`. **All SAR values are simulated demonstration values; Dalal processes no real money** (§19.0). *(Decided; formerly Q12.)*
+- **FR-CREATE-13** The platform operates in a single currency: **Saudi Riyal (SAR)**. Every price — starting price, current price, bid amounts, final winning bid — must be displayed in the **one canonical format `1,250.00 SAR`**: grouped thousands, **exactly two decimals**, one space, the Latin indicator `SAR` (BR-43). Produced by a single formatter, so the same amount never renders two ways (NFR-DAT-08). **All SAR values are simulated demonstration values; Dalal processes no real money** (§19.0). *(Decided; formerly Q12.)*
 - **FR-CREATE-14** All timestamps must be stored and compared in a single canonical timezone (UTC) and displayed in the viewer's local timezone.
 
 **Image requirements**
@@ -777,6 +795,9 @@ These are the authoritative rules of the product. Every one must be enforced **s
 | **BR-38** | **Auction duration must be between 5 minutes and 7 days**, inclusive, measured from creation using server time. | 5 minutes makes a full lifecycle demonstrable in one sitting; 7 days bounds how long an un-editable, un-cancellable listing stays live |
 | **BR-39** | **Display names must be unique across all accounts.** | Public identity must be unambiguous in bid history and in the named winner of the seller's result view. The internal identifier remains the source of truth for attribution |
 | **BR-40** | **Bid history is public**, visible to every viewer including unauthenticated visitors, showing display names only. | Visible competition and an auditable outcome are core to the product (§3, Principle 5) |
+| **BR-41** | **The interface language is Arabic, rendered right-to-left.** `dir="rtl"` is set once at the document root and never overridden per component. English is not a required MVP interface language. | Dalal is a Saudi marketplace priced in SAR. Single-locale, so no translation infrastructure is needed (§1.2, §19.7) |
+| **BR-42** | **Numerals are Western Arabic digits (0–9)**, and every numeric run is isolated as an LTR island inside RTL text. | Prices must align in a column and read as a strictly increasing sequence (FR-BID-15). Without isolation the decimal point and the currency indicator reorder |
+| **BR-43** | **The canonical price format is `1,250.00 SAR`** — grouped thousands, exactly two decimals, one space, the Latin indicator `SAR`. Exactly one formatter produces it, everywhere. | NFR-DAT-08 requires one format; FR-CREATE-13 specifies the `SAR` indicator (§1.2) |
 
 > **Accepted consequence of BR-21 (no price ceiling).** Without a maximum, a single very large bid can put an auction beyond any realistic competing bid for the rest of its duration. This is accepted deliberately: the SAR values are simulated, so the bidder harms only their own position in a demonstration, and no product or business requirement justifies inventing a ceiling. **Implementers must not add a maximum on their own initiative** — if one is ever wanted, it requires a product decision recorded here first.
 
@@ -1544,7 +1565,7 @@ Product-level and technology-neutral. Each is measurable or testable.
 | NFR-DAT-03 | Accepted bid amounts on an auction are strictly increasing in recorded order, always. |
 | NFR-DAT-04 | The recorded winner is always the highest bidder in history, verifiable by independent recomputation for every closed auction. |
 | NFR-DAT-05 | SAR amounts are handled with exact two-decimal precision; no rounding drift is acceptable. Because no maximum is imposed (BR-21), large values must also be stored, compared, and displayed exactly — precision must not degrade at scale. |
-| NFR-DAT-08 | Every price shown anywhere in the product — listing, detail, bid history, result views — is expressed in SAR using one consistent format. The same amount never appears formatted two different ways. |
+| NFR-DAT-08 | Every price shown anywhere in the product — listing, detail, bid history, result views — is expressed in the one canonical format **`1,250.00 SAR`** (BR-43), produced by a single formatter. The same amount never appears formatted two different ways. |
 | NFR-DAT-06 | All timestamps are stored in a single canonical timezone and are unambiguous. |
 | NFR-DAT-07 | Auction outcomes, once recorded, are immutable. |
 
@@ -1857,7 +1878,7 @@ Everything listed is explicitly **not built** in the MVP. Each has a reason; ite
 |---|---|
 | **Native mobile applications of any kind** — Flutter, Android, iOS | **Dalal is a website** (§1.1). A responsive web interface serves all target users on both desktop and mobile browsers (NFR-USA-06, SC-49). No native mobile architecture, no device builds |
 | **App Store / Google Play distribution** | Nothing is distributed through an app store. The product is reached by URL |
-| **Multi-language support** | Adds translation to every string and message; no identified need |
+| **Multi-language support** | The MVP is **single-locale Arabic** (BR-41). A *second* language would add translation infrastructure, a locale switcher and a second string catalogue — none of which is needed. Excluding multiple languages says nothing about which single language the product speaks |
 | **Multi-currency** | Requires exchange rates and per-auction currency; **SAR alone is sufficient** (FR-CREATE-13, BR-33) |
 | **Offline mode** | Fundamentally incompatible with live auctions |
 | **Public API for third parties** | No identified consumer |
@@ -1901,7 +1922,7 @@ Assumptions the team is making. **Every assumption that once required confirmati
 | A-U7 | The same person may be both a seller and a bidder; no separate account types are needed. | |
 | A-U8 | Users understand basic auction concepts (bidding, outbidding, closing time) without a tutorial. | |
 | A-U9 | **Decided:** users may forget their passwords, and the MVP provides a self-service reset (M24). This assumption is retired. | Resolved |
-| A-U10 | English is sufficient for all users in the MVP period. | |
+| A-U10 | **Decided:** the interface is **Arabic, right-to-left**, single-locale (BR-41, §1.2). English is not a required interface language. | Resolved |
 
 ### 20.2 About auctions
 
@@ -2008,6 +2029,7 @@ Assumptions the team is making. **Every assumption that once required confirmati
 | **Q13** | Should ended auctions appear in the main listing? | **Active auctions only.** Ended auctions are removed from the main listing but remain permanently accessible by direct link and via My Auctions / My Bids. | FR-LIST-05 · FR-LIST-05a · FR-LIST-06 · FR-END-12 |
 | **Q14** | May a leading bidder bid again? | **Yes**, provided the new bid is strictly greater than the current valid price. Leading is never itself grounds for rejection. A UI warning is advised; the server must accept a qualifying bid. | BR-24 · FR-BID-04 · FR-BID-04a |
 | **Q15** | Is password reset in the MVP? | **Yes — password reset is included.** Self-service, single-use, time-limited, non-enumerating. | M24 · FR-AUTH-25 → 31 · US-23 · SC-60 → 64 |
+| **Q16** | What is the interface language, and what is the canonical price format? | **Arabic, right-to-left**, single-locale — English is not a required interface language. Canonical price format **`1,250.00 SAR`**: grouped, exactly two decimals, Latin `SAR` indicator. | **BR-41 · BR-42 · BR-43** · §1.2 · FR-CREATE-13 · NFR-DAT-08 |
 
 ### 21.2 Accepted consequences of these decisions
 

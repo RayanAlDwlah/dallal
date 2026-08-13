@@ -59,11 +59,18 @@ SAR is used purely as a realistic unit of price representation. The term **"Demo
 
 | Developer | GitHub | Owns | Branch |
 |---|---|---|---|
-| **Abdulrahman** | [`@Dem4t`](https://github.com/Dem4t) | Authentication & User Management | `feature/abdulrahman-auth` |
-| **Mohammed** | [`@m7ya505`](https://github.com/m7ya505) | Auction Management | `feature/mohammed-auctions` |
-| **Rayan** | [`@RayanAlDwlah`](https://github.com/RayanAlDwlah) | Bidding & Realtime | `feature/rayan-bidding` |
+| **Abdulrahman** | [`@Dem4t`](https://github.com/Dem4t) | Authentication & identity **behaviour and data** | `feature/abdulrahman-auth` |
+| **Mohammed** | [`@m7ya505`](https://github.com/m7ya505) | Auction Management · **all presentation, product-wide** | `feature/mohammed-auctions` |
+| **Rayan** | [`@RayanAlDwlah`](https://github.com/RayanAlDwlah) | Bidding & Realtime **behaviour** | `feature/rayan-bidding` |
 
 Ownership does not mean exclusive access — it means **coordinate with the owner before changing their area** (`TEAM.md` §7).
+
+**The axis is presentation vs. behaviour, not file.** A component routinely holds both, and
+each half has a different owner: Mohammed owns how every screen looks — including the bid
+panel, bid history, outcome views and the auth and profile screens — while Rayan owns what
+bidding does and Abdulrahman owns what authentication does. Restyling someone's component
+is fine; changing what it does without telling them is not. Full rules in `CLAUDE.md` §1
+and `TEAM.md` §7.
 
 ---
 
