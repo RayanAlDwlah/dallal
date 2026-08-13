@@ -473,6 +473,88 @@ $$;
 | 7 Not above current | `{"accepted": false, "reason": "not_above_current", "current_price": "100.00"}` |
 | 8 Lost the race | `{"accepted": false, "reason": "outbid_race", "current_price": "100.00"}` — distinguishable from 7 because the user did nothing wrong (EC-01, SC-18) |
 
+### 2.1 The client-side result type — decided `2026-08-13`
+
+Mohammed's `BidPanel` (currently `design/components/bidding/bid-panel.tsx`, unmounted) declares
+its own rejection taxonomy in `kebab-case`, and **three of the eight names differ by word, not
+just by convention**: `owner_cannot_bid`→`caller-is-owner`, `not_above_current`→
+`not-above-current-price`, `outbid_race`→`lost-race`. Its payload keys are camelCase
+(`currentPrice`) against this contract's `current_price`.
+
+The result contract is mine (CLAUDE.md §1 — "bid recording", "validation"), so the boundary
+shape is my call. It is an interface decision, not a product decision: **no new product rule is
+being invented, and the eight reasons themselves are unchanged.**
+
+**Decision — the reason string crosses the boundary byte-identical. There is no translation
+layer.** Three reasons:
+
+1. **A translation layer needs a total function from `string` to the union, and its `default`
+   branch is unimplementable.** It can only throw or emit a generic message — and `BR-27` /
+   `NFR-USA-03` require every rejection to state what happened and what to do, which makes a
+   generic error a defect by definition. The only design with no unreachable-but-required branch
+   is the one with no branch.
+2. **These eight strings are the tested reality.** They were verified against PostgreSQL 17.10,
+   and `V-1` and `BID-20` both grep for the literals `outbid_race` and `not_above_current`
+   (lines ~712, ~796, ~801). Renaming them client-side means the tests and the UI speak two
+   vocabularies, and a later session grepping `lost-race` finds nothing in the test suite.
+3. **It is the same discipline as the money formatter** (`S0-12` §9.8, `CLAUDE.md` §4.6): one
+   string, byte-identical everywhere, no second implementation.
+
+**The type. One variant per reason, so the compiler — not a code review — guarantees that the
+payload field is present when the message needs it:**
+
+```ts
+/** Mirrors BID-02 §2's result contract exactly. Do not rename a reason. */
+export type BidOutcome =
+  | { accepted: true;  bid_id: BidId; amount: Sar; current_price: Sar }
+  | { accepted: false; reason: "not_authenticated" }
+  | { accepted: false; reason: "auction_not_found" }
+  | { accepted: false; reason: "auction_ended" }
+  | { accepted: false; reason: "owner_cannot_bid" }
+  | { accepted: false; reason: "malformed_amount" }
+  | { accepted: false; reason: "below_starting_price"; starting_price: Sar }
+  | { accepted: false; reason: "not_above_current";    current_price: Sar }
+  | { accepted: false; reason: "outbid_race";          current_price: Sar };
+```
+
+This closes a real defect in the current panel, not a stylistic one. Its rejected variant
+declares `currentPrice?` and `startingPrice?` as optional **for every reason**, so
+`below_starting_price` with the amount missing type-checks — and its own message renders as
+`"المزايدة تبدأ من ."`, an empty amount and a dangling full stop. Under the union above that
+state cannot be constructed.
+
+**`bid_id` is opaque.** `bids.id` is `bigint` (§1d) and is the **definitive ordering authority**
+(`BR-11`, `CLAUDE.md` §5). The client uses it as a React key and nothing else: **never sort by
+it, never do arithmetic on it, never round-trip it through a narrowing numeric type.** The
+server already returned history in `order by id`; the client renders the order it was given.
+Type it as a branded string or `string | number` treated as a token — not as a `number` you
+compute with.
+
+**What this asks of Mohammed — small, and the rest of his panel stands.** Rename three union
+members and use the wire key names; his four-state matrix, the no-optimistic-update submission
+flow (correctly reasoned against `BR-12` and `FR-BID-16`), the never-block-a-too-low-submission
+rule (`BR-08`, `SEC-V6`), the brass-not-red race treatment (`EC-01`, `SC-18`) and the
+different-verb minimum hints (`NFR-USA-11`) are all correct and are adopted as-is.
+
+**And the ask is already conceded on his side.** Commit `e246fb7` (PR #2, `2026-08-13`) rewrote
+the panel's own header to the presentation/behaviour split and states it plainly:
+
+> `PRESENTATION: Mohammed. BEHAVIOUR: Rayan` […] "Everything it *decides* still belongs to Rayan
+> and arrives through props: `submitBid` performs the submission, **`BidResult` carries which of
+> the eight rejection reasons applies**, and the current price is a value Rayan owns. This
+> component **must never re-derive any of that**."
+
+Which of the eight applies is exactly what the reason string names. A client taxonomy that
+renames three of them is a re-derivation of that decision in a second vocabulary — the thing his
+own header now forbids. So §2.1 is not a request to change his design; it is the naming his
+header already defers to, written down.
+
+> **Separate, and his to fix:** the panel's `rejectionMessage` builds
+> `` `${formatSar(x)} ${SAR_SUFFIX}` `` as a plain string and interpolates it into Arabic prose
+> with **no `<bdi>` and the indicator inside the unisolated run** — `CLAUDE.md` §3. Its accepted
+> branch does it correctly, so this is an oversight, not a disagreement. Bidi isolation is
+> presentation and therefore Mohammed's; raised, not edited.
+
 ---
 
 ## 3. RLS policies and grants
