@@ -6,8 +6,8 @@
 | Issue | **S0-11** — "Agree the auction record contract" (`GITHUB_PLAN.md:263`) |
 | Record owner | **Mohammed** (`@m7ya505`) — he owns the table, the DDL and the access path (`TEAM.md` §4, §9.3) |
 | Consumer | **Rayan** (`@RayanAlDwlah`) — bidding, current price, closing, winner |
-| Status | 🟡 **Draft — awaiting Mohammed's sign-off.** Nothing here is decided until the boxes in §8 are ticked |
-| Date | 2026-08-12 |
+| Status | 🟡 **Draft — awaiting Mohammed's sign-off.** Nothing here is decided until the boxes in §8 are ticked. He has endorsed the document and **one** box in revert `5adaad2`; **seven remain open** — see §8.1 |
+| Date | 2026-08-12 · endorsement evidence recorded 2026-08-13 |
 | Depends on | `S0-12` (money type, FINAL) · `S0-10` (identity contract, Abdulrahman) |
 | Consumed by | `BID-01`, `BID-02`, `BID-05`, `BID-15`, and Mohammed's `AUC-08`/`AUC-14`/`M-10` |
 
@@ -247,6 +247,49 @@ I will build to it.
 
 Once ticked, this document — not `GITHUB_PLAN.md:263`, not `TEAM.md:421` — is the citable
 contract, and the three conflicting field lists are superseded.
+
+### 8.1 Evidence of partial endorsement — recorded `2026-08-13`, **nothing ticked**
+
+Mohammed drafted a competing S0-11 (commit `32358bd`, proposing a **stored `bid_count`
+column**), then **withdrew it** in revert `5adaad2` and endorsed this document instead. His
+words, verbatim from that commit message:
+
+> Rayan had already published his half of the S0-11 contract at 18:15 on 2026-08-12, before
+> this draft existed. Both found the same defect independently — current_price cannot
+> distinguish "no bids" from "first bid equal to the starting price" (BR-29) — but his
+> resolution is the better one. He derives the fact in-transaction inside the row lock he
+> already holds, verified against PostgreSQL 17.10, and explicitly asks for no stored
+> bid_count column, because a stored counter would widen his write set beyond GITHUB_PLAN
+> §263's "current price on each accepted bid and nothing else". This draft proposed exactly
+> that column. **Rayan's contract stands as the S0-11 document.**
+
+**This is not a sign-off, and it is deliberately not being treated as one.** A commit
+message on another branch is not the tick §8 asks for, and it does not reach nine of the ten
+boxes. Mapped honestly:
+
+| § | Box | Status after `5adaad2` |
+|---|---|---|
+| §3.2 | derived has-bids, **no stored column** | ✅ **explicitly endorsed, with his reasoning** |
+| §3.2 | *or* a counting view instead | ➖ moot — he chose derived |
+| §4 | writes are `current_price` per accepted bid + the four close fields | 🟡 **partial** — he affirms the `GITHUB_PLAN §263` write-set limit, but never names the four close fields |
+| §2 | the six read fields; `current_price` **is** the sixth | 🟡 **partial** — he accepts the `BR-29` indistinguishability that §2.1 turns on, but never confirms the field list |
+| §2 | no rename or removal without telling me | ⬜ **open** |
+| §4.1 | he initialises `current_price = starting_price`, `NOT NULL` | ⬜ **open** |
+| §5 | `status` is never the eligibility gate | ⬜ **open** |
+| §6 | history ordered by `bids.id`; `created_at` display-only | ⬜ **open** |
+| §7 | none of the four prohibited fields in the DDL | ⬜ **open** |
+| §9 | the three items go to the whole team | ⬜ **open** |
+
+Seven boxes are untouched, and four of them (`§4.1`, `§5`, `§6`, `§7`) are the ones that
+break bidding silently if he assumes otherwise. **`BID-02`, `BID-13`, `BID-15` and `BID-16`
+are still building against a draft.**
+
+> **Recording mechanism — a problem worth naming.** `GITHUB_PLAN.md` §12.1 says agreement is
+> recorded in the issue thread. **There are no issues.** `gh issue list --state all` returns
+> zero on `RayanAlDwlah/dallal` (issues are enabled; none were ever created). The whole
+> `GITHUB_PLAN` breakdown exists as a document only. Until that is fixed, the only durable
+> record is this file plus a PR review — and Mohammed **has not reviewed PR #1 at all**; its
+> single approval is Abdulrahman's (`Dem4t`, `2026-08-12T16:54Z`).
 
 ---
 
