@@ -23,10 +23,15 @@ trap '[ -n "${KEEP:-}" ] || docker rm -f "$CONTAINER" >/dev/null 2>&1; rm -rf "$
 
 command -v docker >/dev/null || { echo "docker is required"; exit 1; }
 docker info >/dev/null 2>&1 || { echo "the docker daemon is not running"; exit 1; }
-command -v python3 >/dev/null || { echo "python3 is required (lib/extract-sql.py)"; exit 1; }
+command -v python3 >/dev/null || { echo "python3 is required (lib/contract-sync.py)"; exit 1; }
 
-echo "==> extracting SQL from docs/contracts/BID-02-bid-operation.md"
-python3 "$HERE/lib/extract-sql.py" "$WORK" || exit 1
+MIGRATION="$HERE/../../supabase/migrations/20260812120000_bid02_bid_acceptance.sql"
+
+# The migration is committed AND printed in the contract. Two copies of one
+# artefact drift, and a suite that applies its own copy keeps passing while they
+# do. So: assert they are identical, then apply the committed one.
+echo "==> checking the migration against docs/contracts/BID-02-bid-operation.md"
+python3 "$HERE/lib/contract-sync.py" "$WORK" || exit 1
 
 echo "==> starting PostgreSQL 17"
 docker rm -f "$CONTAINER" >/dev/null 2>&1
@@ -39,13 +44,17 @@ docker exec "$CONTAINER" pg_isready -U postgres -q || { echo "postgres never bec
 echo "    $(docker exec "$CONTAINER" psql -U postgres -tAc 'select version();' | cut -c1-40)"
 
 cp "$HERE/lib/supabase-shim.sql" "$HERE/acceptance.sql" "$HERE/concurrency.sh" "$WORK/"
+cp "$MIGRATION" "$WORK/01-migration.sql"
 docker cp "$WORK/." "$CONTAINER":/t/ >/dev/null
 
 echo "==> applying the Supabase shim (auth schema, auth.uid, PostgREST roles)"
 docker exec "$CONTAINER" psql -U postgres -v ON_ERROR_STOP=1 -q -f /t/supabase-shim.sql || exit 1
 
-echo "==> applying the BID-02 migration"
-for f in 01-schema 02-function 03-rls 04-seed; do
+# 01-migration is the committed file verbatim. 04-seed is V-1's fixtures, which
+# are NOT part of it: the seed writes auth.users directly with reserved UUIDs,
+# something the product never does. Applying them separately is the point.
+echo "==> applying the BID-02 migration, then the test-only seed"
+for f in 01-migration 04-seed; do
   printf '    %-14s ' "$f"
   if docker exec "$CONTAINER" psql -U postgres -v ON_ERROR_STOP=1 -q -f "/t/$f.sql" 2>/tmp/err; then
     echo ok
