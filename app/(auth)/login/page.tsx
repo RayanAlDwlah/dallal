@@ -1,17 +1,34 @@
-import { NotImplemented } from "@/components/layout/not-implemented";
-import { Page } from "@/components/layout/container";
+import { redirect } from "next/navigation";
 
-/**
- * Route placeholder only — this screen belongs to Abdulrahman (@Dem4t).
- *
- * S0-08 creates the route so navigation resolves instead of 404ing. No
- * authentication logic, no form, no Supabase call is implemented here.
- * Abdulrahman replaces this file wholesale in AUTH-04.
- */
-export default function LoginPage() {
+import { Page } from "@/components/layout/container";
+import { Card, CardBody } from "@/components/ui/card";
+import { getVerifiedUserId } from "@/lib/auth/identity";
+import { safeNextPath } from "@/lib/auth/validation";
+
+import { LoginForm } from "./login-form";
+
+export const metadata = { title: "تسجيل الدخول — دلال" };
+
+export default async function LoginPage({
+  searchParams,
+}: {
+  searchParams: Promise<{ next?: string }>;
+}) {
+  const { next } = await searchParams;
+  const safeNext = safeNextPath(next);
+
+  /* Already signed in — send them on rather than showing a form they do not need. */
+  if (await getVerifiedUserId()) {
+    redirect(safeNext ?? "/");
+  }
+
   return (
     <Page title="تسجيل الدخول" description="ادخل إلى حسابك." width="narrow">
-      <NotImplemented issue="AUTH-04" owner="عبدالرحمن" />
+      <Card>
+        <CardBody>
+          <LoginForm next={safeNext ?? undefined} />
+        </CardBody>
+      </Card>
     </Page>
   );
 }

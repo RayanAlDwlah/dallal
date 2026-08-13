@@ -1,6 +1,7 @@
 import type { Metadata, Viewport } from "next";
 
 import { SiteHeader } from "@/components/layout/site-header";
+import { getViewer } from "@/lib/auth/identity";
 
 import { num, ui } from "./fonts";
 import "./globals.css";
@@ -24,11 +25,23 @@ export const viewport: Viewport = {
  * design/STACK.md §4.1 — lang and dir are set here, once, and never
  * overridden anywhere else in the application.
  */
-export default function RootLayout({
+export default async function RootLayout({
   children,
 }: {
   children: React.ReactNode;
 }) {
+  /*
+   * Read here rather than in the header itself so the signed-in state is
+   * present in the first server render — FR-AUTH-15 asks every page to state
+   * it, and a client-side read would show every page as signed-out for a beat
+   * before correcting itself.
+   *
+   * Reading cookies in the root layout makes every route render per request.
+   * That is the intended trade: this is a live auction product where the
+   * listing, prices and countdowns are request-time data anyway.
+   */
+  const viewer = await getViewer();
+
   return (
     <html lang="ar" dir="rtl" suppressHydrationWarning>
       <body
@@ -45,7 +58,7 @@ export default function RootLayout({
           تخطَّ إلى المحتوى
         </a>
 
-        <SiteHeader />
+        <SiteHeader viewer={viewer} />
 
         <div id="main" className="flex-1">
           {children}
