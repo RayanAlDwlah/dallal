@@ -1,0 +1,62 @@
+-- ============================================================================
+-- AUC-18 — auction authorization. FR-SEC-03/04/09, SC-38/58/59, BR-30, BR-31.
+--
+-- Almost all of this issue is the ABSENCE of things, and absence needs no DDL:
+-- public.auctions has no UPDATE policy and no DELETE policy, for any role. That
+-- absence IS the enforcement (ARCHITECTURE §11.2) and tests/auction/ asserts it.
+--
+-- One thing here is not an absence, and it is a defect rather than a decision.
+-- ============================================================================
+
+-- ----------------------------------------------------------------------------
+-- 1. The missing INSERT grant.
+--
+-- public.auctions carries the auctions_owner_insert policy (BID-02 §3a), whose
+-- WITH CHECK ties owner_id to auth.uid() — FR-SEC-03, SC-39. But the policy was
+-- never reachable: NOTHING grants INSERT on the table to `authenticated`.
+--
+-- PostgreSQL checks the table GRANT *before* it evaluates any policy, so a role
+-- holding no INSERT privilege is refused with 42501 and the policy never runs.
+-- That is the rule docs/supabase-cli.md records, and this is the same defect it
+-- was written about — #5 fixed it for SELECT in 778462d and the write side was
+-- missed.
+--
+-- Why it has not been noticed: no auction has ever been created. AUC-01→AUC-08
+-- is being built right now, and the symptom would have been "42501 on insert",
+-- which reads as a policy problem and sends you to the wrong file.
+--
+-- Not merely theoretical, and not merely local either. Production's
+-- pg_default_acl has TWO entries — anon=Dxtm from postgres and anon=arwdDxtm
+-- from supabase_admin (#7) — so whether `authenticated` gets INSERT by default
+-- depends on which role created the table. Stating the grant explicitly is what
+-- makes dev, prod and the test container agree instead of differing silently.
+-- ----------------------------------------------------------------------------
+grant insert on public.auctions to authenticated;
+
+-- ----------------------------------------------------------------------------
+-- 2. Everything else stays absent, and is re-stated here so the intent is
+-- readable in one place rather than inferred from a gap.
+--
+--   * NO update policy — BR-31, FR-SEC-04, FR-SEC-09, SC-58. Name, description,
+--     starting price, end time and image are immutable once published. The
+--     creation form is the only chance to get an auction right (FR-CREATE-26a).
+--   * NO delete policy — BR-30, FR-SEC-04, SC-59. There is no cancellation, so
+--     there is nothing a delete could legitimately express.
+--   * NO 'cancelled' status — the auctions_status_valid CHECK admits exactly
+--     'active' and 'ended'. A Cancelled state cannot be reached even by a role
+--     that bypasses RLS entirely.
+--
+-- The revokes below are belt and braces against Supabase's broad default
+-- grants, in the same spirit as the bids revoke. They are idempotent and are
+-- repeated rather than assumed.
+--
+-- NOTE the deliberate asymmetry: insert is granted, update and delete are not.
+-- An auction is written exactly once, by its owner, and never again by anybody.
+-- ----------------------------------------------------------------------------
+revoke update, delete on public.auctions from anon, authenticated;
+revoke insert          on public.auctions from anon;
+
+-- Elevated paths are covered separately and not by grants at all: the
+-- auctions_guard_update trigger (BID-02 §1e, amended by BID-15) raises for ANY
+-- update to the creation-time terms, including from SECURITY DEFINER functions
+-- and the table owner. Grants bind client roles; the trigger binds everyone.
