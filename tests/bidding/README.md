@@ -36,7 +36,7 @@ session with no credentials.
 
 ## What it proves
 
-**Acceptance — 19 assertions.** Each traces to a PRD scenario or business rule:
+**Acceptance — 25 assertions.** Each traces to a PRD scenario or business rule:
 
 | Area | Covers |
 |---|---|
@@ -49,6 +49,7 @@ session with no credentials.
 | `BR-02` / `BR-01` | the owner cannot bid; identity comes from the session, never the payload |
 | `BR-21` / `SEC-R3` / `SC-57` | a 40-digit bid is accepted and stored with no drift. **There is no ceiling** |
 | **`LC-03`** | an auction past its `end_time` whose `status` column still reads `active` **rejects the bid**. Eligibility is the server clock, never the stored flag |
+| `FR-LIST-01` / `BR-40` | `anon` holds `SELECT` on `profiles`, `auctions`, `bids` — and holds nothing else. RLS is the **second** gate: PostgreSQL checks the GRANT first, so `using (true)` on a table the role cannot select denies every read with `42501` and the policy never runs. This container grants nothing, so these can only pass if the migration grants it |
 
 **Concurrency — `BID-20`.** Per round, N connections bid the *same* amount on
 one auction simultaneously. Every round must show:
@@ -99,6 +100,12 @@ diverge, printing the offending lines. That is the whole reason it exists.
 
 ## Scope
 
-Not covered here: finalization (`BID-15`), the Realtime payload path, RLS under
-the real `anon`/`authenticated` roles rather than as superuser, and the client
-tier. The shim reproduces `auth.uid()` faithfully but it is not Supabase.
+Not covered here: finalization (`BID-15`), the Realtime payload path, and the
+client tier. The shim reproduces `auth.uid()` faithfully but it is not Supabase.
+
+**Policy *evaluation* is still not covered** — the suite runs as superuser, so it
+proves what `anon` is *granted*, not what a policy returns when `anon` actually
+runs the query. That gap is why the missing `GRANT SELECT` reached a live
+database: everything the container could see was correct. The four privilege
+assertions above close the half that is checkable offline. The other half needs
+a real PostgREST request against a real project, and belongs with `BID-11`.

@@ -82,7 +82,7 @@ echo "==> acceptance suite"
 # that aborts partway emits neither PASS nor FAIL, so counting only PASS/FAIL
 # reports a clean run while assertions silently never executed. Keep this in
 # step with acceptance.sql.
-EXPECTED=19
+EXPECTED=25
 raw=$(docker exec "$CONTAINER" psql -U postgres -q -f /t/acceptance.sql 2>&1)
 acc=$(echo "$raw" | grep -E 'PASS|FAIL' | sed 's/^psql[^ ]* //; s/WARNING:  //; s/NOTICE:  //')
 echo "$acc" | sed 's/^/    /'

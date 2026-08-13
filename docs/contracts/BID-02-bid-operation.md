@@ -572,6 +572,22 @@ alter table public.profiles enable row level security;
 alter table public.auctions enable row level security;
 alter table public.bids     enable row level security;
 
+-- Table privileges. RLS is the SECOND gate, never the first: PostgreSQL checks
+-- the GRANT before it evaluates any policy, so `using (true)` on a table the
+-- role holds no SELECT on denies every read with 42501 and the policy never
+-- runs. This is NOT redundant with 3a and must not be "cleaned up".
+-- It is also not inherited: this project's default for public tables is
+-- `anon=Dxtm` — TRUNCATE, REFERENCES, TRIGGER, MAINTAIN, and no DML at all
+-- (pg_default_acl, measured on the dev project). The broad GRANT ALL older
+-- Supabase projects shipped is gone, so public read must be granted here.
+-- Measured on dev before this line existed: GET /rest/v1/auctions -> 401
+-- 42501 "permission denied for table auctions", and bid_history -> 401
+-- "permission denied for table bids" (security_invoker reads the base tables
+-- as the caller, so 3b's grant alone buys nothing). That is FR-LIST-01,
+-- FR-DETAIL-01, BR-40 and FR-BID-22 all failing on a missing GRANT.
+-- SELECT only. Not to service_role: nothing in this product may use it.
+grant select on public.profiles, public.auctions, public.bids to anon, authenticated;
+
 -- Public reads — anonymous read access is a first-class case (§11.2).
 create policy profiles_public_read on public.profiles
   for select to anon, authenticated
@@ -618,8 +634,9 @@ create policy auctions_owner_insert on public.auctions
 -- including the bidder. This is the load-bearing decision of the architecture
 -- (§11.2): it is what forces every bid through place_bid (ADR-2, SEC-Z4).
 -- The absence of policies IS the enforcement; the revokes below are belt and
--- braces against Supabase's default broad grants; the trigger in 1e covers
--- even RLS-exempt roles.
+-- braces in case a host default or a later hand-grant ever hands DML back —
+-- the grant in 3a is SELECT and nothing else; the trigger in 1e covers even
+-- RLS-exempt roles.
 revoke insert, update, delete on public.bids     from anon, authenticated;
 revoke update, delete         on public.auctions from anon, authenticated;
 
