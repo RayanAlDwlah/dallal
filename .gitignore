@@ -39,3 +39,6 @@ test-results/
 # Misc
 .cache/
 .turbo/
+
+# Claude Code local settings
+.claude/
