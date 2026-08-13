@@ -149,7 +149,7 @@ Opening an auction should feel like standing in a saleroom, not reading a databa
 
 **Where this could go (direction, not commitment)**
 
-Once the live loop is trustworthy, the natural extensions are: closing the commercial loop (payments, settlement, shipping), depth of auction mechanics (reserve prices, proxy/automatic bidding, anti-sniping time extension, buy-it-now), and reach (notifications, search and categories, mobile). These are recorded in *Future Enhancements* and are explicitly not MVP.
+Once the live loop is trustworthy, the natural extensions are: closing the commercial loop (payments, settlement, shipping), depth of auction mechanics (reserve prices, proxy/automatic bidding, buy-it-now), and reach (notifications, search and categories, mobile). These are recorded in *Future Enhancements* and are explicitly not MVP.
 
 **How we will know the vision is being realized**
 
@@ -269,7 +269,7 @@ Concurrent bids on the same auction resolve to a single deterministic order; exa
 |---|---|
 | Completing any commercial transaction | Dalal processes no real money. Payments, checkout, settlement, shipping, and fulfillment are all out of scope; the MVP ends at winner determination and result display (§19.0) |
 | Connecting the seller and the winner | No chat, messaging, or contact exchange. The system displays the result and stops |
-| Maximizing final sale prices | No proxy bidding, reserve prices, or anti-sniping mechanics in v1 |
+| Maximizing final sale prices | No proxy bidding and no reserve prices in v1. **Anti-sniping is now in scope (BR-36, amended 2026-08-13)** — it was adopted for fairness, not to raise prices |
 | Growth, engagement, or retention mechanics | No notifications-driven re-engagement, recommendations, or social features |
 | Marketplace-scale operations | No admin tooling, moderation queues, or analytics dashboards |
 | Handling hostile load | Correct behavior for realistic small-scale concurrent use, not adversarial traffic |
@@ -397,7 +397,7 @@ Ordered by priority within each tier. "Must Have" is the release gate: the MVP d
 
 ### 7.3 Future — explicitly outside the MVP
 
-Payment processing and settlement; checkout; shipping and fulfilment; reserve prices; proxy/automatic bidding; anti-sniping time extension; buy-it-now; **auction cancellation** (BR-30); **auction editing after publish** (BR-31); email/push notifications; **buyer–seller messaging or contact exchange**; ratings and reviews; categories, search, and recommendations; admin dashboards and moderation tooling; multi-language and multi-currency; native mobile applications; social sharing and following; advanced analytics; bulk listing tools; multi-image galleries and video.
+Payment processing and settlement; checkout; shipping and fulfilment; reserve prices; proxy/automatic bidding; buy-it-now; **auction cancellation** (BR-30); **auction editing after publish** (BR-31); email/push notifications; **buyer–seller messaging or contact exchange**; ratings and reviews; categories, search, and recommendations; admin dashboards and moderation tooling; multi-language and multi-currency; native mobile applications; social sharing and following; advanced analytics; bulk listing tools; multi-image galleries and video.
 
 See *Out of Scope* (§19) and *Future Enhancements* (§22) for detail and rationale.
 
@@ -770,7 +770,7 @@ These are the authoritative rules of the product. Every one must be enforced **s
 | **BR-13** | Current price is always the highest accepted bid; before any bid it is the starting price. | Single definition of "the price"; removes ambiguity between listing, detail, and validation |
 | **BR-14** | An auction becomes Active immediately on creation and is publicly visible. | No draft state in MVP (FR-CREATE-26/27) |
 | **BR-15** | Auction state transitions are one-directional: Active → Ended. An ended auction can never return to Active. | Prevents reopening, extending, or re-running a settled outcome |
-| **BR-16** | Auction end time is fixed at creation and cannot change. | Foundation of a fair, predictable close; reinforced by BR-31 |
+| **BR-16** | **NARROWED 2026-08-13.** Nobody may change an auction's end time — not the seller, not an admin, not any edit path. It is still fixed against every human and every application route (reinforced by BR-31). **The single exception is the automatic anti-sniping extension in BR-36**, which moves it forward only, in 30-second steps, only as part of accepting a bid, and at most 20 times. | Foundation of a fair, predictable close. The original wording, *"fixed at creation and cannot change"*, was written when BR-36 forbade extension; BR-36 was reversed and this rule had to narrow rather than disappear. What it protects — **no one can move an auction's deadline** — is unchanged and is enforced structurally |
 | **BR-17** | Winner determination runs exactly once per auction and is idempotent. | A recorded outcome never changes on reprocessing (FR-END-10) |
 | **BR-18** | Bid history is append-only and permanent, and remains publicly visible after close. | Auditability; every outcome must be explainable from history |
 | **BR-19** | All time-based decisions use authoritative server time; client clocks are display-only. | Client clocks are wrong, skewed, or manipulated |
@@ -790,7 +790,7 @@ These are the authoritative rules of the product. Every one must be enforced **s
 | **BR-33** | The auction currency is **Saudi Riyal (SAR)** for all prices and bids. **All SAR values are simulated demonstration values; Dalal processes no real money.** | Realistic price representation without any financial scope (§19.0) |
 | **BR-34** | **The product ends at result display.** After winner determination, the system displays the outcome and takes no further action — no payment, no contact exchange, no fulfillment. | Defines the MVP's terminal boundary unambiguously |
 | **BR-35** | **Auctions have no reserve price.** The highest valid bid at close wins, whatever its amount. There is no hidden threshold and no "reserve not met" outcome. | A reserve would add a third close outcome and hidden state, changing winner determination and all three result views. Sellers can achieve the same effect openly by setting a higher starting price |
-| **BR-36** | **The auction end time is fixed and is never extended.** A bid arriving in the final seconds does not extend the auction. There is no anti-sniping mechanism. | A fixed end time is far simpler to close correctly, and correctness at close is a Must Have. Reinforces BR-16 and BR-31 |
+| **BR-36** | **AMENDED 2026-08-13 — anti-sniping now exists.** A bid **accepted** in the **final 15 seconds** extends the end time by **exactly 30 seconds**. This repeats for each such bid, to a **hard maximum of 20 extensions**, after which the end time is final regardless of further bidding. The extension is atomic with the bid — a rejected bid never extends. The end time is otherwise immutable: it moves only **forward**, and only in 30-second quanta. | **Reverses the original decision** ("fixed and never extended", Q7), taken by the project owner with both other developers agreeing. Sniping is the most-cited fairness complaint of a fixed end, and the amended rule is what eBay and Whatnot do. The **cap is not decoration**: without it a contested auction never ends, never finalizes and never has a winner. 20 × 30 s bounds any auction at 10 minutes past its original deadline |
 | **BR-37** | **Email verification is not required to use the platform.** A user may register and immediately browse, create auctions, and bid. **A valid, unique email address is still required at registration**, because it is the login identifier and the only password-reset channel. | Removes a registration barrier from a demonstration platform holding nothing of real value (§19.0), while keeping the address that account recovery depends on |
 | **BR-38** | **Auction duration must be between 5 minutes and 7 days**, inclusive, measured from creation using server time. | 5 minutes makes a full lifecycle demonstrable in one sitting; 7 days bounds how long an un-editable, un-cancellable listing stays live |
 | **BR-39** | **Display names must be unique across all accounts.** | Public identity must be unambiguous in bid history and in the named winner of the seller's result view. The internal identifier remains the source of truth for attribution |
@@ -811,7 +811,7 @@ These are the authoritative rules of the product. Every one must be enforced **s
 | BR-P2 (reserve price) | **BR-35** | No reserve price |
 | BR-P3 (editing) | **BR-31** | Published auctions are immutable |
 | BR-P4 (increment) | **BR-32** | No minimum bid increment |
-| BR-P5 (anti-sniping) | **BR-36** | End time is fixed; never extended |
+| BR-P5 (anti-sniping) | **BR-36** | **Amended 2026-08-13:** a bid in the final 15 s extends the end by 30 s, capped at 20 extensions |
 | BR-P6 (email verification) | **BR-37** | Not required; valid email still required at registration |
 | — | **BR-29** | First bid may equal the starting price |
 | — | **BR-38** | Duration is 5 minutes to 7 days |
@@ -1237,7 +1237,7 @@ The MVP has **two operative states**, plus a conceptual state that is not persis
 There are no other transitions. Specifically:
 
 - **No Ended → Active.** An ended auction can never reopen, be extended, or be re-run (BR-15, FR-END-18).
-- **No Active → Active.** End time and all other published details are immutable (BR-16, BR-31).
+- **No Active → Active.** All published details are immutable (BR-16, BR-31). **The end time is the one exception, and only automatically**: the anti-sniping extension moves it forward in 30-second steps, up to 20 times (BR-36 as amended 2026-08-13). No human and no edit path can move it.
 - **No Active → Cancelled.** The state does not exist (BR-30).
 - **No manual transitions.** No user, including the seller, can change status directly (FR-SEC-08).
 
@@ -1731,7 +1731,10 @@ The MVP is successful when **all** Tier 1 criteria pass. Tier 2 criteria are qua
 | **SC-71** | The main listing contains **only Active auctions**; an ended auction never appears in it, yet remains fully viewable by direct link with its outcome and history (BR-40 context, FR-LIST-05, FR-LIST-05a). | Automated test + manual check |
 | **SC-72** | The current leading bidder can place a further bid that is strictly greater than the current price, and it is accepted (BR-24, FR-BID-04). | Automated test |
 | **SC-73** | No reserve-price field, control, or "reserve not met" outcome exists anywhere; the highest valid bid always wins regardless of amount (BR-35). | Review + automated winner test |
-| **SC-74** | A bid accepted in the final seconds does **not** extend the auction; the end time recorded at creation is the end time used at close (BR-36). | Automated test |
+| **SC-74** | **Amended 2026-08-13.** A bid **accepted** in the final **15 seconds** extends the end time by **exactly 30 seconds**; a bid accepted before that window does not move it at all (BR-36). | Automated test |
+| **SC-74a** | Extension **repeats**: each further accepted bid inside the (moved) final 15 seconds adds another 30 seconds (BR-36). | Automated test |
+| **SC-74b** | Extension **stops at 20**. At the cap a late bid is still **accepted** and the end time does **not** move, and the auction ends — the cap ends the extending, not the bidding (BR-36). | Automated test |
+| **SC-74c** | A **rejected** bid in the final 15 seconds never extends the auction — an ineligible bidder cannot hold an auction open (BR-36, BR-23). | Automated test |
 | **SC-75** | Bid history is visible to an unauthenticated visitor, showing display names and amounts in SAR, and never an email address (BR-40, FR-BID-22a). | Manual test signed out + payload review |
 
 ### 18.2 Tier 2 — quality gates (should pass; failures must be explicitly accepted)
@@ -1822,7 +1825,7 @@ Everything listed is explicitly **not built** in the MVP. Each has a reason; ite
 |---|---|
 | **Reserve prices** | **Decided against (BR-35).** Adds hidden state and a third close outcome. Sellers can set a higher starting price instead |
 | **Proxy / automatic bidding** | Substantially complicates the bidding engine and concurrency model; the MVP must first prove simple bidding is correct |
-| **Anti-sniping time extension** | **Decided against (BR-36).** The end time is fixed. A dynamic end time complicates closing, the countdown, and realtime propagation |
+| **Anti-sniping time extension** | ~~Decided against (BR-36).~~ **No longer out of scope — reversed 2026-08-13 and now in the MVP (BR-36, SC-74/74a/74b/74c).** The complication it was avoiding is real and was paid for: the countdown and realtime must both handle a moving end time |
 | **Buy-it-now** | A second, different transaction path with its own rules |
 | **Bid retraction** | Directly conflicts with BR-05 immutability |
 | **Auction editing after publish** | **Decided against (BR-31)** — changing terms mid-auction is unfair to existing bidders |
@@ -1948,7 +1951,7 @@ Assumptions the team is making. **Every assumption that once required confirmati
 | A-B3 | **Decided:** the first bid **may equal** the starting price; every bid after it must be strictly greater (BR-29). | Resolved |
 | A-B4 | **Decided:** a user may bid again while already leading, provided the bid is strictly greater than the current price (BR-24, FR-BID-04). | Resolved |
 | A-B5 | Bidders accept that bids are final and cannot be retracted. | |
-| A-B6 | **Decided:** the end time is hard and is never extended for last-second bids (BR-36). Bidders accept that sniping is possible. | Resolved |
+| A-B6 | **Re-decided 2026-08-13:** a last-second bid **does** extend the end time — 15 s in adds 30 s, up to 20 times (BR-36). Bidders no longer have to accept sniping; they do have to accept that a contested auction can run up to 10 minutes past its stated end. | Resolved |
 | A-B7 | Concurrent bidding volume on a single auction stays within roughly 10 bids per minute (NFR-SCA-04). | |
 | A-B8 | Two-decimal precision is sufficient for all amounts. | |
 | A-B9 | **Decided:** there is **no** maximum bid or price ceiling (BR-21). The team accepts that a very large bid can dominate an auction, and must not introduce a ceiling to prevent it. | Resolved |
@@ -2020,7 +2023,7 @@ Assumptions the team is making. **Every assumption that once required confirmati
 | **Q4** | Is there a minimum bid increment? | **No fixed increment.** Any amount meeting the minimum acceptable bid is valid — `+0.01 SAR` is as valid as `+1,000 SAR`. Never `+5 / +10 / +50`. | BR-32 · FR-BID-09 · EC-24 |
 | **Q5** | What are the auction duration bounds? | **5 minutes to 7 days**, inclusive, measured from creation using server time. | BR-38 · FR-CREATE-09 · FR-CREATE-10 · FR-CREATE-10a |
 | **Q6** | Must the first bid exceed the starting price? | **No — it may equal it.** `First Bid ≥ Starting Price`. Every bid after the first must be strictly greater than the current price. Explicit, documented special case. | BR-28 · BR-29 · FR-BID-06 · EC-23 |
-| **Q7** | Should the end time extend for late bids (anti-sniping)? | **No anti-sniping.** The end time is fixed at creation and is never extended. Sniping is possible and accepted. | BR-36 · BR-16 · FR-END-01 |
+| **Q7** | Should the end time extend for late bids (anti-sniping)? | **REOPENED AND REVERSED 2026-08-13. Anti-sniping exists.** An accepted bid in the final **15 seconds** adds **30 seconds**, repeating, capped at **20 extensions**. The original answer was "no anti-sniping; the end time is fixed", and it stood from the PRD's first version until this amendment. | BR-36 · BR-16 · FR-END-01 · SC-74/74a/74b/74c |
 | **Q8** | Must a user verify their email? | **No email verification.** A user may register and immediately browse, create, and bid. **A valid, unique email is still required at registration** — it is the login identifier and the only password-reset channel. | BR-37 · FR-AUTH-07 · FR-AUTH-07a · FR-AUTH-07b |
 | **Q9** | How do the seller and winner make contact? | **They do not.** No chat, messaging, or contact exchange. The system displays the result and stops. | BR-34 · FR-END-17 · FR-DETAIL-21a · §19.0 |
 | **Q10** | Should bid history be public? | **Public bid history**, visible on the auction to every viewer including unauthenticated visitors. Display names only — never emails. | BR-40 · FR-BID-22 · FR-BID-22a · FR-DETAIL-10 |
@@ -2039,7 +2042,7 @@ Each decision below has a downside the team accepted deliberately. They are reco
 |---|---|---|
 | **Q1 + Q3** — no cancellation, no editing | A mistaken listing cannot be corrected or removed by anyone (EC-26). Duplicate submissions are permanent (EC-21) | Deliberate fairness protection. Raises the importance of pre-submission clarity (FR-CREATE-26a) and duplicate prevention |
 | **Q4 + Q12** — no increment, no ceiling | Penny-increment bid wars are possible (EC-24); one very large bid can dominate an auction (EC-25) | Values are simulated. No product requirement justifies either constraint. **Implementers must not add one** (SD-05) |
-| **Q7** — no anti-sniping | A last-second bid can win with no chance to respond | A fixed end time is far simpler to close correctly, and correctness at close is a Must Have |
+| **Q7** — anti-sniping, **as amended 2026-08-13** | A contested auction can run up to **10 minutes** past the end time shown at creation, so "ends at 8:00" is not a promise. The countdown and realtime propagation must both handle an end time that moves | The fairness complaint it fixes was judged to outweigh that, and the 20-extension cap keeps the overrun bounded and easy to explain |
 | **Q8** — no email verification | A user registering with an address they cannot access can never reset their password, and no Admin exists to help (§4.3) | Dalal holds nothing of real value (§19.0). FR-AUTH-07b requires the registration form to make the recovery role of the email clear |
 | **Q9** — no contact system | The winner and seller cannot reach each other | There is nothing to arrange — no goods or money move (§19.0) |
 | **Q10** — public bid history | Participation is visible to anyone on the internet | Core to the transparency promise. Display names only; registration must make this clear |
@@ -2069,7 +2072,7 @@ The MVP determines a winner, displays the result, and stops. The most valuable n
 |---|---|---|
 | **Outbid notifications (N1)** | Highest-value single addition; brings bidders back, raises final prices | Email delivery already exists for password reset (§16.5), so the remaining cost is per-event design and preferences |
 | **Won / ended notifications (N2, N3, N4)** | Closes the gap for absent users | Natural companion to N1 |
-| **Anti-sniping time extension** | Fixes the most-cited fairness complaint of fixed-end auctions | **Explicitly not MVP (BR-36).** Would require reopening the fixed-end-time decision |
+| **Anti-sniping time extension** | Fixes the most-cited fairness complaint of fixed-end auctions | ~~Explicitly not MVP.~~ **Reopened and built, 2026-08-13 (BR-36).** No longer a future enhancement |
 | **Relisting an unsold auction** | Sellers with no bids currently must recreate from scratch | Pairs with N5; partly compensates for having no editing (BR-31) |
 | **Buyer–seller contact mechanism** | Would make the outcome actionable | **Explicitly not MVP (BR-34).** Only meaningful alongside Phase 3 commerce — there is nothing to arrange while no goods or money move |
 
@@ -2154,7 +2157,7 @@ Version 1.0 raised fifteen product questions. Version 2.0 closed seven. **Versio
 | 5a | **Auction duration is defined** | ✅ | **BR-38, FR-CREATE-09/10/10a — 5 minutes to 7 days inclusive** |
 | 5b | **Leading-bidder behavior is defined** | ✅ | **BR-24, FR-BID-04/04a — may bid again if strictly greater** |
 | 5c | **No reserve price** | ✅ | **BR-35, FR-CREATE-03** |
-| 5d | **No anti-sniping; end time fixed** | ✅ | **BR-36, BR-16, SC-74** |
+| 5d | **Anti-sniping is defined, bounded and testable** | ✅ | **BR-36 as amended 2026-08-13 — 15 s window, 30 s step, 20-extension cap; SC-74/74a/74b/74c** |
 | 6 | Currency is defined as SAR | ✅ | BR-33, FR-CREATE-13, NFR-DAT-08 |
 | 7 | Prices are clearly simulated/demo values | ✅ | Header callout, §1, §19.0, BR-33 — the term "Demo Points" is prohibited |
 | 8 | Payment is explicitly out of scope | ✅ | §19.0, BR-34, SC-67 |
@@ -2178,7 +2181,7 @@ Eight further decisions were applied and the whole document re-scanned. Changes 
 |---|---|
 | **Q2** — no reserve | FR-CREATE-03 stops deferring it; BR-35 added; §19.2 and §22.2 marked "decided against" |
 | **Q5** — 5 min to 7 days | **FR-CREATE-10 changed from 30 days to 7 days**; FR-CREATE-10a added; US-06, A-A6, SC-68 updated |
-| **Q7** — no anti-sniping | BR-36 added; §19.2 and §22.1 marked "decided against"; SC-74 added |
+| **Q7** — ~~no anti-sniping~~ **reversed 2026-08-13** | Originally: BR-36 added; §19.2 and §22.1 marked "decided against"; SC-74 added. **Amended:** BR-36 rewritten; §19.2 and §22.1 un-marked; SC-74 rewritten and SC-74a/74b/74c added; A-B6 re-decided; BR-P5, §5.3, §7.3 and the §23 checklist updated |
 | **Q8** — no email verification | FR-AUTH-07 rewritten; FR-AUTH-07a/07b added; BR-37 added; A-T2 resolved with its consequence recorded; SC-70 added |
 | **Q10** — public bid history | FR-BID-22 rewritten; FR-BID-22a added; BR-40 added; A-B10 resolved; SC-75 added |
 | **Q11** — unique display names | FR-PROF-03 rewritten; FR-PROF-03a/03b added; BR-39 added; A-T4 resolved; SC-69 added |
@@ -2219,7 +2222,7 @@ All are accepted consequences of finalized decisions, catalogued in full at §21
 | **No price ceiling** (BR-21) | A very large bid can dominate an auction for its remaining duration | Values are simulated; no product requirement justifies a ceiling. Implementers must not invent one (SD-05) |
 | **No editing, no cancellation** (BR-30, BR-31) | A mistaken listing cannot be corrected or removed by anyone | Deliberate fairness decision. Raises the importance of duplicate-submission prevention (EC-21) and pre-submission clarity (FR-CREATE-26a) |
 | **No email verification** (BR-37) | A user registering with an unreachable address can never reset their password, and no Admin exists to help | Dalal holds nothing of real value. FR-AUTH-07b requires the form to make the recovery role of the email clear |
-| **No anti-sniping** (BR-36) | A last-second bid can win with no chance to respond | A fixed end time is far simpler to close correctly |
+| **Anti-sniping, capped at 20 extensions** (BR-36, amended 2026-08-13) | A contested auction can end up to 10 minutes after its stated end time | Competitors get a chance to respond; the cap guarantees the auction still ends |
 | **Active-only listing** (FR-LIST-05) | The platform shows no evidence of completed sales on its main page | The listing is a marketplace, not an archive. Ended auctions stay reachable by direct link |
 | **No Admin role** (§4.3) | No in-product route to remove abusive content | Handled out-of-band at demonstration scale |
 | **No notifications** (§16) | A user outbid while away learns of it only on return | Engagement, not correctness. Password reset is the sole outbound email (§16.5) |

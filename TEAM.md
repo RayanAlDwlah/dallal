@@ -690,7 +690,7 @@ Tasks are MVP-focused and reference the approved PRD requirement IDs. **No imple
 | **No bid increment** | BR-32, FR-BID-09 | Never require `+5 / +10 / +50`. A 0.01 SAR raise is valid |
 | **No maximum bid** | BR-21, FR-BID-08 | Never reject a bid for being too large. Handle large values correctly instead (SEC-R3) |
 | **Leading bidder may bid again** | BR-24, FR-BID-04/04a | Leading is never grounds for rejection — only the amount matters. A UI warning is advised; the server must accept a qualifying bid |
-| **End time is fixed; no anti-sniping** | BR-36 | R-17 closes at the end time recorded at creation. **No extension logic** — the end time is static, which keeps closing simple |
+| **Anti-sniping exists** *(BR-36 reversed 2026-08-13; this row said "end time is fixed")* | BR-36 as amended | R-17 closes at the **current** `end_time`, which is not necessarily the one recorded at creation. Extension logic exists and is Rayan's: an accepted bid in the final 15 s adds 30 s, capped at 20 extensions |
 | **Bid history is public** | BR-40, FR-BID-22/22a | R-09 renders to unauthenticated visitors. Display names only, **never** emails |
 | **Currency: SAR** | BR-33 | All prices, bids, and results in SAR, using the shared representation (§11) |
 
@@ -1239,7 +1239,7 @@ All fifteen are closed in `PRD.md` v3.0 §21.1. This table is a convenience copy
 | 4 | **No fixed minimum bid increment** | BR-32 |
 | 5 | **Auction duration: 5 minutes to 7 days** | BR-38 |
 | 6 | **First bid may equal the starting price** | BR-29 |
-| 7 | **No anti-sniping — end time is fixed** | BR-36 |
+| 7 | **Anti-sniping — an accepted bid in the final 15 s adds 30 s, capped at 20 extensions** *(reversed 2026-08-13; this entry read "no anti-sniping — end time is fixed")* | BR-36 as amended |
 | 8 | **No email verification; a valid unique email is still required** | BR-37 |
 | 9 | **No seller/winner messaging or contact** | BR-34 |
 | 10 | **Bid history is public** | BR-40 |
@@ -1251,9 +1251,11 @@ All fifteen are closed in `PRD.md` v3.0 §21.1. This table is a convenience copy
 
 ### Things nobody may build
 
-Each is a deliberate product decision, not an oversight to correct in code (PRD SD-05):
+Each is a deliberate product decision, not an oversight to correct in code (PRD SD-05).
+**`anti-sniping extension` was removed from this list on 2026-08-13** — BR-36 was reversed
+and the extension is now a required feature, not a prohibited one:
 
-`Cancelled` state · cancel control · edit screen or route · persisted Draft · reserve-price field · bid increment · maximum price or bid ceiling · anti-sniping extension · email-verification step · Admin role · payment, checkout, or wallet · seller/winner messaging · shipping or fulfillment · **native mobile app, Flutter/Android/iOS build, or app-store submission (§27)** · the term "Demo Points"
+`Cancelled` state · cancel control · edit screen or route · persisted Draft · reserve-price field · bid increment · maximum price or bid ceiling · email-verification step · Admin role · payment, checkout, or wallet · seller/winner messaging · shipping or fulfillment · **native mobile app, Flutter/Android/iOS build, or app-store submission (§27)** · the term "Demo Points"
 
 ---
 
