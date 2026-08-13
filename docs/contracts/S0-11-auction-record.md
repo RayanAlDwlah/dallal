@@ -11,11 +11,11 @@
 | Depends on | `S0-12` (money type, FINAL) · `S0-10` (identity contract, Abdulrahman) |
 | Consumed by | `BID-01`, `BID-02`, `BID-05`, `BID-15`, and Mohammed's `AUC-08`/`AUC-14`/`M-10` |
 
-> **Citation correction.** The S0-11 issue text cites "ARCHITECTURE §10.3" twice.
+> **Citation correction — applied.** The S0-11 issue text cited "ARCHITECTURE §10.3" twice.
 > `ARCHITECTURE.md:605` §10.3 is **Password reset**. The auction-record material is in
-> `TEAM.md` §10.3, `ARCHITECTURE.md` §9.3–§9.4, and `ARCHITECTURE.md` §19.3. Once this
-> document is agreed it becomes the single citable location, so no session has to follow
-> the broken pointer again.
+> `TEAM.md` §10.3, `ARCHITECTURE.md` §9.3–§9.4, and `ARCHITECTURE.md` §19.3, and
+> `GITHUB_PLAN.md` S0-11 now points there. Once this document is agreed it becomes the
+> single citable location, so no session has to follow the broken pointer again.
 
 ---
 

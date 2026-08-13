@@ -987,7 +987,11 @@ TEAM.md §11 requires the auction detail page to be split by owner. Architectura
 | Page shell, product content, image, seller name | Mohammed | None — static per page load |
 | Status label and countdown | Mohammed | Countdown ticks locally; the status change arrives from Rayan's subscription |
 | Current price display region | Mohammed builds it | **Rayan supplies the value and its updates** |
-| Bid control, history, outcome banner | Rayan | Subscribed |
+| Bid control, history, outcome banner | Mohammed presents it — **Rayan supplies the behaviour and its updates** | Subscribed |
+
+The split in this table is **presentation vs. behaviour, not file-level** (CLAUDE.md §1). Mohammed
+may change how any row looks provided behaviour and contracts are unchanged; what a row *does* —
+validation, submission, recorded order, outcome semantics — stays Rayan's wherever it lives.
 
 Mohammed's page tells Rayan's components which auction is being viewed. **Mohammed must not add a competing update mechanism** (TEAM.md §10.4).
 
