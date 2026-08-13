@@ -91,9 +91,21 @@ yourself wanting one, raise it with the team first (`ARCHITECTURE.md` §17.3).
 
 | | project ref | schema | migration history |
 |---|---|---|---|
-| `dallal-dev` (Vercel **Preview**) | `cjrnakdigcwnsrvtyqhy` | present, applied by hand | **none** — `supabase_migrations` schema absent |
+| `dallal-dev` (Vercel **Preview**) | `cjrnakdigcwnsrvtyqhy` | rebuilt from `supabase/migrations/` | `20260812120000` recorded |
 | `dallal-prod` (Vercel **Production**) | `yfszokbunbqesigdfuwk` | **empty — zero tables** | none |
 
+`dallal-dev` was rebuilt on 2026-08-13. It had been applied by hand, had no
+migration history at all, and was missing the `GRANT SELECT` public reads depend
+on. It held **zero rows and zero users** — verified immediately before, and
+guarded by an abort inside the same statement batch — so nothing was lost. The
+Supabase-managed `ensure_rls` event trigger and its `public.rls_auto_enable`
+function were deliberately left alone: they ship with the project, not with us,
+and `dallal-prod` has them too despite never having been touched.
+
+That one function is now the **only** thing `supabase db diff --linked` reports,
+and it will keep reporting it forever. It is not our drift. Ignore that entry
+and read the rest — if anything else appears, that is real.
+
 Production has no schema. The wiring is correct but the first production deploy
-would fail against an empty database. That is tracked separately; do not fix it
-by pasting into the SQL editor.
+would fail against an empty database. Do not fix it by pasting into the SQL
+editor — it gets the same `supabase db push`, from `main`, that dev just got.
