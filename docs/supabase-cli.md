@@ -47,6 +47,52 @@ and committed; nothing secret goes in it.
    supabase db diff --linked        # what the remote has that the repo does not
    ```
 
+   > **`db diff --linked` is failing right now — 2026-08-13, CLI 2.114.0.** It builds
+   > the shadow database and applies both migrations correctly, then dies inside
+   > Supabase's own diffing service:
+   >
+   > ```
+   > Diffing schemas...
+   > error diffing schema: Error: timeout exceeded when trying to connect
+   >   at .../@supabase/pg-delta/1.0.0-alpha.33/dist/core/catalog.model.js
+   > PGDELTA_SCRIPT_ERROR
+   > ```
+   >
+   > Reproduced twice, minutes apart. It is **server-side and not ours** — note the
+   > `alpha` version of `pg-delta`. It worked earlier the same day, so it may well come
+   > back on its own; try it before assuming it is still broken.
+   >
+   > **Until it does, do not read the failure as "no drift".** Ask the catalog directly
+   > — it names what is actually there instead of what changed, which is the better
+   > question anyway:
+   >
+   > ```sql
+   > select
+   >   (select string_agg(tablename, ', ' order by tablename)
+   >      from pg_tables where schemaname = 'public')                            as tables,
+   >   (select string_agg(p.proname, ', ' order by p.proname)
+   >      from pg_proc p join pg_namespace n on n.oid = p.pronamespace
+   >     where n.nspname = 'public')                                             as functions,
+   >   (select string_agg(t.typname, ', ' order by t.typname)
+   >      from pg_type t join pg_namespace n on n.oid = t.typnamespace
+   >     where n.nspname = 'public' and t.typtype = 'd')                         as domains,
+   >   (select string_agg(c.relname, ', ' order by c.relname)
+   >      from pg_class c join pg_namespace n on n.oid = c.relnamespace
+   >     where n.nspname = 'public' and c.relkind = 'v')                         as views;
+   > ```
+   >
+   > On both projects that must return exactly:
+   >
+   > | | |
+   > |---|---|
+   > | tables | `auctions, bids, profiles` |
+   > | functions | `auctions_guard_update, bid_reject, bids_are_append_only, bids_only_via_place_bid, format_sar, handle_new_user, place_bid, rls_auto_enable, sar_text` |
+   > | domains | `sar_amount` |
+   > | views | `bid_history` |
+   >
+   > `rls_auto_enable` is Supabase's, not ours — same function the diff has always
+   > reported. Everything else is the two committed migrations. Anything extra is real.
+
 3. Open a PR. `main` is protected and this is a schema change — it gets an
    approval like everything else.
 
@@ -91,8 +137,28 @@ yourself wanting one, raise it with the team first (`ARCHITECTURE.md` §17.3).
 
 | | project ref | schema | migration history |
 |---|---|---|---|
-| `dallal-dev` (Vercel **Preview**) | `cjrnakdigcwnsrvtyqhy` | rebuilt from `supabase/migrations/` | `20260812120000` recorded |
-| `dallal-prod` (Vercel **Production**) | `yfszokbunbqesigdfuwk` | **empty — zero tables** | none |
+| `dallal-dev` (Vercel **Preview**) | `cjrnakdigcwnsrvtyqhy` | rebuilt from `supabase/migrations/` | `20260812120000`, `20260813190000` |
+| `dallal-prod` (Vercel **Production**) | `yfszokbunbqesigdfuwk` | applied from `supabase/migrations/` | `20260812120000`, `20260813190000` |
+
+**Both projects now carry the same two migrations, applied the same way.**
+`dallal-prod` was empty until 2026-08-13 — zero tables, zero users, verified
+immediately before the push — and received its entire schema through
+`supabase db push` from `main`. Nothing was pasted, and its migration history
+matches the repository, so the next change reaches it the same way this one did.
+
+Measured on `dallal-prod` after the push, and identical to `dallal-dev`:
+
+| | `anon` / `authenticated` |
+|---|---|
+| `auctions`, `bids`, `profiles`, `bid_history` | `SELECT` only — no `INSERT`, `UPDATE` or `DELETE` |
+| RLS | enabled on all three base tables |
+| `POST /rest/v1/bids` | `401` / `42501` — a bid cannot bypass `place_bid` |
+| `POST /rest/v1/rpc/place_bid` | `200` `{"accepted": false, "reason": "not_authenticated"}` |
+| `sar_amount` | `VALUE > 0 AND VALUE < 'Infinity' AND VALUE = round(VALUE,2)` |
+
+That `VALUE < 'Infinity'` is on the production domain and must stay there
+(`CLAUDE.md` §4.4). The two `bid_history` amount columns are `text`, by design —
+amounts travel as strings and are compared in SQL, never as a JS `Number`.
 
 `dallal-dev` was rebuilt on 2026-08-13. It had been applied by hand, had no
 migration history at all, and was missing the `GRANT SELECT` public reads depend
@@ -106,6 +172,27 @@ That one function is now the **only** thing `supabase db diff --linked` reports,
 and it will keep reporting it forever. It is not our drift. Ignore that entry
 and read the rest — if anything else appears, that is real.
 
-Production has no schema. The wiring is correct but the first production deploy
-would fail against an empty database. Do not fix it by pasting into the SQL
-editor — it gets the same `supabase db push`, from `main`, that dev just got.
+**When it reports anything at all**, that is: the command started failing
+server-side later the same day. See the note under "Making a change" step 2 for
+the error and for the catalog query to use instead. Both projects were
+re-checked that way afterwards and match the table above.
+
+## Advisors — what is expected, so a new WARN stands out
+
+`get_advisors` reports **no errors** on either project. It reports nine
+warnings, and every one of them is either intentional or not ours:
+
+- `place_bid` executable by `anon` — **intentional.** It is the bid endpoint.
+  Identity comes from `auth.uid()` inside the function, never from the payload,
+  and the anonymous call is answered `not_authenticated` rather than refused at
+  the API layer (`BR-01`, measured above).
+- `rls_auto_enable` on both counts — Supabase's own function, not ours.
+- `function_search_path_mutable` on `bid_reject`, `format_sar`, `sar_text`,
+  `bids_are_append_only`, `bids_only_via_place_bid`, `auctions_guard_update` —
+  **six real warnings against `BID-02`, to be fixed in `BID-15`.**
+
+`handle_new_user` appears in none of these lists, because `AUTH-01` sets
+`search_path = ''` and revokes `EXECUTE`. That is the pattern the six above
+should follow.
+
+**Anything outside that list is new and worth reading.**
