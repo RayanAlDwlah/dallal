@@ -692,21 +692,30 @@ Save as `supabase/tests/v1_setup.sql`:
 -- it writes auth.users directly, which the product never does (test-only).
 -- Idempotent. Creates 1 owner + 8 bidders with profiles (ADR-7: a profile
 -- must exist before a user can bid).
+--
+-- The display name travels in raw_user_meta_data because AUTH-01's signup
+-- trigger reads it from there and inserts the profile in this same statement.
+-- Without it the trigger hits its NOT NULL and the seed fails outright, taking
+-- the whole suite with it (reproduced on PostgreSQL 17, 2026-08-13). The
+-- profiles insert below is a no-op once that trigger exists; it is kept so the
+-- seed still works on a stack where it does not.
 -- ============================================================================
-insert into auth.users (id, instance_id, aud, role, email, created_at, updated_at)
+insert into auth.users (id, instance_id, aud, role, email, created_at, updated_at,
+                        raw_user_meta_data)
 select x.id, '00000000-0000-0000-0000-000000000000',
-       'authenticated', 'authenticated', x.email, now(), now()
+       'authenticated', 'authenticated', x.email, now(), now(),
+       jsonb_build_object('display_name', x.name)
 from (values
-  ('00000000-0000-0000-0000-0000000000a1'::uuid, 'v1-owner@test.local'),
-  ('00000000-0000-0000-0000-0000000000b1'::uuid, 'v1-bidder1@test.local'),
-  ('00000000-0000-0000-0000-0000000000b2'::uuid, 'v1-bidder2@test.local'),
-  ('00000000-0000-0000-0000-0000000000b3'::uuid, 'v1-bidder3@test.local'),
-  ('00000000-0000-0000-0000-0000000000b4'::uuid, 'v1-bidder4@test.local'),
-  ('00000000-0000-0000-0000-0000000000b5'::uuid, 'v1-bidder5@test.local'),
-  ('00000000-0000-0000-0000-0000000000b6'::uuid, 'v1-bidder6@test.local'),
-  ('00000000-0000-0000-0000-0000000000b7'::uuid, 'v1-bidder7@test.local'),
-  ('00000000-0000-0000-0000-0000000000b8'::uuid, 'v1-bidder8@test.local')
-) as x(id, email)
+  ('00000000-0000-0000-0000-0000000000a1'::uuid, 'v1-owner@test.local',   'v1_owner'),
+  ('00000000-0000-0000-0000-0000000000b1'::uuid, 'v1-bidder1@test.local', 'v1_bidder_1'),
+  ('00000000-0000-0000-0000-0000000000b2'::uuid, 'v1-bidder2@test.local', 'v1_bidder_2'),
+  ('00000000-0000-0000-0000-0000000000b3'::uuid, 'v1-bidder3@test.local', 'v1_bidder_3'),
+  ('00000000-0000-0000-0000-0000000000b4'::uuid, 'v1-bidder4@test.local', 'v1_bidder_4'),
+  ('00000000-0000-0000-0000-0000000000b5'::uuid, 'v1-bidder5@test.local', 'v1_bidder_5'),
+  ('00000000-0000-0000-0000-0000000000b6'::uuid, 'v1-bidder6@test.local', 'v1_bidder_6'),
+  ('00000000-0000-0000-0000-0000000000b7'::uuid, 'v1-bidder7@test.local', 'v1_bidder_7'),
+  ('00000000-0000-0000-0000-0000000000b8'::uuid, 'v1-bidder8@test.local', 'v1_bidder_8')
+) as x(id, email, name)
 on conflict (id) do nothing;
 
 insert into public.profiles (id, display_name)
