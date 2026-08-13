@@ -9,7 +9,7 @@
 | Version | **1.1 — synchronized with PRD v3.0 and TEAM v2.0** |
 | Date | 2026-08-12 |
 | Author | Software Architecture |
-| Status | **Ready for review** — all document conflicts resolved (§2); five **technical** verification spikes remain (§22) |
+| Status | **Ready for review** — all document conflicts resolved (§2); of five **technical** verification spikes (§22), **V-1 and V-2 are executed** and three remain |
 | Sources of truth | [PRD.md](PRD.md) **v3.0** (requirements — zero open product questions) · [TEAM.md](TEAM.md) **v2.0** (ownership) |
 | **Platform** | **Responsive web application (website).** Desktop and mobile **browsers**. **No** native mobile application — see §4.4 |
 | Deployment | Vercel (web application) + Supabase (backend platform) |
@@ -1091,6 +1091,21 @@ Three outcomes, defined in advance so nobody improvises:
 
 **This is technical verification spike V-2 (§22).** It must be resolved before Rayan builds R-17. It is recorded here rather than assumed away because FR-END-03 is a stated numeric requirement, and **this document must not silently weaken a product requirement to fit a platform limitation** (PRD §21.3).
 
+> **V-2 is resolved. The answer is the first row: sub-minute scheduling is available.**
+> Measured 2026-08-13 on `dallal-dev` — `pg_cron` 1.6.4 accepts a schedule written in
+> seconds, and a `'30 seconds'` job fired 16 times with a mean interval of 30.034 s
+> (min 30.010, max 30.276, σ 0.067) and no failures. A `'10 seconds'` job held
+> 10.014 s. **FR-END-03 is met as written, with no offset sweeps** — mitigation (a)
+> is not needed and should not be built. Full record and method:
+> `docs/V-2-scheduling-verification.md`.
+>
+> **The sweep period is 15 s, not 30 s.** An auction's end time falls at an arbitrary
+> point between two fires, so the period *is* the worst-case latency: a 30 s sweep
+> spends the whole FR-END-03 budget on scheduling and overruns it on jitter alone
+> (~30.3 s measured). 15 s costs nothing at this granularity and leaves headroom for
+> the sweep's own runtime. That is a technical choice made **inside** the 30 s
+> requirement, not a change to it.
+
 ### 15.7 Winner determination
 
 | Requirement | Design |
@@ -1326,9 +1341,9 @@ Each records the decision, the alternatives, and — importantly — what would 
 
 ### ADR-4 — Auction closing is triggered by a Supabase-side scheduled sweep, plus on-read and on-bid triggers, against one idempotent operation
 
-**Status:** Accepted, **pending V-2** (§22) · **Driver:** Vercel has no always-on process; FR-END-02 and SC-26 require closure with nobody watching.
+**Status:** **Accepted — V-2 resolved 2026-08-13** (§22, §15.6) · **Driver:** Vercel has no always-on process; FR-END-02 and SC-26 require closure with nobody watching.
 **Alternatives rejected:** Vercel Cron (couples closing to application availability, needs an elevated credential in the application, adds a trust surface); per-auction timers (impossible without a daemon); close-on-read only (fails SC-26).
-**Open:** whether sub-minute scheduling is achievable — see §15.6. **If not, FR-END-03's 30 s is a product decision to revisit, not a developer's call.**
+**Resolved:** sub-minute scheduling **is** achievable — `pg_cron` 1.6.4 schedules in seconds and was measured firing at 30.034 s mean and 10.014 s mean on `dallal-dev` (`docs/V-2-scheduling-verification.md`). The sweep is a single 15-second job; no offset pair. FR-END-03's 30 s stands as written and was never in jeopardy.
 
 ### ADR-5 — Authorization is Row Level Security, default deny
 
@@ -1427,15 +1442,17 @@ The architecture must support the PRD's testing requirements, and two of them co
 
 Five platform assumptions in this document must be **confirmed against the actual platforms** before the affected work starts. They are stated as spikes rather than asserted as fact, because getting one wrong would require rework in exactly the areas that matter most.
 
-| # | Spike | Blocks | Owner | If the answer is unfavourable |
-|---|---|---|---|---|
-| **V-1** | Confirm the database supports the row-locking and transactional semantics assumed in §13, and measure behavior under genuinely concurrent bids | **R-05, R-03** — the whole bidding design | Rayan | Escalate immediately. This is the architecture's foundation |
-| **V-2** | Determine the minimum scheduling frequency available in Supabase. Can a sweep run every ~30 s — directly, or via two offset sweeps? | **R-17** — auction closing, FR-END-03 | Rayan | §15.6 defines the outcomes. **FR-END-03 stands as written**; offset sweeps most likely satisfy it even against a one-minute floor. Correctness is unaffected either way (LC-03) |
-| **V-3** | Decide the preview-environment Supabase target (§18.4, option A or B). Confirm whether password-reset email works in previews | Preview deployments; Abdulrahman's ability to exercise US-23 pre-merge | Whole team | Option A is the safe default. **Never option C** |
-| **V-4** | Confirm image transformation/thumbnail capability, or plan a derivative at upload | **M-05, M-10** — NFR-PERF-05, NFR-PERF-01 | Mohammed | Generate a smaller derivative at upload time |
-| **V-5** | Confirm the full lifecycle — including realtime and scheduled closing — can be exercised in a local or isolated environment | NFR-MNT-03, NFR-MNT-04; the whole team's inner loop | Whole team | Fall back to a shared non-production project with coordinated use |
+**Two of the five are now executed.** Both came back favourable, and both have a written record of the method and the numbers rather than a verdict — so a later reader can disagree with the conclusion without having to re-run it.
 
-**V-1 and V-2 are the two that could change the architecture.** They should be run first, in Sprint 0, before Rayan commits to R-03 or R-17. Neither can change a product requirement.
+| # | Spike | Blocks | Owner | Status | If the answer is unfavourable |
+|---|---|---|---|---|---|
+| **V-1** | Confirm the database supports the row-locking and transactional semantics assumed in §13, and measure behavior under genuinely concurrent bids | **R-05, R-03** — the whole bidding design | Rayan | ✅ **Executed 2026-08-12** — `docs/contracts/BID-02-verification.md` | Escalate immediately. This is the architecture's foundation |
+| **V-2** | Determine the minimum scheduling frequency available in Supabase. Can a sweep run every ~30 s — directly, or via two offset sweeps? | **R-17** — auction closing, FR-END-03 | Rayan | ✅ **Executed 2026-08-13 — directly, no offset sweeps** — `docs/V-2-scheduling-verification.md` | §15.6 defines the outcomes. **FR-END-03 stands as written**; offset sweeps most likely satisfy it even against a one-minute floor. Correctness is unaffected either way (LC-03) |
+| **V-3** | Decide the preview-environment Supabase target (§18.4, option A or B). Confirm whether password-reset email works in previews | Preview deployments; Abdulrahman's ability to exercise US-23 pre-merge | Whole team | ⬜ Open | Option A is the safe default. **Never option C** |
+| **V-4** | Confirm image transformation/thumbnail capability, or plan a derivative at upload | **M-05, M-10** — NFR-PERF-05, NFR-PERF-01 | Mohammed | ⬜ Open | Generate a smaller derivative at upload time |
+| **V-5** | Confirm the full lifecycle — including realtime and scheduled closing — can be exercised in a local or isolated environment | NFR-MNT-03, NFR-MNT-04; the whole team's inner loop | Whole team | ⬜ Open | Fall back to a shared non-production project with coordinated use |
+
+**V-1 and V-2 were the two that could change the architecture.** They were run first, in Sprint 0, before Rayan committed to R-03 or R-17 — which is what this section asked for. **Neither changed a product requirement, and neither needed to.** Three remain: V-3 and V-5 are the team's, V-4 is Mohammed's.
 
 ---
 
@@ -1445,7 +1462,7 @@ Five platform assumptions in this document must be **confirmed against the actua
 |---|---|---|---|
 | **1** | **RLS completeness is load-bearing.** The public client key is only safe because policies are complete (§17.1). One table left permissive is a full data exposure | Critical | Default deny everywhere. Each developer owns their entity's policies (§19.2). A policy review before launch, testing SC-38 → SC-43 explicitly |
 | **2** | **The bid operation is a single point of correctness.** Every concurrency guarantee depends on it | Critical | Isolate it, keep it small, and cover it with the automated concurrent test NFR-MNT-02 requires. **This is where review effort should concentrate** |
-| **3** | **FR-END-03's 30 s may exceed platform scheduling granularity** (§15.6) | Low–Medium — **presentation only, never correctness** (LC-03). Bid rejection is driven by the actual end timestamp, not the status flag | **Technical** spike V-2. Offset sweeps most likely meet 30 s even against a one-minute floor. **The requirement stands as written; no silent relaxation** |
+| **3** | ~~**FR-END-03's 30 s may exceed platform scheduling granularity**~~ (§15.6) — **RESOLVED 2026-08-13, the risk did not materialise.** `pg_cron` schedules in seconds; measured at 30.034 s and 10.014 s mean on `dallal-dev` | Was Low–Medium — **presentation only, never correctness** (LC-03) | V-2 executed: `docs/V-2-scheduling-verification.md`. A single 15 s sweep, no offset pair. **The requirement stood as written and was never relaxed** |
 | **4** | **Rayan's workstream carries almost all architectural risk** — the bid operation, concurrency, realtime, closing, and winner determination | High, and already flagged in TEAM.md §25 Risk 1 | Unchanged from TEAM.md: when Abdulrahman finishes authentication, he should support Rayan. This architecture reinforces rather than relieves that imbalance |
 | **5** | **Orphaned storage objects** accumulate on failed creations (ADR-6) | Low | Accepted debt at demonstration scale. Recorded so it is a decision, not a surprise |
 | **6** | **Elevated-privilege operations bypass RLS** and must self-authorize (§11.4) | High if mishandled | Exactly two exist. Each re-verifies identity internally. Adding a third is an architectural change |
@@ -1489,3 +1506,5 @@ Not designed here, deliberately:
 **Document conflicts:** all resolved (§2). `PRD.md` v3.0, `TEAM.md` v2.0, and this document are synchronized.
 
 **Before implementation begins:** run **technical** verification spikes V-1 (row-locking semantics) and V-2 (scheduling granularity). Both are platform questions. **There are zero unresolved product questions** — `PRD.md` §21.1 closes all fifteen.
+
+> **Both are now run, and both came back favourable.** V-1 on 2026-08-12 (`docs/contracts/BID-02-verification.md`) and V-2 on 2026-08-13 (`docs/V-2-scheduling-verification.md`). The two spikes that could have changed the architecture did not. V-3, V-4 and V-5 remain open (§22).
