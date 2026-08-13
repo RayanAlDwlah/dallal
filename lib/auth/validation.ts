@@ -84,8 +84,35 @@ export function safeNextPath(next: string | null | undefined): string | null {
   return next;
 }
 
-/** The login URL that will return the user to `next` once they are signed in. */
-export function loginPath(next?: string | null): string {
+/**
+ * Why the login screen is being shown — FR-AUTH-17.
+ *
+ * `expired` means a session existed and no longer does. `required` means a
+ * guard sent the user here from a page they cannot see signed out. Neither is
+ * an error state, and the screen must not read like one.
+ */
+export type LoginReason = "expired" | "required";
+
+const LOGIN_REASONS: readonly string[] = ["expired", "required"];
+
+/** Discards anything not one of the two known reasons — it comes from the URL. */
+export function safeLoginReason(raw: string | null | undefined): LoginReason | null {
+  return raw && LOGIN_REASONS.includes(raw) ? (raw as LoginReason) : null;
+}
+
+/**
+ * The login URL that will return the user to `next` once they are signed in.
+ *
+ * `reason` is what turns FR-AUTH-17's "told clearly" into something the login
+ * screen can actually say. Without it the screen cannot distinguish a user who
+ * clicked "sign in" from one whose session died underneath them, and both get
+ * the same blank form.
+ */
+export function loginPath(next?: string | null, reason?: LoginReason): string {
+  const params = new URLSearchParams();
   const safe = safeNextPath(next);
-  return safe ? `/login?next=${encodeURIComponent(safe)}` : "/login";
+  if (safe) params.set("next", safe);
+  if (reason) params.set("reason", reason);
+  const query = params.toString();
+  return query ? `/login?${query}` : "/login";
 }

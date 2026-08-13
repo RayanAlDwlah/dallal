@@ -2,7 +2,7 @@ import { redirect } from "next/navigation";
 
 import { NotImplemented } from "@/components/layout/not-implemented";
 import { Page } from "@/components/layout/container";
-import { getVerifiedUserId } from "@/lib/auth/identity";
+import { getSessionState } from "@/lib/auth/identity";
 import { loginPath } from "@/lib/auth/validation";
 
 /**
@@ -25,8 +25,10 @@ export default async function CreateAuctionPage() {
    * owner_id to auth.uid() inside the database (SEC-Z2). Deleting this guard
    * would degrade the experience; it would not open a hole.
    */
-  if (!(await getVerifiedUserId())) {
-    redirect(loginPath("/auctions/new"));
+  const state = await getSessionState();
+  if (state !== "authenticated") {
+    /* FR-AUTH-17 — the redirect carries why, so the login screen can say it. */
+    redirect(loginPath("/auctions/new", state === "expired" ? "expired" : "required"));
   }
 
   return (
