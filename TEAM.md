@@ -1014,11 +1014,28 @@ Branch: feature/rayan-bidding
 
 ### Labels
 
-Create these in Sprint 0: `auth` · `auction` · `bidding` · `realtime` · `shared` · `blocked` · `verify`
+**22 labels exist**: GitHub's nine defaults, all preserved, plus 13 project labels. The project labels are namespaced so they group in GitHub's picker instead of scattering through one alphabetical list.
+
+| Namespace | Labels |
+|---|---|
+| `type:` | `type:foundation` · `type:feature` · `type:verification` · `type:integration` · `type:testing` |
+| `area:` | `area:auth` · `area:auction` · `area:bidding` · `area:realtime` · `area:shared` |
+| `priority:` | `priority:critical` · `priority:high` · `priority:medium` |
+
+**This replaces the flat list this section used to carry.** [`GITHUB_PLAN.md`](GITHUB_PLAN.md) §1.6 is the final decision on the scheme; the mapping is one-to-one and is recorded here so anything written against the old names can be translated rather than guessed at:
+
+| was | now |
+|---|---|
+| `auth` · `auction` · `bidding` · `realtime` · `shared` | `area:auth` · `area:auction` · `area:bidding` · `area:realtime` · `area:shared` |
+| `verify` | `type:verification` |
+| `blocked` | **dropped.** GitHub's native "blocked by" Issue links express this better than a label somebody has to remember to remove |
+| `needs-decision` | **never existed**, and must not be created — see below |
+
+Of the nine defaults only `bug` and `documentation` are used. **`enhancement` is deliberately left unused**: it overlaps `type:feature`, and having both would make the choice ambiguous every time.
 
 **There is no `needs-decision` label.** `PRD.md` v3.0 has zero open product questions, so no Issue can be blocked on one.
 
-Use **`verify`** for an Issue that depends on a **technical** platform verification recorded in [ARCHITECTURE.md](ARCHITECTURE.md) §22 — for example, whether the platform supports the scheduling granularity auction closing needs. **These are technical questions about what the platform can do, never product questions about what Dalal should do.** A technical finding never rewrites a product requirement; if one appears to, raise it with the team (Rule 16).
+Use **`type:verification`** for an Issue that depends on a **technical** platform verification recorded in [ARCHITECTURE.md](ARCHITECTURE.md) §22 — for example, whether the platform supports the scheduling granularity auction closing needs. **These are technical questions about what the platform can do, never product questions about what Dalal should do.** A technical finding never rewrites a product requirement; if one appears to, raise it with the team (Rule 16).
 
 ### Working with Issues
 
