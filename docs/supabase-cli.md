@@ -91,8 +91,28 @@ yourself wanting one, raise it with the team first (`ARCHITECTURE.md` §17.3).
 
 | | project ref | schema | migration history |
 |---|---|---|---|
-| `dallal-dev` (Vercel **Preview**) | `cjrnakdigcwnsrvtyqhy` | rebuilt from `supabase/migrations/` | `20260812120000` recorded |
-| `dallal-prod` (Vercel **Production**) | `yfszokbunbqesigdfuwk` | **empty — zero tables** | none |
+| `dallal-dev` (Vercel **Preview**) | `cjrnakdigcwnsrvtyqhy` | rebuilt from `supabase/migrations/` | `20260812120000`, `20260813190000` |
+| `dallal-prod` (Vercel **Production**) | `yfszokbunbqesigdfuwk` | applied from `supabase/migrations/` | `20260812120000`, `20260813190000` |
+
+**Both projects now carry the same two migrations, applied the same way.**
+`dallal-prod` was empty until 2026-08-13 — zero tables, zero users, verified
+immediately before the push — and received its entire schema through
+`supabase db push` from `main`. Nothing was pasted, and its migration history
+matches the repository, so the next change reaches it the same way this one did.
+
+Measured on `dallal-prod` after the push, and identical to `dallal-dev`:
+
+| | `anon` / `authenticated` |
+|---|---|
+| `auctions`, `bids`, `profiles`, `bid_history` | `SELECT` only — no `INSERT`, `UPDATE` or `DELETE` |
+| RLS | enabled on all three base tables |
+| `POST /rest/v1/bids` | `401` / `42501` — a bid cannot bypass `place_bid` |
+| `POST /rest/v1/rpc/place_bid` | `200` `{"accepted": false, "reason": "not_authenticated"}` |
+| `sar_amount` | `VALUE > 0 AND VALUE < 'Infinity' AND VALUE = round(VALUE,2)` |
+
+That `VALUE < 'Infinity'` is on the production domain and must stay there
+(`CLAUDE.md` §4.4). The two `bid_history` amount columns are `text`, by design —
+amounts travel as strings and are compared in SQL, never as a JS `Number`.
 
 `dallal-dev` was rebuilt on 2026-08-13. It had been applied by hand, had no
 migration history at all, and was missing the `GRANT SELECT` public reads depend
@@ -106,6 +126,22 @@ That one function is now the **only** thing `supabase db diff --linked` reports,
 and it will keep reporting it forever. It is not our drift. Ignore that entry
 and read the rest — if anything else appears, that is real.
 
-Production has no schema. The wiring is correct but the first production deploy
-would fail against an empty database. Do not fix it by pasting into the SQL
-editor — it gets the same `supabase db push`, from `main`, that dev just got.
+## Advisors — what is expected, so a new WARN stands out
+
+`get_advisors` reports **no errors** on either project. It reports nine
+warnings, and every one of them is either intentional or not ours:
+
+- `place_bid` executable by `anon` — **intentional.** It is the bid endpoint.
+  Identity comes from `auth.uid()` inside the function, never from the payload,
+  and the anonymous call is answered `not_authenticated` rather than refused at
+  the API layer (`BR-01`, measured above).
+- `rls_auto_enable` on both counts — Supabase's own function, not ours.
+- `function_search_path_mutable` on `bid_reject`, `format_sar`, `sar_text`,
+  `bids_are_append_only`, `bids_only_via_place_bid`, `auctions_guard_update` —
+  **six real warnings against `BID-02`, to be fixed in `BID-15`.**
+
+`handle_new_user` appears in none of these lists, because `AUTH-01` sets
+`search_path = ''` and revokes `EXECUTE`. That is the pattern the six above
+should follow.
+
+**Anything outside that list is new and worth reading.**
