@@ -16,7 +16,10 @@ create table if not exists auth.users (
   role        text,
   email       text unique,
   created_at  timestamptz default now(),
-  updated_at  timestamptz default now()
+  updated_at  timestamptz default now(),
+  -- Added for tests/auth: the AUTH-01 signup trigger reads the display name
+  -- from here, exactly as GoTrue writes it from signUp's options.data.
+  raw_user_meta_data jsonb not null default '{}'::jsonb
 );
 
 -- NOTE where nullif sits: it wraps the SETTING, before the cast. Writing it the

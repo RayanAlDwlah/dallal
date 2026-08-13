@@ -6,10 +6,14 @@
 KEEP=1 ./tests/bidding/run.sh   # leave the container up to poke at
 ```
 
-Needs **Docker** and **`python3`** (the SQL is extracted from
-`docs/contracts/BID-02-bid-operation.md` by `lib/extract-sql.py`, so the contract
-stays the single source and cannot drift from what is tested). Nothing else — no
-Supabase account, no network, no credentials, no npm dependency.
+**Needs Docker. That is the whole list** — no `python3`, no Supabase account, no
+network, no credentials, no npm dependency. `awk` and `diff` do the contract
+check and both ship with the shell you are already running.
+
+> It used to need `python3` too. @Dem4t reported on PR #1 that he does not have
+> it, so the suite did not run on his machine — while PR #5 asks him to review a
+> migration whose only evidence *is* this suite. A runner one of three developers
+> cannot execute is not a runner. `lib/extract-sql.py` → `lib/contract-sync.awk`.
 
 ---
 
@@ -32,10 +36,11 @@ session with no credentials.
 
 ## What it proves
 
-**Acceptance — 18 assertions.** Each traces to a PRD scenario or business rule:
+**Acceptance — 25 assertions.** Each traces to a PRD scenario or business rule:
 
 | Area | Covers |
 |---|---|
+| `S0-12` §5.2 | `place_bid`'s signature is `(uuid, text)`. With a `numeric` parameter PostgREST casts **before** the body runs, so the `EXCEPTION` block can never catch `22P02`/`22003` and every `malformed_amount` assertion below silently stops testing what it says it tests |
 | `SC-55` / `BR-29` | the first bid may **equal** the starting price |
 | `SC-56` / `BR-03` | every bid after it must be **strictly** greater; `+0.01` is enough (`BR-32` — no increment exists) |
 | `S0-12` §8.1 | `NaN`, `Infinity`, `-Infinity`, `"  inf  "` are rejected. PostgreSQL `numeric` accepts these, and `NaN > 0` and `NaN = round(NaN,2)` are both true — an accepted `NaN` bid makes the auction permanently unwinnable |
@@ -44,6 +49,7 @@ session with no credentials.
 | `BR-02` / `BR-01` | the owner cannot bid; identity comes from the session, never the payload |
 | `BR-21` / `SEC-R3` / `SC-57` | a 40-digit bid is accepted and stored with no drift. **There is no ceiling** |
 | **`LC-03`** | an auction past its `end_time` whose `status` column still reads `active` **rejects the bid**. Eligibility is the server clock, never the stored flag |
+| `FR-LIST-01` / `BR-40` | `anon` holds `SELECT` on `profiles`, `auctions`, `bids` — and holds nothing else. RLS is the **second** gate: PostgreSQL checks the GRANT first, so `using (true)` on a table the role cannot select denies every read with `42501` and the policy never runs. This container grants nothing, so these can only pass if the migration grants it |
 
 **Concurrency — `BID-20`.** Per round, N connections bid the *same* amount on
 one auction simultaneously. Every round must show:
@@ -65,29 +71,41 @@ contention rather than being decorative.
 never executed. This happened during development: a wrong `nullif` placement in
 the shim's `auth.uid()` crashed on the anonymous path and hid the last four
 assertions — and the suite printed `SUITE PASSED`. `run.sh` now asserts that all
-18 assertions were **reached**, and fails on any `ERROR:` from psql.
+19 assertions were **reached**, and fails on any `ERROR:` from psql.
 
 **A stale ordering assumption.** `bids.created_at` defaults to `now()`, which is
 *transaction start* — not lock order. Ordering history by it renders a
 **decreasing** bid history under contention (measured: 2 of 12 contended
 auctions). Ordering authority is `bids.id`. See `BID-02-verification.md` §3.
 
-## Why the SQL is extracted, not committed as a migration
+## The migration is committed, and the suite applies *it*
 
-`lib/extract-sql.py` pulls the migration out of
-`docs/contracts/BID-02-bid-operation.md` at run time.
+`supabase/migrations/20260812120000_bid02_bid_acceptance.sql` is the contract's
+first three ```sql blocks concatenated, verbatim. `run.sh` applies **that file**,
+not a copy of it, so the suite proves the artefact that would ship.
 
-That is not laziness. `S0-11` — the auction record contract — is still awaiting
-Mohammed's sign-off, and `BID-02` §1c declares the `auctions` table. Committing
-that as `supabase/migrations/*.sql` would freeze a shape its owner has not
-agreed to, which `TEAM.md` rule 16 forbids.
+The fourth block — V-1's seed — is **not** in the migration and never will be: it
+writes `auth.users` directly with reserved UUIDs, which the product never does.
+`lib/contract-sync.awk` extracts it for the test run and applies it separately.
 
-So the contract stays the single source and the tests read from it. **When
-`S0-11` comes back ticked, the SQL blocks move to `supabase/migrations/` and
-`extract-sql.py` is deleted.**
+**Committing it does not settle who owns the shape.** `S0-11` — the auction
+record contract — is still awaiting Mohammed's sign-off, and `BID-02` §1c
+declares the `auctions` table; `profiles` is Abdulrahman's. The file exists on a
+branch, in a PR blocked on both, so they can review the exact bytes rather than a
+description of them. Until those are ticked, this migration is a proposal that
+runs, not a decision.
+
+`contract-sync.awk` + a `diff` refuse to run the suite if the two copies ever
+diverge, printing the offending lines. That is the whole reason it exists.
 
 ## Scope
 
-Not covered here: finalization (`BID-15`), the Realtime payload path, RLS under
-the real `anon`/`authenticated` roles rather than as superuser, and the client
-tier. The shim reproduces `auth.uid()` faithfully but it is not Supabase.
+Not covered here: finalization (`BID-15`), the Realtime payload path, and the
+client tier. The shim reproduces `auth.uid()` faithfully but it is not Supabase.
+
+**Policy *evaluation* is still not covered** — the suite runs as superuser, so it
+proves what `anon` is *granted*, not what a policy returns when `anon` actually
+runs the query. That gap is why the missing `GRANT SELECT` reached a live
+database: everything the container could see was correct. The four privilege
+assertions above close the half that is checkable offline. The other half needs
+a real PostgREST request against a real project, and belongs with `BID-11`.
