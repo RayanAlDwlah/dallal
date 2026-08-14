@@ -1,4 +1,43 @@
-# Realtime tests — `BID-11`
+# Realtime tests
+
+```bash
+node --no-warnings                          tests/realtime/live-price-mount.check.mjs   # BID-09, no setup
+node --experimental-strip-types --no-warnings tests/realtime/reconnect.check.mjs        # BID-11, needs .env.local
+```
+
+---
+
+## `live-price-mount.check.mjs` — `BID-09` / `#125`
+
+Twelve checks, no database, no network, no `.env.local`, well under a second.
+
+It guards a defect class this project keeps meeting: **a mechanism built,
+tested, and consumed by nobody.** In `#125` the channel, the hook, the trigger
+and the payload were all correct and all green while
+`app/auctions/[id]/page.tsx` rendered `PriceRegion` with a server read frozen at
+render time — `FR-RT-03`, `FR-RT-05`, `RT-P1` and `RT-X1` were unmet **on the
+deployed product**.
+
+The regression that brings it back is invisible to every other gate here.
+Swapping `LivePriceRegion` for `PriceRegion` "as a simplification" passes `tsc`
+— the props are identical by construction, which is exactly what made the
+original edit safe — passes `eslint`, and passes every SQL suite. So this file
+asserts the wire itself: the page mounts the live component and hands it an
+`auctionId`; the live component still calls `useLiveAuction` and still prefers
+the snapshot.
+
+**Check 11 is the point of it.** It applies that exact swap to a copy of the
+page and requires the audit to fail; check 12 proves the mutation was not a
+no-op. Both halves have been seen to fail against the real files.
+
+It reads source text rather than rendering React — a render would need a tree,
+a browser Supabase client and a `document`, and would test far more than the one
+fact that keeps silently going wrong. The hole that leaves is stated in the
+file's header: a mount hidden behind a condition that is never true would pass.
+
+---
+
+## `reconnect.check.mjs` — `BID-11`
 
 ```bash
 node --experimental-strip-types --no-warnings tests/realtime/reconnect.check.mjs
