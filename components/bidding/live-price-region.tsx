@@ -29,10 +29,23 @@ import type { AuctionPrice } from "@/lib/money";
  * ## Why the server values are still props, and are still used
  *
  * `RT-R7`: bidding works without realtime, so the display must too. Until the
- * first snapshot lands — on the server render, during the channel join, and
- * for the whole of `connection === "unavailable"` — the viewer reads the
- * server's number, never a blank, a zero, or a skeleton (ARCH §14.5). The
- * fallback is the point of the component, not a defensive leftover.
+ * first snapshot lands — on the server render and during the channel join —
+ * the viewer reads the server's number, never a blank, a zero, or a skeleton
+ * (ARCH §14.5). The fallback is the point of the component, not a defensive
+ * leftover.
+ *
+ * **Once a snapshot has landed the fallback is over, and that is deliberate.**
+ * A dropped connection keeps showing the last consistent snapshot instead of
+ * reverting to the older server value. `live-snapshot.ts` swaps only
+ * `connection` on a status change (`:321`) and a failed re-read returns early
+ * rather than publishing a null (`:290`), so `snapshot` never becomes null
+ * again once it is set. Reverting would mean a viewer who watched the price
+ * climb to 300.00 sees 150.00 the moment their Wi-Fi dies — a price falling on
+ * screen while the stored data is perfectly correct, which is #115's defect
+ * class exactly. `RT-R7` holds either way; only this way has no visible
+ * regression. So do not "fix" the code to match a stricter reading of this
+ * paragraph: @m7ya505 caught the earlier version of it claiming the opposite
+ * on #138, and the code was the one telling the truth.
  *
  * `startingPrice` deliberately does NOT come from the store. It is immutable
  * after creation (BR-31), so the live read never selects it; taking it from a
