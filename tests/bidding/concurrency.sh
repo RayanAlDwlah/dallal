@@ -29,8 +29,10 @@ printf 'BID-20 — %s rounds x %s simultaneous bidders\n\n' "$ROUNDS" "$WORKERS"
 
 for round in $(seq 1 "$ROUNDS"); do
   auction=$($PSQL -c "insert into public.auctions
-      (owner_id, status, end_time, starting_price, current_price)
-    values ('$OWNER', 'active', now() + interval '1 hour', 100, 100)
+      (owner_id, status, end_time, starting_price, current_price,
+       name, description, image_path)
+    values ('$OWNER', 'active', now() + interval '1 hour', 100, 100,
+            'ساعة اختبار', 'وصف اختباري طوله كافٍ للحد الأدنى.', 'test/a.jpg')
     returning id;")
 
   out="/tmp/bid20-round-$round"
@@ -92,8 +94,10 @@ echo
 printf 'BID-15 — %s simultaneous bidders inside the final 15 seconds\n\n' "$WORKERS"
 
 ext_auction=$($PSQL -c "insert into public.auctions
-    (owner_id, status, end_time, starting_price, current_price)
-  values ('$OWNER', 'active', clock_timestamp() + interval '10 seconds', 100, 100)
+    (owner_id, status, end_time, starting_price, current_price,
+     name, description, image_path)
+  values ('$OWNER', 'active', clock_timestamp() + interval '10 seconds', 100, 100,
+          'ساعة اختبار', 'وصف اختباري طوله كافٍ للحد الأدنى.', 'test/a.jpg')
   returning id;")
 t0=$($PSQL -c "select end_time from public.auctions where id='$ext_auction';")
 
