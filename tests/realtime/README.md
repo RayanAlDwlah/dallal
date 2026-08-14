@@ -2,6 +2,8 @@
 
 ```bash
 node --no-warnings                          tests/realtime/live-price-mount.check.mjs   # BID-09, no setup
+node --no-warnings                          tests/realtime/convergence.check.mjs        # BID-10, no setup
+node --experimental-strip-types --no-warnings tests/realtime/ux-rules.check.mjs         # BID-10, no setup
 node --experimental-strip-types --no-warnings tests/realtime/reconnect.check.mjs        # BID-11, needs .env.local
 ```
 
