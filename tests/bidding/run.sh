@@ -159,7 +159,7 @@ suite acceptance 25          # BID-02 — bid acceptance
 suite closing    50          # BID-15/BID-16 — finalization and the extension
 suite terminal   30          # BID-19 — terminal-state enforcement, + BR-30 delete guard (#124)
 suite realtime   33          # BID-08 — the broadcast payload, coverage, RT-R7
-suite sweep      16          # BID-21 — gap-filling: SC-28, SC-57, SC-72, SC-73, SC-75
+suite sweep      22          # BID-21 — gap-filling: SC-28, SC-57, SC-72, SC-73, SC-75, SC-15
 
 # EXPECTED catches a suite that aborts partway; nothing above catches a suite
 # line that VANISHES. A merge conflict resolved by taking one side can drop a

@@ -14,7 +14,7 @@ import {
   isSubmissionKey,
   validateDescription,
   validateEndTime,
-  validateImage,
+  validateImageSize,
   validateName,
   validateStartingPrice,
 } from "@/lib/auctions/validation";
@@ -175,7 +175,17 @@ export async function createAuctionAction(
     description: validateDescription(description),
     startingPrice: validateStartingPrice(startingPrice),
     endTime: validateEndTime(endTime, Date.now()), // FR-CREATE-11 — server clock
-    image: validateImage(image),
+    /*
+     * SIZE ONLY. The type is decided below, from the bytes.
+     *
+     * This used to be validateImage(), which also tests `file.type` — the
+     * browser's claim. SEC-V5 rules that out in as many words ("not by
+     * extension or client-reported values"), and it was not merely a wording
+     * problem: it made the client's claim the FIRST gate, so a genuine PNG
+     * arriving as `application/octet-stream` was refused with "the accepted
+     * formats are…" and its signature was never read (FR-CREATE-18).
+     */
+    image: validateImageSize(image),
   };
 
   if (Object.values(fieldErrors).some(Boolean)) {
@@ -183,22 +193,33 @@ export async function createAuctionAction(
   }
 
   /*
-   * Non-null once validateImage() passed. Asserted rather than `!` so that a
-   * future change to the validator cannot turn this into a runtime crash.
+   * Non-null once validateImageSize() passed. Asserted rather than `!` so that
+   * a future change to the validator cannot turn this into a runtime crash.
    */
   if (!image) return { fieldErrors: { image: "اختر صورة للمنتج." } };
 
   /*
-   * FR-CREATE-18, SEC-V5 — what the bytes say, not what the request claimed.
+   * FR-CREATE-18, SEC-V5 — the bytes decide the type. Nothing else does.
+   *
+   * `sniffed` is the single source of truth from here on: it selects the stored
+   * `contentType` and the object's extension, and it is the only thing that can
+   * reject on type. The request's own `image.type` is never consulted again.
+   *
+   * The check used to be `!sniffed || sniffed !== image.type` — the bytes AND
+   * the client's label agreeing. That reads like belt and braces and is not:
+   * the braces can only *reject* files the bytes have already approved. A real
+   * PNG mislabelled by the sender was refused, and no attack was prevented,
+   * because a sender who controls the label can always make it agree with the
+   * bytes. Removing the comparison loses no security and stops rejecting valid
+   * images.
    *
    * Read before the upload, so a rejected file never becomes a stored object at
-   * all. A file whose signature disagrees with its declared type is treated the
-   * same as an unrecognised one: the message names the accepted formats (EC-08)
-   * rather than lecturing the user about their Content-Type header.
+   * all. The message names the accepted formats (EC-08) rather than lecturing
+   * the user about their Content-Type header.
    */
   const header = new Uint8Array(await image.slice(0, SIGNATURE_BYTES).arrayBuffer());
   const sniffed = sniffImageType(header);
-  if (!sniffed || sniffed !== image.type) {
+  if (!sniffed) {
     return { fieldErrors: { image: "الملف ليس صورة صالحة بصيغة JPEG أو PNG أو WebP." } };
   }
 

@@ -13,6 +13,23 @@ extends (SC-74c). `tests/bidding/closing.sql` already asserts the amended
 behaviour (sections E, G, H, I, L). The issue body must not be implemented;
 this report records the contradiction in place of acting on it.
 
+**Correction, 2026-08-14 (this table was wrong about SC-15).** The SC-15 row
+previously read **COVERED**, citing `closing.sql`'s "SC-33 closing does not
+touch bid history" and an "append-only trigger test" in `acceptance.sql`.
+Neither citation holds. SC-33 asserts that *one* code path leaves history
+alone — not that no editing path exists — and the sole mention of
+`bids_are_append_only` anywhere in `tests/` was inside `closing.sql`'s
+`search_path` assertion, which proves the function pins `search_path` and
+nothing else. `grep -rn 'SC-15' tests/` returned **no match**: the criterion
+was asserted nowhere while this table said it was covered.
+
+That is the failure mode `CLAUDE.md` §8 names and the one `#130` already cost
+us on SC-17 — *the sentence asserting something was verified, where the
+verification does not exist*. Recorded here rather than quietly overwritten,
+because a traceability table's only value is that its COVERED means covered.
+The row now points at six real assertions in `sweep.sql`; the underlying
+behaviour was correct all along, which is precisely why nobody caught it.
+
 ---
 
 ## Traceability Table
@@ -32,7 +49,7 @@ Legend:
 | SC-12 | Malformed bid (non-numeric, zero, negative, >2 decimals) rejected server-side | COVERED | `acceptance.sql` — "abc rejected", "100.005 rejected not rounded", "zero rejected", "negative rejected", "NaN rejected", "Infinity rejected", "-Infinity rejected", "whitespace inf rejected" |
 | SC-13 | Every rejection gives a specific, actionable reason | COVERED | `acceptance.sql` — all rejection paths return a named `reason` field; asserted by checking the specific reason string |
 | SC-14 | Accepted bid appears in history, updates current price | COVERED | `acceptance.sql` — "state unchanged after rejections" verifies count and price; acceptance assertions verify `accepted = true` plus current_price update |
-| SC-15 | No mechanism to edit or delete a bid | COVERED | `closing.sql` — "SC-33 closing does not touch bid history"; `acceptance.sql` — bids_are_append_only trigger test (the `bids_no_update_or_delete` trigger is asserted in acceptance via the insert-gate test structure) |
+| SC-15 | No mechanism to edit or delete a bid | COVERED | `sweep.sql` — six assertions: both product-role gates (`42501`, bidder attacking their **own** bid) and both trigger gates (`P0001`, bypassing grants and RLS entirely), plus a premise control and a re-read proving the row is unchanged |
 | SC-16 | Two simultaneous bids at same price: exactly one accepted | COVERED | `concurrency.sh` — the BID-20 concurrency harness |
 | SC-17 | Under concurrent bidding, history has every accepted bid exactly once, strictly increasing | COVERED | `concurrency.sh` — verified by the concurrency harness |
 | SC-18 | Concurrency rejection names the new price | COVERED | `acceptance.sql` — "state unchanged after rejections" checks `not_above_current`; the `outbid_race` reason and its `current_price` field are tested in the concurrency harness |

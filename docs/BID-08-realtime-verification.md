@@ -250,7 +250,7 @@ documentation, and both of which shaped the migration:
 | Artefact | Role |
 |---|---|
 | `supabase/migrations/20260814140000_bid08_realtime_foundation.sql` | The trigger, the `RT-R7` wrapper, the SELECT-only policy |
-| `tests/bidding/realtime.sql` | 31 assertions — wiring, payload, coverage, `RT-R7`, policy |
+| `tests/bidding/realtime.sql` | 33 assertions — wiring, payload, coverage, `RT-R7`, policy |
 | `tests/bidding/lib/supabase-shim.sql` | A `realtime.send` double that can be made to fail |
 | `lib/realtime/auction-channel.ts` | The subscription, with a change callback that takes **no argument** |
 | `lib/realtime/use-auction-channel.ts` | The React binding — `status` plus a `revision` that is a dependency, not data |
