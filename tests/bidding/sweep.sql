@@ -291,3 +291,99 @@ begin
   perform pg_temp.chk('SC-75 no email address appears in bid_history',
                       has_em::text, 'false');
 end $$;
+
+
+-- ===========================================================================
+-- SC-15 — no mechanism to edit or delete a bid (BR-05, SEC-I1).
+--
+-- This criterion was marked COVERED in docs/BID-21-traceability.md citing
+-- closing.sql's "SC-33 closing does not touch bid history" and an
+-- "append-only trigger test" in acceptance.sql. Neither claim survives
+-- reading: SC-33 asserts that ONE code path leaves history alone, which is
+-- not the same as no path existing, and the only mention of
+-- bids_are_append_only in the whole suite is inside closing.sql's
+-- search_path assertion — that proves the function pins search_path, not
+-- that it refuses anything. `grep -rn 'SC-15' tests/` returned nothing.
+--
+-- The property has TWO independent gates and the distinction matters:
+--   * the grant gate  — authenticated/anon hold no UPDATE or DELETE on
+--     public.bids, so the product roles are refused with 42501 before any
+--     row is examined;
+--   * the trigger     — bids_are_append_only raises unconditionally, so a
+--     role that BYPASSES grants and RLS (postgres, service_role) is still
+--     refused, with P0001.
+--
+-- Asserting only the first would make the guarantee depend on a GRANT that a
+-- future migration could hand out without anyone noticing the criterion
+-- broke. Asserting only the second would not prove the product path is shut.
+-- Both are asserted, and the row is re-read afterwards so that "refused"
+-- means "unchanged", not merely "raised".
+-- ===========================================================================
+do $$
+declare
+  b1  uuid := '00000000-0000-0000-0000-0000000000b1';
+  a   uuid;
+  r   jsonb;
+  v_bid bigint;
+  got text;
+begin
+  a := pg_temp.new_auction();
+  perform pg_temp.as_user(b1);
+  r := public.place_bid(a, '150');
+
+  -- Premise. Without this the four assertions below can pass vacuously
+  -- against zero rows (#117: a negative assertion with no subject always
+  -- holds).
+  perform pg_temp.chk('SC-15 control: a bid exists to attempt to edit',
+                      coalesce(r->>'accepted', '?'), 'true');
+  select id into v_bid from public.bids where auction_id = a;
+
+  -- Gate 1 — the product role. The bidder attacks their OWN bid: if any
+  -- ownership-based exception existed, this is where it would show.
+  begin
+    perform pg_temp.as_user(b1);
+    set local role authenticated;
+    update public.bids set amount = 999 where id = v_bid;
+    got := 'ACCEPTED';
+  exception when others then got := sqlstate;
+  end;
+  reset role;
+  perform pg_temp.chk('SC-15 bidder cannot UPDATE own bid (grant gate)',
+                      got, '42501');
+
+  begin
+    perform pg_temp.as_user(b1);
+    set local role authenticated;
+    delete from public.bids where id = v_bid;
+    got := 'ACCEPTED';
+  exception when others then got := sqlstate;
+  end;
+  reset role;
+  perform pg_temp.chk('SC-15 bidder cannot DELETE own bid (grant gate)',
+                      got, '42501');
+
+  -- Gate 2 — no role at all. This block runs as the suite's own superuser,
+  -- which bypasses both the grant gate and RLS; only the trigger can refuse
+  -- it. P0001 is bids_are_append_only's bare `raise exception`.
+  begin
+    update public.bids set amount = 999 where id = v_bid;
+    got := 'ACCEPTED';
+  exception when others then got := sqlstate;
+  end;
+  perform pg_temp.chk('SC-15 UPDATE refused even bypassing grants (trigger)',
+                      got, 'P0001');
+
+  begin
+    delete from public.bids where id = v_bid;
+    got := 'ACCEPTED';
+  exception when others then got := sqlstate;
+  end;
+  perform pg_temp.chk('SC-15 DELETE refused even bypassing grants (trigger)',
+                      got, 'P0001');
+
+  -- "Refused" must mean the row is untouched. A raise that fired AFTER the
+  -- write would still be caught above.
+  perform pg_temp.chk('SC-15 the bid row is unchanged after all four attempts',
+                      (select public.sar_text(amount) from public.bids where id = v_bid),
+                      '150.00');
+end $$;
