@@ -126,6 +126,13 @@ rejected on sight.
    `S0-12` §0): grouped thousands, exactly two decimals, one space, the **Latin** `SAR`
    indicator. Never `ر.س`, never "Demo Points", never a second currency, and never a
    second formatter — `styleguide.html` and demo pages included.
+7. **Every direct read of a `sar_amount` column casts `::text`, per column, every
+   time.** Rule 1 is not satisfied by not writing `Number()`: PostgREST serialises bare
+   `numeric` as an unquoted JSON *number*, and `JSON.parse` inside the Supabase client
+   corrupts it before a line of this repository runs — the float is produced with **no
+   code of yours on the stack** (measured, `#103`). Read through `public.bid_history` /
+   `sar_text()`, or cast every money column in the select: `starting_price::text`. A
+   review that only greps for `Number(` will pass the violation.
 
 ---
 
