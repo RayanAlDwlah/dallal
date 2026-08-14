@@ -519,7 +519,21 @@ amended the contract himself in `#133`**, which is the right hand: he authored t
 and he owns the behaviour they describe. Nothing in this section amends the contract; the
 body above already carries his amendments, and the two new boxes in §8 come from them.
 
-### 10.4 What is left
+### 10.4 How the signature gets recorded — @RayanAlDwlah's answer, adopted
+
+§8.1's own complaint was that there is no recording mechanism:  §12.1 says
+agreement lives in the issue thread, and it refused a commit message on another branch as
+the tick. His review on #132 supplies the missing half, and it is better than what §8 asks
+for:
+
+> **@m7ya505 approves this PR with an explicit sentence** — "I confirm the §10.1 rows and
+> tick the §8 boxes" — and that review becomes the citable artifact.
+
+A review is bound to the exact revision of the document it was left on, which a commit
+message is not. That is precisely the gap §8.1 named. On his approval the status line
+becomes true as written: **signed by Mohammed, recorded in the review on #132**.
+
+### 10.5 What is left
 
 One person. Every statement about code in §8 has been checked and the evidence is above;
 every undertaking in §8 is unticked and waiting. When @m7ya505 ticks, he is confirming
