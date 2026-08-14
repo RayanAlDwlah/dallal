@@ -239,7 +239,11 @@ The two hints use different verbs — تبدأ من versus أكبر من — so 
 | ≤ 60 seconds | Brass, with a slow 1 s pulse on the seconds only — and the word `ينتهي الآن` |
 | Ended | Slate, replaced by the absolute close time |
 
-The countdown ticks client-side from the **server-supplied** end time (RT-P3, BR-19). It is display only; it never decides anything. The end time never changes — there is no anti-sniping extension (BR-36), so the countdown never jumps.
+The countdown ticks client-side from the **server-supplied** end time (RT-P3, BR-19). It is display only; it never decides anything.
+
+**The end time CAN move, and the countdown must follow it.** `BR-36` was reversed on 2026-08-13: a bid accepted in the final 15 seconds adds exactly 30 seconds, repeating to a cap of 20 (`CLAUDE.md` §5). So a countdown seeded once at mount is **wrong**, not merely stale — on a contested auction it reaches zero while bidding is still open, for up to ten minutes. Re-read the end time from the live snapshot; never cache it across a bid.
+
+> This paragraph used to read *"The end time never changes … so the countdown never jumps."* That sentence was true when written and false from 2026-08-13. It is corrected here rather than deleted because it is the reason the defect in #140 went unseen: every session that read this file was told a frozen countdown was correct behaviour.
 
 The whole `2د 04:11:38` run is LTR-isolated; only the unit letters are Arabic.
 
@@ -314,7 +318,9 @@ Rules that hold at every width:
 
 Design-side companion to PRD SD-05 and TEAM.md §26. `INT-08` audits every screen against this list; **if a component for any of these exists, the audit has already failed.**
 
-No edit-auction screen or control · no cancel control or `Cancelled` state styling · no reserve-price field · no bid-increment stepper (`+5 / +10 / +50`) · no maximum-price or bid-ceiling validation · no anti-sniping "time extended" treatment · no email-verification screen or "unverified" badge · no admin surface · **no payment, checkout, card, wallet, refund, shipping, or fulfilment UI** · no message, chat, or contact-the-seller control · no ended auctions in the main listing · the term **"Demo Points"**.
+No edit-auction screen or control · no cancel control or `Cancelled` state styling · no reserve-price field · no bid-increment stepper (`+5 / +10 / +50`) · no maximum-price or bid-ceiling validation · no email-verification screen or "unverified" badge · no admin surface · **no payment, checkout, card, wallet, refund, shipping, or fulfilment UI** · no message, chat, or contact-the-seller control · no ended auctions in the main listing · the term **"Demo Points"**.
+
+> **Removed from this list on 2026-08-14: "no anti-sniping 'time extended' treatment".** Anti-sniping **exists** since `BR-36`'s reversal (`CLAUDE.md` §5). Whether the extension gets a visible treatment is an open presentation question and is tracked separately — but it is no longer an excluded feature, and listing it here told every reader the opposite.
 
 The winner and seller result views in particular must present **no next step** — no button, label, or hint suggesting payment, collection, contact or delivery (FR-DETAIL-21a, FR-END-17a, SC-67). The result is the end of the flow.
 
