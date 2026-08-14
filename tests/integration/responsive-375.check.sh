@@ -32,7 +32,14 @@ EXPECTED=6
 pass=0
 fail=0
 
+# `got` is trimmed before comparing. BSD `wc -l` (macOS) pads its output with
+# spaces and GNU `wc -l` (Linux, WSL) does not, so `[ "       3" = "3" ]` fails
+# on one developer's machine and passes on another's — @RayanAlDwlah hit exactly
+# that on #153. A shared check that is green for the author and red for everyone
+# else is worse than no check. Trimming here kills the whole class, including
+# any future use; the call sites also prefer `grep -c .`, which pads on neither.
 chk() { # label  got  want
+  set -- "$1" "$(printf '%s' "$2" | tr -d '[:space:]')" "$3"
   if [ "$2" = "$3" ]; then
     pass=$((pass + 1))
     printf 'PASS  %-62s (%s)\n' "$1" "$2"
@@ -93,7 +100,7 @@ chk "no fixed width at or above 375 px, no viewport-width units" \
 # four are what every screen builds from, so a target regression here is a
 # target regression everywhere.
 chk "Button, Input, Textarea and AmountInput all set min-h-tap" \
-    "$(grep -l 'min-h-tap' components/ui/button.tsx components/ui/input.tsx components/ui/amount-input.tsx 2>/dev/null | wc -l)" 3
+    "$(grep -l 'min-h-tap' components/ui/button.tsx components/ui/input.tsx components/ui/amount-input.tsx 2>/dev/null | grep -c .)" 3
 
 # --- 5. The listing grid starts at one column -------------------------------
 # FR-LIST at 375 px: a two-column grid of cards carrying an image, a name, a

@@ -86,6 +86,21 @@ That is the **third** time this shape has appeared in two days — `#143` (`Imag
 
 `money.tsx` is omitted from check 1's scan: it **is** the implementation of the rule, and flagging it would make the check unsatisfiable.
 
+### 3.1 It passed for me and failed for @RayanAlDwlah — `wc -l`
+
+The first version of check 4 compared `… | wc -l` against `3`. **BSD `wc -l` on macOS pads its output with spaces; GNU `wc -l` on Linux and WSL does not.** So the string comparison was `[ "       3" = "3" ]`, which is false — the check was green on my machine and red on his, on identical code.
+
+Reproduced here by shadowing `wc` with a padding shim rather than taking it on report:
+
+```
+old form, padded output   FAIL  … all set min-h-tap   got=       3 want=3
+new form, same padding    PASS  … all set min-h-tap   (3)
+```
+
+Fixed twice over, deliberately. The call site uses `grep -c .`, which pads on neither platform; and `chk()` now strips whitespace from the measured value before comparing, which kills the whole class rather than this one instance.
+
+**A shared check that is green for its author and red for everyone else is worse than no check** — it teaches the other two developers that the harness is unreliable, and the next real failure gets read as the same noise.
+
 ## 4. What is still not known
 
 1. **Rendered layout at 375 px.** No browser. Nothing here measures a real box, and `document.documentElement.scrollWidth` was never read. This is the substance of `#88` and it is untouched.
