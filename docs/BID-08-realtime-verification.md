@@ -356,11 +356,25 @@ After this change the conclusion holds again, for a different reason: the payloa
 authored by a trigger and contains one auction id. Not *"RLS keeps the private column
 away from the stream"*, but *"the private column is never in the stream"*.
 
-**Recommended amendment to `ARCHITECTURE.md` §14.4** — for the team to take, not for this
-PR to slip in: keep the "structural, not by filtering" claim, replace the justification
-with the trigger-authored payload, and keep the email sentence as the second, narrower
-guarantee it always was. Raised here rather than edited, because §14.4 is shared ground
-and `CLAUDE.md` §2 says the surfacing is the required action.
+**Amendment to `ARCHITECTURE.md` §14.4 — raised here, then taken.** It was first written up
+as a recommendation for the team, because §14.4 is shared ground and `CLAUDE.md` §2 makes
+surfacing the required action. **The project owner then approved it directly (2026-08-14)
+and asked for it to be applied in this PR rather than deferred**, so §14.4 now keeps the
+"structural, not by filtering" claim, rests it on the trigger-authored payload, keeps the
+email sentence as the second and narrower guarantee it always was, and **quotes the old
+wording with the reason it was insufficient** rather than deleting it. Two neighbouring
+sections were corrected in the same pass, for the same reason — they described a mechanism
+this PR replaces:
+
+| Section | Was | Now |
+|---|---|---|
+| §14.1 | *"Supabase Realtime detects the committed change"* — CDC by implication | Names the trigger, names the re-read, and states that neither table may join the `supabase_realtime` publication |
+| §14.3 | Source column read as *what arrives*; "New bid in history ← **Bid insert**" | Renamed to *what fires the event*; one `auctions` UPDATE wakes every row, and the BR-36 end-time move is listed as its own row |
+| §14.4 | Justified only by emails; `bidder_id` fell through the gap | Justified by the payload's contents; emails retained as the narrower second guarantee |
+
+The approval is recorded here so a reviewer can check the decision, not just the diff —
+these are edits to a shared document made from a bidding branch, and that is exactly the
+shape that should be questioned by default.
 
 ### Footprint left on dev
 

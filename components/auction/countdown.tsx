@@ -4,7 +4,18 @@ import { useEffect, useState } from "react";
 import { cn } from "@/lib/cn";
 
 export interface CountdownProps {
-  /** ISO timestamp, fixed at creation and never extended (BR-36, BR-16). */
+  /**
+   * ISO timestamp. **It can move.** This line used to read "fixed at creation
+   * and never extended"; BR-36 was reversed on 2026-08-13 and an accepted bid
+   * in the final 15 seconds now pushes the end 30 seconds out, up to 20 times.
+   * BR-16 narrowed rather than disappeared: no *human* and no edit path may
+   * move it, only that automatic extension, and only forward.
+   *
+   * The effect below already depends on this prop, so a new value restarts the
+   * ticker — which is what AUC-13 requires ("must not freeze on a value read
+   * once at mount"). Passing an end time captured once at page load would
+   * defeat that from the caller's side, not this component's.
+   */
   endsAt: string;
   /**
    * The server's clock at render time. Used to measure skew, so a wrong or
