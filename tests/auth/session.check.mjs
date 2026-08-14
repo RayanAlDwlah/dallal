@@ -170,6 +170,16 @@ chk(
   chk("open redirect refused at the login screen", String(res.status), "200");
 }
 
+/*
+ * The completeness guard at the bottom counts the REQUIRED group and nothing
+ * else, so the count is snapshotted HERE, where that group ends. Reading
+ * pass+fail at the bottom instead sweeps in the optional three and exits 1 with
+ * 16 green assertions — the suite failing precisely when it proves the most,
+ * and in the documented thorough mode this file's own header advertises.
+ * @RayanAlDwlah found it on #104.
+ */
+const requiredRan = pass + fail;
+
 // ==========================================================================
 // OPTIONAL — needs a real account on the dev project.
 //
@@ -232,15 +242,16 @@ if (!url || !key || !email || !password) {
 
 // --------------------------------------------------------------------------
 const REQUIRED = 13;
-const ran = pass + fail;
 console.log(
-  `---- ${pass} passed, ${fail} failed, ${skipped} skipped, ${ran} of ${REQUIRED} required assertions reached`,
+  `---- ${pass} passed, ${fail} failed, ${skipped} skipped, ${requiredRan} of ${REQUIRED} required assertions reached`,
 );
 if (skipped > 0) {
   console.log(`     ${skipped} assertion(s) NOT PROVEN — the optional group did not run.`);
 }
-if (ran !== REQUIRED) {
-  console.log(`!! expected ${REQUIRED} required assertions, only ${ran} reached. Treating as failure.`);
+if (requiredRan !== REQUIRED) {
+  console.log(
+    `!! expected ${REQUIRED} required assertions, only ${requiredRan} reached. Treating as failure.`,
+  );
   process.exit(1);
 }
 process.exit(fail === 0 ? 0 : 1);
