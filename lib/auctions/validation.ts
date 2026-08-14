@@ -52,6 +52,25 @@ export const MAX_IMAGE_MB = 5;
 /** The one bucket. FR-CREATE-15: exactly one image per auction. */
 export const IMAGE_BUCKET = "auction-images";
 
+/**
+ * AUC-05 — the whole envelope, in one sentence, appended to EVERY image
+ * rejection.
+ *
+ * `GITHUB_PLAN.md:393` asks that a rejected type **or** size name "the
+ * accepted formats **and** the limit". Both, on either rejection — and the
+ * reason is EC-08's, not tidiness: the seller is looking at a file picker,
+ * and a message that names only the half they just failed sends them back to
+ * pick a file that fails the other half. Telling them the format is wrong and
+ * letting them return with a 9 MB PNG is two round trips for one mistake.
+ *
+ * One constant rather than the sentence written three times, so the three
+ * paths cannot drift apart — the same reason S0-12 §6 allows exactly one money
+ * formatter. tests/auction/image-type.check.mjs asserts that every rejection
+ * message carries it.
+ */
+export const IMAGE_ENVELOPE =
+  `الصيغ المقبولة: JPEG أو PNG أو WebP، وبحجم لا يتجاوز ${MAX_IMAGE_MB} ميجابايت.` as const;
+
 /* -------------------------------------------------------------------------
    Field validators. Each returns an Arabic message, or undefined when valid.
    ------------------------------------------------------------------------- */
@@ -137,7 +156,8 @@ export function validateEndTime(raw: string, now: number): string | undefined {
 export function validateImageSize(file: File | null): string | undefined {
   if (!file || file.size === 0) return "اختر صورة للمنتج.";
   if (file.size > MAX_IMAGE_BYTES) {
-    return `حجم الصورة يجب ألا يتجاوز ${MAX_IMAGE_MB} ميجابايت.`;
+    /* AUC-05 — the size failed, and the message still names the formats too. */
+    return `حجم الصورة كبير جدًا. ${IMAGE_ENVELOPE}`;
   }
   return undefined;
 }
@@ -163,7 +183,8 @@ export function validateImageSize(file: File | null): string | undefined {
 export function validateImageType(file: File | null): string | undefined {
   if (!file) return "اختر صورة للمنتج.";
   if (!ACCEPTED_IMAGE_TYPES.includes(file.type as (typeof ACCEPTED_IMAGE_TYPES)[number])) {
-    return "الصيغ المقبولة: JPEG أو PNG أو WebP.";
+    /* AUC-05 — the type failed, and the message still names the limit too. */
+    return `هذا الملف ليس بصيغة مقبولة. ${IMAGE_ENVELOPE}`;
   }
   return undefined;
 }

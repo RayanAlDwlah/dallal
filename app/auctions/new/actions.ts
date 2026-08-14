@@ -9,6 +9,7 @@ import { loginPath } from "@/lib/auth/validation";
 import { SIGNATURE_BYTES, sniffImageType } from "@/lib/auctions/image-signature";
 import {
   IMAGE_BUCKET,
+  IMAGE_ENVELOPE,
   MIN_DURATION_MS,
   extensionFor,
   isSubmissionKey,
@@ -220,7 +221,13 @@ export async function createAuctionAction(
   const header = new Uint8Array(await image.slice(0, SIGNATURE_BYTES).arrayBuffer());
   const sniffed = sniffImageType(header);
   if (!sniffed) {
-    return { fieldErrors: { image: "الملف ليس صورة صالحة بصيغة JPEG أو PNG أو WebP." } };
+    /*
+     * AUC-05 — names the formats AND the limit, through the one constant the
+     * other two rejection paths use. The seller is standing in a file picker;
+     * a message naming only the half they failed sends them back for a file
+     * that fails the other half.
+     */
+    return { fieldErrors: { image: `الملف ليس صورة صالحة. ${IMAGE_ENVELOPE}` } };
   }
 
   const supabase = await createClient();

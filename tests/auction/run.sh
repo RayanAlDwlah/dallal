@@ -139,7 +139,7 @@ run_suite() {
 
 # Keep each EXPECTED in step with the chk() calls in its file.
 run_suite immutability.sql 24 "AUC-18 — immutability and authorization"
-run_suite creation.sql     26 "AUC-19 — creation validation and the active-only listing"
+run_suite creation.sql     28 "AUC-19 — creation validation and the active-only listing"
 run_suite duplicate.sql    13 "AUC-03 — duplicate-submission prevention (EC-21)"
 
 echo
