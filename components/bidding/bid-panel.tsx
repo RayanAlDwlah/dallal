@@ -162,6 +162,20 @@ export function BidPanel({ auctionId }: BidPanelProps) {
   const [outcome, setOutcome] = useState<PlaceBidOutcome | null>(null);
 
   /*
+   * BID-17's other half (SC-23, FR-RT-08): when the LIVE status flips to
+   * ended under the viewer, the bid control disappears — in the same paint
+   * as the outcome banner's appearance, because both consume the same
+   * snapshot publish from the shared store. BidSlot's server-side gate only
+   * covers pages LOADED after the end; this gate covers the viewer who was
+   * already here. Every bid this form could still collect would be a
+   * guaranteed rejection (FR-DETAIL-17's own logic), so vanishing — even
+   * mid-typing — is the honest behaviour, and the banner above answers the
+   * question the form no longer can. After all hooks, deliberately: a
+   * conditional return before them would break React's rules.
+   */
+  if (snapshot?.auction.status === "ended") return null;
+
+  /*
    * BID-06 — the minimum, from the live snapshot, through the ONE rule module
    * (lib/money). Inclusive for the first bid (BR-29), strict after (BR-03) —
    * the hint's verb carries the difference. Null until the first read lands;
