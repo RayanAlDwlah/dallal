@@ -514,6 +514,22 @@ described wrongly and @RayanAlDwlah corrected, so it is the one place in this ta
 stale row costs the most. Fixed above, with the two citations the seventh field actually
 needs.
 
+### 10.1a A box that contradicts its own evidence — @RayanAlDwlah's to resolve
+
+§8's §4 box ends **“Grants allow all three”**. The §4 row above proves the opposite in
+its own cell: there is no `UPDATE` grant, `bid02:512` revokes it, and the write set is
+**not enforced by grants at all** — it reaches the table through `SECURITY DEFINER`.
+
+So the sentence @m7ya505 is being asked to tick is false as written, and a ✅ beside it
+is an invitation to sign it. The cost is not wording: a later session reading the
+**signed** contract concludes a grant is what permits the per-bid `current_price` write,
+restores it, and reopens the hole that the absence of that grant is what closes (`AUC-18`).
+
+**Not corrected here.** §8 is @RayanAlDwlah's text, and rewriting another owner's box from
+inside a verification of it is the exact thing this PR was stopped for once. Raised, not
+taken. Suggested wording, his to accept or replace: *“the writes reach the table through
+`SECURITY DEFINER`; no `UPDATE` grant exists and none must be added”*.
+
 ### 10.2 Not checkable from here — @m7ya505's alone
 
 These stay ⬜ in §8 and nothing below substitutes for them:
