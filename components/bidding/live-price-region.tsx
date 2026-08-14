@@ -2,6 +2,7 @@
 
 import { PriceRegion } from "@/components/auction/detail/price-region";
 import { useLiveAuction } from "@/lib/bidding/use-live-auction";
+import type { AuctionStatus } from "@/lib/auctions/detail";
 import type { AuctionPrice } from "@/lib/money";
 
 /**
@@ -84,6 +85,18 @@ import type { AuctionPrice } from "@/lib/money";
 export interface LivePriceRegionProps extends AuctionPrice {
   /** Which auction to watch. Same store as the panel and the history (SC-21). */
   auctionId: string;
+  /**
+   * F-3 (#162) — @m7ya505. Forwarded UNTOUCHED to PriceRegion so a closed
+   * zero-bid auction stops claiming a first bid would be accepted.
+   *
+   * ⚠️ Deliberately NOT taken from `snapshot.auction.status`, even though the
+   * snapshot is right here and carries it. Making the status live is the
+   * BID-17/AUC-13 seam (#160, #140), it crosses two owners, and it still has
+   * an unanswered question attached (the badge clock, #129). Swapping this one
+   * line to the snapshot would settle that quietly, which is the one thing
+   * those issues exist to prevent. It stays the server value until #140 lands.
+   */
+  status?: AuctionStatus;
 }
 
 export function LivePriceRegion({
@@ -91,6 +104,7 @@ export function LivePriceRegion({
   startingPrice,
   currentPrice,
   bidCount,
+  status,
 }: LivePriceRegionProps) {
   /*
    * Reads the SHARED per-auction store — it does not open a channel of its
@@ -105,6 +119,7 @@ export function LivePriceRegion({
       startingPrice={startingPrice}
       currentPrice={snapshot?.auction.currentPrice ?? currentPrice}
       bidCount={snapshot?.auction.bidCount ?? bidCount}
+      status={status}
     />
   );
 }

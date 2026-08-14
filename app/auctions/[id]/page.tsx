@@ -202,6 +202,7 @@ export default async function AuctionDetailPage({
             startingPrice={auction.startingPrice}
             currentPrice={auction.currentPrice}
             bidCount={auction.bidCount}
+            status={status}
           />
 
           {/*
