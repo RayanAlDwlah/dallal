@@ -29,6 +29,7 @@ MIGRATION15="$ROOT/supabase/migrations/20260814000000_bid15_closing_and_extensio
 MIGRATIONAUC="$ROOT/supabase/migrations/20260814120000_auc01_auction_product_fields.sql"
 MIGRATIONAUC18="$ROOT/supabase/migrations/20260814130000_auc18_auction_authorization.sql"
 MIGRATIONBID08="$ROOT/supabase/migrations/20260814140000_bid08_realtime_foundation.sql"
+MIGRATIONBID09="$ROOT/supabase/migrations/20260814200000_bid09_history_order_key.sql"
 CONTRACT="$ROOT/docs/contracts/BID-02-bid-operation.md"
 
 # The migration is committed AND printed in the contract. Two copies of one
@@ -67,23 +68,24 @@ cp "$MIGRATION15"     "$WORK/02-bid15.sql"
 cp "$MIGRATIONAUC"    "$WORK/03-auc01.sql"
 cp "$MIGRATIONAUC18"  "$WORK/04-auc18.sql"
 cp "$MIGRATIONBID08"  "$WORK/05-bid08.sql"
+cp "$MIGRATIONBID09"  "$WORK/06-bid09.sql"
 # contract-sync.awk names the seed 04-seed.sql because it was the fourth thing
-# applied when it was written. It is now the sixth, and it is still the last:
+# applied when it was written. It is now the seventh, and it is still the last:
 # every migration goes on before any fixture does, exactly as production sees
 # them. Renaming it here rather than in the awk keeps the awk about the
 # contract and this file about the order.
-mv "$WORK/04-seed.sql" "$WORK/06-seed.sql"
+mv "$WORK/04-seed.sql" "$WORK/07-seed.sql"
 docker cp "$WORK/." "$CONTAINER":/t/ >/dev/null
 
 echo "==> applying the Supabase shim (auth schema, auth.uid, PostgREST roles)"
 docker exec "$CONTAINER" psql -U postgres -v ON_ERROR_STOP=1 -q -f /t/supabase-shim.sql || exit 1
 
-# 01 through 05 are the committed migration files verbatim, in the order
-# `supabase db push` applies them. 06-seed is V-1's fixtures, which are NOT part
+# 01 through 06 are the committed migration files verbatim, in the order
+# `supabase db push` applies them. 07-seed is V-1's fixtures, which are NOT part
 # of any of them: the seed writes auth.users directly with reserved UUIDs,
 # something the product never does. Applying them separately is the point.
 #
-# Three of the five degrade deliberately on a stock postgres:17 container, and
+# Three of the six degrade deliberately on a stock postgres:17 container, and
 # each says so rather than failing:
 #
 #   02-bid15  installs pg_cron when available. Here it is not — a supported
@@ -102,7 +104,7 @@ docker exec "$CONTAINER" psql -U postgres -v ON_ERROR_STOP=1 -q -f /t/supabase-s
 #             that it says so. The trigger applies either way and, by design,
 #             cannot fail a bid on a stack with no realtime at all (RT-R7).
 echo "==> applying the migrations, then the test-only seed"
-for f in 01-migration 02-bid15 03-auc01 04-auc18 05-bid08 06-seed; do
+for f in 01-migration 02-bid15 03-auc01 04-auc18 05-bid08 06-bid09 07-seed; do
   printf '    %-14s ' "$f"
   if docker exec "$CONTAINER" psql -U postgres -v ON_ERROR_STOP=1 -q -f "/t/$f.sql" 2>/tmp/err; then
     echo ok

@@ -13,12 +13,15 @@ import { compareSar, formatSar, SAR_SUFFIX } from "@/lib/money";
  *
  * The four behaviours — each fails silently, so they are named:
  *
- *   1. ORDER: rendered exactly as delivered. `bid_history` orders by
- *      `bids.id` — lock order, the definitive order (BR-11). Nothing here
- *      re-sorts and nothing may: the only sortable projected column is
- *      `created_at`, which is transaction start, disagrees with lock order
- *      under contention, and renders a DECREASING history (measured at 2 of
- *      12 contended auctions, S0-11 §6). Newest first (FR-BID-29).
+ *   1. ORDER: rendered exactly as delivered, because the store already
+ *      GUARANTEED it — live-snapshot.ts sorts on `seq`, the public per-auction
+ *      lock-order rank, after receipt. That client-side sort is the contract
+ *      (@Dem4t's #109 question: every transport-level ordering reaches the
+ *      client through an aggregate whose input order is planner behaviour).
+ *      Nothing here re-sorts, and nothing may sort by `created_at`: it is
+ *      transaction start, disagrees with lock order under contention, and
+ *      renders a DECREASING history (measured, S0-11 §6). Newest first
+ *      (FR-BID-29) = `seq` descending (BR-11).
  *
  *   2. IDENTITY: display name only (BR-26, FR-BID-22a). The email absence is
  *      structural — the view cannot reach one — and stays that way exactly as
@@ -107,12 +110,13 @@ export function BidHistory({ auctionId }: BidHistoryProps) {
       <ol className="divide-rule mt-2 divide-y">
         {snapshot.history.map((entry, i) => (
           /*
-           * Keyed by content, not index: bids are append-only (BR-05) and new
-           * entries arrive at the head, so an index key would re-identify
-           * every existing row on each new bid.
+           * `seq` is stable per row forever (append-only, rank over bids.id),
+           * which is exactly what a React key wants. The composite-content
+           * key this replaces was a workaround for the projection not
+           * carrying an identity — it does now.
            */
           <li
-            key={`${entry.createdAt}·${entry.amount}·${entry.displayName}`}
+            key={entry.seq}
             className="flex items-center justify-between gap-3 py-2"
           >
             <span className="min-w-0 truncate text-sm text-ink">
