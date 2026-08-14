@@ -118,6 +118,14 @@ begin
   perform public.place_bid(a, '150');
   perform set_config('request.jwt.claims', '', false);
 
+  -- place_bid sets dalal.in_place_bid = 'on' TRANSACTION-locally and never
+  -- clears it — in production each RPC is its own transaction, so there is
+  -- nothing to clear. A DO block is one transaction, so without this reset the
+  -- flag leaks into every assertion that follows the fixture, and a "no flag"
+  -- test silently runs WITH the flag. Found when D1 below reported the
+  -- terminal-guard message instead of the end-time-guard one.
+  perform set_config('dalal.in_place_bid', '', true);
+
   perform pg_temp.expire(a);
   perform public.close_ended_auctions(a);
 
@@ -300,9 +308,12 @@ end $$;
 -- ===========================================================================
 -- D. Post-close end_time cannot be moved
 --
--- The trigger checks end_time changes before the terminal-state check, so the
--- error message differs depending on whether dalal.in_place_bid is set.
--- Either way the update is refused; what changes is which guard fires first.
+-- The guard (20260814000000 §2) checks end_time changes BEFORE the
+-- terminal-state check — verified against the function body, and then
+-- verified the hard way: the first run of D1 reported the TERMINAL message,
+-- because the fixture's place_bid had leaked dalal.in_place_bid='on' into the
+-- test transaction (see ended_auction()), so the "no flag" path was never on
+-- the flag-less branch at all. With the fixture fixed:
 --
 -- D1 (without flag): "may only be extended by place_bid" — end_time guard.
 -- D2 (with flag, correct shape): "ended auctions are terminal" — terminal guard.
