@@ -671,11 +671,19 @@ select b.auction_id,
 
 grant select on public.bid_history to anon, authenticated;
 
--- Realtime wiring belongs to BID-09, not BID-02. When Rayan enables it:
---   alter publication supabase_realtime add table public.auctions, public.bids;
--- and REMEMBER S0-12 §6: those payloads carry raw JSON numbers the browser
--- corrupts above ~9x10^15 — the event is a TRIGGER to re-read via the text
--- path (bid_history / auctions select), NEVER a display source (RT-R6, §14.5).
+-- Realtime wiring landed in BID-08 (20260814140000) — and NOT the way this
+-- comment used to prescribe. It read "alter publication supabase_realtime add
+-- table public.auctions, public.bids"; measured wrong twice over before any
+-- code shipped: postgres_changes ignores publication column lists (an
+-- unpublished column reached an anon client) and serialises numeric through a
+-- JSON number (#103). Delivery is a content-free realtime.send broadcast from
+-- an AFTER UPDATE trigger, and NOTHING may add these tables to that
+-- publication (ARCHITECTURE §14.1). The event stays a TRIGGER to re-read,
+-- never a display source (RT-R6, §14.5) — and the re-read has exactly ONE
+-- ready-made text path: bid_history, via sar_text(). A plain auctions select
+-- is NOT one, though this comment used to name it as one (#103's defect,
+-- nearly shipped on that sentence): every sar_amount column needs ::text,
+-- per column, at every read site.
 ```
 
 ---
