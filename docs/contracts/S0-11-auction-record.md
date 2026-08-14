@@ -6,7 +6,7 @@
 | Issue | **S0-11** — "Agree the auction record contract" (`GITHUB_PLAN.md:263`) |
 | Record owner | **Mohammed** (`@m7ya505`) — he owns the table, the DDL and the access path (`TEAM.md` §4, §9.3) |
 | Consumer | **Rayan** (`@RayanAlDwlah`) — bidding, current price, closing, winner |
-| Status | 🟡 **Draft — awaiting Mohammed's sign-off.** Nothing here is decided until the boxes in §8 are ticked. He has endorsed the document and **one** box in revert `5adaad2`; **nine remain open** — see §8.1. Every box that is a *statement about code* has been checked against merged `main` by @Dem4t and the evidence returned in §10; the undertakings are untouched and his alone (§10.0) |
+| Status | 🟡 **موقَّع جزئيًّا — عشرة من اثني عشر**، مسجّل في مراجعة @m7ya505 على #132 (2026-08-14) — وهي الأثر القابل للاستشهاد بحكم §10.4. صندوق مرفوض بوعي (§3.2 عرض العدّ). **صندوقان مفتوحان:** §2 ⚠️ حتى يُغلق #140، و§4 حتى تُعاد صياغته (§10.1a) |
 | Date | 2026-08-12 · endorsement evidence recorded 2026-08-13 · **amended 2026-08-14 for the `BR-36` reversal — see the box below** |
 | Depends on | `S0-12` (money type, FINAL) · `S0-10` (identity contract, Abdulrahman) |
 | Consumed by | `BID-01`, `BID-02`, `BID-05`, `BID-15`, and Mohammed's `AUC-08`/`AUC-14`/`M-10` |
