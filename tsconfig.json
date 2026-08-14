@@ -9,6 +9,10 @@
     "jsx": "react-jsx",
     "module": "esnext",
     "moduleResolution": "bundler",
+    /* Lets a lib module import a sibling as "./x.ts". Required because the
+       *.check.mjs harness imports these files on bare node, which does NOT
+       infer extensions in ESM — see #147. Safe with noEmit: true. */
+    "allowImportingTsExtensions": true,
     "allowJs": false,
     "esModuleInterop": true,
     "resolveJsonModule": true,

@@ -37,7 +37,7 @@
  * red on main from #136 until #147 found it. Next resolves the relative form
  * identically, so this costs nothing.
  */
-import { isSar } from "../money";
+import { isSar } from "../money.ts";
 
 /* -------------------------------------------------------------------------
    Bounds — mirrored by CHECK constraints in
