@@ -37,7 +37,11 @@ EXPECTED=3
 pass=0
 fail=0
 
+# `got` is trimmed: BSD `wc -l` (macOS) pads and GNU `wc -l` (Linux/WSL) does
+# not, so an untrimmed comparison is green for one developer and red for another
+# on identical code — measured on #153. Same fix, same reason.
 chk() {
+  set -- "$1" "$(printf '%s' "$2" | tr -d '[:space:]')" "$3"
   if [ "$2" = "$3" ]; then
     pass=$((pass + 1)); printf 'PASS  %-58s (%s)\n' "$1" "$2"
   else
@@ -54,7 +58,7 @@ reachable() {
 
 echo "==> check harness — every *.check.mjs can load (#147)"
 
-n=$(reachable | wc -l)
+n=$(reachable | grep -c . || true)
 chk "the harness reaches at least one lib module" "$([ "$n" -gt 0 ] && echo yes || echo no)" yes
 
 # THE RULE. A value import through `@/` in any of these files stops its check
@@ -66,7 +70,7 @@ FILES=$(reachable | while read -r f; do [ -f "$f" ] && printf '%s ' "$f"; done)
 VALUE_RE='^\s*import\s+(?!type\s)[^;]*from\s+"@/'
 
 # shellcheck disable=SC2086
-offenders=$(grep -hP "$VALUE_RE" $FILES 2>/dev/null | wc -l)
+offenders=$(grep -hP "$VALUE_RE" $FILES 2>/dev/null | grep -c . || true)
 if [ "$offenders" -gt 0 ]; then
   # shellcheck disable=SC2086
   grep -nP "$VALUE_RE" $FILES 2>/dev/null | sed 's/^/      !! /'
@@ -88,7 +92,7 @@ chk "no VALUE import through @/ in a check-reachable lib file" "$offenders" 0
 # appended a SECOND line and the arithmetic that consumed it silently produced
 # nothing.
 # shellcheck disable=SC2086
-typeonly=$(grep -hE '^\s*import\s+type\s+[^;]*from\s+"@/' $FILES 2>/dev/null | wc -l)
+typeonly=$(grep -hE '^\s*import\s+type\s+[^;]*from\s+"@/' $FILES 2>/dev/null | grep -c . || true)
 chk "a type-only @/ import exists, so the exemption is exercised" \
     "$([ "$typeonly" -ge 1 ] && echo yes || echo none)" yes
 
