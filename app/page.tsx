@@ -1,6 +1,6 @@
 import Link from "next/link";
 
-import { AuctionCard } from "@/components/auction/auction-card";
+import { ActiveListing } from "@/components/auction/active-listing";
 import { Page } from "@/components/layout/container";
 import { Alert } from "@/components/ui/alert";
 import { EmptyState } from "@/components/ui/empty-state";
@@ -18,11 +18,15 @@ import { getVerifiedUserId } from "@/lib/auth/identity";
  * anonymously readable at the database as well, so this is not a UI-only
  * courtesy.
  *
+ * FR-LIST-05b — an auction leaving the listing as its countdown reaches zero —
+ * is AUC-10 (#52) and now happens in place, in
+ * components/auction/active-listing.tsx. This file still supplies the rows and
+ * the empty state; what it no longer does is assume the set is static for the
+ * life of the page.
+ *
  * Not built here, and left to their own issues: live per-item price push is
  * Should Have (FR-LIST-10, FR-RT-16), and so are search, filter, sort and
- * pagination (FR-LIST-12, S6). FR-LIST-05b — an auction leaving the listing as
- * its countdown hits zero — currently takes effect on the next load; making it
- * happen in place is AUC-10's.
+ * pagination (FR-LIST-12, S6).
  */
 export default async function ListingPage() {
   const [{ entries, serverNow, failed }, viewerId] = await Promise.all([
@@ -51,37 +55,39 @@ export default async function ListingPage() {
         <Alert tone="error">
           تعذّر تحميل المزادات. حدِّث الصفحة، وإن تكرّر الأمر فالمشكلة عندنا لا عندك.
         </Alert>
-      ) : entries.length === 0 ? (
-        /* FR-LIST-08 — the empty case, with a create prompt for signed-in users. */
-        <EmptyState
-          title="لا توجد مزادات نشطة الآن"
-          description={
-            viewerId
-              ? "كن أول من ينشر مزادًا — يظهر هنا فور نشره."
-              : "سجّل الدخول أو أنشئ حسابًا لتنشر أول مزاد."
-          }
-          action={
-            <Link
-              href={viewerId ? "/auctions/new" : "/register"}
-              className="bg-brand text-on-brand border-brand min-h-tap inline-flex w-full items-center justify-center rounded-md border px-5 font-semibold sm:w-auto"
-            >
-              {viewerId ? "أنشئ مزادًا" : "أنشئ حسابًا"}
-            </Link>
-          }
-        />
       ) : (
         /*
-         * 375px is the base layer, not a breakpoint (DESIGN_SYSTEM.md §10): one
-         * column first, widening upward. `gap` is a logical property already,
-         * so the grid mirrors under dir="rtl" without a single left/right.
+         * AUC-10 (#52) — the grid, and the removal of a card whose countdown
+         * reaches zero, happen in ActiveListing. The empty state is built HERE
+         * and handed down, for two reasons: its create prompt depends on the
+         * server-verified session, which a client component must not be given;
+         * and a marketplace that empties while you watch must look exactly like
+         * one that was empty when you arrived (FR-LIST-08, FR-LIST-05b).
+         *
+         * 375px is the base layer, not a breakpoint (DESIGN_SYSTEM.md §10).
          */
-        <ul className="grid grid-cols-1 gap-4 sm:grid-cols-2 lg:grid-cols-3">
-          {entries.map((auction) => (
-            <li key={auction.id}>
-              <AuctionCard auction={auction} serverNow={serverNow} />
-            </li>
-          ))}
-        </ul>
+        <ActiveListing
+          entries={entries}
+          serverNow={serverNow}
+          empty={
+            <EmptyState
+              title="لا توجد مزادات نشطة الآن"
+              description={
+                viewerId
+                  ? "كن أول من ينشر مزادًا — يظهر هنا فور نشره."
+                  : "سجّل الدخول أو أنشئ حسابًا لتنشر أول مزاد."
+              }
+              action={
+                <Link
+                  href={viewerId ? "/auctions/new" : "/register"}
+                  className="bg-brand text-on-brand border-brand min-h-tap inline-flex w-full items-center justify-center rounded-md border px-5 font-semibold sm:w-auto"
+                >
+                  {viewerId ? "أنشئ مزادًا" : "أنشئ حسابًا"}
+                </Link>
+              }
+            />
+          }
+        />
       )}
     </Page>
   );
