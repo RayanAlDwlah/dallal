@@ -4,7 +4,19 @@ import { useEffect, useState } from "react";
 import { cn } from "@/lib/cn";
 
 export interface CountdownProps {
-  /** ISO timestamp, fixed at creation and never extended (BR-36, BR-16). */
+  /**
+   * ISO timestamp, and it MOVES.
+   *
+   * This line used to read "fixed at creation and never extended (BR-36,
+   * BR-16)". BR-36 was REVERSED on 2026-08-13 (CLAUDE.md §5, ARCHITECTURE
+   * §15.2): a bid ACCEPTED in the final 15 seconds extends the end time by
+   * exactly 30 seconds, repeating, to a hard cap of 20 extensions.
+   *
+   * The component was already correct — the effect below re-derives on every
+   * change to this prop, so a new end time simply flows through (RT-P3). Only
+   * the comment was stale, and a comment promising a fixed deadline is exactly
+   * what would talk the next session into caching one.
+   */
   endsAt: string;
   /**
    * The server's clock at render time. Used to measure skew, so a wrong or

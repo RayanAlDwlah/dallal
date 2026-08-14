@@ -8,6 +8,10 @@ import { Alert } from "@/components/ui/alert";
  * so it is the one region of the detail page with a single owner
  * (ARCHITECTURE §14.6 — "None — static per page load").
  *
+ * The product NAME is rendered by the page shell as the page's single <h1>
+ * (AUC-11), so that the shell and this region never produce two competing
+ * headings. FR-DETAIL-02 is satisfied there; everything below is AUC-12's.
+ *
  * What AUC-12 must honour, recorded now so the requirement does not have to be
  * rediscovered from four documents:
  *

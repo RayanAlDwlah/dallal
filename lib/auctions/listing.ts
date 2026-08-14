@@ -1,7 +1,7 @@
 import { createClient } from "@/lib/supabase/server";
 import { sar, type Sar } from "@/lib/money";
 
-import { IMAGE_BUCKET } from "./validation";
+import { publicImageUrl } from "./image-url";
 
 /**
  * AUC-09 — the marketplace listing read.
@@ -158,15 +158,3 @@ export async function listActiveAuctions(): Promise<AuctionListing> {
   };
 }
 
-type SupabaseClient = Awaited<ReturnType<typeof createClient>>;
-
-/**
- * FR-CREATE-20 — the bucket is public, so this is a plain URL and needs no
- * signing and no credential. Built through the SDK rather than by concatenating
- * the project URL, so the object-path shape lives in one place.
- */
-function publicImageUrl(supabase: SupabaseClient, path: string): string | undefined {
-  if (!path) return undefined;
-  const { data } = supabase.storage.from(IMAGE_BUCKET).getPublicUrl(path);
-  return data.publicUrl || undefined;
-}
