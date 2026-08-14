@@ -2,6 +2,7 @@
 
 import { useState, type FormEvent } from "react";
 
+import { Money } from "@/components/ui/money";
 import { useLiveAuction } from "@/lib/bidding/use-live-auction";
 import { placeBid, type PlaceBidOutcome } from "@/lib/bidding/place-bid";
 import {
@@ -87,13 +88,33 @@ export interface BidPanelProps {
   auctionId: string;
 }
 
-/** One amount, rendered the only way amounts render (§3/§4: bdi + suffix out). */
+/**
+ * One amount, rendered the only way amounts render.
+ *
+ * INT-06 (#88), presentation — @m7ya505. This was a local span carrying
+ * `whitespace-nowrap` and nothing else:
+ *
+ *   <span className="num font-bold whitespace-nowrap">
+ *     <bdi>{formatSar(amount)}</bdi> {SAR_SUFFIX}
+ *   </span>
+ *
+ * Its comment said "the only way amounts render", and it was not: `Money`
+ * carries `max-w-full min-w-0 overflow-x-auto` on the isolate, and this
+ * carried none of it while adding a `nowrap` that `Money` deliberately does
+ * not have. So a wide amount could neither wrap nor scroll inside itself, and
+ * had to push its `<p>` — and the page — past the viewport.
+ *
+ * `BR-21`/`SEC-R3` make that reachable rather than theoretical: there is no
+ * price ceiling, and `tests/auction/creation.sql` asserts a 40-digit starting
+ * price is accepted. These three call sites are rejection messages that quote
+ * the current or starting price, so a contested wide-priced auction renders one
+ * of them — and `NFR-USA-06`/`SC-49` forbid horizontal scrolling at 375 px.
+ *
+ * This is the same defect #120 fixed for the detail page's amount island,
+ * surviving in a sibling that was not under review at the time.
+ */
 function Price({ amount }: { amount: Sar }) {
-  return (
-    <span className="num font-bold whitespace-nowrap">
-      <bdi>{formatSar(amount)}</bdi> {SAR_SUFFIX}
-    </span>
-  );
+  return <Money amount={amount} size="sm" />;
 }
 
 /** BID-04 — one sentence per §13.5 reason. Wording is behaviour: it names the
