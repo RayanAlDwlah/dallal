@@ -282,10 +282,21 @@ console.log(`     account ${email} and its auction are permanent — see the hea
  * the value is already derivable from the email above plus this file.
  */
 if (fail === 0) {
+  /*
+   * Printed with DALAL_BASE_URL already filled in when this run was given one,
+   * because a line with one placeholder left in it is a line that gets run with
+   * the placeholder still in it — twice, so far.
+   */
+  const base = process.env.DALAL_BASE_URL;
   console.log("\n     to run the three credentialed assertions in session.check.mjs:");
-  console.log(
-    `     DALAL_TEST_EMAIL=${email} DALAL_TEST_PASSWORD='${password}' \\\n       DALAL_BASE_URL=<a preview deployment> \\\n       node --no-warnings=MODULE_TYPELESS_PACKAGE_JSON tests/auth/session.check.mjs`,
-  );
+  if (base) {
+    console.log(
+      `     DALAL_TEST_EMAIL=${email} DALAL_TEST_PASSWORD='${password}' DALAL_BASE_URL=${base} node --no-warnings=MODULE_TYPELESS_PACKAGE_JSON tests/auth/session.check.mjs`,
+    );
+  } else {
+    console.log("     (re-run this suite with DALAL_BASE_URL set to a preview deployment");
+    console.log("      and the whole command is printed here, ready to paste)");
+  }
 }
 if (ran !== EXPECTED) {
   console.log(`!! expected ${EXPECTED} assertions, only ${ran} reached. Treating as failure.`);
