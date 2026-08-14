@@ -162,6 +162,40 @@ export function BidPanel({ auctionId }: BidPanelProps) {
   const [outcome, setOutcome] = useState<PlaceBidOutcome | null>(null);
 
   /*
+   * BID-17's other half (SC-23, FR-RT-08): when the LIVE status flips to
+   * ended under the viewer, the bid control disappears — in the same paint
+   * as the outcome banner's appearance, because both consume the same
+   * snapshot publish from the shared store. BidSlot's server-side gate only
+   * covers pages LOADED after the end; this gate covers the viewer who was
+   * already here. The banner above answers the question the form no longer
+   * can. After all hooks, deliberately: a conditional return before them
+   * would break React's rules.
+   *
+   * BOUND TO THE STORED FLIP, NOT TO A CLOCK — and the difference is real,
+   * so it is stated rather than blurred (@Dem4t, #122 review). Eligibility
+   * itself is never decided here: `place_bid` decides it with
+   * clock_timestamp() against end_time (LC-03), and this gate neither
+   * participates in that nor may be read as doing so. What it decides is
+   * only WHEN THE CONTROL LEAVES THE SCREEN, and it leaves on the recorded
+   * transition.
+   *
+   * So in the EC-04 window — end_time passed, the sweep not yet run, up to
+   * 30s (FR-END-03) — a viewer who was already here still has a form, and
+   * the server rejects everything it sends with `auction_ended`. That is a
+   * dead form for up to half a minute, and it disagrees with two surfaces
+   * that ARE clock-driven: ActiveListing's card (offset-corrected) and a
+   * fresh load's presentedStatus.
+   *
+   * It is bound this way on purpose: a control disappears on a fact the
+   * server recorded, never on arithmetic over a client clock that can be
+   * wrong in the direction that removes a form still able to be used.
+   * Binding it to presentedStatus instead is a defensible different answer,
+   * and it would make the three surfaces agree — recorded here, not taken
+   * silently, and not settled inside a review of something else.
+   */
+  if (snapshot?.auction.status === "ended") return null;
+
+  /*
    * BID-06 — the minimum, from the live snapshot, through the ONE rule module
    * (lib/money). Inclusive for the first bid (BR-29), strict after (BR-03) —
    * the hint's verb carries the difference. Null until the first read lands;
