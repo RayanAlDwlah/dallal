@@ -1,7 +1,7 @@
 "use client";
 
+import { Money } from "@/components/ui/money";
 import { useLiveAuction } from "@/lib/bidding/use-live-auction";
-import { formatSar, SAR_SUFFIX } from "@/lib/money";
 
 /**
  * ═══════════════════════════════════════════════════════════════════════════
@@ -49,12 +49,13 @@ import { formatSar, SAR_SUFFIX } from "@/lib/money";
  *   - at least one bid → winner display name and final price (FR-DETAIL-18)
  *   - no bids at all   → ended with no winner and no final price (BR-09, EC-05)
  *
- * Identity and money rules, same as bid-history.tsx: the winner's display
- * name is the ONLY identity shown (BR-26, FR-BID-22a — the projection carries
- * no internal id, structurally), isolated in `<bdi>` because it is
- * user-supplied and may be Latin; the amount renders through lib/money and
- * nothing else, digits inside a `<bdi>` isolate with `SAR` OUTSIDE it
- * (CLAUDE.md §3/§4, BR-42/43).
+ * Identity and money rules: the winner's display name is the ONLY identity
+ * shown (BR-26, FR-BID-22a — the projection carries no internal id,
+ * structurally), isolated in `<bdi>` because it is user-supplied and may be
+ * Latin; the amount renders through the `Money` component, which is the
+ * product's single display path for a price (NFR-DAT-08) and therefore the
+ * only place the isolate, the `SAR` placement and the overflow containment
+ * are decided once (CLAUDE.md §3/§4, BR-42/43).
  *
  * And the hard boundary, which is a product decision rather than a design one:
  * this banner may NOT present, imply or link to a next step — no payment, no
@@ -131,10 +132,26 @@ export function OutcomeBanner({ auctionId }: OutcomeBannerProps) {
           </div>
           <div className="flex flex-col gap-0.5">
             <span className="text-ink-3 text-xs font-bold">السعر النهائي</span>
-            <p className="num text-base font-bold text-ink">
-              {/* Digits inside the isolate, the indicator outside (§4.6). */}
-              <bdi>{formatSar(finalPrice)}</bdi> {SAR_SUFFIX}
-            </p>
+            {/*
+             * Through `Money`, not hand-rolled markup — @Dem4t's blocking
+             * finding on #122. The FORMAT was already canonical either way;
+             * what the hand-rolled `<bdi>` could not inherit is CONTAINMENT.
+             * `overflow` does not apply to an inline box, so a legal 30-digit
+             * amount (no maximum price — BR-21, SEC-R3) escaped its column and
+             * pushed the document to 1871px, measured by @m7ya505 on #120.
+             * `Money` is the one display path that carries the scrollable
+             * digit island (NFR-DAT-08); every bypass of it re-opens that hole.
+             *
+             * SIZE IS NOT MINE TO SETTLE, and the two reviewers wrote different
+             * words: @Dem4t asked for `lg` — matching SellerOutcome, which
+             * renders THIS SAME VALUE in the adjacent block on this page —
+             * while @m7ya505's option (a) said `sm` for a two-file follow-up
+             * that also covered bid-history. Presentation is @m7ya505's, wholly
+             * (CLAUDE.md §1), so `lg` is here only because it is the only
+             * variant argued for THIS file, and one word changes it without
+             * asking me.
+             */}
+            <Money amount={finalPrice} size="lg" />
           </div>
         </div>
       ) : (
