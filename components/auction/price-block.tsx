@@ -1,6 +1,6 @@
 import { cn } from "@/lib/cn";
 import { Money } from "@/components/ui/money";
-import { formatSar, formatSarWithSuffix, type AuctionPrice, type Sar } from "@/lib/money";
+import { formatSarWithSuffix, type AuctionPrice, type Sar } from "@/lib/money";
 
 /**
  * TWO components, not one component with two labels.
@@ -105,7 +105,23 @@ export function CurrentBid({
           <span className="inline-flex items-baseline gap-0.5 text-sm font-bold text-brand-text">
             {/* Vertical, so it must NOT mirror in RTL — no icon-directional here. */}
             <span aria-hidden="true">▲</span>
-            <bdi className="num">{formatSar(lastRaise)}</bdi>
+            {/*
+              INT-06 (#88) — was `<bdi className="num">{formatSar(lastRaise)}</bdi>`,
+              a fourth hand-rolled amount island with none of Money's
+              `max-w-full min-w-0 overflow-x-auto`. A raise is a difference of
+              two prices and BR-21 puts no ceiling on either, so it is
+              width-unbounded like any other amount.
+              MILDER than the two in bid-panel/bid-history and stated as such:
+              the parent here is `flex-wrap`, so a wide delta wraps to its own
+              line instead of dragging the hero price with it. And `lastRaise`
+              is not passed by any caller yet (#138 leaves it for a SQL-side
+              delta), so this was latent rather than live. Fixed at the same
+              time because the fix is the same and the next caller would
+              activate it.
+              `suffix={false}`: the sr-only line below already states the amount
+              with its indicator, and repeating it visually would say SAR twice.
+            */}
+            <Money amount={lastRaise} size="sm" suffix={false} />
             <span className="sr-only">ارتفع السعر بمقدار {formatSarWithSuffix(lastRaise)}</span>
           </span>
         ) : null}

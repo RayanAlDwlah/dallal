@@ -1,7 +1,8 @@
 "use client";
 
+import { Money } from "@/components/ui/money";
 import { useLiveAuction } from "@/lib/bidding/use-live-auction";
-import { compareSar, formatSar, SAR_SUFFIX } from "@/lib/money";
+import { compareSar } from "@/lib/money";
 
 /**
  * ═══════════════════════════════════════════════════════════════════════════
@@ -123,17 +124,37 @@ export function BidHistory({ auctionId }: BidHistoryProps) {
               {/* Isolated so a Latin display name cannot flip the line (§3). */}
               <bdi>{entry.displayName}</bdi>
             </span>
-            <span className="flex shrink-0 items-center gap-2">
+            {/*
+              INT-06 (#88), presentation — @m7ya505.
+
+              This span was `shrink-0`, and the amount inside it was a local
+              `num text-sm font-bold` span rather than <Money>. Together those
+              two facts guaranteed a horizontal overflow rather than risking
+              one: `shrink-0` tells the flex row this side may not give way, and
+              the local span carried none of the `max-w-full min-w-0
+              overflow-x-auto` that lets an amount scroll inside its own island.
+              A wide price therefore had to widen the <li>, and the page with it.
+
+              `BR-21` makes that reachable — no ceiling, and creation.sql
+              asserts a 40-digit price is accepted — while `NFR-USA-06`/`SC-49`
+              forbid horizontal scrolling at 375 px.
+
+              Now: the row may shrink (`min-w-0`), the badge and the timestamp
+              hold their size because they are short and fixed, and the amount
+              is the one part that yields — inside itself, through <Money>,
+              which is the containment #120 established.
+            */}
+            <span className="flex min-w-0 items-center gap-2">
               {i === highest && (
-                <span className="bg-brand-weak text-brand-text rounded px-1.5 py-0.5 text-xs font-bold">
+                <span className="bg-brand-weak text-brand-text shrink-0 rounded px-1.5 py-0.5 text-xs font-bold">
                   الأعلى
                 </span>
               )}
-              <span className="num text-sm font-bold text-ink">
-                {/* Digits inside the isolate, the indicator outside (§4.6). */}
-                <bdi>{formatSar(entry.amount)}</bdi> {SAR_SUFFIX}
-              </span>
-              <time dateTime={entry.createdAt} className="num text-xs text-ink-3">
+              {/* The one rendering path for every price (NFR-DAT-08): digits
+                  inside the isolate, the indicator outside (§4.6), and the
+                  money scale rather than the text scale. */}
+              <Money amount={entry.amount} size="sm" />
+              <time dateTime={entry.createdAt} className="num shrink-0 text-xs text-ink-3">
                 <bdi>{TIME_FORMAT.format(new Date(entry.createdAt))}</bdi>
               </time>
             </span>
