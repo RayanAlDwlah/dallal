@@ -72,6 +72,35 @@ bidding does and Abdulrahman owns what authentication does. Restyling someone's 
 is fine; changing what it does without telling them is not. Full rules in `CLAUDE.md` §1
 and `TEAM.md` §7.
 
+### The auction detail page — the one file split by owner (S0-13)
+
+`/auctions/[id]` is where all three workstreams render. Left as a single file it conflicts
+on nearly every merge, so it is split into separately owned files **before** anyone builds
+on it (`TEAM.md` §11, `ARCHITECTURE.md` §14.6). This table is the record the S0-13
+acceptance criteria ask for; each file repeats it in its own header.
+
+| File | Owner | Filled by |
+|---|---|---|
+| `app/auctions/[id]/page.tsx` | Mohammed | `AUC-11` — shell, layout, auction read |
+| `components/auction/detail/product-content.tsx` | Mohammed | `AUC-12` |
+| `components/auction/detail/status-countdown.tsx` | Mohammed | `AUC-13` |
+| `components/auction/detail/price-region.tsx` | Mohammed builds it — **Rayan supplies the value and its updates** | `AUC-14` |
+| `components/bidding/bid-panel.tsx` | Mohammed presents — **Rayan owns what it accepts and what submission does** | `BID-03`, `BID-04`, `BID-06` |
+| `components/bidding/bid-history.tsx` | Mohammed presents — **Rayan owns what is recorded and its order** | `BID-07` |
+| `components/bidding/outcome-banner.tsx` | Mohammed presents — **Rayan owns the outcome values and when they appear** | `BID-18`, `BID-17` |
+
+The page tells Rayan's components **which auction is being viewed, and nothing else** — the
+one prop S0-13 fixes. Everything they need beyond that is Rayan's to declare. The split is
+by responsibility, not by file (`CLAUDE.md` §1): Mohammed may restyle any row above without
+asking, provided behaviour and contracts are unchanged.
+
+**Mohammed must not add a second update mechanism.** One per-auction realtime subscription
+is owned upstream (`BID-08`/`BID-09`); a competing one is a defect, not an optimization
+(`TEAM.md` §10.4, `ARCHITECTURE.md` §14.6).
+
+`design/components/bidding/bid-panel.tsx` is a styled, behaviour-free draft kept as a
+**frozen reference**. Nothing imports it, and it is not the history of the file above.
+
 ---
 
 ## Branching
