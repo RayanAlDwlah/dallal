@@ -7,9 +7,11 @@
 #                      caller rather than the payload.
 #   creation.sql     — AUC-19. Creation validation at its boundaries, the money
 #                      domain clause by clause, and the active-only listing.
+#   duplicate.sql    — AUC-03. One intent, one auction (EC-21) — and the other
+#                      direction, that the guard never eats a real auction.
 #
-# Both go through the `authenticated` role, so they exercise the server path a
-# crafted request meets rather than anything the UI does (AUC-19's AC).
+# All three go through the `authenticated` role, so they exercise the server path
+# a crafted request meets rather than anything the UI does (AUC-19's AC).
 #
 # Needs Docker. That is the whole list.
 #
@@ -45,7 +47,7 @@ docker exec "$CONTAINER" pg_isready -U postgres -q || { echo "postgres never bec
 # Reuses the bidding suite's shim rather than keeping a second copy that could
 # drift from it.
 cp "$ROOT/tests/bidding/lib/supabase-shim.sql" \
-   "$HERE/immutability.sql" "$HERE/creation.sql" "$WORK/"
+   "$HERE/immutability.sql" "$HERE/creation.sql" "$HERE/duplicate.sql" "$WORK/"
 cp "$MIGRATIONS"/*.sql "$WORK/"
 docker cp "$WORK/." "$CONTAINER":/t/ >/dev/null
 
@@ -105,8 +107,9 @@ run_suite() {
 }
 
 # Keep each EXPECTED in step with the chk() calls in its file.
-run_suite immutability.sql 23 "AUC-18 — immutability and authorization"
+run_suite immutability.sql 24 "AUC-18 — immutability and authorization"
 run_suite creation.sql     26 "AUC-19 — creation validation and the active-only listing"
+run_suite duplicate.sql    13 "AUC-03 — duplicate-submission prevention (EC-21)"
 
 echo
 if [ "$total_fail" -eq 0 ]; then

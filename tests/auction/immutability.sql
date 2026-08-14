@@ -122,6 +122,24 @@ begin
   perform pg_temp.chk('SC-58 owner cannot change image_path',
     pg_temp.owner_update(a, owner, 'image_path = ''test/swapped.jpg'''), '42501');
 
+  /*
+   * AUC-03 (#45). submission_key is the one column on this table with NO
+   * branch in auctions_guard_update — its migration rests entirely on the
+   * absence of an UPDATE grant instead, and says so.
+   *
+   * That makes this assertion the load-bearing one rather than a formality: it
+   * is the only thing standing between "defended by a deliberate absence" and
+   * "undefended". If a later change ever hands UPDATE back to `authenticated`,
+   * every other field here still raises from the trigger and only this line
+   * turns red.
+   *
+   * Rewriting a key would let a seller re-spend an intent the guarantee had
+   * already settled, which is EC-21 back with extra steps.
+   */
+  perform pg_temp.chk('SC-58 owner cannot change submission_key',
+    pg_temp.owner_update(a, owner,
+      'submission_key = ''99999999-9999-4999-8999-999999999999'''), '42501');
+
   -- A non-owner is the easy case, asserted so the suite is total rather than
   -- because anyone doubts it.
   perform pg_temp.chk('SC-58 a stranger cannot change end_time',
@@ -258,7 +276,11 @@ declare
     -- AUC-01 (#99). Added here only alongside the three assertions above —
     -- adding a name to this list without asserting it is how a completeness
     -- guard becomes a comment.
-    'name', 'description', 'image_path'
+    'name', 'description', 'image_path',
+    -- AUC-03 (#45). Same rule: this entry exists because the assertion above
+    -- exists. The guard did its job when this column landed — it failed the
+    -- suite by name rather than letting a new field arrive uncovered.
+    'submission_key'
   ];
   missing text;
 begin
