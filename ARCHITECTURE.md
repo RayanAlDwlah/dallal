@@ -1457,17 +1457,17 @@ The architecture must support the PRD's testing requirements, and two of them co
 
 Five platform assumptions in this document must be **confirmed against the actual platforms** before the affected work starts. They are stated as spikes rather than asserted as fact, because getting one wrong would require rework in exactly the areas that matter most.
 
-**Two of the five are now executed.** Both came back favourable, and both have a written record of the method and the numbers rather than a verdict — so a later reader can disagree with the conclusion without having to re-run it.
+**Four of the five are now executed.** All four came back favourable, and each has a written record of the method and the numbers rather than a verdict — so a later reader can disagree with the conclusion without having to re-run it. **V-4 and V-5 came back favourable with a named limit**, which is the more useful shape: V-4 rules a paid-tier feature out on grounds that do not depend on whether it is enabled, and V-5 meets the lifecycle criterion in full while stating exactly where local isolation stops.
 
 | # | Spike | Blocks | Owner | Status | If the answer is unfavourable |
 |---|---|---|---|---|---|
 | **V-1** | Confirm the database supports the row-locking and transactional semantics assumed in §13, and measure behavior under genuinely concurrent bids | **R-05, R-03** — the whole bidding design | Rayan | ✅ **Executed 2026-08-12** — `docs/contracts/BID-02-verification.md` | Escalate immediately. This is the architecture's foundation |
 | **V-2** | Determine the minimum scheduling frequency available in Supabase. Can a sweep run every ~30 s — directly, or via two offset sweeps? | **R-17** — auction closing, FR-END-03 | Rayan | ✅ **Executed 2026-08-13 — directly, no offset sweeps** — `docs/V-2-scheduling-verification.md` | §15.6 defines the outcomes. **FR-END-03 stands as written**; offset sweeps most likely satisfy it even against a one-minute floor. Correctness is unaffected either way (LC-03) |
 | **V-3** | Decide the preview-environment Supabase target (§18.4, option A or B). Confirm whether password-reset email works in previews | Preview deployments; Abdulrahman's ability to exercise US-23 pre-merge | Whole team | ⬜ Open | Option A is the safe default. **Never option C** |
-| **V-4** | Confirm image transformation/thumbnail capability, or plan a derivative at upload | **M-05, M-10** — NFR-PERF-05, NFR-PERF-01 | Mohammed | ⬜ Open | Generate a smaller derivative at upload time |
-| **V-5** | Confirm the full lifecycle — including realtime and scheduled closing — can be exercised in a local or isolated environment | NFR-MNT-03, NFR-MNT-04; the whole team's inner loop | Whole team | ⬜ Open | Fall back to a shared non-production project with coordinated use |
+| **V-4** | Confirm image transformation/thumbnail capability, or plan a derivative at upload | **M-05, M-10** — NFR-PERF-05, NFR-PERF-01 | Mohammed | ✅ **Executed 2026-08-14 — Supabase transformation ruled out; `next/image` chosen, derivative-at-upload the fallback** — `docs/V-4-image-transformation.md` | Generate a smaller derivative at upload time — retained as the fallback, measured at 18 ms |
+| **V-5** | Confirm the full lifecycle — including realtime and scheduled closing — can be exercised in a local or isolated environment | NFR-MNT-03, NFR-MNT-04; the whole team's inner loop | Whole team | ✅ **Executed 2026-08-14 — the lifecycle runs on Docker alone in 5.0 s; realtime *delivery* cannot and is measured on a deployment instead** — `docs/V-5-lifecycle-isolation.md` | Fall back to a shared non-production project with coordinated use — **not needed for the lifecycle; still the path for delivery**, and `#84` measured it at max 793 ms |
 
-**V-1 and V-2 were the two that could change the architecture.** They were run first, in Sprint 0, before Rayan committed to R-03 or R-17 — which is what this section asked for. **Neither changed a product requirement, and neither needed to.** Three remain: V-3 and V-5 are the team's, V-4 is Mohammed's.
+**V-1 and V-2 were the two that could change the architecture.** They were run first, in Sprint 0, before Rayan committed to R-03 or R-17 — which is what this section asked for. **Neither changed a product requirement, and neither needed to.** **V-3 is the only one still open**, and it is the team's.
 
 ---
 
