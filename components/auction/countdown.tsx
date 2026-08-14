@@ -5,17 +5,16 @@ import { cn } from "@/lib/cn";
 
 export interface CountdownProps {
   /**
-   * ISO timestamp, and it MOVES.
+   * ISO timestamp. **It can move.** This line used to read "fixed at creation
+   * and never extended"; BR-36 was reversed on 2026-08-13 and an accepted bid
+   * in the final 15 seconds now pushes the end 30 seconds out, up to 20 times.
+   * BR-16 narrowed rather than disappeared: no *human* and no edit path may
+   * move it, only that automatic extension, and only forward.
    *
-   * This line used to read "fixed at creation and never extended (BR-36,
-   * BR-16)". BR-36 was REVERSED on 2026-08-13 (CLAUDE.md §5, ARCHITECTURE
-   * §15.2): a bid ACCEPTED in the final 15 seconds extends the end time by
-   * exactly 30 seconds, repeating, to a hard cap of 20 extensions.
-   *
-   * The component was already correct — the effect below re-derives on every
-   * change to this prop, so a new end time simply flows through (RT-P3). Only
-   * the comment was stale, and a comment promising a fixed deadline is exactly
-   * what would talk the next session into caching one.
+   * The effect below already depends on this prop, so a new value restarts the
+   * ticker — which is what AUC-13 requires ("must not freeze on a value read
+   * once at mount"). Passing an end time captured once at page load would
+   * defeat that from the caller's side, not this component's.
    */
   endsAt: string;
   /**

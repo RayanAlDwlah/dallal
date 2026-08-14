@@ -1,18 +1,22 @@
 import type { Metadata } from "next";
 import { notFound } from "next/navigation";
 
+import { BidSlot, type ViewerRole } from "@/components/auction/detail/bid-slot";
 import { PriceRegion } from "@/components/auction/detail/price-region";
 import { ProductContent } from "@/components/auction/detail/product-content";
+import { SellerOutcome } from "@/components/auction/detail/seller-outcome";
 import { StatusCountdown } from "@/components/auction/detail/status-countdown";
 import { BidHistory } from "@/components/bidding/bid-history";
-import { BidPanel } from "@/components/bidding/bid-panel";
 import { OutcomeBanner } from "@/components/bidding/outcome-banner";
 import { Container, Page } from "@/components/layout/container";
 import { Alert } from "@/components/ui/alert";
+import { getVerifiedUserId } from "@/lib/auth/identity";
 import { readAuctionDetail } from "@/lib/auctions/detail";
+import { outcomePending, presentedStatus } from "@/lib/auctions/presentation";
 
 /**
- * Auction detail — the page shell. AUC-11 (#53).
+ * Auction detail — the page shell. AUC-11 (#53), AUC-15 (#57), AUC-16 (#58),
+ * AUC-17 (#59).
  *
  * This is the one surface all three workstreams render on, so it is split by
  * owner (TEAM.md §11, ARCHITECTURE §14.6, S0-13). The table of who owns what is
@@ -21,10 +25,15 @@ import { readAuctionDetail } from "@/lib/auctions/detail";
  *
  * FR-DETAIL-01 — public. No auth guard, and there must not be one; a visitor is
  * a supported user (S0-10 §6, FR-AUTH-23). What a viewer is SHOWN does depend
- * on who they are — sign-in prompt, bid control, or the owner's "you cannot bid
- * on your own auction" — and that matrix is AUC-15 (#57, SC-07), not this
- * issue. Until then all three of Rayan's mount points render unconditionally,
- * which is what gives him somewhere to build against (TEAM §14).
+ * on who they are, and that matrix is AUC-15 — resolved here into a single
+ * ViewerRole and handed to components/auction/detail/bid-slot.tsx, which owns
+ * the four cells of SC-07.
+ *
+ * The identity used is the SERVER-VERIFIED one (S0-10 thing (2)), and the role
+ * it produces still decides only what is drawn. Nothing on this page is an
+ * authorization control: the server rejects an owner's bid, an anonymous bid
+ * and a late bid on every route, including one that never renders this file
+ * (BR-02, EC-07, FR-SEC-16, SEC-V6).
  *
  * Two things this page must never grow:
  *
@@ -62,18 +71,21 @@ export default async function AuctionDetailPage({
   params: Promise<{ id: string }>;
 }) {
   const { id } = await params;
-  const result = await readAuctionDetail(id);
 
   /*
-   * FR-DETAIL-25 / EC-13 — a non-existent auction gets a clear not-found page,
-   * never a raw error. An id that is not even a UUID lands here too, so a
-   * mistyped URL reads as "no such auction" rather than as a fault.
-   *
-   * AUC-16 (#58) refines this presentation, and adds the other half of that
-   * issue: an auction past its end time must PRESENT as ended even before the
-   * closing sweep has run (FR-DETAIL-24, EC-04). That is deliberately not
-   * decided here — this page reads `status` and `endsAt` and derives no
-   * lifecycle state of its own.
+   * Both reads issued together. getVerifiedUserId revalidates the token with
+   * the auth server and is cache()d for the request, so the layout's own call
+   * and this one share one revalidation rather than issuing two.
+   */
+  const [result, viewerId] = await Promise.all([
+    readAuctionDetail(id),
+    getVerifiedUserId(),
+  ]);
+
+  /*
+   * AUC-16 (#58) — FR-DETAIL-25 / EC-13. A non-existent auction gets a clear
+   * not-found page, never a raw error. An id that is not even a UUID lands here
+   * too, so a mistyped URL reads as "no such auction" rather than as a fault.
    */
   if (result.state === "not-found") notFound();
 
@@ -95,6 +107,31 @@ export default async function AuctionDetailPage({
   }
 
   const { auction } = result;
+
+  /*
+   * AUC-16 (#58) — the other half of that issue, and the reason it is a
+   * function rather than an inline comparison: an auction past its end time
+   * whose row still says `active` must be PRESENTED as ended, before the
+   * closing sweep has run (FR-DETAIL-24, EC-04). Measured against the SERVER
+   * clock carried by the same read (BR-19, EC-17), never the viewer's.
+   *
+   * It decides nothing. A late bid is rejected inside the database against
+   * clock_timestamp() regardless of what was drawn here (LC-03).
+   */
+  const status = presentedStatus(auction, result.serverNow);
+  const ended = status === "ended";
+
+  /*
+   * AUC-15 (#57) — the whole viewer matrix collapses to one value here, and the
+   * four cells of SC-07 live in bid-slot.tsx. Compared against the
+   * server-verified id (S0-10 thing (2)); a client-supplied id would make this
+   * an authorization decision taken on the caller's word.
+   */
+  const role: ViewerRole = !viewerId
+    ? "visitor"
+    : viewerId === auction.ownerId
+      ? "owner"
+      : "bidder";
 
   return (
     <Container as="main" className="flex flex-col gap-6 py-6 sm:py-8">
@@ -124,29 +161,99 @@ export default async function AuctionDetailPage({
       */}
       <div className="grid grid-cols-1 gap-6 lg:grid-cols-[minmax(0,1fr)_22rem] lg:items-start">
         <aside className="flex flex-col gap-4 lg:col-start-2 lg:row-start-1">
-          {/* AUC-13 (#55) — wires this to auction.status and auction.endsAt. */}
-          <StatusCountdown />
-
-          {/* AUC-14 (#56) — wires this to the prices and the bid count. */}
-          <PriceRegion />
+          {/*
+            AUC-13 (#55), fed the PRESENTED status from AUC-16 rather than the
+            stored one — which is exactly the seam this component's header said
+            it was waiting for.
+          */}
+          <StatusCountdown
+            status={status}
+            endsAt={auction.endsAt}
+            serverNow={result.serverNow}
+          />
 
           {/*
-            Rayan's mount points. They receive the auction id and nothing else:
-            that is the only prop S0-13 fixes, and every other input — the
-            minimum, the submit action, the outcome values — is his to declare
-            (see components/bidding/bid-panel.tsx).
+            AUC-14 (#56). bidCount, not a price comparison: BR-29 lets the first
+            bid equal the starting price, so the two prices are equal both
+            before any bid and immediately after the first one.
 
-            Both are rendered unconditionally for now. Which one a given viewer
-            sees, and when, is AUC-15 (#57) for the viewer matrix and BID-17
-            (#78) for the live Active → Ended transition.
+            leadingBidder and lastRaise are Rayan's values and are not passed
+            yet — they arrive through this same seam with BID-05 and BID-09.
+            Nothing here invents a placeholder for them.
           */}
-          <BidPanel auctionId={auction.id} />
+          <PriceRegion
+            startingPrice={auction.startingPrice}
+            currentPrice={auction.currentPrice}
+            bidCount={auction.bidCount}
+          />
+
+          {/*
+            AUC-15 (#57) — the bid-control slot. All four cells of SC-07 are in
+            bid-slot.tsx, including the one that mounts Rayan's BidPanel; it
+            still receives the auction id and nothing else (S0-13).
+          */}
+          <BidSlot auctionId={auction.id} role={role} status={status} />
+
+          {/*
+            AUC-17 (#59) — the seller's own view of their completed auction,
+            from the outcome finalization RECORDED (BID-16). Nothing here
+            recomputes it, and it presents no next step: no payment, no contact,
+            no shipping (FR-DETAIL-21a, SC-67, PRD §19.0).
+
+            Owner-only and ended-only. This gate is MINE to set: which blocks a
+            seller sees is presentation, and FR-DETAIL-21 wants the seller told a
+            different sentence from every other viewer.
+
+            Note for BID-18 (#79), raised by @Dem4t in review: once Rayan's
+            banner has content, an owner on an ended auction will read the
+            outcome twice — once in the seller's sentence and once in the
+            general one. Deliberately left for then rather than pre-empted now,
+            because the answer depends on what that banner actually says, and it
+            is a decision for the two of us together.
+          */}
+          {ended && role === "owner" ? (
+            <SellerOutcome
+              winnerName={auction.winnerName}
+              finalPrice={auction.finalPrice}
+              pending={outcomePending(auction, result.serverNow)}
+            />
+          ) : null}
+
+          {/*
+            Rayan's outcome banner (BID-18). MOUNTED UNCONDITIONALLY, and it
+            must stay that way.
+
+            It was briefly gated on `ended` here. That was wrong, and @RayanAlDwlah
+            caught it: `ended` is computed from presentedStatus at SERVER RENDER,
+            so it is frozen in the HTML. A page that loads while the auction is
+            still active would never mount the component at all, and there would
+            be nothing on the client for BID-17 (#78) to reveal when the auction
+            closes under the viewer — which is exactly what SC-23 and FR-RT-08
+            require ("status changes, bid control disappears, outcome appears,
+            with no refresh").
+
+            The gate also took a decision that is not mine. This file has said
+            since #105 that Rayan's mount points render unconditionally and that
+            WHEN each becomes visible is his (S0-13, TEAM.md §6, ARCHITECTURE
+            §14.6). Hard-coding "only after a reload" is answering his half.
+
+            BidSlot's `ended → null` is a different case and stays: hiding a
+            control that would collect only guaranteed rejections is
+            FR-DETAIL-17's own requirement, and BID-17 makes a MOUNTED control
+            disappear from inside — removal it can do, appearance of something
+            never mounted it cannot.
+          */}
           <OutcomeBanner auctionId={auction.id} />
         </aside>
 
         <div className="flex flex-col gap-6 lg:col-start-1 lg:row-start-1">
-          {/* AUC-12 (#54) — wires this to the description, image and seller. */}
-          <ProductContent />
+          {/* AUC-12 (#54). The name goes only to the image's alt — the <h1> above is the page's one heading. */}
+          <ProductContent
+            name={auction.name}
+            description={auction.description}
+            imageUrl={auction.imageUrl}
+            sellerName={auction.sellerName}
+          />
 
           {/* BID-07 (#68) — public to unauthenticated visitors (BR-40, SC-75). */}
           <BidHistory auctionId={auction.id} />

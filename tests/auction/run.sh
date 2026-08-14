@@ -1,8 +1,15 @@
 #!/usr/bin/env bash
 # ============================================================================
-# AUC-18 — proves a user cannot modify or delete any auction, their own
-# included, and that creation is attributed to the caller rather than the
-# payload.
+# The auction suites.
+#
+#   immutability.sql — AUC-18. A user cannot modify or delete any auction,
+#                      their own included, and creation is attributed to the
+#                      caller rather than the payload.
+#   creation.sql     — AUC-19. Creation validation at its boundaries, the money
+#                      domain clause by clause, and the active-only listing.
+#
+# Both go through the `authenticated` role, so they exercise the server path a
+# crafted request meets rather than anything the UI does (AUC-19's AC).
 #
 # Needs Docker. That is the whole list.
 #
@@ -37,7 +44,8 @@ docker exec "$CONTAINER" pg_isready -U postgres -q || { echo "postgres never bec
 
 # Reuses the bidding suite's shim rather than keeping a second copy that could
 # drift from it.
-cp "$ROOT/tests/bidding/lib/supabase-shim.sql" "$HERE/immutability.sql" "$WORK/"
+cp "$ROOT/tests/bidding/lib/supabase-shim.sql" \
+   "$HERE/immutability.sql" "$HERE/creation.sql" "$WORK/"
 cp "$MIGRATIONS"/*.sql "$WORK/"
 docker cp "$WORK/." "$CONTAINER":/t/ >/dev/null
 
@@ -55,45 +63,55 @@ for f in "$MIGRATIONS"/*.sql; do
   fi
 done
 
-echo
-echo "==> auction immutability suite"
+total_fail=0
+
 # A DO block that aborts partway emits neither PASS nor FAIL, so counting only
-# PASS/FAIL reports a clean run while assertions silently never executed.
-# Keep this in step with immutability.sql.
-EXPECTED=23
-raw=$(docker exec "$CONTAINER" psql -U postgres -q -f /t/immutability.sql 2>&1)
-acc=$(echo "$raw" | grep -E 'PASS|FAIL' | sed 's/^psql[^ ]* //; s/WARNING:  //; s/NOTICE:  //')
-echo "$acc" | sed 's/^/    /'
-pass=$(echo "$acc" | grep -c '^PASS'); fail=$(echo "$acc" | grep -c '^FAIL')
-ran=$((pass + fail))
-echo "    ---- $pass passed, $fail failed, $ran of $EXPECTED assertions reached"
+# PASS/FAIL reports a clean run while assertions silently never executed. Every
+# suite therefore declares how many it must reach, and the count is checked.
+run_suite() {
+  local file="$1" expected="$2" title="$3"
+  echo
+  echo "==> $title"
+  local raw acc pass fail ran
+  raw=$(docker exec "$CONTAINER" psql -U postgres -q -f "/t/$file" 2>&1)
+  acc=$(echo "$raw" | grep -E 'PASS|FAIL' | sed 's/^psql[^ ]* //; s/WARNING:  //; s/NOTICE:  //')
+  echo "$acc" | sed 's/^/    /'
+  pass=$(echo "$acc" | grep -c '^PASS'); fail=$(echo "$acc" | grep -c '^FAIL')
+  ran=$((pass + fail))
+  echo "    ---- $pass passed, $fail failed, $ran of $expected assertions reached"
 
-# The completeness guard prints the column names it could not account for.
-echo "$raw" | grep -q 'uncovered column' && \
-  echo "$raw" | grep 'uncovered column' | sed 's/^psql[^ ]* //; s/WARNING:  /    !! /'
+  # immutability.sql's completeness guard prints the columns it cannot account
+  # for. Harmless for a suite that has none.
+  echo "$raw" | grep -q 'uncovered column' && \
+    echo "$raw" | grep 'uncovered column' | sed 's/^psql[^ ]* //; s/WARNING:  /    !! /'
 
-# psql writes "psql:/t/immutability.sql:68: ERROR:  …" — never a bare "ERROR:"
-# at the start of a line. Anchored on ^ERROR: this matched nothing and the
-# branch could never fire, so an aborted run printed no cause at all.
-#
-# The assertion COUNT below still caught the failure ("0 of 23 reached"), which
-# is the only reason this was a short diagnosis rather than a long one. But the
-# count says THAT the run died, never WHY — and the two failures look identical
-# from outside. Un-anchoring turns a mystery back into one line of output.
-if echo "$raw" | grep -q 'ERROR:'; then
-  echo "    !! psql reported an error — assertions after it never ran:"
-  echo "$raw" | grep 'ERROR:' | sed 's/^psql[^ ]* //; s/^/       /'
-  fail=$((fail + 1))
-fi
-if [ "$ran" -ne "$EXPECTED" ]; then
-  echo "    !! expected $EXPECTED assertions, only $ran reached. Treating as failure."
-  fail=$((fail + 1))
-fi
+  # psql writes "psql:/t/immutability.sql:68: ERROR:  …" — never a bare "ERROR:"
+  # at the start of a line. Anchored on ^ERROR: this matched nothing and the
+  # branch could never fire, so an aborted run printed no cause at all.
+  #
+  # The assertion COUNT still catches the failure, but the count says THAT the
+  # run died, never WHY — and the two failures look identical from outside.
+  # Un-anchoring turns a mystery back into one line of output.
+  if echo "$raw" | grep -q 'ERROR:'; then
+    echo "    !! psql reported an error — assertions after it never ran:"
+    echo "$raw" | grep 'ERROR:' | sed 's/^psql[^ ]* //; s/^/       /'
+    fail=$((fail + 1))
+  fi
+  if [ "$ran" -ne "$expected" ]; then
+    echo "    !! expected $expected assertions, only $ran reached. Treating as failure."
+    fail=$((fail + 1))
+  fi
+  total_fail=$((total_fail + fail))
+}
+
+# Keep each EXPECTED in step with the chk() calls in its file.
+run_suite immutability.sql 23 "AUC-18 — immutability and authorization"
+run_suite creation.sql     26 "AUC-19 — creation validation and the active-only listing"
 
 echo
-if [ "$fail" -eq 0 ]; then
+if [ "$total_fail" -eq 0 ]; then
   echo "SUITE PASSED"
   exit 0
 fi
-echo "SUITE FAILED — $fail failing assertions"
+echo "SUITE FAILED — $total_fail failing assertions"
 exit 1
