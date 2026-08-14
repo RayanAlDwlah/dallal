@@ -123,22 +123,67 @@ export function validateEndTime(raw: string, now: number): string | undefined {
 }
 
 /**
- * FR-CREATE-16, 17 — type and size.
+ * FR-CREATE-17 — there is a file, and it is within 5 MB.
  *
- * This is the CLIENT-SIDE mirror and is explicitly not the authority
- * (FR-CREATE-18, SEC-V5): a browser-reported MIME type is attacker-controlled.
- * The bucket's own allowed_mime_types and file_size_limit reject the upload
- * server-side regardless of what this says.
+ * **This half is server-authoritative and the type half is not.** Size is a
+ * property of the bytes that arrived: the server measures it, and a client
+ * cannot talk it down. Type is a property the client merely *asserts*, which
+ * is why it is a separate function below and why the server does not call it.
+ *
+ * Split out of validateImage for AUC-04. Calling the combined function on the
+ * server made a browser-reported MIME type the FIRST gate a real upload had to
+ * pass — see validateImageType.
  */
-export function validateImage(file: File | null): string | undefined {
+export function validateImageSize(file: File | null): string | undefined {
   if (!file || file.size === 0) return "اختر صورة للمنتج.";
-  if (!ACCEPTED_IMAGE_TYPES.includes(file.type as (typeof ACCEPTED_IMAGE_TYPES)[number])) {
-    return "الصيغ المقبولة: JPEG أو PNG أو WebP.";
-  }
   if (file.size > MAX_IMAGE_BYTES) {
     return `حجم الصورة يجب ألا يتجاوز ${MAX_IMAGE_MB} ميجابايت.`;
   }
   return undefined;
+}
+
+/**
+ * FR-CREATE-16 — the type the *browser* claims. **Client-side only.**
+ *
+ * `SEC-V5` is explicit that server-side type validation must not rest on "the
+ * extension **or client-reported values**", and `File.type` is exactly a
+ * client-reported value: in a multipart body it is the `Content-Type` the
+ * sender chose for that part.
+ *
+ * It is still worth running in the browser, where it is the only type
+ * information available before the bytes are read and it turns "wrong file"
+ * into instant feedback. It must never be what the server decides on — the
+ * server reads the signature (`lib/auctions/image-signature.ts`).
+ *
+ * The failure mode this caused is not hypothetical: a genuine PNG whose part
+ * carries `application/octet-stream` — which happens with several drag-and-drop
+ * paths and with any `curl -F` that does not name a type — was rejected here
+ * with "the accepted formats are…", and its bytes were never looked at.
+ */
+export function validateImageType(file: File | null): string | undefined {
+  if (!file) return "اختر صورة للمنتج.";
+  if (!ACCEPTED_IMAGE_TYPES.includes(file.type as (typeof ACCEPTED_IMAGE_TYPES)[number])) {
+    return "الصيغ المقبولة: JPEG أو PNG أو WebP.";
+  }
+  return undefined;
+}
+
+/**
+ * The client's combined check — size, then the browser's claimed type.
+ *
+ * The form's entry point. **Not for server use:** the server pairs
+ * validateImageSize with the byte signature instead (FR-CREATE-18, SEC-V5).
+ *
+ * Size first, deliberately: an oversized JPEG should be told it is oversized,
+ * not that its format is unacceptable.
+ *
+ * ⚠️ **It has no caller on this branch and it is not dead.** The action stopped
+ * calling it here (that is the AUC-04 fix); the form starts calling it in
+ * `AUC-03` (#134), which is open at the time of writing. Deleting it would take
+ * the create form's only instant image feedback with it.
+ */
+export function validateImage(file: File | null): string | undefined {
+  return validateImageSize(file) ?? validateImageType(file);
 }
 
 /** The file extension for a validated image type. Never trusted from the name. */

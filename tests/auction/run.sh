@@ -11,7 +11,11 @@
 # Both go through the `authenticated` role, so they exercise the server path a
 # crafted request meets rather than anything the UI does (AUC-19's AC).
 #
-# Needs Docker. That is the whole list.
+#   image-type.check.mjs — AUC-04. The byte signature that decides an upload's
+#                      type, and the label that must not (FR-CREATE-18, SEC-V5).
+#                      Pure node, runs before Docker.
+#
+# Needs Docker, and node >= 22 for the check above. That is the whole list.
 #
 # It applies every file in supabase/migrations/ in filename order, so it proves
 # the artefacts that ship rather than a copy of them — same discipline as
@@ -29,6 +33,32 @@ ROOT="$(cd "$HERE/../.." && pwd)"
 MIGRATIONS="$ROOT/supabase/migrations"
 WORK="$(mktemp -d)"
 trap '[ -n "${KEEP:-}" ] || docker rm -f "$CONTAINER" >/dev/null 2>&1; rm -rf "$WORK"' EXIT
+
+total_fail=0
+
+# ----------------------------------------------------------------------------
+# AUC-04 — the byte-signature checks. Pure node, no Docker, so they run first
+# and fail fast.
+#
+# Node >= 22 for native TypeScript type-stripping, same requirement as
+# tests/auth/*.check.mjs. On an older node this is announced as NOT RUN and
+# counted as a failure rather than skipped quietly — #121 removed one vacuous
+# pass from this repo already, and "the suite was green" must never be able to
+# mean "the suite did not execute".
+# ----------------------------------------------------------------------------
+echo "==> AUC-04 — image type by content (node)"
+node_major=$(node -p 'process.versions.node.split(".")[0]' 2>/dev/null || echo 0)
+if [ "$node_major" -ge 22 ]; then
+  if out=$(node --no-warnings=MODULE_TYPELESS_PACKAGE_JSON "$HERE/image-type.check.mjs" 2>&1); then
+    echo "$out" | sed 's/^/    /'
+  else
+    echo "$out" | sed 's/^/    /'
+    total_fail=$((total_fail + 1))
+  fi
+else
+  echo "    !! NOT RUN — node $node_major is too old; these need >= 22. Counting as a failure."
+  total_fail=$((total_fail + 1))
+fi
 
 command -v docker >/dev/null || { echo "docker is required"; exit 1; }
 docker info >/dev/null 2>&1 || { echo "the docker daemon is not running"; exit 1; }
@@ -63,7 +93,8 @@ for f in "$MIGRATIONS"/*.sql; do
   fi
 done
 
-total_fail=0
+# NOTE: total_fail is initialised before the node checks above, not here. It was
+# re-initialised at this point and that silently discarded any node failure.
 
 # A DO block that aborts partway emits neither PASS nor FAIL, so counting only
 # PASS/FAIL reports a clean run while assertions silently never executed. Every
