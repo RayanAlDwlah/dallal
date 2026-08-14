@@ -1,19 +1,29 @@
 import { redirect } from "next/navigation";
 
-import { NotImplemented } from "@/components/layout/not-implemented";
 import { Page } from "@/components/layout/container";
-import { getVerifiedUserId } from "@/lib/auth/identity";
+import { Card, CardBody } from "@/components/ui/card";
+import { getSessionState } from "@/lib/auth/identity";
 import { loginPath } from "@/lib/auth/validation";
 
+import { CreateAuctionForm } from "./create-auction-form";
+
+export const metadata = { title: "أنشئ مزادًا — دلال" };
+
 /**
- * Create auction.
+ * Create auction — AUC-01.
  *
- * Structure only. AUC-01 → AUC-08 build the form, its validation (duration
- * 5 minutes to 7 days, BR-38), image upload and publication. Nothing is
- * validated or submitted here.
+ * The form, its validation (5 minutes to 7 days, BR-38), image upload and
+ * publication now live in ./create-auction-form.tsx and ./actions.ts. AUC-02 →
+ * AUC-08 remain @m7ya505's: the review step FR-CREATE-26a asks for, richer
+ * upload affordances, and the orphaned-image sweep (AUC-05, referenced by the
+ * action's one known gap).
  *
- * The access guard below is AUTH-09 (Abdulrahman) — behaviour, not
- * presentation. The placeholder it wraps is untouched.
+ * The access guard below is Abdulrahman's — AUTH-09, extended by AUTH-06 (#97)
+ * to carry *why* the login screen is being shown. It is behaviour, not
+ * presentation, and it is reproduced here verbatim: this commit replaced the
+ * body the guard wraps and nothing else. Resolving the rebase the other way
+ * would have restored `getVerifiedUserId()` and dropped the reason, silently
+ * undoing FR-AUTH-17 on this one route with no test to catch it.
  */
 export default async function CreateAuctionPage() {
   /*
@@ -25,8 +35,10 @@ export default async function CreateAuctionPage() {
    * owner_id to auth.uid() inside the database (SEC-Z2). Deleting this guard
    * would degrade the experience; it would not open a hole.
    */
-  if (!(await getVerifiedUserId())) {
-    redirect(loginPath("/auctions/new"));
+  const state = await getSessionState();
+  if (state !== "authenticated") {
+    /* FR-AUTH-17 — the redirect carries why, so the login screen can say it. */
+    redirect(loginPath("/auctions/new", state === "expired" ? "expired" : "required"));
   }
 
   return (
@@ -35,7 +47,11 @@ export default async function CreateAuctionPage() {
       description="انشر منتجك للمزايدة."
       width="narrow"
     >
-      <NotImplemented issue="AUC-01 → AUC-08" owner="محمد" />
+      <Card>
+        <CardBody>
+          <CreateAuctionForm />
+        </CardBody>
+      </Card>
     </Page>
   );
 }
