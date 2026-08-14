@@ -200,8 +200,16 @@ export default async function AuctionDetailPage({
             recomputes it, and it presents no next step: no payment, no contact,
             no shipping (FR-DETAIL-21a, SC-67, PRD §19.0).
 
-            Owner-only and ended-only. Every other viewer's outcome is Rayan's
-            banner below.
+            Owner-only and ended-only. This gate is MINE to set: which blocks a
+            seller sees is presentation, and FR-DETAIL-21 wants the seller told a
+            different sentence from every other viewer.
+
+            Note for BID-18 (#79), raised by @Dem4t in review: once Rayan's
+            banner has content, an owner on an ended auction will read the
+            outcome twice — once in the seller's sentence and once in the
+            general one. Deliberately left for then rather than pre-empted now,
+            because the answer depends on what that banner actually says, and it
+            is a decision for the two of us together.
           */}
           {ended && role === "owner" ? (
             <SellerOutcome
@@ -212,13 +220,30 @@ export default async function AuctionDetailPage({
           ) : null}
 
           {/*
-            Rayan's outcome banner (BID-18), shown once the auction is over.
-            It receives the auction id and nothing else — the outcome values and
-            the moment they become visible are his (S0-13, TEAM.md §6). BID-17
-            (#78) makes the Active → Ended transition happen without a refresh;
-            until it lands the change appears on the next load.
+            Rayan's outcome banner (BID-18). MOUNTED UNCONDITIONALLY, and it
+            must stay that way.
+
+            It was briefly gated on `ended` here. That was wrong, and @RayanAlDwlah
+            caught it: `ended` is computed from presentedStatus at SERVER RENDER,
+            so it is frozen in the HTML. A page that loads while the auction is
+            still active would never mount the component at all, and there would
+            be nothing on the client for BID-17 (#78) to reveal when the auction
+            closes under the viewer — which is exactly what SC-23 and FR-RT-08
+            require ("status changes, bid control disappears, outcome appears,
+            with no refresh").
+
+            The gate also took a decision that is not mine. This file has said
+            since #105 that Rayan's mount points render unconditionally and that
+            WHEN each becomes visible is his (S0-13, TEAM.md §6, ARCHITECTURE
+            §14.6). Hard-coding "only after a reload" is answering his half.
+
+            BidSlot's `ended → null` is a different case and stays: hiding a
+            control that would collect only guaranteed rejections is
+            FR-DETAIL-17's own requirement, and BID-17 makes a MOUNTED control
+            disappear from inside — removal it can do, appearance of something
+            never mounted it cannot.
           */}
-          {ended ? <OutcomeBanner auctionId={auction.id} /> : null}
+          <OutcomeBanner auctionId={auction.id} />
         </aside>
 
         <div className="flex flex-col gap-6 lg:col-start-1 lg:row-start-1">

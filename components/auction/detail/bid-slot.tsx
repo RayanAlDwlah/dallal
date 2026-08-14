@@ -90,7 +90,7 @@ export function BidSlot({ auctionId, role, status }: BidSlotProps) {
      * a broken page, and the seller is the one person guaranteed to open this
      * auction repeatedly.
      *
-     * `calm` rather than `error`: owning your own auction is not a mistake.
+     * `info` rather than `error`: owning your own auction is not a mistake.
      */
     case "owner":
       return (
