@@ -1,4 +1,5 @@
 import { PriceBlock } from "@/components/auction/price-block";
+import type { AuctionStatus } from "@/lib/auctions/detail";
 import type { AuctionPrice, Sar } from "@/lib/money";
 
 /**
@@ -57,6 +58,14 @@ export interface PriceRegionProps extends AuctionPrice {
    */
   leadingBidder?: string;
   lastRaise?: Sar | null;
+  /**
+   * F-3 (#162) — the PRESENTED status, forwarded untouched to PriceBlock so a
+   * closed zero-bid auction stops claiming a first bid would be accepted
+   * (BR-29 is true only while bidding is open; LC-03 is what closes it).
+   * Optional and defaulting open: nothing that renders a price outside a
+   * lifecycle has to supply it.
+   */
+  status?: AuctionStatus;
 }
 
 export function PriceRegion({
@@ -65,6 +74,7 @@ export function PriceRegion({
   bidCount,
   leadingBidder,
   lastRaise,
+  status,
 }: PriceRegionProps) {
   return (
     <PriceBlock
@@ -73,6 +83,7 @@ export function PriceRegion({
       bidCount={bidCount}
       leadingBidder={leadingBidder}
       lastRaise={lastRaise}
+      status={status}
     />
   );
 }
