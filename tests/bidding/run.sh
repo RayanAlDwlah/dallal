@@ -61,7 +61,7 @@ docker exec "$CONTAINER" pg_isready -U postgres -q || { echo "postgres never bec
 echo "    $(docker exec "$CONTAINER" psql -U postgres -tAc 'select version();' | cut -c1-40)"
 
 cp "$HERE/lib/supabase-shim.sql" "$HERE/acceptance.sql" "$HERE/closing.sql" \
-   "$HERE/realtime.sql" "$HERE/sweep.sql" "$HERE/concurrency.sh" "$WORK/"
+   "$HERE/realtime.sql" "$HERE/terminal.sql" "$HERE/sweep.sql" "$HERE/concurrency.sh" "$WORK/"
 cp "$MIGRATION"       "$WORK/01-migration.sql"
 cp "$MIGRATION15"     "$WORK/02-bid15.sql"
 cp "$MIGRATIONAUC"    "$WORK/03-auc01.sql"
@@ -143,6 +143,7 @@ suite() {
 
 suite acceptance 25          # BID-02 — bid acceptance
 suite closing    50          # BID-15/BID-16 — finalization and the extension
+suite terminal   20          # BID-19 — terminal-state enforcement
 suite realtime   33          # BID-08 — the broadcast payload, coverage, RT-R7
 suite sweep      15          # BID-21 — gap-filling: SC-28, SC-57, SC-72, SC-73, SC-75
 
