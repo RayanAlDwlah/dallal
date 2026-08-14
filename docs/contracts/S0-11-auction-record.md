@@ -357,8 +357,12 @@ I will build to it.
 Once ticked, this document — not `GITHUB_PLAN.md:263`, not `TEAM.md:421` — is the citable
 contract, and the three conflicting field lists are superseded.
 
-> **Returned 2026-08-14 — see §10 for the evidence behind every tick, and for the two
-> amendments (`§10.2`, `§10.3`) that the `BR-36` reversal forces on `§4` and `§2`.**
+> **Not returned. Nothing above is ticked.** What §10 adds is evidence, not a signature:
+> the boxes that are *statements about code* have been checked against merged `main` and
+> the file-and-line findings are in §10.1, so that ticking is a confirmation rather than a
+> re-derivation. The boxes that are *undertakings* are listed in §10.2 and only @m7ya505
+> can give them. The `BR-36` amendments to `§4` and `§2` are already in the body above —
+> @RayanAlDwlah made them himself in `#133`.
 
 ### 8.1 Evidence of partial endorsement — recorded `2026-08-13`, **nothing ticked**
 
@@ -474,8 +478,8 @@ The boxes are not one kind of thing:
 
 - **Statements about code.** "Is `current_price` `NOT NULL`?" has an answer in the schema,
   the same answer for everyone, and reading it is not a decision. Those I checked.
-- **Commitments.** "None of the six is renamed without telling me first" is a promise about
-  *future conduct*. No amount of code reading produces it. Neither does anyone else's
+- **Commitments.** "None of the **seven** is renamed without telling me first" is a promise
+  about *future conduct*. No amount of code reading produces it. Neither does anyone else's
   reading. Only @m7ya505 can give those, and they are marked ⬜ below and left untouched.
 
 That split is the whole point. Half of §8 is not a fact to be verified; it is an
@@ -485,7 +489,7 @@ undertaking, and an undertaking has to be given by the person who will keep it.
 
 | § | Box | Evidence | Result |
 |---|---|---|---|
-| §2 | six read fields, `current_price` among them | `20260812120000_bid02_bid_acceptance.sql:40–66` declares them on `public.auctions` | ✅ **holds** — and §2.1's resolution stands: existence is the outcome of the id lookup, not a column |
+| §2 | **seven** read fields, `current_price` among them | Fields 1–6 are declared on `public.auctions` by `20260812120000_bid02_bid_acceptance.sql:40–66`. **Field 7, `extension_count`, is not in that range and cannot be** — it is added later by `20260814000000:65`, and what makes it a *read* field is `bids_extend_end_time()` at `20260814000000:186`, which selects `a.end_time, a.extension_count … for update` and skips the extension at the cap | ✅ **holds, for all seven** — and §2.1's resolution stands: existence is the outcome of the id lookup, not a column |
 | §3.2 | derived has-bids / bid-count, no stored column | `lib/auctions/listing.ts`, `lib/auctions/detail.ts`, `lib/bidding/live-snapshot.ts` — all three read paths derive it as an aggregate over `bids`. No `bid_count` column exists | ✅ **holds** |
 | §4 | grants allow the writes | There is **no** `UPDATE` grant to `authenticated` — `bid02:512` revokes it — and the writes reach the table through `SECURITY DEFINER` (`bid02:209`). The absence of the grant is what `AUC-18` rests on, and it is why the write set is *not* enforced by grants at all | ✅ **holds** |
 | §4.1 | `current_price = starting_price` at creation, `NOT NULL` | `bid02:50` declares `sar_amount not null`; `auctions_owner_insert` pins `current_price = starting_price` in its `WITH CHECK` (`bid02:495`), so the birth value is enforced by the database, not by application code | ✅ **holds** — and it is not nullable, and no read path writes `COALESCE(current_price, starting_price)` |
@@ -498,6 +502,17 @@ comment claiming it; where a comment and the code disagreed, the code decided. O
 claim of mine — that §4's grant instruction would break the extension — was **wrong**, and
 was withdrawn on #20 once `bid02:512` and `place_bid`'s `SECURITY DEFINER` showed the
 grants were never the mechanism.
+
+A second correction, from review on this PR. The §2 row above read *"six read fields"* and
+offered only the original `CREATE TABLE` as its evidence — a range that contains no
+`extension_count`, because the column did not exist when it was written. The box it claims
+to verify says **seven**. So the row was checking the pre-`BR-36` contract while sitting
+under the post-`BR-36` one, and §10.5 invites @m7ya505 to tick on the strength of these
+rows rather than re-audit — which would have had him confirm a seven-field set against a
+six-field table definition. The seventh is precisely the field an earlier revision of §10.3
+described wrongly and @RayanAlDwlah corrected, so it is the one place in this table where a
+stale row costs the most. Fixed above, with the two citations the seventh field actually
+needs.
 
 ### 10.2 Not checkable from here — @m7ya505's alone
 
