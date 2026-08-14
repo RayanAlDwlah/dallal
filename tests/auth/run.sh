@@ -40,6 +40,15 @@ for f in validation site-url login-path; do
 done
 echo
 
+# SUITE PASSED below covers the database and the pure functions. It does NOT
+# cover AUTH-11's HTTP criteria — session persistence, expiry and the guards
+# over the wire. That is session.check.mjs, which needs a running server and so
+# cannot join the loop above. Named here so nobody reads a green run as broader
+# coverage than it is (@RayanAlDwlah on #104).
+echo "    note: AUTH-11's HTTP criteria are tests/auth/session.check.mjs — not run here."
+echo "          npm run dev, then: node --no-warnings=MODULE_TYPELESS_PACKAGE_JSON tests/auth/session.check.mjs"
+echo
+
 command -v docker >/dev/null || { echo "docker is required for the rest"; exit 1; }
 docker info >/dev/null 2>&1 || { echo "the docker daemon is not running — the checks above still ran"; exit 1; }
 

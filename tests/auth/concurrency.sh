@@ -45,6 +45,17 @@ for round in $(seq 1 "$ROUNDS"); do
       # Reported as 'accepted' or the SQLSTATE, one line per worker, so a
       # connection that dies silently shows up as a missing answer rather than
       # being counted as a rejection.
+      #
+      # The `$` anchor is load-bearing, not tidiness. psql prints the notice as
+      # "NOTICE:  accepted", and grep -oE scans left to right with alternation
+      # that is NOT longest-match — so an unanchored '[0-9A-Z]{5}' matches
+      # "NOTIC" at offset 0 and head -1 takes it. Both branches then collapse to
+      # the same token, accepted and dup are structurally always 0, and every
+      # round fails regardless of what the database did. Caught by @RayanAlDwlah
+      # on #104; reproducible with no database at all:
+      #
+      #   printf 'NOTICE:  accepted\n' | grep -oE 'accepted|[0-9A-Z]{5}'   -> NOTIC
+      #   printf 'NOTICE:  accepted\n' | grep -oE '(accepted|[0-9A-Z]{5})$' -> accepted
       $PSQL -v ON_ERROR_STOP=0 -c "
         do \$\$
         begin
@@ -54,7 +65,7 @@ for round in $(seq 1 "$ROUNDS"); do
           raise notice 'accepted';
         exception when others then
           raise notice '%', sqlstate;
-        end \$\$;" 2>&1 | grep -oE 'accepted|[0-9A-Z]{5}' | head -1
+        end \$\$;" 2>&1 | grep -oE '(accepted|[0-9A-Z]{5})$' | head -1
     ) &
   done > "$out" 2>&1
   wait
