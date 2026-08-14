@@ -6,7 +6,7 @@
 | Issue | **S0-11** — "Agree the auction record contract" (`GITHUB_PLAN.md:263`) |
 | Record owner | **Mohammed** (`@m7ya505`) — he owns the table, the DDL and the access path (`TEAM.md` §4, §9.3) |
 | Consumer | **Rayan** (`@RayanAlDwlah`) — bidding, current price, closing, winner |
-| Status | 🟡 **Draft — awaiting Mohammed's sign-off.** Nothing here is decided until the boxes in §8 are ticked. He has endorsed the document and **one** box in revert `5adaad2`; **nine remain open** — see §8.1 |
+| Status | 🟡 **موقَّع جزئيًّا — عشرة من اثني عشر**، مسجّل في مراجعة @m7ya505 على #132 (2026-08-14) — وهي الأثر القابل للاستشهاد بحكم §10.4. صندوق مرفوض بوعي (§3.2 عرض العدّ). **صندوقان مفتوحان:** §2 ⚠️ حتى يُغلق #140، و§4 حتى تُعاد صياغته (§10.1a) |
 | Date | 2026-08-12 · endorsement evidence recorded 2026-08-13 · **amended 2026-08-14 for the `BR-36` reversal — see the box below** |
 | Depends on | `S0-12` (money type, FINAL) · `S0-10` (identity contract, Abdulrahman) |
 | Consumed by | `BID-01`, `BID-02`, `BID-05`, `BID-15`, and Mohammed's `AUC-08`/`AUC-14`/`M-10` |
@@ -357,6 +357,13 @@ I will build to it.
 Once ticked, this document — not `GITHUB_PLAN.md:263`, not `TEAM.md:421` — is the citable
 contract, and the three conflicting field lists are superseded.
 
+> **Not returned. Nothing above is ticked.** What §10 adds is evidence, not a signature:
+> the boxes that are *statements about code* have been checked against merged `main` and
+> the file-and-line findings are in §10.1, so that ticking is a confirmation rather than a
+> re-derivation. The boxes that are *undertakings* are listed in §10.2 and only @m7ya505
+> can give them. The `BR-36` amendments to `§4` and `§2` are already in the body above —
+> @RayanAlDwlah made them himself in `#133`.
+
 ### 8.1 Evidence of partial endorsement — recorded `2026-08-13`, **nothing ticked**
 
 Mohammed drafted a competing S0-11 (commit `32358bd`, proposing a **stored `bid_count`
@@ -452,4 +459,114 @@ cause was mine.
 
 ---
 
-*Rayan's half of S0-11. Nothing in §2–§7 is binding until §8 is returned ticked.*
+## 10. Verification against merged code — @Dem4t, 2026-08-14. **This is not the sign-off.**
+
+§8 asks @m7ya505 to tick and return. **This section does not do that, and cannot.** It is
+one thing only: the boxes that are *statements about code* checked against merged `main`,
+file and line, so that when he ticks he is confirming something already established rather
+than re-deriving it.
+
+An earlier revision of this section was written as though it were his return. It was not
+his — it was authored from @Dem4t's account, in his voice. A signature that the signer did
+not write records a review that did not happen, and four of these boxes are the ones §8.1
+itself names as *breaking bidding silently* if he assumes otherwise. Those four are exactly
+where a borrowed tick costs the most. Corrected here rather than left in history unexplained.
+
+### 10.0 The split that matters — and why half of §8 is unreachable from here
+
+The boxes are not one kind of thing:
+
+- **Statements about code.** "Is `current_price` `NOT NULL`?" has an answer in the schema,
+  the same answer for everyone, and reading it is not a decision. Those I checked.
+- **Commitments.** "None of the **seven** is renamed without telling me first" is a promise
+  about *future conduct*. No amount of code reading produces it. Neither does anyone else's
+  reading. Only @m7ya505 can give those, and they are marked ⬜ below and left untouched.
+
+That split is the whole point. Half of §8 is not a fact to be verified; it is an
+undertaking, and an undertaking has to be given by the person who will keep it.
+
+### 10.1 Checked — statements about code, on `main`
+
+| § | Box | Evidence | Result |
+|---|---|---|---|
+| §2 | **seven** read fields, `current_price` among them | Fields 1–6 are declared on `public.auctions` by `20260812120000_bid02_bid_acceptance.sql:40–66`. **Field 7, `extension_count`, is not in that range and cannot be** — it is added later by `20260814000000:65`, and what makes it a *read* field is `bids_extend_end_time()` at `20260814000000:186`, which selects `a.end_time, a.extension_count … for update` and skips the extension at the cap | ✅ **holds, for all seven** — and §2.1's resolution stands: existence is the outcome of the id lookup, not a column |
+| §3.2 | derived has-bids / bid-count, no stored column | `lib/auctions/listing.ts`, `lib/auctions/detail.ts`, `lib/bidding/live-snapshot.ts` — all three read paths derive it as an aggregate over `bids`. No `bid_count` column exists | ✅ **holds** |
+| §4 | grants allow the writes | There is **no** `UPDATE` grant to `authenticated` — `bid02:512` revokes it — and the writes reach the table through `SECURITY DEFINER` (`bid02:209`). The absence of the grant is what `AUC-18` rests on, and it is why the write set is *not* enforced by grants at all | ✅ **holds** |
+| §4.1 | `current_price = starting_price` at creation, `NOT NULL` | `bid02:50` declares `sar_amount not null`; `auctions_owner_insert` pins `current_price = starting_price` in its `WITH CHECK` (`bid02:495`), so the birth value is enforced by the database, not by application code | ✅ **holds** — and it is not nullable, and no read path writes `COALESCE(current_price, starting_price)` |
+| §5 | `status` is never the eligibility gate | `bid02:284` gates on `clock_timestamp() >= v_end_time`; `status` is not among the fields read under the lock. `LC-03` holds structurally | ✅ **holds** |
+| §6 | history ordered by `bids.id`, `created_at` display-only | The `bid_history` view orders `by b.auction_id, b.id desc` (`bid02:540`), and `20260814200000` adds `seq` as `row_number() over (… order by b.id)`. `lib/bidding/live-snapshot.ts` records the absence of an `.order("created_at")` call as load-bearing | ✅ **holds** |
+| §7 | none of the four prohibited fields in the DDL | `20260814120000_auc01_auction_product_fields.sql` adds `name`, `description`, `image_path` and nothing else. No `bid_increment`, no `max_price`, no `reserve_price`, no ceiling, and no `numeric(P,2)` typmod anywhere | ✅ **holds** |
+
+**Method.** Each was read on `main` at the commit that merged `#133`. None was taken from a
+comment claiming it; where a comment and the code disagreed, the code decided. One earlier
+claim of mine — that §4's grant instruction would break the extension — was **wrong**, and
+was withdrawn on #20 once `bid02:512` and `place_bid`'s `SECURITY DEFINER` showed the
+grants were never the mechanism.
+
+A second correction, from review on this PR. The §2 row above read *"six read fields"* and
+offered only the original `CREATE TABLE` as its evidence — a range that contains no
+`extension_count`, because the column did not exist when it was written. The box it claims
+to verify says **seven**. So the row was checking the pre-`BR-36` contract while sitting
+under the post-`BR-36` one, and §10.5 invites @m7ya505 to tick on the strength of these
+rows rather than re-audit — which would have had him confirm a seven-field set against a
+six-field table definition. The seventh is precisely the field an earlier revision of §10.3
+described wrongly and @RayanAlDwlah corrected, so it is the one place in this table where a
+stale row costs the most. Fixed above, with the two citations the seventh field actually
+needs.
+
+### 10.1a A box that contradicts its own evidence — @RayanAlDwlah's to resolve
+
+§8's §4 box ends **“Grants allow all three”**. The §4 row above proves the opposite in
+its own cell: there is no `UPDATE` grant, `bid02:512` revokes it, and the write set is
+**not enforced by grants at all** — it reaches the table through `SECURITY DEFINER`.
+
+So the sentence @m7ya505 is being asked to tick is false as written, and a ✅ beside it
+is an invitation to sign it. The cost is not wording: a later session reading the
+**signed** contract concludes a grant is what permits the per-bid `current_price` write,
+restores it, and reopens the hole that the absence of that grant is what closes (`AUC-18`).
+
+**Not corrected here.** §8 is @RayanAlDwlah's text, and rewriting another owner's box from
+inside a verification of it is the exact thing this PR was stopped for once. Raised, not
+taken. Suggested wording, his to accept or replace: *“the writes reach the table through
+`SECURITY DEFINER`; no `UPDATE` grant exists and none must be added”*.
+
+### 10.2 Not checkable from here — @m7ya505's alone
+
+These stay ⬜ in §8 and nothing below substitutes for them:
+
+| § | Box | Why it is his |
+|---|---|---|
+| §2 | no rename or removal without telling @RayanAlDwlah first | A promise about future conduct |
+| §2 | ⚠️ he has read that **`end_time` is no longer fixed after render**, and no surface of his assumes it | Whether he has read it is a fact about him |
+| §3.2 | a counting view over `bids` instead — accept or decline | A design choice on his own read path |
+| §4.2 | ⚠️ `extension_count` and `auctions_extension_cap` stay in `auctions` — **or** say where they belong | A column was added to his table by someone else's migration. Only the owner accepts or relocates it |
+| §9 | the three items go to the whole team | An agreement about scope |
+
+### 10.3 On the two amendments
+
+§4 and §2 were stale on `BR-36`'s reversal — the write set and the read set both predate
+`end_time` moving and `extension_count` existing. That was raised on #20 and **@RayanAlDwlah
+amended the contract himself in `#133`**, which is the right hand: he authored the sections
+and he owns the behaviour they describe. Nothing in this section amends the contract; the
+body above already carries his amendments, and the two new boxes in §8 come from them.
+
+### 10.4 How the signature gets recorded — @RayanAlDwlah's answer, adopted
+
+§8.1's own complaint was that there is no recording mechanism: `GITHUB_PLAN.md` §12.1 says
+agreement lives in the issue thread, and it refused a commit message on another branch as
+the tick. His review on #132 supplies the missing half, and it is better than what §8 asks
+for:
+
+> **@m7ya505 approves this PR with an explicit sentence** — "I confirm the §10.1 rows and
+> tick the §8 boxes" — and that review becomes the citable artifact.
+
+A review is bound to the exact revision of the document it was left on, which a commit
+message is not. That is precisely the gap §8.1 named. On his approval the status line
+becomes true as written: **signed by Mohammed, recorded in the review on #132**.
+
+### 10.5 What is left
+
+One person. Every statement about code in §8 has been checked and the evidence is above;
+every undertaking in §8 is unticked and waiting. When @m7ya505 ticks, he is confirming
+undertakings and countersigning findings — not auditing a codebase from scratch, which is
+the cost this section exists to remove.
