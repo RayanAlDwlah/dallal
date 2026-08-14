@@ -131,6 +131,19 @@ const AUCTION_SELECT = [
  */
 const HISTORY_SELECT = "seq, display_name, amount, created_at";
 
+/**
+ * The explicit presentation window: this read returns the newest
+ * HISTORY_WINDOW entries of an auction's bid history (owner decision
+ * 2026-08-14, #118). The database record is complete and append-only —
+ * every bid stays stored, immutable, forever (M12, RR-04) — this constant
+ * bounds only what one read presents. It exists so the limit is a named,
+ * reviewable decision in this file rather than PostgREST's `max_rows`
+ * default deciding silently from infrastructure config no reviewer sees;
+ * that default (1000 on both projects) remains as a backstop, never the
+ * mechanism.
+ */
+export const HISTORY_WINDOW = 1000;
+
 interface LiveAuctionRow {
   status: LiveAuctionStatus;
   end_time: string;
@@ -170,12 +183,19 @@ export async function readLiveSnapshot(auctionId: string): Promise<LiveSnapshot 
         .select(HISTORY_SELECT)
         .eq("auction_id", auctionId)
         /*
-         * Transport-level ordering, for politeness not for correctness: this
-         * travels through PostgREST's json_agg over a subquery, whose input
-         * order PostgreSQL documents as unspecified — @Dem4t's #109 review
-         * question, and he was right. The sort below is the contract.
+         * Load-bearing, not politeness (an earlier comment here said the
+         * opposite — #118 corrected it): PostgREST builds `ORDER BY seq DESC
+         * LIMIT n`, and ORDER BY runs before LIMIT, so under a server-side
+         * row cap this parameter decides WHICH rows survive the cut —
+         * deterministically the newest HISTORY_WINDOW, not an arbitrary
+         * thousand. Deleting it would not merely unsort the transport, it
+         * would make the surviving SET planner-chosen. What it still cannot
+         * guarantee is the order of what arrives (json_agg input order is
+         * unspecified — @Dem4t's #109 review question, and he was right);
+         * the sort below remains the ordering contract.
          */
         .order("seq", { ascending: false })
+        .limit(HISTORY_WINDOW)
         .returns<HistoryRow[]>(),
     ]);
 
@@ -208,6 +228,13 @@ export async function readLiveSnapshot(auctionId: string): Promise<LiveSnapshot 
        * not contract. A local sort on a monotonic public rank closes that for
        * good, at the cost of one O(n log n) over an already-nearly-sorted
        * array. Raised by @Dem4t on #109; this is the settled answer.
+       *
+       * Ordering, not completeness: this sort guarantees the order OF WHAT
+       * ARRIVED, and what arrives is bounded by the explicit HISTORY_WINDOW
+       * above (with the infra `max_rows` cap as a backstop). Anyone adding
+       * pagination for the older entries must page by `seq` cursor —
+       * `seq < last seen`, the sanctioned growth path (#118) — never by
+       * offset, which slides under live writes and skips or repeats rows.
        */
       history: historyRes.data
         .map((h) => ({

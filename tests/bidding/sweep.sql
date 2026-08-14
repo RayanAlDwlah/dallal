@@ -237,6 +237,7 @@ declare
   cnt     bigint;
   has_dn  boolean;
   has_em  boolean;
+  em_ctl  boolean;
 begin
   a := pg_temp.new_auction();
   perform pg_temp.as_user(b1);
@@ -268,10 +269,25 @@ begin
 
   perform set_config('role', 'postgres', true);
 
+  -- Positive control for the no-email assertion below: it can only ever fail
+  -- if the fixture bidder's email actually contains '@'. That is true today
+  -- (b1 = 'v1-bidder1@test.local', seeded from BID-02-bid-operation.md), but
+  -- nothing guarded it — reseed b1 with an @-less email, or no email at all,
+  -- and the negative assertion passes vacuously forever (#117). This control
+  -- turns "able to fail" from a fact someone once read into an assertion that
+  -- fails loudly. Read as postgres: anon cannot (and must not) see auth.users.
+  select exists (
+    select 1 from auth.users
+     where id = b1
+       and email like '%@%'
+  ) into em_ctl;
+
   perform pg_temp.chk('SC-75 anon can read bid_history rows (content visible)',
                       cnt::text, '1');
   perform pg_temp.chk('SC-75 display_name is populated in bid_history',
                       has_dn::text, 'true');
+  perform pg_temp.chk('SC-75 control: fixture bidder email contains @',
+                      em_ctl::text, 'true');
   perform pg_temp.chk('SC-75 no email address appears in bid_history',
                       has_em::text, 'false');
 end $$;
