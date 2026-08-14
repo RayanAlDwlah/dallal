@@ -1,5 +1,3 @@
-import { Alert } from "@/components/ui/alert";
-
 /**
  * ═══════════════════════════════════════════════════════════════════════════
  * RAYAN'S FILE — `@RayanAlDwlah`. Created empty by S0-13 (#22); filled by
@@ -30,15 +28,29 @@ export interface OutcomeBannerProps {
   auctionId: string;
 }
 
-export function OutcomeBanner({ auctionId }: OutcomeBannerProps) {
-  return (
-    <Alert tone="info" title="نتيجة المزاد">
-      <p>
-        نقطة تركيب فارغة من <span className="num">S0-13</span>. قيم النتيجة
-        وتوقيت ظهورها ضمن <span className="num">BID-18</span> و{" "}
-        <span className="num">BID-17</span>، ومالكها ريان.
-      </p>
-      <p className="sr-only">المزاد {auctionId}</p>
-    </Alert>
-  );
+/*
+ * A QUESTION RECORDED FOR BID-18, so it is not rediscovered then (@Dem4t,
+ * #110 review): once this banner has content, the OWNER of an ended auction
+ * will see the outcome twice — SellerOutcome renders FR-DETAIL-21's
+ * seller-facing sentence, and this banner renders the general one. Whether
+ * this banner should stay quiet for the owner, or the two should merge, is a
+ * decision between Rayan (values, timing) and Mohammed (composition) to make
+ * WHEN BID-18 fills this in — not silently by either.
+ */
+export function OutcomeBanner(props: OutcomeBannerProps) {
+  /*
+   * The prop stays in the signature — S0-13 fixes `auctionId` as this mount
+   * point's whole contract, and dropping it would break the page's call site.
+   * `void` marks it deliberately unread until BID-17/18 wire the live store.
+   */
+  void props;
+  /*
+   * Deliberately renders NOTHING — not a placeholder box. The page mounts
+   * this component unconditionally (its file states that contract), so until
+   * BID-17/BID-18 give it behaviour, an empty mount point's honest rendering
+   * is the absence of an outcome, which is true on every auction it currently
+   * mounts on. The placeholder Alert this replaces was showing an empty-slot
+   * notice to real viewers of every active auction.
+   */
+  return null;
 }
