@@ -9,6 +9,7 @@ import { loginPath } from "@/lib/auth/validation";
 import { SIGNATURE_BYTES, sniffImageType } from "@/lib/auctions/image-signature";
 import {
   IMAGE_BUCKET,
+  MIN_DURATION_MS,
   extensionFor,
   validateDescription,
   validateEndTime,
@@ -232,11 +233,42 @@ export async function createAuctionAction(
      * round.
      *
      * What IS guaranteed is the half that can hurt someone: no partial auction.
-     * Every field was validated before the upload, so reaching this branch
-     * means the database refused the row — an outage or a policy change, not
-     * ordinary input. Orphan cleanup is AUC-05's and runs as the table owner.
-     * Raised for @m7ya505 in the PR rather than decided here.
+     * Orphan cleanup is AUC-05's and runs as the table owner.
      */
+
+    /*
+     * AUC-02 / SC-68 — ONE rule can have become false since it was validated,
+     * and only one: the end-time floor.
+     *
+     * validateEndTime ran against this process's clock at T1. The insert policy
+     * re-evaluates `end_time >= now() + interval '5 minutes'` against the
+     * DATABASE's clock at T2, and the upload happens in between — so T2 > T1
+     * always. An auction the user set to exactly five minutes therefore passes
+     * validation and is then refused by the policy, deterministically rather
+     * than as a race. Every other field is immutable between the two checks.
+     *
+     * Re-reading it here is the same technique registerAction uses for the
+     * display-name race: ask what is true NOW instead of guessing why the
+     * database said no, so the message is accurate rather than plausible.
+     *
+     * Without this the user was told "try again" — and retrying could not
+     * work, because their chosen end time is closer to now on every attempt.
+     * Each retry also re-uploads, orphaning one more file.
+     *
+     * This does NOT make SC-68's "exactly 5 minutes accepted" true; nothing in
+     * this file can. That is a contradiction between an inclusive boundary and
+     * a check re-evaluated against a clock that has moved, and it is open for
+     * the team on #44. What this fixes is the unrecoverable dead end.
+     */
+    if (Date.parse(endTime) - Date.now() < MIN_DURATION_MS) {
+      return {
+        fieldErrors: {
+          endTime:
+            "وقت الانتهاء أصبح قريبًا جدًا أثناء الإنشاء. اختر وقتًا أبعد — مدة المزاد تُقاس من لحظة الإنشاء، لا من لحظة تعبئة النموذج.",
+        },
+      };
+    }
+
     return { error: "تعذّر إنشاء المزاد، ولم يُنشأ شيء. حاول مرة أخرى." };
   }
 
