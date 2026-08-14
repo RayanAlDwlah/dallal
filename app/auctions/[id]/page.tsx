@@ -124,11 +124,32 @@ export default async function AuctionDetailPage({
       */}
       <div className="grid grid-cols-1 gap-6 lg:grid-cols-[minmax(0,1fr)_22rem] lg:items-start">
         <aside className="flex flex-col gap-4 lg:col-start-2 lg:row-start-1">
-          {/* AUC-13 (#55) — wires this to auction.status and auction.endsAt. */}
-          <StatusCountdown />
+          {/*
+            AUC-13 (#55). `status` is passed rather than derived: an auction
+            past its end time whose row still says active must PRESENT as ended
+            (FR-DETAIL-24, EC-04), and deciding that is AUC-16 (#58) — it
+            changes what is passed here, not what the component does with it.
+          */}
+          <StatusCountdown
+            status={auction.status}
+            endsAt={auction.endsAt}
+            serverNow={result.serverNow}
+          />
 
-          {/* AUC-14 (#56) — wires this to the prices and the bid count. */}
-          <PriceRegion />
+          {/*
+            AUC-14 (#56). bidCount, not a price comparison: BR-29 lets the first
+            bid equal the starting price, so the two prices are equal both
+            before any bid and immediately after the first one.
+
+            leadingBidder and lastRaise are Rayan's values and are not passed
+            yet — they arrive through this same seam with BID-05 and BID-09.
+            Nothing here invents a placeholder for them.
+          */}
+          <PriceRegion
+            startingPrice={auction.startingPrice}
+            currentPrice={auction.currentPrice}
+            bidCount={auction.bidCount}
+          />
 
           {/*
             Rayan's mount points. They receive the auction id and nothing else:
@@ -145,8 +166,13 @@ export default async function AuctionDetailPage({
         </aside>
 
         <div className="flex flex-col gap-6 lg:col-start-1 lg:row-start-1">
-          {/* AUC-12 (#54) — wires this to the description, image and seller. */}
-          <ProductContent />
+          {/* AUC-12 (#54). The name goes only to the image's alt — the <h1> above is the page's one heading. */}
+          <ProductContent
+            name={auction.name}
+            description={auction.description}
+            imageUrl={auction.imageUrl}
+            sellerName={auction.sellerName}
+          />
 
           {/* BID-07 (#68) — public to unauthenticated visitors (BR-40, SC-75). */}
           <BidHistory auctionId={auction.id} />
