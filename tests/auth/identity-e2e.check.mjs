@@ -264,8 +264,66 @@ chk("BR-26 the seller is named by display name",
 chk("CLAUDE.md §6 no email address in the public auction read",
   String(JSON.stringify(publicRead ?? {}).includes("@")), "false");
 
+// ==========================================================================
+// 7. Logout — FR-AUTH-13. Last, because it spends the session the sections
+//    above depend on.
+//
+// #39's coverage list names registration, login, LOGOUT, persistence and
+// expiry. Every one but logout had assertions; a grep for `logout` or
+// `signOut` across tests/ returned nothing at all.
+//
+// WHAT IS ASSERTED, AND WHY NOT THE OBVIOUS THING
+//
+// The obvious test — "sign out, then prove the old access token is refused" —
+// would be asserting a false premise. A Supabase access token is a signed JWT
+// with an expiry; it is not consulted against a session table on every call,
+// so it can outlive the sign-out that revoked its session. An assertion built
+// on that would fail for a correct reason and be read as a product defect.
+//
+// What logout does guarantee is that the session cannot be CONTINUED: the
+// refresh token is revoked, so nothing can mint a new access token from it.
+// That is the durable half of FR-AUTH-13 and it is what is asserted here.
+//
+// The access token's own post-logout behaviour is REPORTED rather than
+// asserted — printed, not counted — because it is a Supabase implementation
+// detail we consume rather than a product decision we made. If it ever
+// changes, this line says so on the next run instead of a suite going red for
+// something nobody decided.
+//
+// FR-AUTH-14 (land on a public page, unauthenticated state everywhere) is not
+// re-tested here: it is HTTP behaviour and session.check.mjs already covers
+// it — FR-AUTH-18 proves a dead session can still browse, and FR-AUTH-22/17
+// prove the guarded routes bounce with a reason.
+// ==========================================================================
+const accessToken = signIn?.session?.access_token ?? "";
+const refreshToken = signIn?.session?.refresh_token ?? "";
+
+const authHeaders = { apikey: key, Authorization: `Bearer ${accessToken}` };
+const before = await fetch(`${url}/auth/v1/user`, { headers: authHeaders });
+chk("the session is live before logout", String(before.status), "200");
+
+await user.auth.signOut();
+
+/*
+ * The refresh grant, called directly rather than through the client: the
+ * client cleared its own copy on signOut, so asking IT would only prove the
+ * client forgot — not that the server refuses.
+ */
+const refreshed = await fetch(`${url}/auth/v1/token?grant_type=refresh_token`, {
+  method: "POST",
+  headers: { apikey: key, "Content-Type": "application/json" },
+  body: JSON.stringify({ refresh_token: refreshToken }),
+});
+chk("FR-AUTH-13 logout revokes the refresh token", String(refreshed.status !== 200), "true");
+
+const stillLive = await fetch(`${url}/auth/v1/user`, { headers: authHeaders });
+console.log(
+  `NOTE  access token after logout: ${stillLive.status}` +
+    ` — ${stillLive.status === 200 ? "still accepted until it expires (JWT semantics, not a defect)" : "already refused"}`,
+);
+
 // --------------------------------------------------------------------------
-const EXPECTED = 17;
+const EXPECTED = 19;
 const ran = pass + fail;
 console.log(`\n---- ${pass} passed, ${fail} failed, ${ran} of ${EXPECTED} assertions reached`);
 console.log(`     account ${email} and its auction are permanent — see the header.`);
