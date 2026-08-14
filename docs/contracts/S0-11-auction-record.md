@@ -521,7 +521,7 @@ body above already carries his amendments, and the two new boxes in §8 come fro
 
 ### 10.4 How the signature gets recorded — @RayanAlDwlah's answer, adopted
 
-§8.1's own complaint was that there is no recording mechanism:  §12.1 says
+§8.1's own complaint was that there is no recording mechanism: `GITHUB_PLAN.md` §12.1 says
 agreement lives in the issue thread, and it refused a commit message on another branch as
 the tick. His review on #132 supplies the missing half, and it is better than what §8 asks
 for:
