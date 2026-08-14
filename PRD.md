@@ -298,15 +298,26 @@ Any signed-in account. This is the base role; every capability below builds on i
 **R3 — Auction Creator / Seller (contextual, per auction)**
 A Registered User in relation to an auction they created.
 
-- **Can:** create the auction; view it, including its full bid history and, after close, the winner's identity and final price.
+- **Can:** create the auction; view it, including its bid history — presented as the newest window (see the 2026-08-14 amendment below) — and, after close, the winner's identity and final price.
 - **Cannot:** **bid on their own auction** (BR-02); alter the current price; alter or delete bid history; alter the outcome; **edit the auction after publishing** (BR-31); **cancel the auction** (BR-30); close, extend, or reopen the auction.
 - **Note:** the seller has no informational advantage during the auction. They see the same live state as everyone else. Once published, an auction is entirely out of the seller's control — it runs to its end time and closes automatically.
 
 **R4 — Bidder (contextual, per auction)**
 A Registered User who is not the seller of that auction, in relation to an auction they may bid on.
 
-- **Can:** place bids that satisfy all validation rules; see whether they are currently the leading bidder; see full bid history; after close, see whether they won.
+- **Can:** place bids that satisfy all validation rules; see whether they are currently the leading bidder; see bid history (the newest window, per the same amendment); after close, see whether they won.
 - **Cannot:** bid on an auction they created; bid on a non-active auction; place a bid below the minimum acceptable bid (BR-28); retract, edit, or delete a placed bid.
+
+> **Amended 2026-08-14 — "full bid history" is presented as the newest window (#118).**
+> Auction surfaces present the **newest 1,000 entries** of an auction's bid history
+> (`HISTORY_WINDOW = 1000` — an explicit, named client-side limit; the platform's
+> `max_rows = 1000` server default remains only as an infrastructure backstop, never
+> the mechanism). The record itself is untouched: every accepted bid is stored,
+> permanent and append-only — **M12 and RR-04 are unaffected** — this bounds only what
+> a single read presents. Should a deeper view ever be needed, the sanctioned growth
+> path is **`seq`-cursor pagination** ("older entries" = `seq <` the last one shown),
+> never offset pagination, which slides under live writes. Wherever this document says
+> "full bid history", it reads as this window over the complete stored record.
 
 **R5 — Winner (contextual, terminal)**
 The bidder holding the highest valid bid at the moment an auction closes. Assigned by the system, never claimed.
