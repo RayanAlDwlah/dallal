@@ -5,6 +5,8 @@ import {
 
 import { createClient } from "@/lib/supabase/client";
 
+import { CONNECT_DEADLINE_MS } from "./connection-timing";
+
 /**
  * The realtime foundation — BID-08. FR-RT-01, ARCH §14.1/§14.2/§14.5, ADR-9, BR-22.
  *
@@ -64,6 +66,12 @@ export type AuctionChannelStatus =
    * Not joined, for any reason. FR-RT-11 and RT-R2 want this surfaced calmly
    * within 10 seconds, with loaded data still readable and the bid control
    * marked stale — presentation is Mohammed's (CLAUDE.md §1); the state is ours.
+   *
+   * BID-11 made the ten seconds true rather than intended. **There is
+   * deliberately no fourth state**: "reconnecting" would be a new word for
+   * Mohammed's screens to say and a new branch for every consumer, to describe
+   * a situation in which the advice to the viewer is identical — your copy may
+   * be stale, bidding still works. See `connection-timing.ts`.
    */
   | "unavailable";
 
@@ -107,6 +115,8 @@ interface Watch {
   closed: boolean;
   /** Pending teardown — see GRACE_MS. Cleared if a subscriber returns first. */
   reaper: ReturnType<typeof setTimeout> | null;
+  /** BID-11 — see CONNECT_DEADLINE_MS. Cleared by the first status of any kind. */
+  deadline: ReturnType<typeof setTimeout> | null;
 }
 
 const watches = new Map<string, Watch>();
@@ -137,7 +147,38 @@ const each = (watch: Watch, run: (h: AuctionChannelHandlers) => void) => {
   }
 };
 
+/**
+ * Record a status and tell everyone watching. The single place `watch.status`
+ * is written, so the connect deadline cannot be left running by a path that
+ * forgot about it — which is the only way this could go wrong.
+ */
+function settle(watch: Watch, status: AuctionChannelStatus): void {
+  if (watch.deadline !== null) {
+    clearTimeout(watch.deadline);
+    watch.deadline = null;
+  }
+  watch.status = status;
+  each(watch, (h) => h.onStatus?.(status));
+}
+
+/**
+ * BID-11 / FR-RT-11 — a join that never answers is loss, and must be said so.
+ *
+ * The heartbeat cannot cover this case: there is no established socket to send
+ * a heartbeat on, so nothing times out and nothing errors. `"connecting"` is
+ * honest for a second and a lie after ten, and the bid control stays unmarked
+ * the whole time.
+ */
+function armConnectDeadline(watch: Watch): void {
+  watch.deadline = setTimeout(() => {
+    watch.deadline = null;
+    if (watch.closed || watch.status !== "connecting") return;
+    settle(watch, "unavailable");
+  }, CONNECT_DEADLINE_MS);
+}
+
 function join(auctionId: string, watch: Watch): void {
+  armConnectDeadline(watch);
   // Async because the private-channel handshake is: set the token, THEN join.
   // The caller gets a synchronous unsubscribe regardless, so a component that
   // unmounts mid-handshake is handled by `watch.closed` rather than by a race.
@@ -174,8 +215,13 @@ function join(auctionId: string, watch: Watch): void {
         .subscribe((state) => {
           if (watch.closed) return;
           const live = state === REALTIME_SUBSCRIBE_STATES.SUBSCRIBED;
-          watch.status = live ? "live" : "unavailable";
-          each(watch, (h) => h.onStatus?.(watch.status));
+
+          // CHANNEL_ERROR arrives here when the heartbeat gives up on a socket
+          // that died without closing — `heartbeatTimeout()` calls
+          // `triggerChanError` on every channel (BID-11). That path is why the
+          // heartbeat interval, set in lib/supabase/client.ts, is part of this
+          // module's behaviour even though it is written somewhere else.
+          settle(watch, live ? "live" : "unavailable");
 
           // ================================================================
           // A JOIN IS A REASON TO RE-READ. This is §14.5's "Reconnected →
@@ -208,8 +254,7 @@ function join(auctionId: string, watch: Watch): void {
       // that refuses the connection — none of it may reach the caller, because
       // the caller is a page whose bid control has to keep working.
       if (watch.closed) return;
-      watch.status = "unavailable";
-      each(watch, (h) => h.onStatus?.("unavailable"));
+      settle(watch, "unavailable");
     }
   })();
 }
@@ -243,6 +288,7 @@ export function subscribeToAuction(
     status: "connecting",
     closed: false,
     reaper: null,
+    deadline: null,
   };
   watch.handlers.add(handlers);
 
@@ -280,6 +326,10 @@ export function subscribeToAuction(
       watch.reaper = null;
       if (watch.handlers.size > 0) return;
       watch.closed = true;
+      if (watch.deadline !== null) {
+        clearTimeout(watch.deadline);
+        watch.deadline = null;
+      }
       // Guard the delete: a later subscriber may already have replaced this
       // entry, and deleting by key alone would evict a healthy watch.
       if (watches.get(auctionId) === watch) watches.delete(auctionId);
