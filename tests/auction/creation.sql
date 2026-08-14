@@ -237,4 +237,56 @@ begin
   select count(*) into n from public.auctions where name = 'انقضى وقته';
   perform pg_temp.chk('FR-END-12 an unlisted auction is still readable by id',
                       n::text, '1');
+
+  -- ==========================================================================
+  -- AUC-06 (#48) / FR-CREATE-20 — the image is reachable by an UNAUTHENTICATED
+  -- visitor.
+  --
+  -- Two gates stand between `anon` and the image, and only one of them lives in
+  -- a schema this container has:
+  --
+  --   1. `anon` must be able to READ image_path off the auction row, because
+  --      that key is what the public URL is built from (lib/auctions/image-url.ts).
+  --      That is public.auctions, and it is asserted here.
+  --   2. The BUCKET must be public and carry auction_images_public_read. That is
+  --      storage.objects, which this stock postgres:17 container has no schema
+  --      for — the AUC-01 migration skips its whole storage block with a notice.
+  --
+  -- Gate 2 is therefore NOT SHOWN by this suite, and saying so is the point:
+  -- asserting gate 1 and calling AUC-06 covered would be the vacuous pass this
+  -- repository keeps meeting. It needs a stack with storage-api, which is
+  -- INT-10's deployed-environment check.
+  --
+  -- Read as `anon` specifically, not as postgres: BR-40 and FR-LIST-01 make the
+  -- listing public, and a read that only works for a signed-in user would leave
+  -- every visitor looking at placeholders.
+  -- ==========================================================================
+  begin
+    perform set_config('request.jwt.claims', '', true);
+    execute 'set local role anon';
+    select count(*) into n
+      from public.auctions
+     where name = 'انقضى وقته' and image_path is not null and image_path <> '';
+    execute 'reset role';
+  exception when others then
+    execute 'reset role';
+    n := -1;
+  end;
+  perform pg_temp.chk('AUC-06 anon can read image_path to build the URL',
+                      n::text, '1');
+
+  -- The control that makes the assertion above mean something. If `anon` could
+  -- read nothing at all, the count would be 0 and would look identical to "the
+  -- column is hidden" — so prove the role really is anon and really is reading.
+  begin
+    perform set_config('request.jwt.claims', '', true);
+    execute 'set local role anon';
+    select count(*) into n from public.auctions where name = 'لا يوجد مزاد بهذا الاسم';
+    execute 'reset role';
+  exception when others then
+    execute 'reset role';
+    n := -1;
+  end;
+  perform pg_temp.chk('AUC-06 control — anon reading a missing row returns 0, not an error',
+                      n::text, '0');
 end $$;

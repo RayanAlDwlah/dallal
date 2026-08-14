@@ -24,7 +24,9 @@ import {
 } from "../../lib/auctions/image-signature.ts";
 import {
   ACCEPTED_IMAGE_TYPES,
+  IMAGE_ENVELOPE,
   MAX_IMAGE_BYTES,
+  MAX_IMAGE_MB,
   extensionFor,
   validateImage,
   validateImageSize,
@@ -41,7 +43,7 @@ import {
  * added above it in #121, a counter in each tests/auth/*.mjs — and its absence
  * is the defect #104 fixed. Keep it in step with the chk() calls below.
  */
-const EXPECTED = 27;
+const EXPECTED = 32;
 
 let pass = 0;
 let fail = 0;
@@ -196,6 +198,55 @@ chk(
   "FR-CREATE-16 every accepted type is reachable from bytes",
   [JPEG, PNG, WEBP].map(sniffImageType).join(","),
   ACCEPTED_IMAGE_TYPES.join(","),
+);
+
+// ==========================================================================
+// 6. AUC-05 (#47) — every rejection names the accepted formats AND the limit.
+//
+// GITHUB_PLAN.md:393 asks for both on either failure. Asserted per MESSAGE
+// rather than by eyeballing the constant, because the constant being right
+// proves nothing about whether the three paths use it — that was exactly the
+// state before: one path named the formats, another named the limit, and each
+// was individually defensible.
+//
+// The check is on CONTENT, not on wording: it looks for the three format names
+// and the megabyte figure. Mohammed can rewrite every sentence around them
+// (the copy is his) and these still hold; what they refuse is a message that
+// drops half the envelope.
+// ==========================================================================
+const namesEnvelope = (message) =>
+  message !== undefined &&
+  ["JPEG", "PNG", "WebP", String(MAX_IMAGE_MB)].every((token) => message.includes(token));
+
+chk("AUC-05 the envelope itself names formats and limit", namesEnvelope(IMAGE_ENVELOPE), true);
+
+chk(
+  "AUC-05 an oversized file is told the FORMATS too",
+  namesEnvelope(validateImageSize(file(PNG, "image/png", MAX_IMAGE_BYTES + 1))),
+  true,
+);
+chk(
+  "AUC-05 a wrong-type file is told the LIMIT too",
+  namesEnvelope(validateImageType(file(GIF, "image/gif"))),
+  true,
+);
+
+// The control that must FAIL if the two paths ever drift apart again: both
+// rejections must carry the SAME envelope, not two hand-written variants.
+chk(
+  "AUC-05 both rejections carry one shared envelope",
+  validateImageSize(file(PNG, "image/png", MAX_IMAGE_BYTES + 1))?.endsWith(IMAGE_ENVELOPE) === true &&
+    validateImageType(file(GIF, "image/gif"))?.endsWith(IMAGE_ENVELOPE) === true,
+  true,
+);
+
+// "Choose an image" is NOT a rejection of a file — no file was offered — so it
+// is deliberately exempt. Asserted so a later session does not "fix" it into
+// carrying the envelope and make the empty-form state shout constraints.
+chk(
+  "AUC-05 the empty-field prompt is exempt, and stays exempt",
+  namesEnvelope(validateImageSize(null)),
+  false,
 );
 
 const ran = pass + fail;
