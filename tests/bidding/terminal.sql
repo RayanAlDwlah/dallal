@@ -408,3 +408,129 @@ begin
     (select extension_count::text from public.auctions where id = a),
     ext_before::text);
 end $$;
+
+
+-- ===========================================================================
+-- F. An auction row cannot be DELETED — by anyone, at any status (BR-30)
+--
+-- Added with the auctions_no_delete guard (#124). Until it existed, BR-30 was
+-- enforced only by the absence of a DELETE grant to client roles: measured,
+-- has_table_privilege('postgres','public.auctions','DELETE') was true and no
+-- trigger fired on DELETE, while public.bids had been guarded since BID-02.
+--
+-- These assertions run as POSTGRES, on purpose. Asserting as authenticated or
+-- anon would prove only that the grant is still missing — the thing that was
+-- already true, and the thing that is not the guarantee. immutability.sql
+-- (SC-59) already covers the grant gate for client roles on an active auction.
+-- The trigger gate is what is new, and postgres is the only role that reaches
+-- it, exactly as §B above reaches the update trigger.
+--
+-- Case (b) is the one that previously slipped through every suite: an ENDED,
+-- FINALIZED auction carries the winner and the final price, so deleting it
+-- destroys a settled outcome and orphans nothing visibly — bids reference it,
+-- but the FK is NO ACTION, so the delete would simply fail on the FK for an
+-- auction WITH bids and succeed silently for one without. The guard makes the
+-- refusal uniform and makes it name BR-30 either way.
+-- ===========================================================================
+do $$
+declare
+  a_active uuid;
+  a_ended  uuid;
+  a_bare   uuid;
+begin
+  -- (a) An ACTIVE auction. Fresh, unbid-on, nothing else standing in the way.
+  insert into public.auctions (owner_id, status, end_time, starting_price,
+                               current_price, extension_count,
+                               name, description, image_path)
+  values ('00000000-0000-0000-0000-0000000000a1', 'active',
+          clock_timestamp() + interval '1 hour', 100, 100, 0,
+          'حارس الحذف — نشط', 'مزاد نشط لإثبات رفض الحذف', 'seed/x.jpg')
+  returning id into a_active;
+
+  perform pg_temp.chk_like(
+    'BR-30 postgres cannot delete an ACTIVE auction',
+    pg_temp.refused(format(
+      'delete from public.auctions where id = %L', a_active)),
+    '%no delete path exists for anyone%');
+
+  perform pg_temp.chk(
+    'BR-30 the ACTIVE auction still exists after the attempt',
+    (select count(*)::text from public.auctions where id = a_active), '1');
+
+  -- (b) An ENDED, FINALIZED auction — the case no suite reached before.
+  -- ended_auction() places a bid and closes, so winner_id and final_price
+  -- are populated; this is a settled outcome, not merely a status flag.
+  a_ended := pg_temp.ended_auction();
+
+  perform pg_temp.chk(
+    'F sanity — fixture is ended AND finalized',
+    (select (status = 'ended' and winner_id is not null
+             and final_price is not null)::text
+       from public.auctions where id = a_ended),
+    'true');
+
+  perform pg_temp.chk_like(
+    'BR-30 postgres cannot delete an ENDED, FINALIZED auction',
+    pg_temp.refused(format(
+      'delete from public.auctions where id = %L', a_ended)),
+    '%no delete path exists for anyone%');
+
+  perform pg_temp.chk(
+    'BR-30 the ENDED auction and its outcome survive the attempt',
+    (select (status = 'ended' and winner_id is not null
+             and final_price is not null)::text
+       from public.auctions where id = a_ended),
+    'true');
+
+  -- An ended auction that has NO bids referencing it. Without this the two
+  -- cases above could both be passing on the foreign key from public.bids
+  -- rather than on the new trigger: a delete blocked by an FK also raises.
+  -- This row has nothing pointing at it, so only the trigger can refuse it —
+  -- and the message assertion proves it is the trigger that did.
+  insert into public.auctions (owner_id, status, end_time, starting_price,
+                               current_price, extension_count,
+                               winner_id, final_price, closed_at,
+                               name, description, image_path)
+  values ('00000000-0000-0000-0000-0000000000a1', 'ended',
+          clock_timestamp() - interval '1 hour', 100, 100, 0,
+          null, 100, clock_timestamp(),
+          'حارس الحذف — منتهٍ بلا مزايدات', 'لا مزايدة تشير إليه', 'seed/x.jpg')
+  returning id into a_bare;
+
+  perform pg_temp.chk(
+    'F sanity — the bidless fixture really has no bids',
+    (select count(*)::text from public.bids where auction_id = a_bare), '0');
+
+  perform pg_temp.chk_like(
+    'BR-30 refusal is the trigger, not the bids foreign key',
+    pg_temp.refused(format(
+      'delete from public.auctions where id = %L', a_bare)),
+    '%no delete path exists for anyone%');
+
+  -- A set-shaped delete: no WHERE at all. A statement-level guard and a
+  -- row-level guard both refuse this, but it is the shape a maintenance
+  -- session actually types by accident, and nothing else in the suite covers
+  -- it. Every auction created by every block above must survive it.
+  perform pg_temp.chk_like(
+    'BR-30 an unqualified DELETE over the whole table is refused',
+    pg_temp.refused('delete from public.auctions'),
+    '%no delete path exists for anyone%');
+
+  perform pg_temp.chk(
+    'BR-30 all three fixtures survive the unqualified DELETE',
+    (select count(*)::text from public.auctions
+      where id in (a_active, a_ended, a_bare)), '3');
+
+  -- The guard must NOT have been bought by breaking the documented
+  -- out-of-band path (PRD §4.3): a postgres session may still disable the
+  -- trigger deliberately, act, and re-enable — the same two-step this suite
+  -- already uses against auctions_immutable_terms. If this stops working, the
+  -- migration has changed a product decision rather than enforcing one.
+  alter table public.auctions disable trigger auctions_no_delete;
+  delete from public.auctions where id = a_bare;
+  alter table public.auctions enable trigger auctions_no_delete;
+
+  perform pg_temp.chk(
+    'PRD §4.3 out-of-band takedown still possible when explicit',
+    (select count(*)::text from public.auctions where id = a_bare), '0');
+end $$;
