@@ -930,14 +930,19 @@ Clients subscribe **directly to Supabase Realtime**, per auction. Vercel is not 
 Bid committed in PostgreSQL
         │
         ▼
-Supabase Realtime detects the committed change
+AFTER UPDATE trigger on auctions calls realtime.send — one content-free event
         │
         ├──► Viewer A  ─┐
         ├──► Viewer B   ├─ all within 2 s (NFR-RT-01)
-        └──► Viewer C  ─┘   RLS applied per subscriber
+        └──► Viewer C  ─┘   RLS applied per subscriber, on realtime.messages
+        │
+        ▼
+Each viewer RE-READS authoritative state (RT-R6) — the event is the signal, not the data
 ```
 
 **Realtime carries only what was already committed.** It is a projection of database state (Tier 4, §7). It never carries a decision, and a bid the server accepted is valid whether or not its broadcast arrived (BR-22, RT-R1).
+
+**The delivery mechanism is Broadcast from database, not `postgres_changes`** *(decided and implemented 2026-08-14, BID-08)*. The two were measured against each other before choosing; `docs/BID-08-realtime-verification.md` is the record. `postgres_changes` streams **whole rows** — it ignores a publication column list, and it serialises `numeric` through a float (issue #103). Both are structural problems for this product rather than avoidable ones, which is why §14.4 below reads the way it does. Nothing may add `public.auctions` or `public.bids` to the `supabase_realtime` publication.
 
 ### 14.2 Subscription scope
 
@@ -951,20 +956,29 @@ Scoping per auction is what makes 20 concurrent viewers (NFR-RT-02) inexpensive:
 
 ### 14.3 What must be delivered
 
-| Element | Live? | Source |
+**Read the Source column as "what wakes the client up", not "what arrives".** Since BID-08 every row below is woken by the **same** event — one `auctions` UPDATE — and every value is then read from the database, never taken from the payload (RT-R6). The column names the change that fires the trigger.
+
+| Element | Live? | What fires the event |
 |---|---|---|
-| Current price | **Must** | Auction record change |
-| New bid in history | **Must** | Bid insert |
-| Status → Ended | **Must** | Auction record change at finalization |
+| Current price | **Must** | The auction UPDATE that STEP 9 makes in the same transaction as the bid insert |
+| New bid in history | **Must** | The same auction UPDATE — **not** a separate subscription to `bids`. Every accepted bid writes `current_price` unconditionally (BID-05), so the auction row is a complete signal for a new bid |
+| Status → Ended | **Must** | Auction record change at finalization — including the multi-row sweep, which fires once **per auction closed** |
 | Outcome (winner, final price) | **Must** | Same change |
-| Minimum acceptable bid | **Must** | Recomputed client-side from the new price |
-| Time remaining | **Must**, but client-driven | Ticks locally from the server-supplied end time — no push needed (FR-RT-02) |
+| End time moved (BR-36 extension) | **Must** | The extension's own UPDATE. A late bid therefore fires twice — extension, then price — and duplicates are required to be harmless anyway (FR-RT-09, RT-R5) |
+| Minimum acceptable bid | **Must** | Recomputed client-side from the re-read price |
+| Time remaining | **Must**, but client-driven | Ticks locally from the server-supplied end time — no push needed (FR-RT-02). The end time it ticks from is the **current** one, which the row above keeps fresh |
 
 ### 14.4 Privacy in payloads
 
 RT-S1 and RT-S2 require that realtime payloads carry only data the recipient may already see, and **never** email addresses.
 
-This is satisfied **structurally**, not by filtering: because RLS applies to realtime subscriptions, and because emails live in the auth record rather than in any publicly-readable table (§9.2), there is no path by which an email can reach a subscriber. A policy mistake would have to grant read access to a table that does not contain the data.
+This is satisfied **structurally**, not by filtering — but *(amended 2026-08-14, BID-08)* **for a different reason than this section originally gave**. The payload is **authored by the trigger in `20260814140000`** and contains one auction id: an identifier the subscriber already had, because it is in the page URL and in the topic name. There is no money in it, no `bidder_id`, no `winner_id`, no display name. The guarantee is not *"RLS keeps the private column out of the stream"* — it is *"the private column is never in the stream"*. There is nothing to filter and nothing a later session can forget to filter.
+
+Emails remain a **second, narrower** guarantee, and the original sentence still holds on its own terms: emails live in the auth record rather than in any publicly-readable table (§9.2), so no read path exposes one either.
+
+> **What this section used to say, and why it was not enough.** It read: *"because RLS applies to realtime subscriptions, and because emails live in the auth record …, there is no path by which an email can reach a subscriber. A policy mistake would have to grant read access to a table that does not contain the data."* The conclusion was right; the reasoning covered only emails. `RT-S2` is wider — "internal account identifiers beyond what public display requires" — and `bidder_id` is exactly that, lives in `public.bids`, and `public.bids` **is** publicly readable by design (`bids_public_read`, `using (true)`). So under `postgres_changes` no policy mistake was needed: the correct, deliberately permissive policy was enough, and an unpublished column was measured arriving at an anonymous browser client. Raised in `docs/BID-08-realtime-verification.md` §6 and amended here with the project owner's approval.
+
+**Two things follow that are not optional.** The event must never become a display source (RT-R6) — it carries nothing displayable, which is what makes the rule unforgettable rather than merely documented. And nothing may be added to the payload later: a price would have to travel as text to survive JSON (S0-12 §6), a bidder would breach RT-S2, and an end time would hand the client a second source of truth to disagree with the read.
 
 ### 14.5 Degradation
 
