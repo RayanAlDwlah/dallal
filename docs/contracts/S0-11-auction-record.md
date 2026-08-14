@@ -346,7 +346,7 @@ I will build to it.
 - [ ] **§2** — ⚠️ *new* — you have read that **`end_time` is no longer fixed after render**, and no surface of yours assumes it is
 - [ ] **§3.2** — your read path exposes a **derived** has-bids / bid-count; no stored column on `auctions`
 - [ ] **§3.2** — *or*: you would rather I expose a counting view over `bids` for you to join → tell me
-- [ ] **§4** — my writes are exactly: `current_price` per accepted bid, `end_time` + `extension_count` on an accepted bid inside the final 15 s, and the four close fields. Grants allow all three
+- [ ] **§4** — my writes are exactly: `current_price` per accepted bid, `end_time` + `extension_count` on an accepted bid inside the final 15 s, and the four close fields. The writes reach the table through `SECURITY DEFINER`; no `UPDATE` grant exists and none must be added
 - [ ] **§4.2** — ⚠️ *new* — `extension_count` and `auctions_extension_cap` stay in `auctions`, added by my migration · **or** tell me where you want them instead
 - [ ] **§4.1** — you initialise `current_price = starting_price` at creation; it is `NOT NULL`
 - [ ] **§5** — `status` is displayed and written at close, but is **never** the bidding eligibility gate
@@ -514,9 +514,9 @@ described wrongly and @RayanAlDwlah corrected, so it is the one place in this ta
 stale row costs the most. Fixed above, with the two citations the seventh field actually
 needs.
 
-### 10.1a A box that contradicts its own evidence — @RayanAlDwlah's to resolve
+### 10.1a A box that contradicted its own evidence
 
-§8's §4 box ends **“Grants allow all three”**. The §4 row above proves the opposite in
+§8’s §4 box **used to end** *“Grants allow all three”* — corrected by this PR. The §4 row above proves the opposite in
 its own cell: there is no `UPDATE` grant, `bid02:512` revokes it, and the write set is
 **not enforced by grants at all** — it reaches the table through `SECURITY DEFINER`.
 
@@ -525,10 +525,15 @@ is an invitation to sign it. The cost is not wording: a later session reading th
 **signed** contract concludes a grant is what permits the per-bid `current_price` write,
 restores it, and reopens the hole that the absence of that grant is what closes (`AUC-18`).
 
-**Not corrected here.** §8 is @RayanAlDwlah's text, and rewriting another owner's box from
-inside a verification of it is the exact thing this PR was stopped for once. Raised, not
-taken. Suggested wording, his to accept or replace: *“the writes reach the table through
-`SECURITY DEFINER`; no `UPDATE` grant exists and none must be added”*.
+**Raised on #132 and left untaken there**, because §8 is @RayanAlDwlah’s text and rewriting
+another owner’s box from inside a verification of it is the exact thing that PR was stopped
+for once. It merged unresolved, so the contradiction reached `main` and #20 closed over it.
+
+**Now proposed as an edit rather than a note** — a PR he reviews and can reject, which is the
+sanctioned way to touch another owner’s file, and the same shape @RayanAlDwlah used in #138
+when he wired a live component into @m7ya505’s presentation and offered to withdraw the line
+on request. @m7ya505 accepted this exact wording in his #132 signature and said he ticks §4
+the moment it lands.
 
 ### 10.2 Not checkable from here — @m7ya505's alone
 
