@@ -6,7 +6,7 @@
 | Issue | **S0-11** — "Agree the auction record contract" (`GITHUB_PLAN.md:263`) |
 | Record owner | **Mohammed** (`@m7ya505`) — he owns the table, the DDL and the access path (`TEAM.md` §4, §9.3) |
 | Consumer | **Rayan** (`@RayanAlDwlah`) — bidding, current price, closing, winner |
-| Status | 🟡 **موقَّع جزئيًّا — عشرة من اثني عشر**، مسجّل في مراجعة @m7ya505 على #132 (2026-08-14) — وهي الأثر القابل للاستشهاد بحكم §10.4. صندوق مرفوض بوعي (§3.2 عرض العدّ). **صندوقان مفتوحان:** §2 ⚠️ حتى يُغلق #140، و§4 حتى تُعاد صياغته (§10.1a) |
+| Status | 🟢 **أُجيب عن أحد عشر من اثني عشر — عشرة معلَّمة وواحد مرفوض بجواب صريح (§3.2 عرض العدّ).** الأثر القابل للاستشهاد هو مراجعة @m7ya505 على #132 (مدموجة)، والصناديق هنا مطابِقة لها. **صندوق واحد مفتوح: §2 ⚠️** — وهو ادّعاء عن كود محمد لا تعهّد، وكودُه لا يحقّقه اليوم (#140). §4 عُلِّم بعد أن أعادت #154 صياغته كما نصّ §10.1a |
 | Date | 2026-08-12 · endorsement evidence recorded 2026-08-13 · **amended 2026-08-14 for the `BR-36` reversal — see the box below** |
 | Depends on | `S0-12` (money type, FINAL) · `S0-10` (identity contract, Abdulrahman) |
 | Consumed by | `BID-01`, `BID-02`, `BID-05`, `BID-15`, and Mohammed's `AUC-08`/`AUC-14`/`M-10` |
@@ -341,18 +341,18 @@ expression, or a test assertion.
 Nothing below is decided until you tick it. Where you disagree, write the alternative and
 I will build to it.
 
-- [ ] **§2** — the seven read fields are as listed, and `current_price` **is** in the set (not "existence")
-- [ ] **§2** — none of the seven is renamed or removed without telling me first
+- [x] **§2** — the seven read fields are as listed, and `current_price` **is** in the set (not "existence")
+- [x] **§2** — none of the seven is renamed or removed without telling me first
 - [ ] **§2** — ⚠️ *new* — you have read that **`end_time` is no longer fixed after render**, and no surface of yours assumes it is
-- [ ] **§3.2** — your read path exposes a **derived** has-bids / bid-count; no stored column on `auctions`
-- [ ] **§3.2** — *or*: you would rather I expose a counting view over `bids` for you to join → tell me
-- [ ] **§4** — my writes are exactly: `current_price` per accepted bid, `end_time` + `extension_count` on an accepted bid inside the final 15 s, and the four close fields. The writes reach the table through `SECURITY DEFINER`; no `UPDATE` grant exists and none must be added
-- [ ] **§4.2** — ⚠️ *new* — `extension_count` and `auctions_extension_cap` stay in `auctions`, added by my migration · **or** tell me where you want them instead
-- [ ] **§4.1** — you initialise `current_price = starting_price` at creation; it is `NOT NULL`
-- [ ] **§5** — `status` is displayed and written at close, but is **never** the bidding eligibility gate
-- [ ] **§6** — bid history is ordered by `bids.id`; `created_at` is display-only
-- [ ] **§7** — none of the four prohibited fields appears in your DDL
-- [ ] **§9** — you agree the three items below go to the whole team, not to the two of us
+- [x] **§3.2** — your read path exposes a **derived** has-bids / bid-count; no stored column on `auctions`
+- [ ] **§3.2** — *or*: you would rather I expose a counting view over `bids` for you to join → **declined; the derived count above stands.** The aggregate through the read path I already own costs nothing extra and keeps the shape of your table yours
+- [x] **§4** — my writes are exactly: `current_price` per accepted bid, `end_time` + `extension_count` on an accepted bid inside the final 15 s, and the four close fields. The writes reach the table through `SECURITY DEFINER`; no `UPDATE` grant exists and none must be added
+- [x] **§4.2** — ⚠️ *new* — `extension_count` and `auctions_extension_cap` stay in `auctions`, added by my migration · **or** tell me where you want them instead
+- [x] **§4.1** — you initialise `current_price = starting_price` at creation; it is `NOT NULL`
+- [x] **§5** — `status` is displayed and written at close, but is **never** the bidding eligibility gate
+- [x] **§6** — bid history is ordered by `bids.id`; `created_at` is display-only
+- [x] **§7** — none of the four prohibited fields appears in your DDL
+- [x] **§9** — you agree the three items below go to the whole team, not to the two of us
 
 Once ticked, this document — not `GITHUB_PLAN.md:263`, not `TEAM.md:421` — is the citable
 contract, and the three conflicting field lists are superseded.
@@ -363,6 +363,24 @@ contract, and the three conflicting field lists are superseded.
 > re-derivation. The boxes that are *undertakings* are listed in §10.2 and only @m7ya505
 > can give them. The `BR-36` amendments to `§4` and `§2` are already in the body above —
 > @RayanAlDwlah made them himself in `#133`.
+
+> **Returned and ticked 2026-08-14 — @m7ya505.** Eleven of twelve. The evidence for
+> the code-statement boxes is the review on **#132** (merged), which is the artifact
+> §10.4 asked for; this only brings the boxes into line with it so the document does
+> not read as unsigned while a merged review says otherwise.
+>
+> **§4 is ticked because #154 changed its wording.** It previously ended *"Grants
+> allow all three"*, which §10.1a established was false — no `UPDATE` grant exists,
+> `bid02:512` revokes it, and the writes reach the table through `SECURITY DEFINER`.
+> I said on #132 I would tick it the moment it was reworded. It was, so this is that.
+>
+> **One box stays open, deliberately: §2 ⚠️ (`end_time` is no longer fixed after
+> render).** It is not a promise — it is a claim about my code, and my code does not
+> satisfy it: `app/auctions/[id]/page.tsx:172` feeds `StatusCountdown` a value frozen
+> at server render, so on a contested auction the countdown reaches zero while bidding
+> is still open (**#140**). Ticking it would be signing something measurably untrue,
+> which is the exact failure §8.1 exists to prevent. It gets ticked when #140 closes,
+> not before.
 
 ### 8.1 Evidence of partial endorsement — recorded `2026-08-13`, **nothing ticked**
 
