@@ -54,8 +54,11 @@ begin
                         where n.nspname = 'public' and p.proname = 'place_bid'),
                       'p_auction_id uuid, p_amount text');
 
-  insert into public.auctions (owner_id, status, end_time, starting_price, current_price)
-  values (owner, 'active', now() + interval '1 hour', 100, 100) returning id into a;
+  insert into public.auctions (owner_id, status, end_time, starting_price, current_price,
+                               name, description, image_path)
+  values (owner, 'active', now() + interval '1 hour', 100, 100,
+          'ساعة اختبار', 'وصف اختباري طوله كافٍ للحد الأدنى.', 'test/a.jpg')
+  returning id into a;
 
   -- SC-55 / BR-29: the first bid may EQUAL the starting price. Inclusive.
   perform pg_temp.as_user(b1);
@@ -129,8 +132,11 @@ declare
   b1    uuid := '00000000-0000-0000-0000-0000000000b1';
   a uuid; r jsonb;
 begin
-  insert into public.auctions (owner_id, status, end_time, starting_price, current_price)
-  values (owner, 'active', now() - interval '1 second', 100, 100) returning id into a;
+  insert into public.auctions (owner_id, status, end_time, starting_price, current_price,
+                               name, description, image_path)
+  values (owner, 'active', now() - interval '1 second', 100, 100,
+          'ساعة اختبار', 'وصف اختباري طوله كافٍ للحد الأدنى.', 'test/a.jpg')
+  returning id into a;
   perform pg_temp.as_user(b1);
   r := public.place_bid(a, '500');
   perform pg_temp.chk('LC-03 past end_time, status still active',

@@ -60,7 +60,7 @@ echo "==> auction immutability suite"
 # A DO block that aborts partway emits neither PASS nor FAIL, so counting only
 # PASS/FAIL reports a clean run while assertions silently never executed.
 # Keep this in step with immutability.sql.
-EXPECTED=20
+EXPECTED=23
 raw=$(docker exec "$CONTAINER" psql -U postgres -q -f /t/immutability.sql 2>&1)
 acc=$(echo "$raw" | grep -E 'PASS|FAIL' | sed 's/^psql[^ ]* //; s/WARNING:  //; s/NOTICE:  //')
 echo "$acc" | sed 's/^/    /'
@@ -72,9 +72,17 @@ echo "    ---- $pass passed, $fail failed, $ran of $EXPECTED assertions reached"
 echo "$raw" | grep -q 'uncovered column' && \
   echo "$raw" | grep 'uncovered column' | sed 's/^psql[^ ]* //; s/WARNING:  /    !! /'
 
-if echo "$raw" | grep -q '^ERROR:'; then
+# psql writes "psql:/t/immutability.sql:68: ERROR:  …" — never a bare "ERROR:"
+# at the start of a line. Anchored on ^ERROR: this matched nothing and the
+# branch could never fire, so an aborted run printed no cause at all.
+#
+# The assertion COUNT below still caught the failure ("0 of 23 reached"), which
+# is the only reason this was a short diagnosis rather than a long one. But the
+# count says THAT the run died, never WHY — and the two failures look identical
+# from outside. Un-anchoring turns a mystery back into one line of output.
+if echo "$raw" | grep -q 'ERROR:'; then
   echo "    !! psql reported an error — assertions after it never ran:"
-  echo "$raw" | grep '^ERROR:' | sed 's/^/       /'
+  echo "$raw" | grep 'ERROR:' | sed 's/^psql[^ ]* //; s/^/       /'
   fail=$((fail + 1))
 fi
 if [ "$ran" -ne "$EXPECTED" ]; then

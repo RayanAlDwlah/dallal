@@ -65,8 +65,17 @@ begin
 
   -- Fixture written as postgres: RLS is bypassed, so this asserts nothing about
   -- the policy. The policy itself is asserted separately, below.
-  insert into public.auctions (owner_id, status, end_time, starting_price, current_price)
-  values (owner, 'active', now() + interval '1 hour', 100, 100)
+  --
+  -- name/description/image_path arrived with AUC-01 (#99), NOT NULL and with no
+  -- DEFAULT. This insert sits OUTSIDE any exception handler, so omitting them
+  -- raised 23502 and aborted the entire block before assertion #1 — the suite
+  -- reported "0 of 20 reached" instead of the completeness guard's named
+  -- failure, because that guard is the LAST assertion in the file and was never
+  -- reached. The guard cannot warn about columns that kill the fixture first.
+  insert into public.auctions (owner_id, status, end_time, starting_price, current_price,
+                               name, description, image_path)
+  values (owner, 'active', now() + interval '1 hour', 100, 100,
+          'ساعة اختبار', 'وصف اختباري طوله كافٍ للحد الأدنى.', 'test/a.jpg')
   returning id into a;
 
   -- ==========================================================================
@@ -94,6 +103,24 @@ begin
   -- place_bid. A user reaching the counter directly would be buying time.
   perform pg_temp.chk('BR-36 owner cannot touch extension_count',
     pg_temp.owner_update(a, owner, 'extension_count = 0'), '42501');
+
+  /*
+   * The AUC-01 product fields (#99). These are the three SC-58 cares most
+   * about, because they are the three a buyer actually reads before bidding:
+   * FR-CREATE-26a gives the seller exactly one chance to get them right, and
+   * BR-31 is what makes that true rather than merely stated.
+   *
+   * A seller who could edit the name or the image after bids arrive could run
+   * a bait-and-switch — take bids on one item and deliver another — without
+   * touching a single price field. That is why "immutable" has to mean every
+   * column, not just the money and the clock.
+   */
+  perform pg_temp.chk('SC-58 owner cannot change name',
+    pg_temp.owner_update(a, owner, 'name = ''اسم آخر'''), '42501');
+  perform pg_temp.chk('SC-58 owner cannot change description',
+    pg_temp.owner_update(a, owner, 'description = ''وصف مختلف تمامًا عن الأصل.'''), '42501');
+  perform pg_temp.chk('SC-58 owner cannot change image_path',
+    pg_temp.owner_update(a, owner, 'image_path = ''test/swapped.jpg'''), '42501');
 
   -- A non-owner is the easy case, asserted so the suite is total rather than
   -- because anyone doubts it.
@@ -130,8 +157,10 @@ begin
    * policy, not a guarantee.
    */
   begin
-    insert into public.auctions (owner_id, status, end_time, starting_price, current_price)
-    values (owner, 'cancelled', now() + interval '1 hour', 100, 100);
+    insert into public.auctions (owner_id, status, end_time, starting_price, current_price,
+                                 name, description, image_path)
+    values (owner, 'cancelled', now() + interval '1 hour', 100, 100,
+            'ساعة اختبار', 'وصف اختباري طوله كافٍ للحد الأدنى.', 'test/a.jpg');
     got := 'accepted';
   exception when others then got := sqlstate;
   end;
@@ -170,8 +199,10 @@ begin
   begin
     perform set_config('request.jwt.claims', json_build_object('sub', owner)::text, true);
     set local role authenticated;
-    insert into public.auctions (owner_id, status, end_time, starting_price, current_price)
-    values (other, 'active', now() + interval '1 hour', 100, 100);
+    insert into public.auctions (owner_id, status, end_time, starting_price, current_price,
+                                 name, description, image_path)
+    values (other, 'active', now() + interval '1 hour', 100, 100,
+            'ساعة اختبار', 'وصف اختباري طوله كافٍ للحد الأدنى.', 'test/a.jpg');
     got := 'accepted';
   exception when others then got := sqlstate;
   end;
@@ -184,12 +215,20 @@ begin
    * which was exactly the state of main before AUC-18 added the INSERT grant.
    * Without this one, the suite would have reported a perfect score for a
    * product in which no auction can ever be created.
+   *
+   * It is also the assertion most exposed to a stale column list. Being inside
+   * an exception handler, a missing NOT NULL column does not abort the run here
+   * — it returns 23502, and this reads as a plain failure of the INSERT grant.
+   * The most load-bearing assertion in the file would have failed for entirely
+   * the wrong reason, and sent the next reader to the wrong migration.
    */
   begin
     perform set_config('request.jwt.claims', json_build_object('sub', owner)::text, true);
     set local role authenticated;
-    insert into public.auctions (owner_id, status, end_time, starting_price, current_price)
-    values (owner, 'active', now() + interval '1 hour', 100, 100);
+    insert into public.auctions (owner_id, status, end_time, starting_price, current_price,
+                                 name, description, image_path)
+    values (owner, 'active', now() + interval '1 hour', 100, 100,
+            'ساعة اختبار', 'وصف اختباري طوله كافٍ للحد الأدنى.', 'test/a.jpg');
     got := 'accepted';
   exception when others then got := sqlstate;
   end;
@@ -215,7 +254,11 @@ do $$
 declare
   covered text[] := array[
     'id', 'owner_id', 'status', 'end_time', 'starting_price', 'current_price',
-    'winner_id', 'final_price', 'closed_at', 'created_at', 'extension_count'
+    'winner_id', 'final_price', 'closed_at', 'created_at', 'extension_count',
+    -- AUC-01 (#99). Added here only alongside the three assertions above —
+    -- adding a name to this list without asserting it is how a completeness
+    -- guard becomes a comment.
+    'name', 'description', 'image_path'
   ];
   missing text;
 begin

@@ -1,4 +1,5 @@
 import { cache } from "react";
+import { cookies } from "next/headers";
 
 import { createClient } from "@/lib/supabase/server";
 
@@ -48,6 +49,44 @@ export const getVerifiedUserId = cache(async (): Promise<string | null> => {
    */
   if (error || !data.user) return null;
   return data.user.id;
+});
+
+/**
+ * Why the current request is not authenticated — `FR-AUTH-17`.
+ *
+ * The requirement is that an expired session leaves the user "told clearly and
+ * prompted to sign in again, not left in a silently broken state". Dropping
+ * them to the visitor state is correct (`S0-10` §7) but it is exactly the
+ * silence the requirement forbids: their name disappears from the header and a
+ * protected page bounces them to a login form with no explanation.
+ *
+ * `expired` and `anonymous` differ only in what the user is told. Neither
+ * grants anything, and no caller may branch on this for authorization — it is
+ * the identity contract's thing (1), display only.
+ */
+export type SessionState = "authenticated" | "expired" | "anonymous";
+
+/*
+ * Supabase's SSR client stores the session under `sb-<project-ref>-auth-token`,
+ * split into `.0`, `.1`, … when it exceeds the per-cookie size limit.
+ */
+const AUTH_COOKIE = /^sb-.+-auth-token(\.\d+)?$/;
+
+/**
+ * Distinguishes "your session ended" from "you were never signed in".
+ *
+ * A cookie that is present but no longer yields a user is a session that has
+ * expired or been revoked. That is a *best-effort* read: on the request where
+ * the refresh finally fails, the proxy may already have cleared the cookie, and
+ * the answer degrades to `anonymous`. That costs a more precise message and
+ * nothing else — both states are unauthenticated, and both are told to sign in.
+ */
+export const getSessionState = cache(async (): Promise<SessionState> => {
+  if (await getVerifiedUserId()) return "authenticated";
+
+  const cookieStore = await cookies();
+  const hadSession = cookieStore.getAll().some((c) => AUTH_COOKIE.test(c.name));
+  return hadSession ? "expired" : "anonymous";
 });
 
 /**

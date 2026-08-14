@@ -2,7 +2,7 @@ import { redirect } from "next/navigation";
 
 import { Page } from "@/components/layout/container";
 import { Card, CardBody } from "@/components/ui/card";
-import { getOwnEmail, getViewer } from "@/lib/auth/identity";
+import { getOwnEmail, getSessionState, getViewer } from "@/lib/auth/identity";
 import { loginPath } from "@/lib/auth/validation";
 import { createClient } from "@/lib/supabase/server";
 
@@ -21,7 +21,15 @@ export const metadata = { title: "حسابي — دلال" };
  */
 export default async function ProfilePage() {
   const viewer = await getViewer();
-  if (!viewer) redirect(loginPath("/profile"));
+  if (!viewer) {
+    /*
+     * FR-AUTH-17 — carry *why* across the redirect. Bouncing someone whose
+     * session just expired to an unexplained login form is the silent breakage
+     * the requirement names.
+     */
+    const state = await getSessionState();
+    redirect(loginPath("/profile", state === "expired" ? "expired" : "required"));
+  }
 
   /*
    * The email comes from the session, never from a table. That is ADR-7's

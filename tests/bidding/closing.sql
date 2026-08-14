@@ -89,9 +89,11 @@ begin
   -- governs updates, so this needs no back door. It is how the cap tests reach
   -- 19 and 20 without 20 real extensions ten minutes apart.
   insert into public.auctions (owner_id, status, end_time, starting_price,
-                               current_price, extension_count)
+                               current_price, extension_count,
+                               name, description, image_path)
   values ('00000000-0000-0000-0000-0000000000a1', 'active',
-          clock_timestamp() + p_ends_in, 100, 100, p_extensions)
+          clock_timestamp() + p_ends_in, 100, 100, p_extensions,
+          'ساعة اختبار', 'وصف اختباري طوله كافٍ للحد الأدنى.', 'test/a.jpg')
   returning id into v;
   return v;
 end $$;
@@ -323,9 +325,11 @@ begin
   perform pg_temp.chk_like('extension_count 21 violates auctions_extension_cap',
     pg_temp.refused($q$
       insert into public.auctions (owner_id, status, end_time, starting_price,
-                                   current_price, extension_count)
+                                   current_price, extension_count,
+                                   name, description, image_path)
       values ('00000000-0000-0000-0000-0000000000a1', 'active',
-              now() + interval '1 hour', 100, 100, 21) $q$),
+              now() + interval '1 hour', 100, 100, 21,
+              'ساعة اختبار', 'وصف اختباري طوله كافٍ للحد الأدنى.', 'test/a.jpg') $q$),
     '%auctions_extension_cap%');
 end $$;
 
