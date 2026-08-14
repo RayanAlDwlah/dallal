@@ -317,6 +317,52 @@ means stop and ask them — the boundary simply runs through files rather than b
 
 **The single rule to remember:** *touching another person's area is fine; touching it without telling them is not.*
 
+### 7.1 Taking over an Issue its owner has not started
+
+The row above — *"the owner is unavailable and you are blocked"* — covers **the smallest
+change that unblocks you**. It does not cover the case this project actually hit: an
+owner not starting a `priority:critical` Issue that a whole workstream is queued behind.
+
+That case was handled twice by verbal permission recorded on the Issue (`AUC-01` #43,
+`AUC-09` #51). That works once. It does not scale to twenty-four Issues, and it makes
+each takeover a judgement about a person instead of an application of a rule.
+
+**A takeover is permitted when all four hold:**
+
+1. The Issue is `priority:critical`, **or** another `priority:critical` Issue is blocked by it.
+2. Its owner has not started it — no branch, no PR, no comment claiming it.
+3. **72 hours** have passed since it became blocking, and the owner was told in that window.
+4. You comment on the Issue **before** you write code, saying what you are taking and why.
+
+**What a takeover does and does not transfer:**
+
+| | |
+|---|---|
+| You may implement | the Issue, to its acceptance criteria |
+| **Ownership does not move** | the area's owner stays its owner in §6 and §7 |
+| **Presentation stays revisable** | anything you build in another's area, they may restyle later **without asking you** — §7's normal rule, not a concession |
+| You must | tag the owner as reviewer, and keep their contracts exactly |
+| You must not | change a *different* owner's behaviour or data along the way — that still means stop and ask |
+
+**The rule is symmetric, and that is the point.** It applies to `area:bidding` and
+`area:auth` exactly as it applies to `area:auction`. If Rayan has not started a critical
+bidding Issue after 72 hours, Mohammed or Abdulrahman takes it under this section, with
+no discussion needed and nothing personal implied. A rule that only ever runs in one
+direction is not a rule; it is a complaint with a section number.
+
+**Why 72 hours and not "when it's urgent":** an owner who is busy for a day should not
+lose an Issue, and a workstream should not idle for a week. The number is the part most
+worth arguing about — argue about it here, once, rather than per Issue.
+
+**This does not apply to:** anything not on the critical path, anything the owner has
+started, or a disagreement about *how* something was built (§7's last row still governs
+that — raise it, do not rewrite it).
+
+> **Precedent.** `AUC-01` (#43) and `AUC-09` (#51) were taken over on 2026-08-14 under
+> owner permission recorded on both Issues, before this section existed. They are what
+> this section generalises, and they are the reason it is written as a rule rather than
+> left to be re-negotiated each time.
+
 ---
 
 ## 8. Branch Structure
