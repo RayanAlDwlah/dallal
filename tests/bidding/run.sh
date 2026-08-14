@@ -120,8 +120,10 @@ done
 #
 #   suite FILE EXPECTED   -> prints the assertions, sets `fail` for the caller
 fail=0
+suites=0
 suite() {
   local file="$1" expected="$2" raw acc pass bad ran
+  suites=$((suites + 1))
   echo
   echo "==> $file"
   raw=$(docker exec "$CONTAINER" psql -U postgres -q -f "/t/$file.sql" 2>&1)
@@ -132,9 +134,17 @@ suite() {
   echo "    ---- $pass passed, $bad failed, $ran of $expected assertions reached"
   fail=$((fail + bad))
 
-  if echo "$raw" | grep -q '^ERROR:'; then
+  # psql writes "psql:/t/terminal.sql:68: ERROR:  …" — never a bare "ERROR:"
+  # at the start of a line. Anchored on ^ERROR: this matched nothing and the
+  # branch could never fire, so an aborted run printed no cause at all.
+  #
+  # The assertion COUNT still catches the failure, but the count says THAT the
+  # run died, never WHY — and the two failures look identical from outside.
+  # Un-anchoring turns a mystery back into one line of output. Same fix as
+  # tests/auction/run.sh (#110); this copy had kept the bug (#116).
+  if echo "$raw" | grep -q 'ERROR:'; then
     echo "    !! psql reported an error — assertions after it never ran:"
-    echo "$raw" | grep '^ERROR:' | sed 's/^/       /'
+    echo "$raw" | grep 'ERROR:' | sed 's/^psql[^ ]* //; s/^/       /'
     fail=$((fail + 1))
   fi
   if [ "$ran" -ne "$expected" ]; then
@@ -147,7 +157,21 @@ suite acceptance 25          # BID-02 — bid acceptance
 suite closing    50          # BID-15/BID-16 — finalization and the extension
 suite terminal   20          # BID-19 — terminal-state enforcement
 suite realtime   33          # BID-08 — the broadcast payload, coverage, RT-R7
-suite sweep      15          # BID-21 — gap-filling: SC-28, SC-57, SC-72, SC-73, SC-75
+suite sweep      16          # BID-21 — gap-filling: SC-28, SC-57, SC-72, SC-73, SC-75
+
+# EXPECTED catches a suite that aborts partway; nothing above catches a suite
+# line that VANISHES. A merge conflict resolved by taking one side can drop a
+# whole `suite X N` call — dozens of assertions disappear and SUITE PASSED
+# still prints. Two near-misses in one hour (#112 against the realtime line,
+# #114's run.sh conflict) were caught by reading, not by structure; this is
+# the structure (#116). Same logic as EXPECTED, one level up. Keep the number
+# in step with the `suite` lines above.
+EXPECTED_SUITES=5
+if [ "$suites" -ne "$EXPECTED_SUITES" ]; then
+  echo
+  echo "!! expected $EXPECTED_SUITES suites, only $suites ran — a suite line is missing. Treating as failure."
+  fail=$((fail + 1))
+fi
 
 echo
 echo "==> BID-20 concurrency"

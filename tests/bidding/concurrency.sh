@@ -129,4 +129,106 @@ printf 'extension  accepted=%s history=%s answered=%s | extensions=%s quantum_ex
 
 echo
 [ "$verdict" = OK ] && echo "BID-15 contention: PASS" || echo "BID-15 contention: $verdict"
+
+# ============================================================================
+# BID-03 — bids on different auctions do not block each other (ARCH §13.3).
+#
+# place_bid locks exactly one auction row per transaction (BID-02 contract
+# §2b), so a bid on B must complete while A's row lock is HELD. The contract's
+# V-1 script phase (c) sketched this with pg_sleep and a wall-clock bound;
+# this phase proves it deterministically instead:
+#
+#   1. a REAL place_bid on A is left uncommitted — its transaction is held
+#      open on a FIFO, so A's row lock stays held until *we* release it,
+#      not until a sleep expires
+#   2. a bid on B runs on a separate connection with lock_timeout set: if B
+#      ever waited on A's lock it would ERROR loudly, never hang the harness
+#   3. B's acceptance arrives while A's transaction is verifiably still open
+#      (pg_stat_activity shows it idle-in-transaction AFTER B answered) —
+#      holding A open while B completes IS the proof; no timing bound
+#   4. only then is A released, and both auctions' invariants are asserted
+#      in SQL: price == max accepted bid, exactly one history row, each side
+#      untouched by the other
+# ============================================================================
+echo
+printf 'BID-03 — a bid on auction B while auction A'"'"'s row lock is held open\n\n'
+
+new_auction() {
+  $PSQL -c "insert into public.auctions
+      (owner_id, status, end_time, starting_price, current_price,
+       name, description, image_path)
+    values ('$OWNER', 'active', now() + interval '1 hour', 100, 100,
+            'ساعة اختبار', 'وصف اختباري طوله كافٍ للحد الأدنى.', 'test/a.jpg')
+    returning id;"
+}
+auc_a=$(new_auction)
+auc_b=$(new_auction)
+
+gate=/tmp/bid03-gate; hold_out=/tmp/bid03-holder
+rm -f "$gate" "$hold_out"; mkfifo "$gate"
+
+# The holder: one psql session, one open transaction. place_bid on A executes
+# (taking A's exclusive row lock) and then the session blocks reading the
+# FIFO — the lock is held until the harness writes "commit;" into the gate.
+( { printf 'begin;\n'
+    printf "select set_config('request.jwt.claims',
+              json_build_object('sub','00000000-0000-0000-0000-0000000000b1')::text, false);\n"
+    printf "select public.place_bid('%s', '150')::text;\n" "$auc_a"
+    cat "$gate"
+  } | $PSQL ) > "$hold_out" 2>&1 &
+holder=$!
+
+# Wait for the holder's bid to be ACCEPTED (not for time to pass): once the
+# acceptance is in the output, A's row lock is held by an open transaction.
+a_locked=f
+for _ in $(seq 1 100); do
+  grep -q '"accepted": true' "$hold_out" && { a_locked=t; break; }
+  kill -0 "$holder" 2>/dev/null || break
+  sleep 0.1
+done
+
+# The measurement: bid on B on a separate connection. lock_timeout means a
+# cross-auction block becomes a loud ERROR (no acceptance), never a hang.
+b_out=$($PSQL -c "set lock_timeout = '2s';
+                  set statement_timeout = '10s';
+                  select set_config('request.jwt.claims',
+                    json_build_object('sub','00000000-0000-0000-0000-0000000000b2')::text, false);
+                  select public.place_bid('$auc_b', '175')::text;" 2>&1 | tail -1)
+b_accepted=f
+printf '%s' "$b_out" | grep -q '"accepted": true' && b_accepted=t
+
+# The proof moment: B has its answer, and A's transaction is STILL open.
+a_open_during_b=$($PSQL -c "select (count(*) >= 1)
+    from pg_stat_activity
+    where state = 'idle in transaction' and query like '%place_bid%';")
+
+# Only now release A, and let its bid commit.
+kill -0 "$holder" 2>/dev/null && printf 'commit;\n' > "$gate"
+wait "$holder" 2>/dev/null
+rm -f "$gate"
+
+# Both auctions' invariants, compared in SQL (S0-12: no amount leaves SQL):
+# current_price == the accepted amount == max(history), exactly one row each.
+a_ok=$($PSQL -c "select (a.current_price = '150'
+    and a.current_price = (select max(amount) from public.bids where auction_id = a.id)
+    and (select count(*) from public.bids where auction_id = a.id) = 1)
+  from public.auctions a where a.id = '$auc_a';")
+b_ok=$($PSQL -c "select (a.current_price = '175'
+    and a.current_price = (select max(amount) from public.bids where auction_id = a.id)
+    and (select count(*) from public.bids where auction_id = a.id) = 1)
+  from public.auctions a where a.id = '$auc_b';")
+
+verdict=OK
+[ "$a_locked" = t ]        || verdict='FAIL the bid on A never took the lock — nothing was proven'
+[ "$b_accepted" = t ]      || verdict='FAIL bid on B not accepted while A was locked (blocked? lock_timeout?)'
+[ "$a_open_during_b" = t ] || verdict='FAIL A'"'"'s transaction was not open when B answered — proof invalid'
+[ "$a_ok" = t ]            || verdict='FAIL auction A invariants broken after release'
+[ "$b_ok" = t ]            || verdict='FAIL auction B invariants broken'
+[ "$verdict" = OK ]        || failures=$((failures + 1))
+
+printf 'cross-auction  a_lock_held=%s b_accepted=%s a_open_during_b=%s | a_ok=%s b_ok=%s  %s\n' \
+  "$a_locked" "$b_accepted" "$a_open_during_b" "$a_ok" "$b_ok" "$verdict"
+
+echo
+[ "$verdict" = OK ] && echo "BID-03 cross-auction: PASS" || echo "BID-03 cross-auction: $verdict"
 exit "$failures"
