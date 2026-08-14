@@ -64,6 +64,21 @@ The race/too-low split **varies between rounds**. That variation is the point �
 it shows the pre-lock/post-lock distinction is doing real work under real
 contention rather than being decorative.
 
+**`SC-17` and `SC-19` — `BID-03`'s last two criteria.** The rounds above bid the
+*same* amount, so exactly one is accepted and a one-row history is *trivially*
+increasing: they prove `SC-16` and cannot prove `SC-17`. A further phase bids
+**distinct rising** amounts, so several are accepted into one history under
+contention — the only arrangement in which `SC-17` can fail — reads it back
+through `public.bid_history` (the view the product renders, and the one that
+carries the `order by bids.id` decision from `BID-09`), then **closes** the
+auction, which no earlier phase does, and asserts `SC-19`: the final price is
+the highest bid, the winner is the bidder who placed it, and exactly one bid
+sits at that price.
+
+The phase fails if **no round ever reached two accepted bids** (`#117`): how
+many bids win a race is not deterministic, and a suite in which nothing was
+contended would otherwise report a pass for a property it never exercised.
+
 ## Two things the harness itself guards against
 
 **A false pass.** A `DO` block that aborts partway emits neither `PASS` nor

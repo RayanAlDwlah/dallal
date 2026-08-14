@@ -231,4 +231,104 @@ printf 'cross-auction  a_lock_held=%s b_accepted=%s a_open_during_b=%s | a_ok=%s
 
 echo
 [ "$verdict" = OK ] && echo "BID-03 cross-auction: PASS" || echo "BID-03 cross-auction: $verdict"
+
+# ============================================================================
+# BID-03 — the last two criteria on #64, which nothing asserted until now:
+#
+#   SC-17  the history's amounts are STRICTLY INCREASING
+#   SC-19  after concurrent bidding, closing yields exactly ONE winner, and it
+#          is the highest bid
+#
+# The rounds at the top of this file bid the SAME amount, so exactly one is
+# accepted and a one-row history is trivially increasing — it proves SC-16, and
+# it cannot prove SC-17. This phase bids DISTINCT RISING amounts instead, so
+# several are accepted into one history under contention, which is the only
+# arrangement in which SC-17 can fail. Then it closes the auction, which the
+# phases above never do, and SC-19 is asserted on the result.
+#
+# SC-17 is read through public.bid_history, not through the bids table: the
+# view is what the product renders, and it carries the ordering decision (seq =
+# row_number over bids.id, BID-09). Ordering by created_at instead renders a
+# DECREASING history under exactly this contention — measured at 2 of 12
+# auctions, which is why the rule exists. Asserting on the view is therefore
+# asserting on the rule; asserting on `order by id` by hand would only restate
+# the query the view already contains.
+#
+# THE VACUOUS-PASS GUARD (#117). "Strictly increasing" is true of a one-row
+# history, and how many bids win a race is not deterministic — if the highest
+# amount happens to commit first, every other bid is correctly rejected as
+# not_above_current and that round's history has one row. So each round asserts
+# the property, AND the phase fails if NO round ever reached two accepted bids:
+# without that, a suite in which nothing was ever contended reports a pass for
+# a property it never exercised.
+# ============================================================================
+echo
+printf 'BID-03 — SC-17 strictly increasing history, SC-19 one winner after contention\n\n'
+
+contended=0
+before=$failures
+for round in $(seq 1 "$ROUNDS"); do
+  auction=$(new_auction)
+
+  out="/tmp/bid03-rising-$round"
+  for i in $(seq 1 "$WORKERS"); do
+    ( $PSQL -c "select set_config('request.jwt.claims',
+                  json_build_object('sub','00000000-0000-0000-0000-0000000000b$i')::text, false);
+                select public.place_bid('$auction', '$((100 + i * 10))')::text;" | tail -1 ) &
+  done > "$out" 2>&1
+  wait
+
+  accepted=$(grep -c '"accepted": true' "$out")
+  answered=$(grep -c 'accepted' "$out")
+  rows=$($PSQL -c "select count(*) from public.bid_history where auction_id = '$auction';")
+  [ "$accepted" -ge 2 ] && contended=$((contended + 1))
+
+  # SC-17, over the product's own ordering. bool_and over a lag window: every
+  # row after the first must be strictly greater than the row before it in seq
+  # order. Amounts are compared as numeric IN SQL and never leave it (S0-12).
+  rising=$($PSQL -c "select coalesce(bool_and(prev is null or amount > prev), false)
+      from (select amount, lag(amount) over (order by seq) as prev
+              from public.bid_history where auction_id = '$auction') t;")
+
+  # Close it. end_time must go backwards, which no product path can do
+  # (auctions_guard_update) — same declared back door as pg_temp.expire in
+  # closing.sql, one statement wide, re-enabled immediately.
+  $PSQL -c "alter table public.auctions disable trigger auctions_immutable_terms;
+            update public.auctions set end_time = clock_timestamp() - interval '1 second'
+             where id = '$auction';
+            alter table public.auctions enable trigger auctions_immutable_terms;" > /dev/null
+  $PSQL -c "select public.close_ended_auctions();" > /dev/null
+
+  # SC-19, as one boolean so no amount crosses into the shell: ended, the final
+  # price is the highest bid, the winner is the bidder who placed it, and only
+  # one bid sits at that price — one winner, not a tie resolved by luck.
+  won=$($PSQL -c "select (a.status = 'ended'
+      and a.final_price = (select max(amount) from public.bids where auction_id = a.id)
+      and a.winner_id = (select bidder_id from public.bids
+                          where auction_id = a.id order by amount desc limit 1)
+      and (select count(*) from public.bids
+            where auction_id = a.id and amount = a.final_price) = 1)
+    from public.auctions a where a.id = '$auction';")
+
+  verdict=OK
+  [ "$answered" = "$WORKERS" ] || verdict='FAIL a submission got no answer'
+  [ "$rows" = "$accepted" ]    || verdict='FAIL history != acceptances'
+  [ "$rising" = t ]            || verdict='FAIL SC-17 history is not strictly increasing'
+  [ "$won" = t ]               || verdict='FAIL SC-19 winner is not the single highest bid'
+  [ "$verdict" = OK ]          || failures=$((failures + 1))
+
+  printf 'round %-3s accepted=%s history=%s | rising=%s one_winner=%s  %s\n' \
+    "$round" "$accepted" "$rows" "$rising" "$won" "$verdict"
+done
+
+echo
+if [ "$contended" -eq 0 ]; then
+  failures=$((failures + 1))
+  echo "BID-03 SC-17/SC-19: FAIL — no round ever accepted two bids; SC-17 was never exercised"
+elif [ "$failures" -eq "$before" ]; then
+  echo "BID-03 SC-17/SC-19: PASS — $ROUNDS/$ROUNDS rounds clean, $contended genuinely contended"
+else
+  echo "BID-03 SC-17/SC-19: FAIL — $((failures - before)) of $ROUNDS rounds violated an invariant"
+fi
+
 exit "$failures"
