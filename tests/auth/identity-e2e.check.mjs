@@ -269,6 +269,24 @@ const EXPECTED = 17;
 const ran = pass + fail;
 console.log(`\n---- ${pass} passed, ${fail} failed, ${ran} of ${EXPECTED} assertions reached`);
 console.log(`     account ${email} and its auction are permanent — see the header.`);
+
+/*
+ * The account this run created is a usable fixture for session.check.mjs, whose
+ * three FR-AUTH-15/16 assertions skip without credentials. Printed as a
+ * ready-to-run line rather than as two values to transcribe: the first attempt
+ * at doing this by hand was run with the placeholder still in it, and the suite
+ * reported a clean 13/13 with three SKIPs — which reads like a pass at a glance.
+ *
+ * No exposure is added by printing the password: the account is disposable, it
+ * lives only on the dev project this script refuses to point at production, and
+ * the value is already derivable from the email above plus this file.
+ */
+if (fail === 0) {
+  console.log("\n     to run the three credentialed assertions in session.check.mjs:");
+  console.log(
+    `     DALAL_TEST_EMAIL=${email} DALAL_TEST_PASSWORD='${password}' \\\n       DALAL_BASE_URL=<a preview deployment> \\\n       node --no-warnings=MODULE_TYPELESS_PACKAGE_JSON tests/auth/session.check.mjs`,
+  );
+}
 if (ran !== EXPECTED) {
   console.log(`!! expected ${EXPECTED} assertions, only ${ran} reached. Treating as failure.`);
   process.exit(1);
