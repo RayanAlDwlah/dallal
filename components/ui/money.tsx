@@ -59,6 +59,33 @@ export interface MoneyProps {
  * again. `overflow-y-hidden` suppresses the parasitic vertical scrollbar that
  * `overflow-x: auto` would otherwise imply — digits have no descenders to clip.
  *
+ * ── `inline-block max-w-full` — why the island states its own display ──────
+ *
+ * `overflow` does not apply to an inline box, and `<bdi>` is inline by default;
+ * `.num` sets font, direction and unicode-bidi but not `display`. So the
+ * overflow above only took effect because the wrapper is `inline-flex` and flex
+ * items are blockified by the spec. @Dem4t found that on #110 — the containment
+ * was correct, but only because of a word in the PARENT's class list, and
+ * relayouting that wrapper is a pure presentation change any session may make
+ * without asking (CLAUDE.md §1). Nothing would have caught the regression:
+ * not tsc, not eslint, and no test — it is invisible until someone looks at a
+ * thirty-digit amount.
+ *
+ * MEASURED, because his remedy was half of one and the missing half matters.
+ * Forcing the wrapper to `display: block`:
+ *
+ *   bdi as-was (inline)                    → document 1059px, page overflows
+ *   bdi `inline-block` alone               → document 1019px, page STILL overflows
+ *   bdi `inline-block` + `max-width: 100%` → document 375px, contained
+ *
+ * `inline-block` alone is not enough because `max-w-full` sits on the WRAPPER:
+ * an inline-block shrink-wraps to its content, and with nothing capping its
+ * width it simply grows to the full 980px again. The island needs its own cap.
+ * With both, containment survives a `block` wrapper and an `inline` one, and
+ * inside the current flex wrapper it changes nothing at all — a flex item is
+ * blockified either way. `inline-block` rather than `block` so the `SAR`
+ * baseline still aligns if the wrapper ever stops being a flex container.
+ *
  * What is deliberately NOT done here: no truncation, no ellipsis, no
  * length-conditional font size, no `max` on the value. CLAUDE.md §4 names
  * exactly this — "do not add a ceiling to solve a layout problem" — and a
@@ -70,7 +97,7 @@ export function Money({ amount, size = "md", suffix = true, className }: MoneyPr
     <span className={cn("inline-flex min-w-0 max-w-full items-baseline gap-1", className)}>
       <bdi
         className={cn(
-          "num min-w-0 overflow-x-auto overflow-y-hidden font-bold",
+          "num inline-block max-w-full min-w-0 overflow-x-auto overflow-y-hidden font-bold",
           SIZE[size],
         )}
       >
