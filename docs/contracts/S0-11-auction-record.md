@@ -6,10 +6,35 @@
 | Issue | **S0-11** — "Agree the auction record contract" (`GITHUB_PLAN.md:263`) |
 | Record owner | **Mohammed** (`@m7ya505`) — he owns the table, the DDL and the access path (`TEAM.md` §4, §9.3) |
 | Consumer | **Rayan** (`@RayanAlDwlah`) — bidding, current price, closing, winner |
-| Status | 🟡 **Draft — awaiting Mohammed's sign-off.** Nothing here is decided until the boxes in §8 are ticked. He has endorsed the document and **one** box in revert `5adaad2`; **seven remain open** — see §8.1 |
-| Date | 2026-08-12 · endorsement evidence recorded 2026-08-13 |
+| Status | 🟡 **Draft — awaiting Mohammed's sign-off.** Nothing here is decided until the boxes in §8 are ticked. He has endorsed the document and **one** box in revert `5adaad2`; **nine remain open** — see §8.1 |
+| Date | 2026-08-12 · endorsement evidence recorded 2026-08-13 · **amended 2026-08-14 for the `BR-36` reversal — see the box below** |
 | Depends on | `S0-12` (money type, FINAL) · `S0-10` (identity contract, Abdulrahman) |
 | Consumed by | `BID-01`, `BID-02`, `BID-05`, `BID-15`, and Mohammed's `AUC-08`/`AUC-14`/`M-10` |
+
+> ## ⚠️ Amendment 2026-08-14 — **do not sign the pre-amendment version**
+>
+> `BR-36` was **reversed on 2026-08-13**: a bid accepted in the final 15 seconds now extends
+> `end_time` by exactly 30 seconds, to a hard cap of 20. This document was written on
+> **2026-08-12**, one day before, and said in §4 *"I write nothing else to `auctions`,
+> ever."* That sentence was true when written and has been **false since `20260814000000`
+> landed**.
+>
+> Three things changed, and all three are in the half of the record **you** rely on:
+>
+> 1. **I write two more fields** — `end_time` and `extension_count` (§4, third row).
+> 2. **`end_time` is no longer a creation-time constant** (§2, field 3). Signing the old
+>    §4 would have entitled you to assume it was — and `CLAUDE.md` §5 says an implementation
+>    built on that assumption breaks the counter.
+> 3. **A column was added to your table by my migration** — `extension_count`, with its cap
+>    as a `CHECK` constraint (§4.2). You own the DDL of `auctions` (§ header). You were
+>    never asked. That is disclosed here rather than left for you to find.
+>
+> **None of this is a security defect.** The writes happen under `place_bid`, which is
+> `SECURITY DEFINER`, and `authenticated` is revoked from `UPDATE` on `auctions`
+> (`20260812120000:512`). The defect is one of **disclosure**: §4 is an inventory you read
+> to know what moves under your hands, and it had gone stale.
+>
+> **Two new boxes in §8 cover the amendment.** Nothing in it is agreed until you tick them.
 
 > **Citation correction — applied.** The S0-11 issue text cited "ARCHITECTURE §10.3" twice.
 > `ARCHITECTURE.md:605` §10.3 is **Password reset**. The auction-record material is in
@@ -31,9 +56,11 @@ account** — this document is deliverable today and `S0-07` is now pushed anywa
 
 ---
 
-## 2. The six read fields — frozen
+## 2. The seven read fields — frozen
 
-These are the fields the bid operation reads. All six are read **inside the per-auction
+*Six until 2026-08-13. The seventh arrived with the `BR-36` reversal.*
+
+These are the fields the bid operation reads. All seven are read **inside the per-auction
 row lock** (`ARCHITECTURE` §13.2 steps 2–3); anything read before the lock is stale by
 definition and is used only to distinguish a race from a too-low bid.
 
@@ -41,12 +68,35 @@ definition and is used only to distinguish a race from a too-low bid.
 |---|---|---|---|
 | 1 | **auction id** | the row to lock | §13.2 step 2 |
 | 2 | **owner identifier** | the owner may never bid | `BR-02`, `FR-BID-03` |
-| 3 | **end time** | eligibility, compared to the **server clock** | `BR-04`, `LC-03`, `FR-BID-18` |
+| 3 | **end time** | eligibility, compared to the **server clock** — and **since `BR-36`'s reversal I also *write* it**, see §4 | `BR-04`, `LC-03`, `FR-BID-18`, `BR-36` as amended |
 | 4 | **starting price** | the first bid's threshold, **inclusive** | `BR-28`, `BR-29`, `SC-55` |
 | 5 | **current price** | every later bid's threshold, **strictly greater** | `BR-03`, `BR-28`, `SC-56` |
 | 6 | **status** | see §5 — *not* an eligibility input | `LC-03` |
+| 7 | **extension count** | *(new, 2026-08-14)* whether the anti-sniping cap is reached — the extension is skipped at 20 | `BR-36` as amended |
+
+Field 7 is read by `bids_extend_end_time()` (`20260814000000:186`), which is part of the
+bid operation: it is an `AFTER INSERT` trigger on `bids` that fires **inside `place_bid`'s
+transaction**, and it re-reads the auction row `FOR UPDATE` — the same lock `place_bid`
+already holds. So it is in the read set for the same reason the other six are.
+
+**Field 3 needs one sentence of its own, because its character changed.** Before
+2026-08-13, `end_time` sat with `owner_id`, `starting_price` and `created_at` in the
+immutable-creation-terms list, and any update to it raised. It is now **conditionally
+mutable**: forward only, in 30-second quanta, only inside `place_bid`, and only together
+with `extension_count + 1` — four conditions, all required, enforced by
+`auctions_guard_update()` (`20260814000000:113`). Every other shape still raises.
+
+> **What this costs you.** Any surface that treats `end_time` as fixed after render — a
+> countdown seeded once at mount, a cached "ends at" string, a `revalidate` window derived
+> from it — will drift on a contested auction. The countdown is presentation, so it is
+> yours; the fact that the number underneath it moves is mine to declare, and this is that
+> declaration.
 
 ### 2.1 Resolving the "sixth field" conflict — please read this one
+
+*(The "sixth" here is the sixth item of the three **external** lists below, all of which
+predate the amendment and all of which have six items. The numbering in §2's own table is
+now 1–7 and does not affect this argument.)*
 
 Three documents state this list three different ways:
 
@@ -134,11 +184,36 @@ which read literally forbids the per-bid current-price update that `BR-13` requi
 | When | Fields I write | Nothing else |
 |---|---|---|
 | **On each accepted bid** | `current_price` ← the accepted amount, in the same transaction as the bid insert (`BR-07`, `BR-13`, `SC-40`) | — |
+| **On an accepted bid inside the final 15 seconds** *(new, `BR-36` as amended)* | `end_time` ← `end_time + 30 seconds`, **and** `extension_count` ← `extension_count + 1`, in the same statement — skipped once `extension_count` reaches 20 | — |
 | **At close** | `status`, final price, winner, close time (`FR-END-08`, `BR-06`) | — |
 
-I write nothing else to `auctions`, ever. Please make sure the grants allow exactly these
-two and no more — if the per-bid `current_price` grant is missing, **every bid fails at
-commit**.
+I write nothing else to `auctions`, ever.
+
+**Three occasions, not two — and that number changed on 2026-08-13.** The middle row did
+not exist when this document was written; `BR-36` had not yet been reversed, and this
+section said in so many words that there were two. If you are reading a copy of this
+contract that lists two, it predates the reversal and `CLAUDE.md` §5 governs over it.
+
+Two properties of the middle row are worth stating here rather than leaving in the
+migration, because they are what make it safe for you to sign:
+
+- **It is not a third write path.** It is an `AFTER INSERT` trigger on `bids`
+  (`bids_extend_end_time`, `20260814000000:197`) firing inside `place_bid`'s transaction,
+  under the lock `place_bid` already holds. A bid and its extension commit together or
+  neither does. There is no way to extend an auction without accepting a bid on it.
+- **A rejected bid never extends.** The trigger is on `INSERT`, and a rejected bid inserts
+  no row. This is load-bearing: if rejections extended, an ineligible bidder could hold an
+  auction open forever with bids that never count.
+
+Please make sure the grants allow exactly these three and no more — if the per-bid
+`current_price` grant is missing, **every bid fails at commit**.
+
+> **The one thing I am asking you not to do here.** The cap of 20 is a `CHECK` constraint
+> (`auctions_extension_cap`), not an `if` inside a function. It must stay a constraint. The
+> `if` in the trigger is an optimisation that skips the update; the constraint is what makes
+> an unbounded extension **impossible**. Without it a contested auction never ends, never
+> finalizes, and never has a winner — and that failure is invisible until it happens in
+> front of someone. `CLAUDE.md` §5 says the same thing in the same words.
 
 ### 4.1 Who initialises `current_price` at creation
 
@@ -154,6 +229,30 @@ system-assigned at creation, then outcome-only). It is a carve-out, not a contra
 `current_price` is **`NOT NULL` from creation onward.** Please do not make it nullable —
 `NULL` would propagate into every listing row, every sort, and every
 `COALESCE(current_price, starting_price)` a future session is tempted to write.
+
+### 4.2 A column of mine now lives in your table — disclosed, not assumed
+
+`extension_count integer not null default 0` was added to `public.auctions` by **my**
+migration (`20260814000000:65`), together with the `auctions_extension_cap` CHECK
+(`:71`) and a `comment on column`. A partial index `auctions_due_for_close` on
+`(end_time) where status = 'active'` was added in the same file for the closing sweep.
+
+**You own the DDL of this table** (see the header of this document) and you were not asked
+first. I am not asking retroactively either — I am telling you, in the document you read to
+know what is in your record, because the alternative is you discovering a column you did not
+add. The reasoning I applied at the time is in the migration's own comment
+(`20260814000000:59`):
+
+> *"`auctions` is Mohammed's table (S0-11) and this is Rayan's column. It is bidding
+> behaviour — the same category as `current_price`, `winner_id`, `final_price` and
+> `closed_at`, which already live here for the same reason (`CLAUDE.md` §1: ownership is by
+> responsibility, not by file)."*
+
+That reasoning is consistent with `CLAUDE.md` §1, and I still think it is right. But
+"consistent with the ownership model" is not the same as "you were told", and only one of
+those two had happened. **§8 now carries a box for it.** If you would rather the column
+lived elsewhere — its own table keyed by auction id, say — say so and I will move it; the
+cap and the guard would move with it and nothing in the bid path would change shape.
 
 ---
 
@@ -223,6 +322,14 @@ Also out of scope for the record, from `PRD` v3.0: no cancel, no edit, no draft 
 `Cancelled` status. `status` has exactly two persisted values — `active` and `ended`
 (`PRD` §12.1, `BR-30`, `BR-14`).
 
+> **One item left this list on 2026-08-13 and it is the only one that ever has.** This
+> section used to carry a fifth row: *"❌ anti-sniping / time extension — the end time is
+> fixed."* **It is gone because the feature is real.** `BR-36` was reversed by the project
+> owner with both other developers agreeing, and `CLAUDE.md` §5 records the reversal as
+> governing over any document that still says the end time never moves. The four rows above
+> are unaffected — none of them has ever been reversed, and adding any of them is still a
+> bug. Do not restore the fifth row on the strength of an older document.
+
 And two more, from `S0-12` (FINAL): **no money column that is not the `sar_amount`
 domain**, and **no floating point anywhere on an amount** — including in a sort, an index
 expression, or a test assertion.
@@ -234,11 +341,13 @@ expression, or a test assertion.
 Nothing below is decided until you tick it. Where you disagree, write the alternative and
 I will build to it.
 
-- [ ] **§2** — the six read fields are as listed, and `current_price` **is** the sixth (not "existence")
-- [ ] **§2** — none of the six is renamed or removed without telling me first
+- [ ] **§2** — the seven read fields are as listed, and `current_price` **is** in the set (not "existence")
+- [ ] **§2** — none of the seven is renamed or removed without telling me first
+- [ ] **§2** — ⚠️ *new* — you have read that **`end_time` is no longer fixed after render**, and no surface of yours assumes it is
 - [ ] **§3.2** — your read path exposes a **derived** has-bids / bid-count; no stored column on `auctions`
 - [ ] **§3.2** — *or*: you would rather I expose a counting view over `bids` for you to join → tell me
-- [ ] **§4** — my writes are exactly: `current_price` per accepted bid, and the four close fields. Grants allow both
+- [ ] **§4** — my writes are exactly: `current_price` per accepted bid, `end_time` + `extension_count` on an accepted bid inside the final 15 s, and the four close fields. Grants allow all three
+- [ ] **§4.2** — ⚠️ *new* — `extension_count` and `auctions_extension_cap` stay in `auctions`, added by my migration · **or** tell me where you want them instead
 - [ ] **§4.1** — you initialise `current_price = starting_price` at creation; it is `NOT NULL`
 - [ ] **§5** — `status` is displayed and written at close, but is **never** the bidding eligibility gate
 - [ ] **§6** — bid history is ordered by `bids.id`; `created_at` is display-only
@@ -279,10 +388,18 @@ boxes. Mapped honestly:
 | §6 | history ordered by `bids.id`; `created_at` display-only | ⬜ **open** |
 | §7 | none of the four prohibited fields in the DDL | ⬜ **open** |
 | §9 | the three items go to the whole team | ⬜ **open** |
+| §2 | ⚠️ `end_time` is no longer fixed after render | ⬜ **open — did not exist on 2026-08-13** |
+| §4.2 | ⚠️ `extension_count` + its CHECK stay in `auctions` | ⬜ **open — did not exist on 2026-08-13** |
 
-Seven boxes are untouched, and four of them (`§4.1`, `§5`, `§6`, `§7`) are the ones that
+Nine boxes are untouched, and four of them (`§4.1`, `§5`, `§6`, `§7`) are the ones that
 break bidding silently if he assumes otherwise. **`BID-02`, `BID-13`, `BID-15` and `BID-16`
 are still building against a draft.**
+
+**The last two are new, and they are new for a reason worth naming.** `5adaad2` was written
+on 2026-08-13 against a document that said `end_time` never moves and said nothing about
+`extension_count`. Even a full tick that day would not have covered them. So an endorsement
+does not age into coverage of a change made after it — **a signature covers the version it
+was given on, and this version is not that one.**
 
 > **Recording mechanism — a problem worth naming.** `GITHUB_PLAN.md` §12.1 says agreement is
 > recorded in the issue thread. **There are no issues.** `gh issue list --state all` returns
