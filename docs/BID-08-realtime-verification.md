@@ -583,8 +583,8 @@ milliseconds.
   reconnect re-read is what covers the case this measurement cannot reach.
 
 The probe is throwaway and lives outside the repository; it is reproduced in the PR
-discussion rather than committed, since this project has **no JavaScript test harness at
-all** (see below).
+discussion rather than committed, since at the time this project had **no JavaScript test
+harness at all** (see below).
 
 #### A gap this raised, for the team rather than for me
 
@@ -594,6 +594,22 @@ the TypeScript side has none, so `auction-channel.ts` — where the critical def
 is verified by throwaway scripts and reading. Adding a runner is **shared infrastructure
 that lands on all three developers**, so it is raised here rather than decided from a
 bidding branch. `TEAM.md` rule 16 applies to tooling the same way it applies to product.
+
+> **Correction, 2026-08-14 — the premise above expired.** "No JavaScript test harness at
+> all" was true when it was written and is not true now: **ten** committed harnesses run
+> across `tests/auth/`, `tests/auction/`, `tests/realtime/` and `tests/integration/`, and
+> the gap closed **without** `package.json` growing a `test` script. Each is a file you
+> run with `node`, prints `PASS`/`FAIL` lines, and carries an `EXPECTED` count guard so a
+> harness that aborts partway cannot exit 0 having asserted nothing. `auction-channel.ts`
+> specifically is no longer "verified by reading" — `tests/realtime/reconnect.check.mjs`
+> measures the two library facts it depends on, and `live-price-mount.check.mjs` asserts
+> the wire from it to the screen.
+>
+> **Whether to add a runner is still open and still shared infrastructure** (`TEAM.md`
+> rule 16); this correction does not decide it, it only removes the premise that there is
+> nothing to run. Recorded in place rather than overwritten — a verification document
+> whose claims decay silently is the defect this project keeps paying for (`#130`). Full
+> inventory and the isolation boundary: `docs/V-5-lifecycle-isolation.md` (`#28`).
 
 #### Footprint left on dev by §7
 
