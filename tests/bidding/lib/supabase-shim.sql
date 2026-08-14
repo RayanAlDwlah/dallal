@@ -20,7 +20,15 @@ create table if not exists auth.users (
   updated_at  timestamptz default now(),
   -- Added for tests/auth: the AUTH-01 signup trigger reads the display name
   -- from here, exactly as GoTrue writes it from signUp's options.data.
-  raw_user_meta_data jsonb not null default '{}'::jsonb
+  raw_user_meta_data jsonb not null default '{}'::jsonb,
+  -- Added for tests/auth (AUTH-11, SC-70): real GoTrue has this column and
+  -- leaves it NULL while "Confirm email" is off, which is the state BR-37
+  -- requires. The SC-70 assertions read it to prove no verification step
+  -- exists — and, more importantly, that none appears later: an implementation
+  -- that quietly confirmed the address on first use would satisfy every other
+  -- assertion in that block. Absent from the shim, the whole block aborted on
+  -- its first statement and six assertions never ran.
+  email_confirmed_at timestamptz
 );
 
 -- NOTE where nullif sits: it wraps the SETTING, before the cast. Writing it the

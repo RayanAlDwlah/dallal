@@ -156,3 +156,88 @@ begin
   reset role;
   perform pg_temp.chk('profiles cannot be deleted by a user', got, '42501');
 end $$;
+
+/*
+ * ===========================================================================
+ * SC-70 / BR-37 — no email verification, proved by using the product.
+ *
+ * "A user can register and immediately create an auction and place a bid
+ * WITHOUT any email verification step." The only way to assert the absence of
+ * a gate is to walk the whole path and confirm nothing stopped it — a test that
+ * merely checked for a confirmation column would pass on a system that gated on
+ * something else entirely.
+ *
+ * Both accounts keep email_confirmed_at NULL throughout, and that is asserted
+ * at the moment the bid is accepted rather than at the start. An implementation
+ * that quietly confirmed the address on first use would satisfy every other
+ * assertion here.
+ * ===========================================================================
+ */
+do $$
+declare
+  seller uuid := '00000000-0000-0000-0000-00000000d001';
+  bidder uuid := '00000000-0000-0000-0000-00000000d002';
+  a      uuid;
+  got    text;
+  res    json;
+begin
+  perform pg_temp.signup(seller, 'sc70-seller@test.local', 'بائع_SC70');
+  perform pg_temp.signup(bidder, 'sc70-bidder@test.local', 'مزايد_SC70');
+
+  perform pg_temp.chk('BR-37 registration records no confirmation',
+    (select coalesce(email_confirmed_at::text, 'null') from auth.users where id = seller), 'null');
+
+  -- Immediately, as the account that has just been created and never confirmed.
+  begin
+    perform set_config('request.jwt.claims', json_build_object('sub', seller)::text, true);
+    set local role authenticated;
+    insert into public.auctions
+      (owner_id, status, end_time, starting_price, current_price, name, description, image_path)
+    values (seller, 'active', now() + interval '1 hour', 100, 100,
+            'سلعة اختبار SC-70', 'وصف اختباري طوله كافٍ لتجاوز الحد الأدنى للوصف.', 'sc70/a.jpg')
+    returning id into a;
+    got := 'accepted';
+  exception when others then got := sqlstate;
+  end;
+  reset role;
+  perform pg_temp.chk('SC-70 unconfirmed account can create an auction', got, 'accepted');
+
+  -- And a different unconfirmed account can bid on it (BR-02 forbids the owner).
+  begin
+    perform set_config('request.jwt.claims', json_build_object('sub', bidder)::text, true);
+    set local role authenticated;
+    res := public.place_bid(a, '150');
+    got := (res ->> 'accepted');
+  exception when others then got := sqlstate;
+  end;
+  reset role;
+  perform pg_temp.chk('SC-70 unconfirmed account can place a bid', got, 'true');
+
+  /*
+   * The assertion that stops the previous two from being satisfiable by a
+   * system that confirms on first use.
+   */
+  perform pg_temp.chk('BR-37 still unconfirmed after creating and bidding',
+    (select count(*)::text from auth.users
+      where id in (seller, bidder) and email_confirmed_at is not null), '0');
+
+  /*
+   * SC-10 / FR-AUTH-22 — an unauthenticated bid is rejected when the UI is
+   * bypassed entirely. It must come back as the PRODUCT's reason, not a raw
+   * permission error: place_bid is granted to anon precisely so a crafted call
+   * receives §13.5 reason 1 instead of leaking that the endpoint exists
+   * (SEC-T3, FR-SEC-16).
+   */
+  begin
+    perform set_config('request.jwt.claims', '', true);
+    set local role anon;
+    res := public.place_bid(a, '999');
+    got := (res ->> 'reason');
+  exception when others then got := sqlstate;
+  end;
+  reset role;
+  perform pg_temp.chk('SC-10 anon bid rejected with a product reason', got, 'not_authenticated');
+
+  perform pg_temp.chk('SC-10 the rejected anon bid wrote nothing',
+    (select count(*)::text from public.bids where auction_id = a), '1');
+end $$;
