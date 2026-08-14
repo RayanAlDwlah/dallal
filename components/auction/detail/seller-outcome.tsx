@@ -74,10 +74,18 @@ export function SellerOutcome({ winnerName, finalPrice, pending }: SellerOutcome
            * read as a broken page. So it says exactly what is true: it is over,
            * and the result is being settled. FR-DETAIL-09 and BID-17 make it
            * appear without a manual refresh once it lands.
+           *
+           * Byte-identical to OutcomePendingNote's sentence, and it must stay
+           * that way — one fact, one wording. It no longer says «هنا»: this
+           * branch is server-rendered and never retracts, so once BID-17's
+           * banner lands both are on screen and a promise pointing at itself
+           * would be pointing at the wrong block (@Dem4t, #128). The note's
+           * header carries the full reasoning and the proposed composition fix
+           * for the half that is still open — this branch has the same gap.
            */
           <p className="text-ink-2 text-sm">
-            انتهى وقت المزاد، ويجري اعتماد النتيجة الآن. ستظهر هنا خلال لحظات دون
-            الحاجة إلى تحديث الصفحة.
+            انتهى وقت المزاد، ويجري اعتماد النتيجة الآن. تظهر خلال لحظات دون الحاجة
+            إلى تحديث الصفحة.
           </p>
         ) : winnerName && finalPrice ? (
           <div className="flex flex-col gap-2">

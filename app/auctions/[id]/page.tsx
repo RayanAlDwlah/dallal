@@ -4,6 +4,7 @@ import { notFound } from "next/navigation";
 import { BidSlot, type ViewerRole } from "@/components/auction/detail/bid-slot";
 import { PriceRegion } from "@/components/auction/detail/price-region";
 import { ProductContent } from "@/components/auction/detail/product-content";
+import { OutcomePendingNote } from "@/components/auction/detail/outcome-pending-note";
 import { SellerOutcome } from "@/components/auction/detail/seller-outcome";
 import { StatusCountdown } from "@/components/auction/detail/status-countdown";
 import { BidHistory } from "@/components/bidding/bid-history";
@@ -217,6 +218,28 @@ export default async function AuctionDetailPage({
               finalPrice={auction.finalPrice}
               pending={outcomePending(auction, result.serverNow)}
             />
+          ) : null}
+
+          {/*
+            AUC-16 (#58) — the other half of EC-04, for everyone who is not the
+            seller.
+
+            EC-04 asks for the outcome to be "marked as being finalized" during
+            the FR-END-03 window, and it does not scope that to the seller. #110
+            delivered the sentence only inside SellerOutcome, which is
+            owner-gated — so a bidder saw the status flip to ended, the bid
+            control disappear, and then nothing where the outcome belongs. Found
+            while reviewing @RayanAlDwlah's BID-17 (#122); the gap is mine, from
+            #110, not his.
+
+            His banner is correctly silent here and must stay silent: it renders
+            from the STORED status, and `ended` is written in the same UPDATE as
+            the winner and the final price, so it has nothing to say until the
+            sweep lands. This window is the server render's to cover, and the
+            two never coexist.
+          */}
+          {ended && role !== "owner" && outcomePending(auction, result.serverNow) ? (
+            <OutcomePendingNote />
           ) : null}
 
           {/*
