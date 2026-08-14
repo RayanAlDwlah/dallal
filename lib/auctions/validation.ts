@@ -22,7 +22,22 @@
  * parseFloat, or does arithmetic on an amount.
  */
 
-import { isSar } from "@/lib/money";
+/*
+ * RELATIVE, not the `@/` alias — and this is load-bearing, not style.
+ *
+ * tests/auction/image-type.check.mjs imports this file directly and runs it on
+ * bare node (`--experimental-strip-types`). Type-stripping ERASES `import
+ * type`, so a type-only alias import is invisible to node — but this is a
+ * VALUE import, so node must resolve `@/lib/money` itself, and node does not
+ * read `paths` from tsconfig.json. There is no `imports` field in
+ * package.json and no `@` link in node_modules either, so nothing else
+ * resolves it.
+ *
+ * The result was ERR_MODULE_NOT_FOUND and a whole suite that could not start —
+ * red on main from #136 until #147 found it. Next resolves the relative form
+ * identically, so this costs nothing.
+ */
+import { isSar } from "../money";
 
 /* -------------------------------------------------------------------------
    Bounds — mirrored by CHECK constraints in
