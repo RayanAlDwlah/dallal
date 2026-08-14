@@ -119,11 +119,26 @@ function OutcomeMessage({ outcome }: { outcome: PlaceBidOutcome }) {
           {outcome.startingPrice ? <Price amount={outcome.startingPrice} /> : "سعر البداية"}.
         </p>
       );
+    /*
+     * The price in the two messages below is the server's number from the
+     * moment of REJECTION, and it ages while the message stays on screen —
+     * the live PriceRegion sits in the same column and keeps moving. So both
+     * speak in the PAST tense (the number is history, not a claim about now),
+     * and the call to action names the live current price, never the frozen
+     * number. `below_starting_price` is exempt: starting price is immutable
+     * (BR-31), its number cannot go stale. The rule class is BID-10's (#71).
+     */
     case "not_above_current":
       return (
         <p className="text-ink-2">
-          يجب أن يكون مبلغك أكبر من{" "}
-          {outcome.currentPrice ? <Price amount={outcome.currentPrice} /> : "السعر الحالي"}.
+          يجب أن يكون مبلغك أكبر من السعر الحالي
+          {outcome.currentPrice ? (
+            <>
+              {" "}
+              — كان <Price amount={outcome.currentPrice} /> عند وصول مزايدتك
+            </>
+          ) : null}
+          .
         </p>
       );
     case "outbid_race":
@@ -131,9 +146,9 @@ function OutcomeMessage({ outcome }: { outcome: PlaceBidOutcome }) {
       return (
         <p className="text-ink-2">
           سبقك مزايد آخر في اللحظة نفسها — مبلغك كان صالحًا عند إرساله، لكن السعر
-          أصبح الآن{" "}
-          {outcome.currentPrice ? <Price amount={outcome.currentPrice} /> : "أعلى"}. زد
-          عليه وحاول فورًا.
+          كان قد بلغ{" "}
+          {outcome.currentPrice ? <Price amount={outcome.currentPrice} /> : "قيمة أعلى"} حين
+          وصل. زد على السعر الحالي وحاول فورًا.
         </p>
       );
   }
