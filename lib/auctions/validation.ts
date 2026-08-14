@@ -141,6 +141,25 @@ export function validateImage(file: File | null): string | undefined {
   return undefined;
 }
 
+/**
+ * AUC-03 / EC-21 — the shape of a submission key.
+ *
+ * Not a user-facing field and deliberately not a `validate*` function: there is
+ * no Arabic message for it, because a seller can never cause it to fail. The
+ * form mints it; a request arriving without a well-formed one is either a bug
+ * or a crafted request, and both get the generic failure rather than a hint.
+ *
+ * Shape only. Uniqueness is `auctions_one_per_submission`, and it has to be —
+ * a double-click is two concurrent requests and no check in this process can
+ * see the other one (see the migration's §1).
+ */
+const UUID_PATTERN =
+  /^[0-9a-f]{8}-[0-9a-f]{4}-[1-5][0-9a-f]{3}-[89ab][0-9a-f]{3}-[0-9a-f]{12}$/i;
+
+export function isSubmissionKey(raw: string): boolean {
+  return UUID_PATTERN.test(raw.trim());
+}
+
 /** The file extension for a validated image type. Never trusted from the name. */
 export function extensionFor(mimeType: string): string {
   switch (mimeType) {
