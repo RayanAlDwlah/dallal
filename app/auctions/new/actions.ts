@@ -11,6 +11,7 @@ import {
   IMAGE_BUCKET,
   MIN_DURATION_MS,
   extensionFor,
+  isSubmissionKey,
   validateDescription,
   validateEndTime,
   validateImageSize,
@@ -36,8 +37,10 @@ import {
  *   1. verify the session on the server              FR-CREATE-02, SEC-Z2
  *   2. validate EVERY field, report all failures     FR-CREATE-12
  *   3. sniff the image bytes                         FR-CREATE-18, SEC-V5
- *   4. upload                                        FR-CREATE-15 → 21
- *   5. insert, letting the policy be the authority   FR-CREATE-26, FR-CREATE-28
+ *   4. settle an already-spent intent                EC-21, AUC-03
+ *   5. upload                                        FR-CREATE-15 → 21
+ *   6. insert, letting the policy be the authority   FR-CREATE-26, FR-CREATE-28
+ *   7. settle the intent again if step 6 raced       EC-21, AUC-03
  *
  * Nothing here re-implements a rule the database already enforces. The
  * `auctions_owner_insert` policy pins owner_id to auth.uid(), forces
@@ -78,6 +81,33 @@ function field(formData: FormData, name: string): string {
   return typeof value === "string" ? value : "";
 }
 
+/**
+ * EC-21 — the auction this intent already produced, or null.
+ *
+ * Reads through the owner's own id and the key together, which is the same
+ * pair auctions_one_per_submission indexes. It cannot return another seller's
+ * auction even if they somehow share a key: the key is not a secret (every
+ * column of public.auctions is publicly readable, BR-40) and is deliberately
+ * not treated as one.
+ *
+ * `id` only — nothing about the existing auction is echoed back to the caller
+ * beyond the address they are about to be sent to.
+ */
+async function auctionForIntent(
+  supabase: Awaited<ReturnType<typeof createClient>>,
+  ownerId: string,
+  submissionKey: string,
+): Promise<string | null> {
+  const { data } = await supabase
+    .from("auctions")
+    .select("id")
+    .eq("owner_id", ownerId)
+    .eq("submission_key", submissionKey)
+    .maybeSingle<{ id: string }>();
+
+  return data?.id ?? null;
+}
+
 export async function createAuctionAction(
   _prevState: CreateAuctionState,
   formData: FormData,
@@ -116,6 +146,23 @@ export async function createAuctionAction(
   const image = rawImage instanceof File ? rawImage : null;
 
   /*
+   * EC-21 / AUC-03 — which INTENT this submission belongs to.
+   *
+   * Minted by the form when the seller reaches the review step and resent
+   * unchanged on every retry of that intent, so the second arrival of one
+   * intent is recognisable as a replay rather than as a new auction.
+   *
+   * Shape-checked, not trusted: uniqueness is decided by
+   * auctions_one_per_submission below. There is no Arabic message for this
+   * because no seller can reach it — the form always sends a well-formed key,
+   * so a malformed one is a crafted request or a bug.
+   */
+  const submissionKey = field(formData, "submissionKey").trim();
+  if (!isSubmissionKey(submissionKey)) {
+    return { error: "تعذّر إنشاء المزاد، ولم يُنشأ شيء. أعد تحميل الصفحة وحاول مرة أخرى." };
+  }
+
+  /*
    * All five validated before any one of them stops the function.
    * FR-CREATE-12 is explicit that the failures arrive together — reporting the
    * name this attempt and the description the next is the behaviour it exists
@@ -146,8 +193,8 @@ export async function createAuctionAction(
   }
 
   /*
-   * Non-null once validateImage() passed. Asserted rather than `!` so that a
-   * future change to the validator cannot turn this into a runtime crash.
+   * Non-null once validateImageSize() passed. Asserted rather than `!` so that
+   * a future change to the validator cannot turn this into a runtime crash.
    */
   if (!image) return { fieldErrors: { image: "اختر صورة للمنتج." } };
 
@@ -177,6 +224,27 @@ export async function createAuctionAction(
   }
 
   const supabase = await createClient();
+
+  /*
+   * STEP 4 — EC-21: has this intent already produced an auction?
+   *
+   * This settles the RETRY case, which is the one PRD.md:1094 names: the
+   * connection dropped during submit, the seller does not know whether it
+   * landed, and they submit again. Their auction exists; they are sent to it,
+   * exactly as a first-time success would send them. No error, because nothing
+   * went wrong — their intent was fulfilled, they simply could not see it.
+   *
+   * THIS CHECK IS NOT THE GUARANTEE, and it is important not to read it as
+   * one. Two concurrent requests from a double-click both reach this line
+   * before either has inserted, so both find nothing and both continue. What
+   * makes that safe is auctions_one_per_submission at the insert below; this
+   * read only spares the retry path an upload it would otherwise orphan.
+   */
+  const alreadyCreated = await auctionForIntent(supabase, userId, submissionKey);
+  if (alreadyCreated) {
+    revalidatePath("/");
+    redirect(`/auctions/${alreadyCreated}`);
+  }
 
   /*
    * The object key. Two properties are load-bearing:
@@ -236,11 +304,38 @@ export async function createAuctionAction(
       name,
       description,
       image_path: imagePath,
+      /* EC-21 — the intent this row belongs to. See STEP 4 and the migration. */
+      submission_key: submissionKey,
     })
     .select("id")
     .single<{ id: string }>();
 
   if (insertError || !created) {
+    /*
+     * STEP 7 — EC-21: the insert lost a race with its own twin.
+     *
+     * This is the double-click path. Both requests passed STEP 4, both
+     * uploaded, both inserted; the index let exactly one through and this is
+     * the other one. The seller performed one intent and one auction exists,
+     * so this is a SUCCESS being reported through an error channel — the
+     * correct response is the same redirect the winner got, not a message
+     * telling them something failed.
+     *
+     * Detected by re-reading the pair rather than by matching the constraint
+     * name out of the error text: a 23505 could also come from
+     * bids_one_per_price_level or a future constraint, and a string match
+     * would quietly turn one of those into a bogus "success". If the intent
+     * resolves to a row, the guarantee held; if it does not, this was some
+     * other failure and it falls through to the messages below.
+     */
+    if (insertError?.code === "23505") {
+      const settled = await auctionForIntent(supabase, userId, submissionKey);
+      if (settled) {
+        revalidatePath("/");
+        redirect(`/auctions/${settled}`);
+      }
+    }
+
     /*
      * KNOWN GAP, stated rather than papered over. SEC-I6 asks for no partial
      * record AND no orphaned image; this path delivers the first and not the

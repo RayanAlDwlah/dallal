@@ -177,13 +177,31 @@ export function validateImageType(file: File | null): string | undefined {
  * Size first, deliberately: an oversized JPEG should be told it is oversized,
  * not that its format is unacceptable.
  *
- * ⚠️ **It has no caller on this branch and it is not dead.** The action stopped
- * calling it here (that is the AUC-04 fix); the form starts calling it in
- * `AUC-03` (#134), which is open at the time of writing. Deleting it would take
- * the create form's only instant image feedback with it.
+ * Its one caller is the create form's `changeImage`, which arrived with AUC-03
+ * (#134). The action no longer calls it — that is the AUC-04 fix — so this is
+ * the client entry point and nothing else.
  */
 export function validateImage(file: File | null): string | undefined {
   return validateImageSize(file) ?? validateImageType(file);
+}
+
+/**
+ * AUC-03 / EC-21 — the shape of a submission key.
+ *
+ * Not a user-facing field and deliberately not a `validate*` function: there is
+ * no Arabic message for it, because a seller can never cause it to fail. The
+ * form mints it; a request arriving without a well-formed one is either a bug
+ * or a crafted request, and both get the generic failure rather than a hint.
+ *
+ * Shape only. Uniqueness is `auctions_one_per_submission`, and it has to be —
+ * a double-click is two concurrent requests and no check in this process can
+ * see the other one (see the migration's §1).
+ */
+const UUID_PATTERN =
+  /^[0-9a-f]{8}-[0-9a-f]{4}-[1-5][0-9a-f]{3}-[89ab][0-9a-f]{3}-[0-9a-f]{12}$/i;
+
+export function isSubmissionKey(raw: string): boolean {
+  return UUID_PATTERN.test(raw.trim());
 }
 
 /** The file extension for a validated image type. Never trusted from the name. */
