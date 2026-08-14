@@ -86,20 +86,48 @@ fi
 # This is a HINT. It caught the original cause and would catch it again, but
 # #155 proved it cannot certify the thing above it.
 # ---------------------------------------------------------------------------
-REACHABLE=$(grep -rh 'from "\.\./\.\./lib/' tests/*/*.check.mjs 2>/dev/null \
+# No 2>/dev/null here either, and for the same reason one line down: if this
+# discovery grep fails, REACHABLE is empty, the else-branch below reports 0
+# against 0, and the whole hint PASSES having measured nothing. Same vacuous
+# shape as the -P bug, one step earlier in the pipeline.
+REACHABLE=$(grep -rh 'from "\.\./\.\./lib/' tests/*/*.check.mjs \
   | sed 's/.*from "\.\.\/\.\.\///; s/".*//' | sort -u \
   | while read -r f; do [ -f "$f" ] && printf '%s ' "$f"; done)
 
+# POSIX only. This used `grep -P` for a `(?!type\s)` lookahead, and -P is
+# GNU-only: BSD grep answers `invalid option -- P`, the pipeline yields nothing,
+# `grep -c .` returns 0, and the check reported PASS on every tree — including
+# the one @RayanAlDwlah probed with #136's broken import restored. A check that
+# cannot fail, inside the PR about checks that cannot fail.
+#
+# Three cheap passes do the same job with `-E`, which every grep has: take
+# import lines, drop the `import type` ones (the exemption — type-only alias
+# imports are erased by type-stripping and are harmless), keep what still
+# targets `@/`.
+#
+# And NO `2>/dev/null` here. The stderr of the tool doing the measuring is the
+# evidence that it ran; silencing it is what turned a broken flag into a green
+# line for a whole review cycle.
+value_aliases() { # files…
+  # shellcheck disable=SC2086
+  grep -nE '^[[:space:]]*import[[:space:]]' "$@" \
+    | grep -vE '^[^:]*:[0-9]*:[[:space:]]*import[[:space:]]+type[[:space:]]' \
+    | grep -E 'from[[:space:]]+"@/'
+}
+
 if [ -n "$REACHABLE" ]; then
   # shellcheck disable=SC2086
-  aliased=$(grep -hP '^\s*import\s+(?!type\s)[^;]*from\s+"@/' $REACHABLE 2>/dev/null | grep -c . || true)
+  aliased=$(value_aliases $REACHABLE | grep -c . || true)
   if [ "$aliased" -gt 0 ]; then
     # shellcheck disable=SC2086
-    grep -nP '^\s*import\s+(?!type\s)[^;]*from\s+"@/' $REACHABLE 2>/dev/null | sed 's/^/      hint: /'
+    value_aliases $REACHABLE | sed 's/^/      hint: /'
   fi
   chk "hint — no VALUE @/ import in a reachable module" "$aliased" 0
 else
-  chk "hint — no VALUE @/ import in a reachable module" 0 0
+  # Not a pass. The harness demonstrably imports lib modules — check 1 already
+  # counted the files — so an empty set here means discovery broke, and
+  # reporting that as "no violations found" is the failure this file is about.
+  chk "hint — no VALUE @/ import in a reachable module" "NO-FILES-DISCOVERED" 0
 fi
 
 ran=$((pass + fail))
