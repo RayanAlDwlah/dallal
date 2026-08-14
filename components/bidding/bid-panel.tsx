@@ -13,6 +13,11 @@ import {
   trySar,
   type Sar,
 } from "@/lib/money";
+import {
+  isPossiblyStale,
+  isTypedAmountSuperseded,
+  shouldAnnounceConnectionLoss,
+} from "@/lib/realtime/ux-rules";
 
 /**
  * ═══════════════════════════════════════════════════════════════════════════
@@ -66,6 +71,16 @@ import {
  *    dies on the way back may still have committed; claiming "nothing
  *    happened" would be inventing a fact. The user is pointed at the live
  *    price/history — which is the authority and updates on its own (EC-09).
+ *
+ * 7. STALENESS MARKS, IT NEVER LOCKS (BID-10 #71, FR-RT-13/RT-R4/RT-R7). The
+ *    form carries `data-stale` whenever cues are not arriving — including
+ *    "connecting", when none can have arrived yet — while the SENTENCE about
+ *    it waits for established loss ("unavailable"), so a normal page load does
+ *    not announce a fault it does not have. The submit button is never
+ *    disabled by connection state: a transport fault deciding a bidding
+ *    outcome is exactly what RT-R1 forbids. The rules themselves, with their
+ *    requirement citations and the two questions the PRD does not answer, are
+ *    in lib/realtime/ux-rules.ts — read that file before changing any of this.
  */
 export interface BidPanelProps {
   /** Which auction is being viewed. Passed by the detail page shell (AUC-11). */
@@ -224,9 +239,38 @@ export function BidPanel({ auctionId }: BidPanelProps) {
    * firmer tone, and nothing else happens. Price only ever rises, so a bid
    * failing against this snapshot would fail against every newer one too —
    * but the server stays the one that says so.
+   *
+   * BID-10 (#71) routes the decision through lib/realtime/ux-rules so RT-X3
+   * reads as the rule it is rather than as an inline conjunction. The
+   * comparison itself stays in lib/money — the one place amounts may be
+   * compared (CLAUDE.md §4). This recomputes from the live snapshot on every
+   * publish, which is what makes "the price overtook you" appear WITHOUT the
+   * input being touched: `amount` is local state and no snapshot path writes
+   * to it (RT-X2/SC-22). That ABSENCE is the rule, and it is why ux-rules.ts
+   * exports no helper for it: no function call can keep a line that is not
+   * there from being added. See its "not functions" note.
    */
   const typed = trySar(amount.trim());
-  const typedBelowMinimum = typed !== null && minimum !== null && !meetsMinimum(typed, minimum);
+  const typedBelowMinimum = isTypedAmountSuperseded({
+    hasTypedAmount: typed !== null,
+    belowMinimum: typed !== null && minimum !== null && !meetsMinimum(typed, minimum),
+  });
+
+  /*
+   * RT-R4 / FR-RT-13 — the control is MARKED stale, never disabled. Disabling
+   * would let a transport fault decide a bidding outcome, which RT-R1 forbids.
+   * Note that `disabled` below does not mention `connection` at all: that is
+   * the whole enforcement, and ux-rules.ts says why it cannot be a helper.
+   * `"connecting"` counts as stale
+   * (no cue can have arrived yet) but does not get a sentence — that split
+   * is isPossiblyStale vs shouldAnnounceConnectionLoss.
+   *
+   * `stale` marks the FORM, which is a state assistive technology can read at
+   * any time; `announceLoss` gates the SENTENCE, which is the calm statement
+   * RT-R2 asks for once loss is established rather than merely suspected.
+   */
+  const stale = isPossiblyStale(connection);
+  const announceLoss = shouldAnnounceConnectionLoss(connection);
 
   const submit = async (event: FormEvent<HTMLFormElement>) => {
     event.preventDefault();
@@ -245,7 +289,18 @@ export function BidPanel({ auctionId }: BidPanelProps) {
         قدّم مزايدتك
       </h2>
 
-      <form onSubmit={submit} className="mt-2 flex flex-col gap-2">
+      {/*
+        data-stale is the MARK required by FR-RT-13 / RT-R4, exposed as a data
+        attribute on purpose: it is a behavioural fact ("this copy may be
+        behind the database"), and expressing it as an attribute lets
+        @m7ya505 style the stale form however he wants — `[data-stale]` in his
+        stylesheet — without me choosing a colour, and without him having to
+        touch the condition that computes it. It is deliberately NOT
+        `disabled`: bidding stays available while stale (RT-R1/RT-R7). It is
+        true while "connecting" too, which is why it is
+        `stale` and not `announceLoss`.
+      */}
+      <form onSubmit={submit} data-stale={stale || undefined} className="mt-2 flex flex-col gap-2">
         <label htmlFor="bid-amount" className="text-sm text-ink-2">
           مبلغ المزايدة (<span className="num">{SAR_SUFFIX}</span>)
         </label>
@@ -257,6 +312,15 @@ export function BidPanel({ auctionId }: BidPanelProps) {
             silently mangles wide values and blocks valid ones (§4 rule 1).
             NO maxLength: an amount may be arbitrarily large (BR-21).
           */}
+          {/*
+            aria-describedby ties the input to whichever notes are currently
+            present, so a screen reader reaching the control hears "your copy
+            may be stale" and the minimum hint as part of the control rather
+            than as loose text it may never reach (FR-RT-13 / RT-R4: the
+            control is MARKED). Behaviour, not styling: it changes what is
+            announced, not how anything looks. Never aria-disabled — the
+            control stays fully usable while stale (RT-R1/RT-R7).
+          */}
           <input
             id="bid-amount"
             name="amount"
@@ -266,6 +330,18 @@ export function BidPanel({ auctionId }: BidPanelProps) {
             autoComplete="off"
             value={amount}
             onChange={(e) => setAmount(e.target.value)}
+            /*
+             * Keyed to `announceLoss`, not to `stale`: aria-describedby must
+             * name an element that EXISTS. `stale` is also true while
+             * "connecting", when the note is deliberately not rendered, and
+             * pointing at a missing id is a dangling reference that assistive
+             * technology resolves to nothing — a mark that silently is not one.
+             */
+            aria-describedby={
+              [minimum ? "bid-minimum-hint" : null, announceLoss ? "bid-stale-note" : null]
+                .filter(Boolean)
+                .join(" ") || undefined
+            }
             className="num border-rule bg-surface min-h-tap w-full rounded-md border px-3 text-start"
             placeholder={minimum ? formatSar(minimum.amount) : ""}
           />
@@ -279,18 +355,28 @@ export function BidPanel({ auctionId }: BidPanelProps) {
         </div>
 
         {minimum && (
-          <p className={typedBelowMinimum ? "text-urge-text text-sm" : "text-ink-3 text-sm"}>
+          <p
+            id="bid-minimum-hint"
+            className={typedBelowMinimum ? "text-urge-text text-sm" : "text-ink-3 text-sm"}
+          >
             {minimumBidHint(minimum)}
           </p>
         )}
 
-        {connection === "unavailable" && (
+        {announceLoss && (
           /*
            * RT-R7 made visible: bidding works without realtime — the paths
            * are independent — so this is a staleness note, never a lock.
            * BID-11 owns the fuller treatment.
+           *
+           * The gate is `shouldAnnounceConnectionLoss`, NOT `isPossiblyStale`,
+           * and the difference is the requirement: RT-R2 wants loss stated
+           * "clearly and calmly", so `"connecting"` — true of every page load
+           * for its first second — must not produce a sentence. It still
+           * marks the control (`stale`), because trusting an unjoined channel
+           * is what makes staleness silent. Wording is unchanged from BID-11.
            */
-          <p className="text-ink-3 text-sm">
+          <p id="bid-stale-note" className="text-ink-3 text-sm">
             التحديث المباشر متوقف مؤقتًا؛ السعر المعروض قد لا يكون الأحدث. المزايدة
             نفسها تعمل بشكل طبيعي.
           </p>
