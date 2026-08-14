@@ -73,6 +73,15 @@ export interface LiveAuctionState {
 }
 
 export interface BidHistoryEntry {
+  /**
+   * Per-auction lock-order rank: 1 is the first bid the row lock admitted.
+   * Stable forever — bids are append-only (BR-05), so a rank over `bids.id`
+   * can never change under an existing row — which also makes it a correct
+   * React key. Deliberately NOT `bids.id` itself (FR-BID-22a: internal
+   * identifiers stay internal). This field IS the ordering contract; see the
+   * sort in readLiveSnapshot.
+   */
+  seq: number;
   /** The bidder's ONLY public identity (BR-26). Never an email, structurally. */
   displayName: string;
   /** Canonical text from sar_text(). Format with lib/money and nothing else. */
@@ -120,7 +129,7 @@ const AUCTION_SELECT = [
  * inside the isolate and `SAR` stays outside (CLAUDE.md §3, BR-42/43) — and a
  * preformatted single string cannot be split without parsing it back.
  */
-const HISTORY_SELECT = "display_name, amount, created_at";
+const HISTORY_SELECT = "seq, display_name, amount, created_at";
 
 interface LiveAuctionRow {
   status: LiveAuctionStatus;
@@ -133,6 +142,7 @@ interface LiveAuctionRow {
 }
 
 interface HistoryRow {
+  seq: number;
   display_name: string;
   amount: string;
   created_at: string;
@@ -159,6 +169,13 @@ export async function readLiveSnapshot(auctionId: string): Promise<LiveSnapshot 
         .from("bid_history")
         .select(HISTORY_SELECT)
         .eq("auction_id", auctionId)
+        /*
+         * Transport-level ordering, for politeness not for correctness: this
+         * travels through PostgREST's json_agg over a subquery, whose input
+         * order PostgreSQL documents as unspecified — @Dem4t's #109 review
+         * question, and he was right. The sort below is the contract.
+         */
+        .order("seq", { ascending: false })
         .returns<HistoryRow[]>(),
     ]);
 
@@ -183,11 +200,23 @@ export async function readLiveSnapshot(auctionId: string): Promise<LiveSnapshot 
         finalPrice: row.final_price === null ? null : sar(row.final_price),
         closedAt: row.closed_at,
       },
-      history: historyRes.data.map((h) => ({
-        displayName: h.display_name,
-        amount: sar(h.amount),
-        createdAt: h.created_at,
-      })),
+      /*
+       * THE ordering guarantee, and the only unconditional one on this path
+       * (FR-BID-29 newest first, BR-11 lock order). Every upstream ordering —
+       * the view's internal ORDER BY, the .order() param above — reaches the
+       * client through an aggregate whose input order is planner behaviour,
+       * not contract. A local sort on a monotonic public rank closes that for
+       * good, at the cost of one O(n log n) over an already-nearly-sorted
+       * array. Raised by @Dem4t on #109; this is the settled answer.
+       */
+      history: historyRes.data
+        .map((h) => ({
+          seq: h.seq,
+          displayName: h.display_name,
+          amount: sar(h.amount),
+          createdAt: h.created_at,
+        }))
+        .sort((a, b) => b.seq - a.seq),
     };
   } catch {
     return null;
