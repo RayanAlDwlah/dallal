@@ -31,6 +31,18 @@ import {
   validateImageType,
 } from "../../lib/auctions/validation.ts";
 
+/*
+ * How many chk() calls this file must reach.
+ *
+ * Exiting on `fail === 0` alone reports a pass for a run that never happened:
+ * a throwing fixture, or a change to sniffImageType that raises before the
+ * assertions, exits 0 with most of the file unexecuted. Every other runner
+ * here already carries this — EXPECTED per SQL suite in run.sh, EXPECTED_SUITES
+ * added above it in #121, a counter in each tests/auth/*.mjs — and its absence
+ * is the defect #104 fixed. Keep it in step with the chk() calls below.
+ */
+const EXPECTED = 27;
+
 let pass = 0;
 let fail = 0;
 
@@ -186,5 +198,11 @@ chk(
   ACCEPTED_IMAGE_TYPES.join(","),
 );
 
-console.log(`\n${pass} passed, ${fail} failed`);
-process.exit(fail === 0 ? 0 : 1);
+const ran = pass + fail;
+console.log(`\n${pass} passed, ${fail} failed, ${ran} of ${EXPECTED} assertions reached`);
+
+if (ran !== EXPECTED) {
+  console.log(`!! expected ${EXPECTED} assertions, only ${ran} reached. Treating as failure.`);
+}
+
+process.exit(fail === 0 && ran === EXPECTED ? 0 : 1);
