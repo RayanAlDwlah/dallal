@@ -2,12 +2,12 @@ import type { Metadata } from "next";
 import { notFound } from "next/navigation";
 
 import { BidSlot, type ViewerRole } from "@/components/auction/detail/bid-slot";
-import { PriceRegion } from "@/components/auction/detail/price-region";
 import { ProductContent } from "@/components/auction/detail/product-content";
 import { OutcomePendingNote } from "@/components/auction/detail/outcome-pending-note";
 import { SellerOutcome } from "@/components/auction/detail/seller-outcome";
 import { StatusCountdown } from "@/components/auction/detail/status-countdown";
 import { BidHistory } from "@/components/bidding/bid-history";
+import { LivePriceRegion } from "@/components/bidding/live-price-region";
 import { OutcomeBanner } from "@/components/bidding/outcome-banner";
 import { Container, Page } from "@/components/layout/container";
 import { Alert } from "@/components/ui/alert";
@@ -181,8 +181,24 @@ export default async function AuctionDetailPage({
             leadingBidder and lastRaise are Rayan's values and are not passed
             yet — they arrive through this same seam with BID-05 and BID-09.
             Nothing here invents a placeholder for them.
+
+            BID-09 (#125), Rayan — the ONLY behavioural line in this file.
+            LivePriceRegion is not a second price component: it renders this
+            exact PriceRegion, with these exact props, and changes nothing but
+            where currentPrice and bidCount come from — a server read frozen at
+            render, or the live BID-08 store. No wrapper element, no class, no
+            string, no layout. Mohammed's presentation is untouched by
+            construction, which is why CLAUDE.md §1's "Rayan may implement
+            bidding behaviour inside a component Mohammed presents" applies
+            rather than its "must not redesign that presentation" (@m7ya505 —
+            say so on the PR if you read it the other way).
+
+            startingPrice stays the server value deliberately: it is immutable
+            for the auction's life (auctions_immutable_terms), so subscribing it
+            to a live store would imply a mutability that does not exist.
           */}
-          <PriceRegion
+          <LivePriceRegion
+            auctionId={auction.id}
             startingPrice={auction.startingPrice}
             currentPrice={auction.currentPrice}
             bidCount={auction.bidCount}
