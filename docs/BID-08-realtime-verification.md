@@ -382,3 +382,231 @@ Two auctions named `BID-08 · …` (both `ended`), two `@test.local` profiles
 (`bid08_seller`, `bid08_bidder`), and two bids. Bids are append-only for everyone
 (`BR-05`), so they stay. Nothing was left running and nothing production-shaped was
 changed.
+
+---
+
+## 7. What an adversarial review found **after** all of the above
+
+Everything in §1–§6 had been done, the suite was green, `/code-review` had run on both
+axes, and the work was committed and pushed. Then the question was asked directly: *is
+this actually at a professional standard?* The honest way to answer it is not to re-read
+one's own work agreeing with oneself — it is to hand it to reviewers whose brief is to
+**find defects**, and to check every claim they make against the installed library source
+rather than against memory.
+
+Two reviewers ran, one on the client transport and one on the SQL and the policy. **Four
+findings were real. One of them was critical, and it had shipped.**
+
+### 7.1 CRITICAL — a reconnect restored the word "live" and nothing else
+
+`ARCHITECTURE.md` §14.5 lists this as a **Must**:
+
+> Reconnected → **Resynchronize to authoritative current state** — re-read price, history,
+> status. Do not resume from the last-seen event — FR-RT-12, RT-R3
+
+The first version did not do it. `subscribe()`'s callback only reported status, so the
+sequence `CHANNEL_ERROR → auto-rejoin → SUBSCRIBED` moved the badge back to `"live"` and
+never moved `revision`. A viewer who lost the network for ten seconds during an endgame
+kept the pre-drop price **permanently**, under a badge telling them it was current.
+
+That is worse than showing no data. Missing data is visible; stale data wearing a fresh
+badge is not, and this product's entire realtime contract (`RT-R6`, `BR-22`) rests on the
+client re-reading.
+
+**Verified before fixing, in the installed packages rather than from memory:**
+
+| Question | Answer | Where |
+|---|---|---|
+| Does `SUBSCRIBED` re-fire on a rejoin, or only on the first join? | **Re-fires.** Phoenix resends the join push, and `Push.reset()` clears the ref and the response but **not** `recHooks` — so the `'ok'` hook runs again | `@supabase/phoenix/assets/js/phoenix/push.js:73`, `:37` |
+| Is a token expiry a second, separate hole? | **No.** `supabase-js` registers an auth listener at construction and pushes refreshed tokens to live channels | `@supabase/supabase-js/dist/index.mjs:673`, `:836`, `:841` |
+
+The fix: **every successful join calls `onChange`.** On the first join too — the page is
+read on the server and the channel joins a second or two later, so a bid landing in that
+window was previously never signalled at all. Re-reading when nothing changed is free by
+construction (`FR-RT-09`, `RT-R5`), which is what makes this affordable.
+
+### 7.2 HIGH — the comment asserted the behaviour the code lacked
+
+`use-auction-channel.ts` said, of `revision`: *"and a reconnect re-reads without moving
+it."* Nothing made that true.
+
+This is worth naming rather than quietly deleting, because it is **the defect this project
+keeps producing** — prose that asserts a behaviour nobody implemented, in a codebase whose
+comments are long enough to be trusted. A reviewer reading that sentence had no reason to
+check. The replacement comment says what happens *and* records what the old one claimed.
+
+### 7.3 HIGH — the page's own architecture broke the transport
+
+`supabase-js` returns the **same** channel object for a repeated topic
+(`RealtimeClient.js:329-338` — `getChannels().find(...)`, and `return exists`). The first
+version created a channel per caller and tore it down on unmount, so **the first component
+to unmount called `removeChannel` and killed delivery for every other component watching
+the same auction** — which then sat on `"live"` receiving nothing. §7.1's failure mode
+again, by a different route.
+
+This is not an edge case: `ARCHITECTURE.md` §14.6 puts the price region, the bid control,
+the history and the outcome banner in **separate components on one auction page**, and
+several are marked "Subscribed". The naive version was broken for the documented layout.
+
+Now one reference-counted watch per auction id fans out to every subscriber, the channel
+is torn down when the **last** one leaves, and a subscriber arriving after the join is told
+the current status on a microtask instead of sitting on `"connecting"` forever.
+
+### 7.4 MEDIUM — a test that could not fail the way its own comment described
+
+The sweep assertion read:
+
+```sql
+(pg_temp.rt(v_a) + pg_temp.rt(v_b) - 2) = 2
+```
+
+with a comment explaining that it guards against a de-duplication flag announcing the
+first auction and dropping the rest. It does catch **that** shape. It does not catch a
+sweep that announces `v_a` twice and `v_b` not at all — that also sums to 2, and every
+viewer of `v_b` is left on an ended auction reading as live. **A total is not a coverage
+check.** It is now two per-auction deltas.
+
+### 7.5 MEDIUM — a broadcast could still roll back a bid
+
+`when others` does not catch `query_canceled` (57014), which is what `statement_timeout`
+raises. `realtime.messages` is a partitioned table this project does not own, written by
+every trigger on the stack, and the INSERT into it happens **inside `place_bid`'s
+transaction while the auction row is held**. A lock wait there would have run until the
+statement timeout fired — and rolled back an accepted bid because a broadcast was slow.
+That is the exact inversion `RT-R7` exists to forbid, and the original comment
+characterised it as working as intended.
+
+`set lock_timeout = '50ms'` on the function turns that case into `lock_not_available`
+(55P03), an ordinary error the handler catches. It is a **function-level** setting, not a
+`set local` in the body, so PostgreSQL restores the previous value on exit and
+`place_bid`'s own locking does not inherit it. 50 ms against a measured 9.4 µs cost is a
+~5000× margin.
+
+**Stated as a narrowing, not a closure.** A `statement_timeout` expiring mid-INSERT for a
+reason that is not lock contention still aborts the transaction, and nothing available in
+PL/pgSQL can catch that. `RT-R7` is now much harder to violate; it is not unconditional.
+
+### 7.6 Reviewed, considered, and deliberately NOT changed
+
+**The `auction:%` policy predicate makes the whole prefix anon-readable.** A reviewer
+proposed narrowing it to `dalal:auction:%`. Declined, and the reasoning is recorded in the
+migration: renaming the namespace does not change the property, because the next person to
+add a topic adds it under the new prefix just as readily. What the rename would buy is the
+*appearance* of a structural fix for something that is a **convention** — and dressing a
+convention as structure is the specific criticism §6 makes of the old §14.4. So it is
+labelled a convention instead: *the `auction:` namespace is public-read by policy; never
+publish anything to it that is not already public.* Today one writer with a content-free
+payload enforces it, and `tests/bidding/realtime.sql` §2 pins the payload.
+
+**Subtransaction cost.** Every `BEGIN/EXCEPTION` in PL/pgSQL opens a savepoint, and
+subtransaction pressure is a real PostgreSQL production hazard. At this workload it is not
+one: the measured marginal cost is 9.4 µs and the platform is a demonstration. Recorded so
+that whoever does run this at thousands of bids per second knows where to look first.
+
+### 7.7 NFR-RT-01 — the requirement that had no evidence at all
+
+`NFR-RT-01` requires delivery **within 2 seconds**, and §5/§6 never measured it. §6 proved
+that events arrive; it did not prove *when*. That gap is on the same list as the others:
+a Must with no number against it.
+
+#### The first two attempts were thrown away, and why that matters
+
+The obvious method is to compare `realtime.messages.inserted_at` — stamped by the database
+— against the local time the event lands, correcting for clock skew estimated from the
+PostgREST `Date` header. Two runs three minutes apart gave **≈0.3 s** and **≈3.2 s** for
+the same kind of event.
+
+The tempting move is to report the good one. The correct move is to notice that the `Date`
+header has **one second of resolution — half the entire budget being measured** — and that
+`cron.job_run_details` shows the producing transaction lasting **4–20 ms**, so the system
+was not what varied. A ruler whose error bar is wider than the thing it is checking cannot
+check it. Both runs were discarded. **Neither number appears in this document as a
+result**, and the 3.2 s figure in particular is not evidence of a problem.
+
+#### The method that replaced them — one process, one clock
+
+No clock is crossed at all. A single Node process holds three clients:
+
+| Client | Role |
+|---|---|
+| `viewer` — anon | subscribes to `auction:<id>` exactly as `lib/realtime/auction-channel.ts` does. **This is the party `NFR-RT-01` is about** |
+| `bidder` — authenticated | calls `place_bid` through PostgREST, the real path |
+| `seller` — authenticated | creates the auction through the real `auctions_owner_insert` policy |
+
+Three timestamps, all from the same `Date.now()`:
+
+- `t0` — immediately before the `place_bid` request leaves
+- `t_commit` — when the RPC response arrives, i.e. when a client could first know the bid exists
+- `t_event` — when the broadcast lands on the viewer
+
+**`total = t_event − t0`** is the number held against the budget, because it is the one
+that cannot flatter the system: the request, the row lock, the commit and the fan-out all
+fall inside it. `after_commit = t_event − t_commit` is reported alongside to show where
+the time actually goes.
+
+#### Result — 10 real bids on one auction
+
+```
+bid  11.00  rpc  348 ms  total  461 ms  after-commit   113 ms  accepted=true
+bid  12.00  rpc  290 ms  total  310 ms  after-commit    20 ms  accepted=true
+bid  13.00  rpc  285 ms  total  315 ms  after-commit    30 ms  accepted=true
+bid  14.00  rpc  287 ms  total  309 ms  after-commit    22 ms  accepted=true
+bid  15.00  rpc  293 ms  total  313 ms  after-commit    20 ms  accepted=true
+bid  16.00  rpc  443 ms  total  442 ms  after-commit    -1 ms  accepted=true
+bid  17.00  rpc  272 ms  total  291 ms  after-commit    19 ms  accepted=true
+bid  18.00  rpc  316 ms  total  348 ms  after-commit    32 ms  accepted=true
+bid  19.00  rpc  552 ms  total  469 ms  after-commit   -83 ms  accepted=true
+bid  20.00  rpc  299 ms  total  316 ms  after-commit    17 ms  accepted=true
+```
+
+| n = 10 | min | p50 | max | budget |
+|---|---|---|---|---|
+| **`total`** — bid submitted → another viewer is told | **291 ms** | **316 ms** | **469 ms** | 2000 ms |
+| `after_commit` — fan-out alone | −83 ms | 20 ms | 113 ms | — |
+| `rpc` — round trip to PostgREST, for scale | 272 ms | 299 ms | 552 ms | — |
+
+**`NFR-RT-01` passes, with the worst case at 23 % of the budget.**
+
+Two of the ten `after_commit` values are **negative**: the broadcast reached the viewer
+*before* the bidder's own HTTP response came back. That is not an anomaly to explain away
+— it is the shape of the answer. Delivery is not the cost here; the round trip to the
+region is, and it dominates `total` by roughly 15×. The realtime path contributes tens of
+milliseconds.
+
+#### What this measurement does not claim
+
+- **One client, one network, one region, ten samples.** It is not a percentile under load,
+  and `NFR-RT-02`'s twenty concurrent viewers were measured separately in §5, not here.
+- **It is an upper bound, not a decomposition.** `total` contains the commit; the fan-out
+  is smaller than any number in that column.
+- **It says nothing about a degraded network** — which is precisely why §7.1 exists. The
+  reconnect re-read is what covers the case this measurement cannot reach.
+
+The probe is throwaway and lives outside the repository; it is reproduced in the PR
+discussion rather than committed, since this project has **no JavaScript test harness at
+all** (see below).
+
+#### A gap this raised, for the team rather than for me
+
+`package.json` has `dev`, `build`, `start`, `lint`, `typecheck` — and no test runner. The
+SQL side has a real suite (`tests/bidding/run.sh`, 33 assertions in `realtime.sql` alone);
+the TypeScript side has none, so `auction-channel.ts` — where the critical defect was —
+is verified by throwaway scripts and reading. Adding a runner is **shared infrastructure
+that lands on all three developers**, so it is raised here rather than decided from a
+bidding branch. `TEAM.md` rule 16 applies to tooling the same way it applies to product.
+
+#### Footprint left on dev by §7
+
+On `dallal-dev` only — nothing touched `dallal-prod`:
+
+| What | Count | Note |
+|---|---|---|
+| `bid08-lat-*@dallal.test` accounts | 4 | two from a first attempt that failed on `profiles.display_name`'s UNIQUE constraint before creating anything |
+| Auction `BID-08 latency probe` | 1 | `6046f85e`, `image_path` points at no object; closes itself via `pg_cron` at its `end_time` |
+| Bids | 10 | `11.00` … `20.00` |
+| Schema changes | 0 | the only DDL was `alter function place_bid … set lock_timeout`, which is the §7.5 fix and is in the migration |
+
+Left in place rather than deleted, for the same reason §6's footprint was: bids are
+append-only for everyone (`BR-05`), and removing them as `postgres` would exercise a path
+the product does not have. Nothing is left running.
+

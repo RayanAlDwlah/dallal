@@ -143,7 +143,7 @@ suite() {
 
 suite acceptance 25          # BID-02 — bid acceptance
 suite closing    50          # BID-15/BID-16 — finalization and the extension
-suite realtime   31          # BID-08 — the broadcast payload, coverage, RT-R7
+suite realtime   33          # BID-08 — the broadcast payload, coverage, RT-R7
 
 echo
 echo "==> BID-20 concurrency"

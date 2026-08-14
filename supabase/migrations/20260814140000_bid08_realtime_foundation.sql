@@ -72,6 +72,29 @@ create or replace function public.auctions_broadcast_change()
 returns trigger
 language plpgsql
 set search_path = ''            -- advisor: function_search_path_mutable
+--
+-- 50 ms, and it is here rather than as a `set local` inside the body so that
+-- PostgreSQL restores the previous value when the function exits — place_bid's
+-- own locking must not inherit it.
+--
+-- Why it exists: `realtime.messages` is a partitioned table this project does
+-- not own, written by every trigger on the stack. If an INSERT into it ever
+-- waits on a lock, the wait happens INSIDE place_bid's transaction while the
+-- auction row is held. Without a bound, that wait ends when `statement_timeout`
+-- fires — and `statement_timeout` raises query_canceled (57014), which
+-- PL/pgSQL's `when others` deliberately does NOT catch. The bid would roll
+-- back because a broadcast was slow, which is precisely the inversion RT-R7
+-- forbids. With the bound, the same situation raises lock_not_available
+-- (55P03), an ordinary error the handler below catches, and the bid commits.
+--
+-- Stated honestly, because a comment claiming more than it delivers is the
+-- defect this file's own review found: this narrows RT-R7's exposure, it does
+-- not close it. A statement_timeout expiring mid-INSERT for a reason that is
+-- not lock contention still aborts the transaction, and nothing available in
+-- PL/pgSQL can catch that. 50 ms against a measured 9.4 microsecond cost is a
+-- ~5000x margin, so it should never fire on a healthy stack; if it does, the
+-- warning below is the signal that realtime.messages is in trouble.
+set lock_timeout = '50ms'
 as $$
 begin
   -- ==========================================================================
@@ -92,8 +115,13 @@ begin
   --     platform rename), or EXECUTE being revoked. Those are raised by the
   --     executor before the body runs. THAT is what this block is for.
   --
-  -- `when others` does not catch query_canceled or assert_failure in PL/pgSQL,
-  -- so a statement timeout or a cancelled bid still propagates as it should.
+  -- `when others` does not catch query_canceled or assert_failure in PL/pgSQL.
+  -- For a bidder who closed the tab that is correct — the whole transaction
+  -- should die with the request. For a statement_timeout that fired because
+  -- *this* INSERT was slow it is NOT correct, because then a broadcast problem
+  -- has rolled back a bid. That gap is the reason for the `set lock_timeout`
+  -- above; read it, because this handler alone does not deliver RT-R7 and the
+  -- first version of this comment implied it did.
   -- ==========================================================================
   begin
     perform realtime.send(
@@ -188,6 +216,22 @@ create trigger auctions_broadcast
 -- The topic predicate is a scope, not a secret: auction pages are public and a
 -- visitor may read bid history without signing in (SC-75), so anon belongs
 -- here. `auction:%` keeps us out of every other topic namespace on the project.
+--
+-- ONE THING THIS POLICY IS NOT, said plainly rather than left to be discovered.
+-- `auction:%` makes the whole prefix readable by anon — not just the topics
+-- this trigger writes. Anyone who later publishes to `auction:anything` has
+-- published it to every anonymous visitor. A review asked whether a narrower
+-- prefix (`dalal:auction:%`) would fix that, and it would not: it renames the
+-- namespace without changing the property, because the next person to add a
+-- topic would add it under the new prefix just as readily.
+--
+-- So this is a **convention**, and calling it structural would be the same
+-- overstatement §1 of this file criticises in the old §14.4. The rule is:
+-- **the `auction:` namespace is public-read by policy — never publish anything
+-- to it that is not already public.** Today that is enforced by there being
+-- exactly one writer (the trigger above) with a content-free payload, which
+-- tests/bidding/realtime.sql §2 pins. A second writer is the thing to catch at
+-- review; a second *namespace* for private data is the correct way to add one.
 -- ----------------------------------------------------------------------------
 do $$
 begin

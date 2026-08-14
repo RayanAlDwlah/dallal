@@ -11,14 +11,23 @@ export interface AuctionChannelState {
   /** Whether live updating is working. Presentation of it is Mohammed's. */
   status: AuctionChannelStatus;
   /**
-   * Increments once per change signal. It is a **dependency, not data**: put it
-   * in a `useEffect` dependency list and re-read the auction when it moves.
+   * Increments once per **cue to re-read**. It is a **dependency, not data**:
+   * put it in a `useEffect` dependency list and re-read the auction when it
+   * moves.
    *
    * It carries no meaning of its own — not a version, not an ordering, not a
-   * count of bids. Two signals arrive for one bid inside the final 15 seconds
-   * (the BR-36 extension, then the price), and a reconnect re-reads without
-   * moving it. Rendering this number would be rendering an implementation
+   * count of bids, and emphatically not a count of *changes*. It moves on every
+   * successful join as well as on every change, so it moves once when the page
+   * first connects and again after every reconnect (RT-R3, FR-RT-12), and it
+   * moves twice for one bid inside the final 15 seconds (the BR-36 extension,
+   * then the price). Rendering this number would be rendering an implementation
    * detail of the transport.
+   *
+   * An earlier version of this comment claimed "a reconnect re-reads without
+   * moving it". Nothing made that true — no reconnect re-read at all, and the
+   * viewer kept a pre-drop price under a `"live"` badge. Left recorded here
+   * because the sentence is the defect this project keeps producing: prose
+   * asserting a behaviour nobody implemented.
    */
   revision: number;
 }

@@ -99,11 +99,26 @@ begin
                  and t.tgname = 'auctions_broadcast'), '(no such trigger)'),
     '%AFTER UPDATE ON public.auctions FOR EACH ROW%');
 
+  -- Membership, not equality. This read `= 'search_path=""'` and broke the
+  -- moment a second setting was added — asserting that the function has
+  -- EXACTLY ONE config, which nobody wanted to assert and which turns a
+  -- deliberate hardening into a red suite.
   perform pg_temp.chk(
     'BID-08 broadcast function pins its search_path',
-    coalesce((select array_to_string(p.proconfig, ',') from pg_proc p
+    coalesce((select ('search_path=""' = any(p.proconfig))::text from pg_proc p
                where p.proname = 'auctions_broadcast_change'), '(none)'),
-    'search_path=""');
+    'true');
+
+  -- RT-R7's second half. A lock wait inside realtime.messages must not be
+  -- allowed to run until statement_timeout kills the bid: statement_timeout
+  -- raises query_canceled, which `when others` cannot catch, so the broadcast
+  -- would roll back an accepted bid. A bounded lock_timeout turns that into
+  -- lock_not_available, which it can. See the migration's §1 header.
+  perform pg_temp.chk(
+    'RT-R7 the broadcast cannot wait on a lock until the bid dies',
+    coalesce((select ('lock_timeout=50ms' = any(p.proconfig))::text from pg_proc p
+               where p.proname = 'auctions_broadcast_change'), '(none)'),
+    'true');
 
   -- §1 and §4 of the migration. If someone later uncomments the publication
   -- line 20260812120000 left behind, both paths run at once and the
@@ -212,6 +227,7 @@ declare
   v_b       uuid;
   v_ext     uuid;
   v_before  bigint;
+  v_before_b bigint;
   v_end     timestamptz;
 begin
   ------------------------------------------------------------------------
@@ -235,16 +251,29 @@ begin
   -- the obvious fix is a transaction-local "already announced" flag. Under
   -- the sweep that flag announces the first auction and silently drops the
   -- rest, leaving every other viewer on an ended auction that still reads as
-  -- live. If this assertion ever returns 1, that is what happened.
+  -- live.
+  --
+  -- MEASURE EACH AUCTION SEPARATELY. This was one assertion on the SUM:
+  --     (rt(v_a) + rt(v_b) - 2) = 2
+  -- and an adversarial review of this suite killed it. A sweep that announced
+  -- v_a twice and v_b not at all also sums to 2 — so the test passed while
+  -- every viewer of v_b sat on an ended auction still reading as live, which
+  -- is the exact failure the paragraph above claims to guard. A total is not a
+  -- coverage check; two deltas are. Kept as a note because a test that cannot
+  -- fail the way its comment describes is worse than no test: it is a false
+  -- assurance that survives review.
   ------------------------------------------------------------------------
   v_a := pg_temp.new_auction();
   v_b := pg_temp.new_auction();
   perform pg_temp.expire(v_a);
   perform pg_temp.expire(v_b);
+  v_before   := pg_temp.rt(v_a);
+  v_before_b := pg_temp.rt(v_b);
   perform public.close_ended_auctions();               -- null: the real sweep
-  perform pg_temp.chk('a sweep announces EVERY auction it closes, not the first',
-    (pg_temp.rt(v_a) + pg_temp.rt(v_b) - 2)::text,     -- -2: the two expire updates
-    '2');
+  perform pg_temp.chk('a sweep announces the first auction it closes',
+    (pg_temp.rt(v_a) - v_before)::text, '1');
+  perform pg_temp.chk('a sweep announces EVERY OTHER auction too, exactly once',
+    (pg_temp.rt(v_b) - v_before_b)::text, '1');
 
   ------------------------------------------------------------------------
   -- BR-36 as amended: end_time moves, so a subscriber has to be told.
