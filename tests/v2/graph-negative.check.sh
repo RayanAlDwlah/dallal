@@ -33,7 +33,7 @@
 # ---------------------------------------------------------------------------
 # WHAT IS PROBED, AND WHAT IS NOT — SAID PLAINLY
 #
-# 113 probes against 164 assertions. The gap is not laziness and it is not
+# 115 probes against 164 assertions. The gap is not laziness and it is not
 # coverage theatre; it is five loops that generate one assertion per row of a
 # table, or per stated reading:
 #
@@ -71,13 +71,13 @@
 # (probes 50 and 52) because the thing being probed is the suite's own
 # blind-spot guard, and nothing subtle triggers it.
 #
-# Six probes mutate `tests/v2/graph.check.mjs` rather than a document. Two of
+# Eight probes mutate `tests/v2/graph.check.mjs` rather than a document. Two of
 # them have to: what they target is an assertion ABOUT the checker — that a
 # hypothetical measured on a throwaway board was discarded, and that no label
 # can be found only by matching a different one — and the only way to probe an
 # assertion about the checker is to break the checker.
 #
-# The other four are a different reason and a firmer one. `PRD.md` is not in
+# The other six are a different reason and a firmer one. `PRD.md` is not in
 # `neg_files` and must not be: the owner ratifies it by hand, no session edits
 # it, and that holds even for a mutation this suite would restore a second
 # later — an interrupted run must not be able to leave it broken. So the probes
@@ -86,19 +86,23 @@
 # expectation instead of the file. Same catch, and the file the owner owns stays
 # untouched.
 #
-# Three of those four aim at the same assertion from different rows. Its list
-# went 3 → 12 → 18 as §19/§22 and then §20 were read inward, and one probe
-# against one tuple stops being evidence for seventeen others: the loop body is
-# shared, but a typo in a newly added tuple is not caught by a probe on an old
+# Five of those six aim at the same assertion from different rows. Its list went
+# 3 → 12 → 18 → 29 as §19/§22, then §20, then §21 were read inward, and one probe
+# against one tuple stops being evidence for twenty-eight others: the loop body
+# is shared, but a typo in a newly added tuple is not caught by a probe on an old
 # one.
 #
 # That reasoning does NOT extend to one probe per tuple, and the third probe is
-# where the line is drawn: it is probe-per-KIND, not probe-per-row. The first
-# two aim at §19/§22 **exclusion** rows; the third aims at a §20 **assumption**
-# row, which is a different table, a different shape of sentence, and — if the
-# two are ever read by different code — a different failure. Eighteen probes
-# against one shared loop body would be coverage theatre; three against three
-# kinds is the claim the suite can actually defend.
+# where the line is drawn: it is probe-per-KIND, not probe-per-row. Four kinds
+# sit in that list and each gets at least one probe — a §19/§22 **exclusion**
+# row (two probes, because that kind spans two sections), a §20 **assumption**
+# row, a §21 **register entry**, and the one **rationale clause** (`:798`),
+# whose deletion leaves every rule it is cited beside still reading perfectly
+# while the argument built on it is gone. Each is a different table, a different
+# shape of sentence, and — if any two are ever read by different code — a
+# different failure. Twenty-nine probes against one shared loop body would be
+# coverage theatre; five against four kinds is the claim the suite can actually
+# defend.
 #
 # ---------------------------------------------------------------------------
 # A LABEL IS AN ARGUMENT TO grep -F, SO QUOTE IT LIKE ONE
@@ -578,27 +582,42 @@ neg_probe "every PRD.md line cited by the V2 docs exists and is not blank" \
 neg_probe "PRD citations were found at all" \
   'perl -pi -e '"'"'s/`PRD\.md:\d+`/PRD/g; s/`:\d+`/LINE/g'"'"' docs/v2/TICKETS.md docs/v2/SPEC.md docs/decisions/README.md'
 
-# The PRD rows the six ratification items rest on. Probed through the CHECKER
+# The PRD rows the eight ratification items rest on. Probed through the CHECKER
 # rather than through PRD.md, for the reason in the section header — this is a
 # G6-shaped probe: break the expectation and prove the comparison fires.
 neg_probe "every PRD row the ratification items rest on still sits on the line cited" \
   'perl -pi -e '"'"'s/\[1847, "Multiple quantity \/ lots"\]/[1847, "Multiple quantity or lots"]/'"'"' tests/v2/graph.check.mjs'
 
 # The same assertion, aimed at one of the rows added by the inward sweep rather
-# than at the §19.2 three. A list that grew from 3 to 18 entries is a list where
+# than at the §19.2 three. A list that grew from 3 to 29 entries is a list where
 # one probe against one entry stops being evidence for the rest: the loop body
 # is shared, but a typo in a new tuple is not caught by a probe on an old one.
 neg_probe "every PRD row the ratification items rest on still sits on the line cited" \
   'perl -pi -e '"'"'s/\[1917, "Image editing \/ cropping"\]/[1917, "Image editing and cropping"]/'"'"' tests/v2/graph.check.mjs'
 
 # And a third, aimed at a §20 ASSUMPTION row rather than a §19/§22 exclusion.
-# Not probe-per-tuple — 18 tuples would mean 18 probes and the loop body is one
+# Not probe-per-tuple — 29 tuples would mean 29 probes and the loop body is one
 # line. It is probe-per-KIND: the two probes above both aim at table rows in an
 # "excluded" table, and the §20 sweep added a row that reads as ordinary prose
 # in a differently-shaped table. If the two shapes were ever read by different
 # code, a probe on an exclusion would say nothing about an assumption.
 neg_probe "every PRD row the ratification items rest on still sits on the line cited" \
   'perl -pi -e '"'"'s/\[1949, "nobody needs to schedule a future start"\]/[1949, "nobody needs to schedule a future start time"]/'"'"' tests/v2/graph.check.mjs'
+
+# Fourth kind: a §21 REGISTER ENTRY. Not a scope boundary and not a belief — a
+# decision `:2025` says may not be reopened or reinterpreted. Aimed at Q1
+# because item 8 is the only ratification item whose tickets carry no `R`.
+neg_probe "every PRD row the ratification items rest on still sits on the line cited" \
+  'perl -pi -e '"'"'s/\[2031, "A published auction runs to its end time and closes"\]/[2031, "A published auction runs until its end time and closes"]/'"'"' tests/v2/graph.check.mjs'
+
+# Fifth, and the one most worth having: `:798` is a RATIONALE clause, not a
+# rule. Item 8 does not merely say BR-30 exists — it says BR-30's stated reason
+# (an informal reserve) survives onto the host-advance power unchanged. Delete
+# that clause from the PRD and every rule item 8 cites still reads perfectly
+# while the argument it actually makes is gone. No other pinned row has that
+# property, which is precisely why one probe on one tuple is not evidence here.
+neg_probe "every PRD row the ratification items rest on still sits on the line cited" \
+  'perl -pi -e '"'"'s/\[798, "Once published it runs to its end time and closes automatically"\]/[798, "Once published it runs to its end time and closes"]/'"'"' tests/v2/graph.check.mjs'
 
 # Dropping a citation is how a finding gets un-found: the rows stay in the PRD,
 # the argument quietly stops pointing at them, and nothing else goes red.
@@ -646,18 +665,18 @@ neg_probe "TICKETS.md states how many questions the ratification blockquote rais
 # alternative is a probe that mutates whatever number it finds, which passes for
 # the wrong reason the day the count is already wrong.
 neg_probe "TICKETS.md: how many questions the blockquote raises" \
-  'perl -pi -e '"'"'s/\*\*Seven things here are the owner/**Eight things here are the owner/'"'"' docs/v2/TICKETS.md'
+  'perl -pi -e '"'"'s/\*\*Eight things here are the owner/**Nine things here are the owner/'"'"' docs/v2/TICKETS.md'
 
 # A gap rather than a miscount — the count stays right and the numbering goes
 # wrong, which is what a hand-numbered list does when an item is removed from
 # the middle. Aimed at the last item so the mutation cannot accidentally
 # duplicate an existing number and be caught for the wrong reason.
 #
-# The `.` either side of R5 is a literal backtick. Written as one it would be
-# command-substituted when the mutation string is handed to the shell — the same
-# reason the apostrophe two probes down is written as `.` rather than quoted.
+# No backtick in this one — item 8's heading starts with plain prose, unlike
+# item 7's, which opened with `R5` and needed a `.` to stand in for the
+# backtick (writing one would have been command-substituted by the shell).
 neg_probe "TICKETS.md: the blockquote's questions are numbered 1..N with no gap" \
-  'perl -pi -e '"'"'s/^> \*\*7\. .R5. calls the AI/> **8. .R5. calls the AI/'"'"' docs/v2/TICKETS.md'
+  'perl -pi -e '"'"'s/^> \*\*8\. A host can end/> **9. A host can end/'"'"' docs/v2/TICKETS.md'
 
 # ---------------------------------------------------------------------------
 # H. The decisions index restates the direct/conditional split in prose, one
@@ -757,4 +776,4 @@ neg_probe "SPEC.md: §4.0 names the board's ratification column and links to it"
 neg_probe "the decisions index and SPEC §4.0 restate no reach figure" \
   'perl -pi -e '"'"'s/a number copied into a second document/R1 reaches 28 of 40, and a number copied into a second document/'"'"' docs/decisions/README.md'
 
-neg_report "V2-GRAPH-NEGATIVE" 113
+neg_report "V2-GRAPH-NEGATIVE" 115

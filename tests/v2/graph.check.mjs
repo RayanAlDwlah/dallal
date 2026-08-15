@@ -1335,15 +1335,18 @@ if (!section) {
   // negative suite's probe then matches no line, and the run reports NO-OP
   // instead of the catch it actually made. That is not hypothetical — it is
   // why the wider-reading assertions above are numbered by ordinal. This list
-  // went 3 → 12 → 18 in three commits; the label has not moved once, and the
-  // comment above it does not say "six items" any more for the same reason.
+  // went 3 → 12 → 18 → 29 in four commits; the label has not moved once, and
+  // the comment above it does not say "six items" any more for the same reason.
   //
-  // Two kinds of row sit in this list and the distinction is the §20 sweep's
-  // finding, not a formatting choice. An **exclusion** (§19, §22) says *we
-  // chose not to build this*; an **assumption** (§20) says *we believe nobody
-  // wants it*. Ratifying the first un-marks a row; ratifying the second
-  // retires a belief. `A-U9` and `A-B6` are the precedent for the second act,
-  // and the board argues from both kinds, so both are pinned here.
+  // THREE kinds of row sit in this list, and the distinctions are findings
+  // rather than formatting. An **exclusion** (§19, §22) says *we chose not to
+  // build this*; an **assumption** (§20) says *we believe nobody wants it*; a
+  // **register entry** (§21) is a decision that `:2025` says may not be
+  // reopened or reinterpreted at all. Ratifying the first un-marks a row, the
+  // second retires a belief, the third amends the register and writes an
+  // accepted consequence in §21.2. `A-U9`/`A-B6` are the precedent for the
+  // second act and Q7 (`:2037`, `:2056`) for the third — it is the one entry
+  // already reversed. The board argues from all three, so all three are pinned.
   const EXCLUSIONS = [
     // item 1 — search
     [1875, "Advanced search / faceted filtering"],
@@ -1373,6 +1376,31 @@ if (!section) {
     [1825, "Escrow / settlement"],
     // item 7 — who authors a listing
     [1952, "Sellers will write their own descriptions and provide their own images"],
+    // item 8 — a host ending a published lot early. Four lines across three
+    // sections, and :798 is the one that is a RATIONALE rather than a rule:
+    // item 8's argument is that BR-30's stated reason — an informal reserve —
+    // survives onto the new power unchanged. Edit that clause away and the
+    // argument goes with it while every rule it cites still reads fine.
+    [798, "Once published it runs to its end time and closes automatically"],
+    [1218, "no branches, no cancellation, and no manual intervention"],
+    [1223, "requiring no administrator and no human action"],
+    [2031, "A published auction runs to its end time and closes"],
+    [2033, "starting price, end time, and image are immutable once published"],
+    // §21's own authority. This is the third kind of row: not a boundary and
+    // not a belief, but the sentence that makes every item above binding
+    // rather than advisory — and, at :2034/:2055, the register entry item 3
+    // turns on.
+    [2025, "No decision here may be reopened, reinterpreted, defaulted, or worked around during implementation"],
+    [2067, "The resolution is recorded here first, then built"],
+    [2034, "Never `+5 / +10 / +50`"],
+    [2055, "Implementers must not add one"],
+    // Q7 — the one register entry already reversed — and its accepted
+    // consequence. The board argues FROM these for what ratifying anything
+    // else requires, so they are pinned for the same reason `:145` in the
+    // decisions index is: a precedent that quietly stops saying what it is
+    // cited for takes the argument with it.
+    [2037, "REOPENED AND REVERSED 2026-08-13"],
+    [2056, "past the end time shown at creation"],
   ];
   const moved = EXCLUSIONS
     .filter(([n, text]) => !(PRD[n - 1] ?? "").includes(text))

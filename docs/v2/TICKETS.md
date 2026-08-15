@@ -243,7 +243,19 @@ Every figure in this section is recomputed from the board by
 appears in a *blocked on* cell, that no `O` appears in a *ratification* cell, and that every
 conflicting record is carried by at least one ticket.
 
-> **Seven things here are the owner's to answer, and this board must not answer any of them.**
+> **Eight things here are the owner's to answer, and this board must not answer any of them.**
+>
+> **Read `PRD.md` §21 before any of them.** It is the **Product Decision Register**, it opens
+> with *"There are ZERO unresolved product questions"*, and `PRD.md:2025` says: **"No decision
+> here may be reopened, reinterpreted, defaulted, or worked around during implementation."*
+> `PRD.md:2067` says how one *is* reopened — *"The resolution is recorded here first, then
+> built."* **Here** means `PRD.md`. A `docs/decisions/D-0x` record is not the place §21 points
+> at, which is exactly why this column exists and why the owner ratifies by hand.
+>
+> **No document on this board cites a single line of §21.** Not `SPEC.md`, not this file, not
+> any of the six decision records — checked mechanically, zero matches anywhere in §21's line
+> range. That is the outward-read defect again, on the most authoritative section in the
+> product document, and it is why item 8 below went unnoticed through three prior sweeps.
 >
 > **1. `PRD.md:411` puts *search* out of scope and no `R` item covers it.** `R1` quotes that
 > line for categories — but the sentence reads *"categories, search, **and recommendations**"*,
@@ -315,6 +327,19 @@ conflicting record is carried by at least one ticket.
 > any kind, per-auction or platform-wide** — *"Decided against **entirely** (BR-32)"* — or with
 > `PRD.md:403`, which withdrew `S4` saying *"**No increment exists in Dalal, now or as a Should
 > Have.**"* A seller-set increment is per-auction by construction.
+>
+> **And §21 names the button's exact shape.** `PRD.md:2034` is **Q4** in the decision register:
+> *"**No fixed increment.** Any amount meeting the minimum acceptable bid is valid — `+0.01 SAR`
+> is as valid as `+1,000 SAR`. **Never `+5 / +10 / +50`.**"* The owner's instruction for D-01 is
+> a button carrying the seller's increment **in multiples of ten**. `+10 / +50` is the example
+> Q4 chose to forbid by name. `PRD.md:2055` adds the accepted consequence — penny bid wars are
+> possible, and *"**Implementers must not add one** (SD-05)"*.
+>
+> This does **not** decide item 3, because D-01 §2's distinction may still hold: Q4 answers the
+> question *"is there a minimum bid increment?"*, and a button that offers `+10` while the
+> server accepts `+0.01` imposes no minimum. But `:2034` is a decision-register entry, and
+> `:2025` says a register entry may not be *reinterpreted* during implementation. Whether
+> D-01 §2 is a distinction or a reinterpretation is the owner's call and nobody else's.
 >
 > The consequence is not rhetorical: `R4` is classified **conditional**, contingent on `O25`
 > deciding whether the field is required or optional. `:1848` excludes per-auction increments
@@ -394,18 +419,63 @@ conflicting record is carried by at least one ticket.
 > question for `R6`. **Both were classified by keyword search, and the keyword was the wrong
 > unit of meaning** — that is one defect with two instances, not two defects.
 >
-> *(Why all seven surfaced this late: the `R` register was built by reading the six decision
+> **8. A host can end a published lot early, and four lines say nobody can.** This is the
+> largest item here and the only one where the tickets that build the power carry **no `R` at
+> all**:
+>
+> | | `PRD.md` | says |
+> |---|---|---|
+> | the rule | `:798` | **BR-30** — *"An auction **cannot be cancelled**. Once published it **runs to its end time** and closes automatically."* |
+> | the lifecycle | `:1218` | *"This is the **complete and only** lifecycle. There are **no branches, no cancellation, and no manual intervention** anywhere in it"* |
+> | …and again | `:1223` | *"The transition to Ended is **automatic**, driven by the end time, requiring **no administrator and no human action**"* |
+> | the register | `:2031` | **Q1** — *"**No cancellation.** No cancel control, no cancellation rule … A published auction runs to its end time and closes."* |
+>
+> D-03 §3.1 grants the opposite, in the owner's words: *«الزر للمضيف اللي يبي **يسرّع**»* — a
+> host button that closes a lot before its end time. `V2-A11` (*open / close a lot*) and
+> `V2-A12` (*host powers: advance, end session*) build it. **Both carry `—` in the `R` column.**
+>
+> **The strongest form of this is not that a row is stale — it is that BR-30's own stated
+> reason applies to the new power, unchanged.** `:798` gives the reason as: *"A seller able to
+> cancel after seeing a low price would hold an **informal reserve**, undermining BR-06 and
+> fairness."* A host who advances past a lot sitting at a disappointing price is holding an
+> informal reserve by exactly that definition. D-03 §3.1 already reasons carefully about one
+> abuse of advance — defeating anti-sniping, which it refuses **server-side** rather than by
+> disabling a button — and does not mention BR-30 or the reserve at all.
+>
+> **The board has this question one level too high.** `O10` asks *"Can a session be
+> cancelled?"* and is open. The **lot** advance is not asked about anywhere; it is treated as
+> decided in D-03 §3.1 and it is the thing `:1223` forbids by name.
+>
+> **Pause is the same question about the same clock.** `:2033` — **Q3** — lists what is
+> immutable after publication: *"Name, description, starting price, **end time**, and image."*
+> Anti-sniping moves `end_time` too, but `BR-36` was reversed by a recorded owner decision and
+> Q7's register row was amended to say so; Q3's was not. A **host** moving the end time by
+> pausing is nearer to *"a seller edits the end time"* than an automatic extension is. `V2-A19`
+> carries `R3`, so unlike the advance this one has a record — but `R3` does not cite Q3.
+>
+> *(Why all eight surfaced this late: the `R` register was built by reading the six decision
 > records and following their citations outward. The PRD's exclusions chapter is reached only
 > when a record happens to cite into it, and §19.2 is a table **no record cites**, so nothing
 > led to it. Items 4, 5 and 6 came from running that read in the other direction — every
 > §19 and §22 row, asked which ticket builds it — which is why they are adjacent to rows the
 > register already had. Item 7, and the assumption rows now attached to items 2, 4 and 5, came
 > from doing the same to §20 — reached only because A-U1 turned up in item 5 and proved that an
-> *assumption* row can bind as hard as an exclusion. The one guard that overlaps — INT-08's
-> `no bid increment / minimum raise` — covers item 3 and will go red the day a `bid_increment`
-> column lands, as `CLAUDE.md` §9 already predicts. **Nothing watches the other six** except
-> the citation resolver added alongside them, which only proves the lines still say what is
-> quoted here.)*
+> *assumption* row can bind as hard as an exclusion. Item 8 came from §21, which is the last
+> section read and should have been the first: it is the register the other three sections are
+> summarised into, **no document cites it**, and it took three sweeps to reach because each
+> sweep chose its next surface by adjacency to the last finding rather than by authority. The
+> one guard that overlaps — INT-08's `no bid increment / minimum raise` — covers item 3 and will
+> go red the day a `bid_increment` column lands, as `CLAUDE.md` §9 already predicts. **Nothing
+> watches the other seven** except the citation resolver added alongside them, which only proves
+> the lines still say what is quoted here.)*
+>
+> *(Item 8 is the one item on this list that is not about a **scope** boundary. Items 1–7 ask
+> whether V2 may build something the MVP put out of scope — an ordinary question for a second
+> version, and the honest answer to most of them is probably "yes, ratify it". Item 8 asks
+> whether a host may hold an informal reserve, which `BR-06` and `:798` call a **fairness**
+> rule. Fairness rules are the ones `CLAUDE.md` §5 says were deliberately removed and whose
+> **absence is the requirement**. It should be read on its own terms, not as the eighth
+> instance of the same pattern.)*
 >
 > *(Items 6 and 7 are the same defect twice. `R5` and `R6` were both classified **silent,
 > therefore gap-filling, therefore safe under rule 4**, and both classifications were reached
@@ -419,6 +489,14 @@ conflicting record is carried by at least one ticket.
 > change. Every item above names its §19 row, its §22 row where one exists, and — since the
 > §20 sweep — the **assumption** row underneath it. `A-U9` and `A-B6` show the third of those
 > being retired in place when a decision moved, so the precedent covers all three.
+>
+> **§21 adds a fourth, and `BR-36` demonstrates it too.** Q7's register row at `PRD.md:2037`
+> was rewritten in place — *"REOPENED AND REVERSED 2026-08-13"* — and `:2056` records the new
+> accepted consequence, that an auction can now run ten minutes past its stated end. So the
+> full act, performed once already on this exact document, is: **un-mark the §19 row, un-mark
+> the §22 row, retire the §20 assumption, amend the §21 register entry, and write the accepted
+> consequence in §21.2.** Q7 also shows the register does not update itself — item 8 exists
+> partly because Q3 was left saying `end_time` is immutable while Q7 was amended to move it.
 
 A previous draft of this board claimed phase 1 had *"no cross-track dependency at all"* and
 that nine tickets could run in parallel. **Both were wrong**: `V2-B4` needs the category
