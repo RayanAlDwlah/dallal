@@ -292,12 +292,40 @@ with a test asserting the server still accepts an amount that is **not** a multi
 increment. `BR-32` governs what the server accepts; D-01 governs only what the screen
 offers.
 
-<!-- BEGIN:nextjs-agent-rules -->
+---
 
-# This is NOT the Next.js you know
+## 10. The Next.js agent-rules block lives in `AGENTS.md` — not in this file
 
-This version has breaking changes — APIs, conventions, and file structure may all differ from your training data. Read the relevant guide in `node_modules/next/dist/docs/` (resolved from this file's directory; in monorepos the `next` package may not be visible from the repo root) before writing any code. Heed deprecation notices.
+`next dev` writes a delimited block of its own guidance into an agent-rules file. It
+used to write it into **this one** — the file §2 places at the top of the
+source-of-truth hierarchy, whose opening line says these instructions override
+everything, and which governs all three of our sessions.
 
-This block is written and re-added by `next dev` — verify at `node_modules/next/dist/server/lib/generate-agent-files.js`. Removing it from a diff only re-creates the uncommitted change; committing it with your work keeps the tree clean.
+The current text is benign. That was never the concern. The concern is that the next
+Next.js version writes whatever it writes, and it will arrive looking exactly like this
+one did: **an innocuous diff inside somebody's unrelated PR, in a file nobody re-reads
+because it is always there.** `S0-17` (#102) is that issue; this section is its answer.
 
-<!-- END:nextjs-agent-rules -->
+**The diversion is measured, not assumed.** In
+`node_modules/next/dist/server/lib/generate-agent-files.js`, `writeAgentFiles()` takes
+the `AGENTS.md` branch whenever that file exists — so it returns `claudeMd: "skipped"`
+and leaves this file byte-identical. Four cases were run against the real function,
+including the one that matters: a **future version with different block text** still
+writes to `AGENTS.md` and still does not touch this file.
+
+The block is imported below rather than dropped, because the guidance itself is
+correct and sessions should keep reading it. Moving it does not hide it — it makes the
+next change to it arrive in a small dedicated file instead of buried in the governance
+file, where it gets read instead of skimmed.
+
+Two checks in `tests/guards/run.sh` hold this, and each fails for its own reason:
+
+- the block in `AGENTS.md` still matches `tests/guards/agents-rules.expected` — so a
+  version bump that rewrites it goes **red** and has to be acknowledged
+- this file still does **not** host the block — so if `AGENTS.md` is ever deleted and
+  `next dev` writes back in here, that is caught rather than absorbed
+
+Per §9, the answer when either goes red is **not** an ignore. Update the expected file
+in a PR that says what Next.js changed and why it is acceptable.
+
+@AGENTS.md
