@@ -1,5 +1,6 @@
 "use client";
 
+import Image from "next/image";
 import { useState } from "react";
 
 import { cn } from "@/lib/cn";
@@ -12,6 +13,12 @@ export interface ImageFrameProps {
   ratio?: "square" | "wide";
   className?: string;
   priority?: boolean;
+  /**
+   * AUC-09 (#148) — what share of the viewport this frame occupies, so the
+   * optimiser picks a derivative instead of the largest candidate. Defaults
+   * from `ratio`, which already encodes the two places a frame appears.
+   */
+  sizes?: string;
 }
 
 /**
@@ -48,7 +55,27 @@ export interface ImageFrameProps {
  * V-4 (#27) has not yet settled whether transformation is available. Swapping
  * to next/image later is a change inside this one component.
  */
-export function ImageFrame({ src, alt, ratio = "square", className, priority }: ImageFrameProps) {
+/**
+ * Default `sizes` per frame shape, matching the layouts that render them:
+ *   square — the listing grid, `grid-cols-1 sm:grid-cols-2 lg:grid-cols-3`
+ *   wide   — the detail hero, one column until `lg`, then the content column
+ *            of `lg:grid-cols-[minmax(0,1fr)_22rem]`
+ * Wrong values here do not break the layout; they make the browser fetch a
+ * candidate wider than it needs, which is the exact cost NFR-PERF-05 is about.
+ */
+const DEFAULT_SIZES = {
+  square: "(min-width: 1024px) 33vw, (min-width: 640px) 50vw, 100vw",
+  wide: "(min-width: 1024px) 60vw, 100vw",
+} as const;
+
+export function ImageFrame({
+  src,
+  alt,
+  ratio = "square",
+  className,
+  priority,
+  sizes,
+}: ImageFrameProps) {
   /*
    * The FAILED URL, not a boolean.
    *
@@ -88,14 +115,31 @@ export function ImageFrame({ src, alt, ratio = "square", className, priority }: 
 
   return (
     <div className={frame}>
-      {/* eslint-disable-next-line @next/next/no-img-element */}
-      <img
+      {/*
+        AUC-09 (#148) — next/image, not a bare <img>. V-4 measured what the bare
+        one costs: 100 originals is 56 MB at the most compressible source
+        measured and 566 MB at a photo-like one, against NFR-PERF-01's 3 s — and
+        two thumbnails alone already exceeded the budget, so lazy loading was
+        not rescuing it. NFR-PERF-05 is the plainer half: a thumbnail must not
+        download the full-resolution original, and every one did.
+
+        `fill` rather than width/height: the frame owns the aspect ratio
+        (`aspect-square` / `aspect-[16/10]`) and is already `relative`, and the
+        stored image's intrinsic dimensions are not known here — nothing records
+        them, and inventing a pair would distort every image that disagreed.
+
+        `onError` survives the swap (AUC-06, #143): next/image supports it, and
+        it is what turns a 404 or a dead CDN into the placeholder rather than a
+        broken-image glyph inside a bordered frame.
+      */}
+      <Image
         src={src}
         alt={alt}
-        loading={priority ? "eager" : "lazy"}
-        decoding="async"
+        fill
+        sizes={sizes ?? DEFAULT_SIZES[ratio]}
+        priority={priority}
         onError={() => setFailedSrc(src)}
-        className="size-full object-cover"
+        className="object-cover"
       />
     </div>
   );
