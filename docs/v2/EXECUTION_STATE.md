@@ -17,9 +17,9 @@ restating the dependency graph, delete that part and link instead.
 | **Run id** | `e33684e-20260815T0250` |
 | **Last updated** | 2026-08-15, after writing the **tracker-configuration proposal** the previous sweep's three team gates were waiting on — [`TRACKER_PROPOSAL.md`](TRACKER_PROPOSAL.md), posted on #168. **The first artefact of this run that is a question rather than a record**, and governed differently for that reason: nine assertions that all *derive* and none that pin its prose, nine probes that mutate **the proposal** rather than the documents it describes. **Nothing was created** — no label, no milestone, no issue, `PRD.md` unopened. The finding is that **gate 3 dissolved**: `GITHUB_PLAN.md:163` and `TEAM.md:1090` already chose GitHub's native blocked-by links over a label, for this exact shape of problem, so it needs no tracker change at all and S0-14's AC ends up *more* strongly satisfied — which corrects the previous item, the second consecutive correction of the sweep before it. One defect in the first posted draft (six pinned lines claimed, seven real, one of the six deliberately untouched) was caught by writing the check, not by reading, and the posted comment was edited to match the file. **The `ubuntu-latest` figures the previous revision left deliberately blank are now filled in from run 31874895610 and they match macOS byte for byte** |
 | **Branch** | `feature/rayan-v2-spec` |
-| **HEAD** | `11345dd` + this commit |
-| **Base** | **51 commits ahead of `origin/main`** at `11345dd`, and it contains `.github/workflows/ci.yml`, which `main` does not. Push, never force-push — #168 is open and others may be reading it |
-| **CI status** | `static` is **GREEN on `ubuntu-latest`** at `11345dd` ([run 31874895610](https://github.com/RayanAlDwlah/dallal/actions/runs/31874895610)), reporting `190 passed, 0 failed` and `147 caught, 0 not caught (0 no-op), 147 of 147 probes reached`; guards `21/21` and `21 caught, 0 not caught`, ci-coverage `21 suites · 0 unwired · 0 stale`, governance `14/14` and `16 caught`, INT-08 `17/17`, INT-06 `6/6`. **Byte-identical to the macOS clean-tree figures at `f031b28`** — as at `1c96f5b` (`181`/`138`), `00352f4`, `61e102f` and `81578ae`. No figure on this page has been macOS-only across five commits, the last four of which added mutation surfaces. **`database` still RED** on the pre-existing #147, and the log names the cause exactly: `ERR_MODULE_NOT_FOUND: Cannot find package '@/lib' imported from lib/auctions/validation.ts`, thrown by `AUC-04 — image type by content (node)`. `auth` (32/16/17/22) and `bidding` (25/50/30/33/22) pass in full; `auction` reports `24`, `28`, `13` all green and then `SUITE FAILED — 1 failing assertions` for the check that never loaded. **PR #155 fixes it and only a human can merge it** — so the *run* conclusion reads `failure` while `static` is green. **Read the job, not the run** |
+| **HEAD** | `c3eeec1` + this commit |
+| **Base** | **56 commits ahead of `origin/main`** at `c3eeec1`, and it contains `.github/workflows/ci.yml`, which `main` does not. Push, never force-push — #168 is open and others may be reading it |
+| **CI status** | **Local at `c3eeec1` (macOS, clean tree): `199 passed, 0 failed` and `157 caught, 0 not caught (0 no-op), 157 of 157 probes reached`; guards `21/21`, ci-coverage `21 suites · 0 unwired · 0 stale`.** The `ubuntu-latest` figures below are the last *observed* ones, at `11345dd`, and they are one sweep behind — the contracts sweep added 9 assertions and 10 probes after that run. `static` was **GREEN on `ubuntu-latest`** at `11345dd` ([run 31874895610](https://github.com/RayanAlDwlah/dallal/actions/runs/31874895610)), reporting `190 passed, 0 failed` and `147 caught, 0 not caught (0 no-op), 147 of 147 probes reached`; guards `21/21` and `21 caught, 0 not caught`, ci-coverage `21 suites · 0 unwired · 0 stale`, governance `14/14` and `16 caught`, INT-08 `17/17`, INT-06 `6/6`. **Byte-identical to the macOS clean-tree figures at `f031b28`** — as at `1c96f5b` (`181`/`138`), `00352f4`, `61e102f` and `81578ae`. No figure on this page has been macOS-only across five commits, the last four of which added mutation surfaces. **`database` still RED** on the pre-existing #147, and the log names the cause exactly: `ERR_MODULE_NOT_FOUND: Cannot find package '@/lib' imported from lib/auctions/validation.ts`, thrown by `AUC-04 — image type by content (node)`. `auth` (32/16/17/22) and `bidding` (25/50/30/33/22) pass in full; `auction` reports `24`, `28`, `13` all green and then `SUITE FAILED — 1 failing assertions` for the check that never loaded. **PR #155 fixes it and only a human can merge it** — so the *run* conclusion reads `failure` while `static` is green. **Read the job, not the run** |
 | **Operator** | unattended Claude session, owner asleep, reviewing later |
 
 ---
@@ -1183,6 +1183,123 @@ three real defects the previous section's first run.
 
 ---
 
+### `docs/contracts/*.md` at `7c367e9`–`c3eeec1` — rank 5, the only rank that *wins*
+
+The eleventh sweep, and the first that produced **amendments to the documents it was reading**
+rather than questions about them. That difference is not a change of method. It follows from
+what rank 5 *is*.
+
+**Why the contracts, and why they could not wait.** `CLAUDE.md` §2 orders six sources, and it
+says something about rank 5 that it says about no other rank: *"Where a contract and an older
+document disagree, the contract wins — that is what it is for."* Every other sweep on this page
+was looking for text that had **stopped being true**. Here, a stale clause has stopped being
+true **and still out-ranks the decision that superseded it**. A session obeying the authority
+order *correctly* is led into the defect by doing exactly the right thing.
+
+> **The stale copy would have been armed, not merely wrong.** That sentence is now in
+> `S0-11 §10.3a`, and it is the reason the amendment could not be deferred to whoever answers
+> `O4`.
+
+**Four findings. All four verified against the files and the migrations, not inferred.**
+
+| # | contract | what was false | what was written |
+|---|---|---|---|
+| 1 | `S0-11 §2` | *"`end_time` moves only inside `place_bid`"* — superseded by the owner's 2026-08-15 pause decision | a supersession blockquote naming **both doors**, and stating that all four listed conditions still describe the `place_bid` door **exactly**; what is wrong is the word *only* |
+| 2 | `S0-11 §4` | *"I write nothing else to `auctions`, ever"* | the table is exhaustive over **my writes**, not over **all writers** — the write set did not grow, the set of writers did |
+| 3 | `S0-11 §7` | row 1's `bid_increment` prohibition is fine; **`V2-A3`'s scope is not** | three artefacts prohibit that column and the ticket line names **one**. Row 1 is **not** amended — the prohibition stands until `V2-A3` amends it explicitly |
+| 4 | `S0-12` rule 5 | *"no increment"* was being read as *no column* | §9.5a: rule 5 forbids a **check**, not a **column** — a column recording what the screen offers rejects nothing. §9.6: rule 1 leaves a real gap, there is **no sanctioned way to add two amounts** |
+
+**Plus one security-relevant note that no ticket asked for.** `dalal.in_place_bid` gates **two**
+doors, not one: `bids_only_via_place_bid()` (may a bid row be inserted?) and
+`auctions_guard_update()` (may `end_time` move?). A pause implementation reaching for that flag
+to open the second **also holds the first open for the whole transaction**, and ADR-2 / SEC-Z4
+stop being structural for that duration. The prohibition already existed in prose — *"any second
+code path setting it fails review"* — but it was written before pause existed and **had never
+been pointed at pause**. The note is in `BID-02` directly above the function, where an
+implementer will hit it.
+
+**What was deliberately NOT done, and this is the load-bearing half.** No pause design was
+invented. No table, no column, no flag name, no host check. `O4` and `O33` are open, and
+`TEAM.md` rule 16 forbids filling that gap with something reasonable. The amendments record
+**that the clause is superseded** and **what is still missing**, and stop. `§10.3a` states the
+precedent it followed (`§10.3`, the `BR-36` staleness fixed the same way in `#133`) and where it
+deliberately stops short of it.
+
+#### Verification — nine assertions, and two of them are supposed to go red one day
+
+`graph.check.mjs` **190 → 199**. Every one recomputes both sides. Two are **derived, not
+pinned**, and that is a design choice with a consequence worth stating plainly: the
+`bid_increment` census will go red **the day `V2-A3` amends all three artefacts**, and the
+`lib/money.ts` inventory will go red **the day an `addSar` appears**. Neither is a false
+positive. Each is the notice asking to be rewritten by the ticket that invalidated it. A probe
+cannot distinguish *red because broken* from *red because fixed* — they are the same
+measurement — so the negative suite establishes only the weaker, necessary fact: each can reach
+red at all.
+
+**`graph-negative.check.sh` 147 → 157: ten probes for nine assertions.** The extra one is the
+finding.
+
+#### The three defects the checks found that reading did not
+
+Every one was caught by **running the check just written**, and every one was fixed in the
+**assertion**, not in the document. That direction matters: the temptation on a red check you
+believe is wrong is to edit the thing being measured.
+
+1. **The both-doors detector flagged `BID-02-verification.md`** — a false positive. That file
+   says *"verified the only way that counts"* (about `LC-03`) and never states the door rule.
+   The predicate had asked for `end_time` + `place_bid` + *only* **anywhere in the file** —
+   token co-occurrence, not the claim. Replaced with a proximity regex. `S0-12 §9.4`'s *"Only
+   `place_bid` inserts bids and writes `current_price`"* is correctly **not** caught: that is a
+   claim about the bids write path, which pause does not touch.
+2. **The INT-08 membership reported a check that has been there all along as missing.** The
+   assertion asked for `bid_increment`; INT-08 spells it as the alternation `bid_?increment`.
+3. **And then the probe for that same assertion reported `MISSED`** — the sharpest result of the
+   sweep, because it is invisible to reading. INT-08 counts **twice on one line**, `count_ts`
+   over TypeScript and `count_sql` over SQL, and **each half carries its own copy of the
+   pattern**. Deleting the TS half left the SQL half matching and the assertion stayed green.
+   Which half goes is not a coin flip: a `bid_increment` **column** is SQL and the **button**
+   carrying it is TypeScript, so `D-01`'s change lands on the **TS half alone** — precisely the
+   half a file-wide test cannot see. Now scoped to the one `chk` block, measuring the two halves
+   as two facts, with a probe each.
+
+A fourth was found while writing a probe rather than by running one: `S0-11 §8`'s box counter
+matched `^- \[ \] \*\*§`, i.e. **unticked boxes only**. All thirteen are unticked today, so it
+was green — and the first reviewer to actually sign one would have turned it red for doing the
+one thing the list exists to ask for. **A check that punishes compliance is a check that gets
+deleted rather than obeyed.** The class is now `[ x]`.
+
+#### The mutation surface grew by five executable files, and the reason is not convenience
+
+`lib/money.ts`, `tests/integration/excluded-features.check.sh` and the closing migration joined
+both contracts in `neg_files`. The argument is the same one the `BID-02` migration was admitted
+under, and it generalises: **every section-M assertion claims something about a file *other*
+than the contract stating it**, and an assertion about another file that cannot be broken by
+changing that file is not an assertion, it is a sentence. Safety is the harness's and is
+unchanged — refuse on a dirty tree, arm the restore trap *after* that refusal, `git checkout --`
+before reading a verdict, no SQL executed and no TypeScript imported (both are read as text).
+**Restoration was verified rather than assumed**: after the full run, `git diff HEAD` is empty
+for every declared file.
+
+Two mutations are worth naming because they are the edits that would actually happen. The
+both-doors probe does **not** delete `S0-11`'s amendment — `S0-11` says *pause* seventeen times
+and one deletion would not silence it. It grows a **second** contract a sentence restating the
+superseded rule, in `S0-12`, which mentions `place_bid` four times and *pause* zero. And the
+code-side money probe writes `addSar` — the literal name `§9.6` states as one of its own two
+candidate answers, so the probe writes the line a future session writes.
+
+#### What this sweep did *not* produce, so nobody re-runs it
+
+`S0-10`, `S0-13`, `S0-14`, `BID-01`, `BID-02-verification` and the remaining contracts were read
+against what V2 builds and **none crosses**. `BID-02-verification` is the one worth naming: it
+was the false positive in defect 1, and re-reading it confirmed it genuinely does not state the
+door rule.
+
+**The last unread surface is the six `D-0x` records read *inward*** — rank 6, the bottom of
+`CLAUDE.md` §2's order. After that the fallback queue is empty and the run is waiting on the
+owner for `#168` and on a human for `#155`.
+
+---
+
 ## Decisions and assumptions made by this run
 
 | id | what | evidence | reversible? |
@@ -1191,7 +1308,9 @@ three real defects the previous section's first run.
 | — | Treat the red Vercel check on #155/#165/#167/#168 as **not a code signal** | Vercel returned `api-deployments-free-per-day`, "try again in 24 hours" | yes |
 | — | `PRD.md` is **not touched** by this run | owner: "the owner will ratify it manually" | n/a |
 | — | The untracked migration is **never staged and never edited** | `git status` shows it untracked at every commit in this run | n/a |
-| — | Every board number is **machine-derived**, never hand-counted | `tests/v2/graph.check.mjs`, 190 assertions | it is a procedure |
+| — | Every board number is **machine-derived**, never hand-counted | `tests/v2/graph.check.mjs`, 199 assertions | it is a procedure |
+| — | A **rank-5 contract** may be amended by this run where a rank-1 document may not | `CLAUDE.md` §2 says the contract *wins* against an older document, so a stale clause there out-ranks the decision that superseded it — it is armed, not merely wrong. The amendments record supersession and name the gap; **no pause design was invented**, because `O4`/`O33` are open and `TEAM.md` rule 16 governs | yes — they are blockquotes, and whoever answers `O4` rewrites them |
+| — | `lib/money.ts`, INT-08 and the closing migration are **declared mutation surfaces** | every section-M assertion claims something about a file *other* than the contract stating it; an assertion about another file that cannot be broken by changing that file is a sentence, not an assertion. Restoration verified — `git diff HEAD` empty after the run | yes — remove them from `neg_files` and the probes go NO-OP, loudly |
 | — | A **shipped migration** may be a declared mutation surface for a text probe, where `PRD.md` may not | the two are not the same risk: the harness refuses on a dirty tree, restores with `git checkout --`, and runs no SQL — and crossing 6 rests on a live `WITH CHECK`, so a pin nothing can break is not a pin. `PRD.md` stays out because the owner ratifies it by hand | yes — remove it from `neg_files` and the two probes go NO-OP, loudly |
 | — | `PRD.md` is not a **mutation surface** either — not even for a probe that would restore it | an interrupted run must not be able to leave the file the owner ratifies broken; the probe breaks the checker's expectation instead | it is a procedure |
 | — | An **unratified decision blocks a ticket**, exactly as an unanswered question does | not invented here: `docs/decisions/README.md:82` already records the precedence rule, and `CLAUDE.md` §2 already orders the sources. The **`R`→ticket mapping** is judgment, and the rule used is stated in prose for the owner to correct | yes — it is a column, and the owner ratifying anything empties it |
