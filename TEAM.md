@@ -501,7 +501,7 @@ Five integration points. Each one is a conversation that must happen in Sprint 0
 | **Owner** | Mohammed (auction state) → **Rayan** (realtime delivery) |
 | **Consumer** | Every viewer of an auction page |
 | **Required information** | Which auction a viewer is watching; the auction's current price, bid history, and status |
-| **Coordination rule** | Rayan owns the realtime mechanism and decides what is broadcast. Mohammed's pages provide the live regions where updates render and tell Rayan's components which auction is being viewed. **Realtime payloads must contain only publicly visible data — display names, never email addresses (PRD RT-S2).** Mohammed must not add a second, competing update mechanism to his pages. |
+| **Coordination rule** | Rayan is the **steward** of the realtime mechanism and of what is broadcast — request his review, do not wait for it (`CLAUDE.md` §1). The auction page provides the live regions where updates render and tells the subscribing component which auction is being viewed. **Realtime payloads must contain only publicly visible data — display names, never email addresses (PRD RT-S2).** **Exactly one update mechanism per page, never a second competing one** — whoever writes it. Two subscriptions are how a price appears to move backwards (`RT-X5`). That last clause used to name a person; the invariant never depended on who typed it. |
 
 ---
 

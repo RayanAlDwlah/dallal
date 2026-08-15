@@ -89,7 +89,7 @@ set -uo pipefail
 ROOT="$(cd "$(dirname "$0")/../.." && pwd)"
 cd "$ROOT" || exit 1
 
-EXPECTED=15
+EXPECTED=17
 pass=0
 fail=0
 
@@ -334,6 +334,61 @@ echo "--- bidding"
 # any .order() naming created_at is the regression, whatever it is ordering.
 chk "no .order(\"created_at\") on any read in TypeScript" \
     "$(count_ts '\.order\(\s*.created_at')" 0
+
+# ===========================================================================
+# GOVERNANCE — CLAUDE.md §1
+# ===========================================================================
+echo
+echo "--- governance"
+
+# The rule these two watch is the newest one in CLAUDE.md and the least
+# code-shaped, which is exactly why it needs watching: it lives entirely in
+# prose, across nine documents, and the failure mode is a sentence coming back
+# rather than a line of code being written.
+#
+# G1 was measured, not predicted. The first governance sweep (ea6eb5f) worked
+# from CLAUDE.md §1's list of stale documents — TEAM.md, GITHUB_PLAN.md,
+# ARCHITECTURE.md, README.md, docs/v2/* — banner-ed all five, and stopped. A
+# mechanical sweep the next day found design/STACK.md §11 still saying
+# "Mohammed must not add a second update mechanism alongside Rayan's": a live
+# prohibition, on a named person, in a file nobody had thought to list. The
+# list was a promise that somebody enumerated correctly. This is not.
+#
+# Quotations are stripped first, and for the same reason comments are stripped
+# above: this repository RETIRES rules by quoting them, so «...», "..." and
+# *"..."* are where the dead sentences live. Without stripping, the documents
+# that did the work of retiring a rule are reported as its worst offenders,
+# somebody adds an ignore list, and the guard dies. The stripping is textual —
+# an unbalanced quote mark swallows to the next one. There is none today.
+# `git ls-files`, not `find` — and that is not a style preference. The first
+# version of this used find and reported got=4 / got=20 on a tree whose tracked
+# files were clean: every match came from .claude/worktrees/, four stale
+# checkouts of this same repository sitting inside it, ignored by git and
+# absent from a CI checkout. It would have been GREEN IN CI AND RED LOCALLY —
+# the exact inversion of a useful guard, and the shape the team has been bitten
+# by before (BSD wc padding, grep -P on macOS). The tracked tree is the subject.
+prose_md() {
+  git ls-files -z '*.md' 2>/dev/null | while IFS= read -r -d '' f; do
+    perl -0777 -pe 's{«.*?»}{}gs; s{\*"[^"]*"\*}{}gs; s{"[^"\n]*"}{}g' "$f"
+  done
+}
+count_md() { prose_md | grep -oiE "$1" | grep -c . ; }
+
+# G1. §1: '"Do not write code you do not own" is deleted. It is no longer a
+# rule on this project, and a session that refuses work by citing it is citing
+# something that does not exist.' A document may quote it to say it is dead —
+# CLAUDE.md §1 does, and that quotation is stripped above. Asserting it is not.
+chk "the deleted refusal rule has not come back" \
+    "$(count_md 'do not write code you do not own')" 0
+
+# G2. §1: 'A steward's absence must not block a ready, well-specified ticket.
+# Request the review, say in the PR that you requested it, and proceed.' The
+# shape that violates this is not the word "owns" — that survives legitimately
+# all over the tree as "who knows this best". It is an instruction addressed to
+# a NAMED PERSON forbidding them from touching something. That is a permission
+# boundary whatever it is called, and it is the thing that stopped work.
+chk "no document forbids a named person from touching something" \
+    "$(count_md '(mohammed|rayan|abdulrahman|dem4t|m7ya505|RayanAlDwlah)[^.]{0,40}(must not|may not|is not allowed to|shall not|cannot) (touch|change|edit|modify|add|write|alter|rename)')" 0
 
 # ---------------------------------------------------------------------------
 ran=$((pass + fail))

@@ -343,8 +343,11 @@ V-5 ──blocks──► nothing formally, but slows EVERY developer's loop
 > profile view, including their loading, empty and error states.
 >
 > This affects `AUTH-02`→`AUTH-05` and `AUTH-08` most directly. **Tag Mohammed on the
-> presentation half** rather than building it alone. Abdulrahman's behaviour ownership is
-> unchanged, and Mohammed must not alter it.
+> presentation half** rather than building it alone. **Abdulrahman is the steward of the
+> authentication behaviour** — request his review before changing it, and if he is
+> unavailable, say in the PR that you requested it and proceed (`CLAUDE.md` §1). This line
+> used to name a person and forbid him from altering it; that was a permission boundary,
+> and it is gone.
 
 Every Issue carries `area:auth`. Shared traceability: TEAM.md §3, §13.1 · ARCHITECTURE §10, §11.2.
 

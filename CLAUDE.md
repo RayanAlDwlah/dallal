@@ -75,11 +75,18 @@ The distinction that matters is now **"is this decided?"**, never **"is this min
 
 > **Status of this amendment.** Recorded by the project owner on **2026-08-15**, replacing
 > the presentation/behaviour ownership split recorded in `5b5e698` and propagated in
-> `ea0d861`. Where any other document — `TEAM.md`, `GITHUB_PLAN.md`, `ARCHITECTURE.md`,
-> `README.md`, `docs/v2/*` — still describes permanent ownership, an ownership matrix, a
-> per-developer branch, or a right of refusal based on who owns something, **this section
-> governs and that text is stale.** Those documents remain authoritative on everything
-> else, per §2.
+> `ea0d861`. Where **any other document in this repository** still describes permanent
+> ownership, an ownership matrix, a per-developer branch, or a right of refusal based on who
+> owns something, **this section governs and that text is stale.** Those documents remain
+> authoritative on everything else, per §2.
+>
+> **That list used to be five paths, and treating it as exhaustive already cost something.**
+> The first sweep named `TEAM.md`, `GITHUB_PLAN.md`, `ARCHITECTURE.md`, `README.md` and
+> `docs/v2/*` — all at the root — and banner-ed every one. A mechanical sweep on 2026-08-15
+> then found `design/STACK.md` §11 still carrying *"Mohammed must not add a second update
+> mechanism alongside Rayan's"*: a live prohibition, addressed to a named person, in a file
+> the list did not name. **A closed list is a promise that somebody enumerated correctly.**
+> `tests/guards/run.sh` now checks it instead of trusting it — see §9.
 
 ---
 

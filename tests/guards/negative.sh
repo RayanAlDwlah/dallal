@@ -58,7 +58,8 @@ components/ui/money.tsx
 app/layout.tsx
 .env.example
 lib/supabase/config.ts
-components/bidding/bid-panel.tsx"
+components/bidding/bid-panel.tsx
+TEAM.md"
 
 STAGED_ENV=".env.guardnegative"
 
@@ -116,7 +117,7 @@ fi
 
 pass=0
 fail=0
-EXPECTED=15
+EXPECTED=17
 
 # probe LABEL_SUBSTRING  MUTATION_COMMAND
 #
@@ -207,6 +208,22 @@ probe "no \"use client\" module mentions SERVICE_ROLE" \
 # --- bidding ---------------------------------------------------------------
 probe "no .order(\"created_at\")" \
   "perl -pi -e 's/\.order\(\"end_time\"/.order(\"created_at\"/' lib/auctions/listing.ts"
+
+# --- governance ------------------------------------------------------------
+# Both governance checks strip quotations before matching, because this
+# repository retires a rule by quoting it and a guard that cannot tell "we
+# deleted this" from "we require this" gets an ignore list within a week. That
+# stripping is also the way these two checks could go vacuous — strip too much
+# and they match nothing, forever, on every branch.
+#
+# These probes insert the banned sentences UNQUOTED, which is the only form
+# that is actually a violation. They are the reason the stripping can be
+# trusted: if it ever grew to swallow plain prose, both would report MISSED.
+probe "the deleted refusal rule has not come back" \
+  "perl -pi -e 's{^}{Do not write code you do not own.\n} if \\\$. == 1' TEAM.md"
+
+probe "forbids a named person from touching something" \
+  "perl -pi -e 's{^}{Mohammed must not touch the money formatter.\n} if \\\$. == 1' TEAM.md"
 
 # ---------------------------------------------------------------------------
 ran=$((pass + fail))

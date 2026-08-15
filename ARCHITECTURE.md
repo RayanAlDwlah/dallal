@@ -1229,12 +1229,19 @@ GitHub (one shared repository — TEAM.md §8)
     ├── main ─────────────────────► Vercel PRODUCTION
     │                               points at the production Supabase project
     │
-    ├── feature/abdulrahman-auth ──┐
-    ├── feature/mohammed-auctions ─┼─► Vercel PREVIEW (one per branch/PR)
-    └── feature/rayan-bidding ─────┘   points at a non-production Supabase project
+    ├── feature/<ticket-id>-<short-name> ──┐
+    ├── feature/<ticket-id>-<short-name> ──┼─► Vercel PREVIEW (one per branch/PR)
+    └── feature/<ticket-id>-<short-name> ──┘   points at a non-production Supabase project
 ```
 
 This maps directly onto TEAM.md §8 and §15: no direct pushes to `main`, everything arrives by reviewed Pull Request, `main` stays usable at all times.
+
+> **Amended 2026-08-15.** The three preview rows used to read `feature/abdulrahman-auth`,
+> `feature/mohammed-auctions` and `feature/rayan-bidding` — three *permanent* branches, one
+> per developer. Those are **retired** (`TEAM.md` §8, `CLAUDE.md` §1 step 3): a branch is now
+> **one per ticket**, named `feature/<ticket-id>-<short-name>`, and it dies when the ticket
+> merges. Nothing about the deployment topology changed — the number of preview branches is
+> simply no longer three, and no longer fixed.
 
 ### 18.2 Branch-to-deployment mapping
 
