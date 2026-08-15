@@ -370,10 +370,26 @@ extracted_block() {
   perl -0777 -ne 'print $1 if /(\Q<!-- BEGIN:nextjs-agent-rules -->\E.*?\Q<!-- END:nextjs-agent-rules -->\E)/s' \
     AGENTS.md 2>/dev/null
 }
+# LINE ENDINGS ARE STRIPPED FROM BOTH SIDES BEFORE COMPARING, and that is the
+# fix for a real red build, not defensiveness. @m7ya505 hit it on a CLEAN
+# checkout on Windows: `core.autocrlf=true` writes `agents-rules.expected` to
+# disk with CRLF, while the block extracted from AGENTS.md and re-emitted here
+# carries bare LF — so the two differed by one byte per line and the check went
+# red on a tree nobody had touched. CI never saw it: `ubuntu-latest` checks out
+# LF, so the guard was green for two of us and red for the third.
+#
+# A check that fails on a clean tree gets deleted by the third person who meets
+# it, which is exactly how this rule would have died.
+#
+# Compared as strings rather than through `diff`, deliberately: `diff` against a
+# normalised copy needs either a temp file or `<(...)`, and process substitution
+# is a bashism that breaks under `sh` — fixing a portability bug with a
+# portability bug. `$( )` also strips trailing newlines from both sides, which
+# is the same normalisation the old `printf '%s\n'` was there to supply.
+expected_block="$(tr -d '\r' < tests/guards/agents-rules.expected 2>/dev/null)"
+actual_block="$(extracted_block | tr -d '\r')"
 chk "the Next.js agent-rules block matches tests/guards/agents-rules.expected" \
-    "$(printf '%s\n' "$(extracted_block)" \
-       | diff -q - tests/guards/agents-rules.expected >/dev/null 2>&1 \
-       && echo same || echo differs)" same
+    "$([ "$actual_block" = "$expected_block" ] && echo same || echo differs)" same
 
 # G2. The diversion is still in place. Delete AGENTS.md and the next `next dev`
 # writes the block straight back into CLAUDE.md — silently, because it is a
