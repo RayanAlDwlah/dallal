@@ -388,9 +388,35 @@ conditional, with five assertions re-deriving both lists from the table.
 | INT-08 / INT-06 static / the three realtime checks | **PASS** 17/17, 6/6, 20/20 + 14/14 + 12/12 | same |
 | `npm run lint` / `typecheck` / `build` | 0 errors (4 pre-existing warnings) / exit 0 / exit 0 | same |
 
-macOS only, as always — the Linux run is whatever CI says next. **No migration and no
-application code changed, so the Docker rows earlier in this file were not re-run and are not
-restated.**
+**No migration and no application code changed, so the Docker rows earlier in this file were
+not re-run and are not restated.**
+
+**Confirmed on Linux**, and not only on the machine that wrote the checks. Run
+[31868139055](https://github.com/RayanAlDwlah/dallal/actions/runs/31868139055) at `5df7337` —
+`static` **GREEN** on ubuntu-latest, GNU grep, node 22, with counts identical to the macOS
+column above. Its predecessor [31868067024](https://github.com/RayanAlDwlah/dallal/actions/runs/31868067024)
+at `e87a170` measured the same, which is what makes the pair worth citing: the numbers did not
+move when the platform did.
+
+```
+guards                    21 passed, 0 failed, 21 of 21 checks reached
+guards — negative         21 caught, 0 not caught, 21 of 21 probes reached
+V2 — graph.check.mjs      143 passed, 0 failed
+V2 — graph-negative       88 caught, 0 not caught (0 no-op), 88 of 88 probes reached
+governance                14 passed / 16 caught of 16
+INT-08 / INT-06           17 of 17 / 6 of 6
+```
+
+The *reached* counts matter more than the *failed* ones: a suite reporting "0 failed" while
+reaching 3 of 88 probes is the #121 shape.
+
+`database` is red, and it is red for a reason that is not this branch's: **one** assertion, in
+`auction`, `AUC-04 — image type by content (node)`, failing
+`ERR_MODULE_NOT_FOUND: Cannot find package '@/lib' imported from lib/auctions/validation.ts`.
+That is #147 exactly, and PR #155 already fixes it. `auth` and `bidding` passed whole. The
+branch touches no migration and no application code, so there is no mechanism by which it could
+have caused this — but "it must be pre-existing" is the sentence this project keeps getting
+wrong, so the failing assertion was read by name rather than inferred from the job colour.
 
 Three defects, none of them found by reading:
 
