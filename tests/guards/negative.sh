@@ -62,6 +62,7 @@ components/bidding/bid-panel.tsx
 TEAM.md
 docs/decisions/D-01-bid-increment-button.md
 docs/decisions/README.md
+tests/guards/ci-coverage.sh
 CLAUDE.md"
 
 STAGED_ENV=".env.guardnegative"
@@ -131,7 +132,7 @@ trap restore EXIT
 
 pass=0
 fail=0
-EXPECTED=20
+EXPECTED=21
 
 # probe LABEL_SUBSTRING  MUTATION_COMMAND
 #
@@ -256,6 +257,37 @@ probe "declares one of the three defined statuses" \
 # filed for, one file over.
 probe "every unratified decision record is in the R register" \
   "perl -ni -e 'print unless /^\\| \\*\\*R1\\*\\* \\|/' docs/decisions/README.md"
+
+# --- portability -----------------------------------------------------------
+# The mutation is not invented: it is the escape the R-A check above carried
+# for three commits, which was green on every machine on this team and red in
+# CI on every push. Appending it to another guard script is the realistic
+# shape — that is where the next one gets copied from.
+#
+# THIS PROBE EARNED ITS KEEP THE FIRST TIME IT RAN. The check it probes was
+# written as `awk -v n="$BS"t`, and POSIX awk runs escape processing on a -v
+# assignment, so the needle was a literal TAB. The check was hunting real tab
+# characters after the word grep and could never fire on the defect it names.
+# It had already been committed, and the positive run said PASS. Nothing but a
+# probe was ever going to find that.
+#
+# Note what this probe can and cannot do. It proves the check FIRES. It cannot
+# prove the check was NEEDED, because a negative probe only ever asks "does red
+# appear when the rule is broken" — and one defect in this same area was a check
+# that was red UNCONDITIONALLY, which a probe reads as CAUGHT and calls healthy.
+# That class is caught by the positive run, in CI, on the other grep. Written
+# down because the gap is not obvious and the next reader will assume otherwise.
+#
+# The needle is assembled from $BS rather than typed, for the reason run.sh
+# gives one level down: a probe that breaks a rule by writing the forbidden
+# sequence into its own source makes the tree permanently red. The literal
+# two characters must never appear in this file. $BS expands HERE, at argument
+# construction, so the string reaching the mutation is correct while the bytes
+# on disk are clean. Measured: before this, the probe's own line was the single
+# violation the fixed check reported against an otherwise clean tree.
+BS='\'
+probe "backslash-escaped tab" \
+  "printf '%s\n' \"# GUARDNEGATIVE grep -cE 'a${BS}${BS}tb' /dev/null\" >> tests/guards/ci-coverage.sh"
 
 # --- self ------------------------------------------------------------------
 # The failure this reproduces is the one that actually happened, twice, in two

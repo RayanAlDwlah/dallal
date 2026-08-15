@@ -5,7 +5,7 @@
 #   ./tests/guards/run.sh
 #
 # Needs nothing: no Docker, no node, no network, no credentials. It reads the
-# tree and asserts twenty facts about it. It finishes in under a second,
+# tree and asserts twenty-one facts about it. It finishes in under a second,
 # which is deliberate: a guard nobody minds running is a guard that runs.
 #
 # ---------------------------------------------------------------------------
@@ -89,7 +89,7 @@ set -uo pipefail
 ROOT="$(cd "$(dirname "$0")/../.." && pwd)"
 cd "$ROOT" || exit 1
 
-EXPECTED=20
+EXPECTED=21
 pass=0
 fail=0
 
@@ -424,8 +424,22 @@ dec_status() { # -> one line per record: "D-0N-slug.md<TAB>STATUS"
 # hypothetical: THREE records wore it, it read as "half-decided, proceed
 # carefully" when the truth was "decided, and here are four things nobody has
 # decided", and it was removed by hand on 2026-08-15. By hand is not a mechanism.
+#
+# The comparison is awk on whole FIELDS, not a regex on a suffix, and that is a
+# correction rather than a preference. This check spent three commits reading
+#
+#     grep -cvE '<backslash>t(DECIDED|OPEN|IN PRD)$'
+#
+# which was green here and RED IN CI on every one of them. GNU grep's ERE has
+# no such escape and reads it as a literal `t`, so nothing matched, `-cv`
+# counted all six records, and the check reported six violations against a tree
+# with none. macOS grep — BSD *and* the ugrep shim on this machine — accepts it
+# and returns zero. Measured on both, see the portability check below.
+#
+# A field comparison also rejects `FOO IN PRD`, which a `$`-anchored alternation
+# would have accepted.
 chk "every decision record declares one of the three defined statuses" \
-    "$(dec_status | grep -cvE '\t(DECIDED|OPEN|IN PRD)$')" 0
+    "$(dec_status | awk -F'\t' '$2 != "DECIDED" && $2 != "OPEN" && $2 != "IN PRD" { n++ } END { print n+0 }')" 0
 
 # R-B. Every record that has not landed in the PRD must appear in the gate's R
 # register, so the owner's queue cannot silently lose an entry. A seventh
@@ -447,6 +461,65 @@ done <<EOF
 $(dec_status)
 EOF
 chk "every unratified decision record is in the R register" "$unqueued" 0
+
+# ===========================================================================
+# PORTABILITY — the guard layer runs on two greps and must mean the same thing
+# ===========================================================================
+echo
+echo "--- portability"
+
+# P1. No grep pattern may contain a backslash-t escape.
+#
+# This is not style. The R-A check above carried one for three commits and was
+# GREEN ON THIS MACHINE AND RED IN CI THE WHOLE TIME — the precise inversion §9
+# warns about, and the second time this repository has produced it. Measured,
+# all three on 2026-08-15:
+#
+#   ugrep 7.5.0 (the shim `grep` resolves to here)   escape honoured   -> 0
+#   /usr/bin/grep, BSD, macOS 15                     escape honoured   -> 0
+#   GNU grep, ubuntu-latest, in CI                   literal `t`       -> 6
+#
+# So the whole team's laptops agree with each other and disagree with the only
+# environment that gates a merge. Nobody would find that by reading; the local
+# run says PASS. Use a bracket expression, awk on fields, or `printf` the tab
+# into the pattern — the R-A check above now does the second.
+#
+# `\s` is deliberately NOT flagged: it is an extension in GNU, BSD and ugrep
+# alike, all three were measured, and all three agree. A portability rule that
+# bans things which actually work teaches people to ignore it.
+#
+# Comments are NOT stripped here, unlike every check above. A dead grep in a
+# comment is where the next one gets copied from, and this file is the most
+# copied-from file in the repository.
+#
+# The needle is assembled rather than written, because a check that greps for a
+# two-character sequence cannot contain that sequence and still pass — the
+# first draft matched its own source and was unconditionally red, which is the
+# same defect one turn later.
+#
+# The needle reaches awk through ENVIRON, and that is the SECOND correction
+# this one check has needed. It was first written as
+#
+#     awk -v n="$BS"t ... index($0,n)
+#
+# which is the same bug one tool over: POSIX awk runs escape processing on a
+# -v assignment, so `n` was set to a literal TAB and this check spent its whole
+# life looking for a real tab after the word grep. It could not fire. Measured
+# on 2026-08-15 by appending a line carrying the escape to a tracked .sh and
+# watching this report PASS (0) — found by the probe in negative.sh, which is
+# the entire argument for writing the probe instead of trusting the pass.
+#
+# ENVIRON is exempt from that processing. Doubling the backslash in the -v
+# assignment also works, and is one tidy-up away from being "simplified" back
+# to the broken form, so ENVIRON is preferred. That alternative is described
+# here rather than written out: this check greps for two characters, and a
+# comment demonstrating them next to the word grep would flag its own file.
+BS='\'
+chk "no grep pattern carries a backslash-escaped tab — GNU grep reads it as a literal t" \
+    "$(git grep -h -F -- "${BS}t" -- '*.sh' '*.yml' '*.yaml' 2>/dev/null \
+        | NEEDLE="${BS}t" awk -v g="gre""p" \
+            'index($0,g) && index($0,ENVIRON["NEEDLE"]) > index($0,g)' \
+        | grep -c .)" 0
 
 # ===========================================================================
 # SELF — CLAUDE.md §9 describes this file; it has to describe it correctly

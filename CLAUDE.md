@@ -342,7 +342,7 @@ migration:
 
 Three things in `tests/guards/` are new and each answers a different question:
 
-- **`run.sh`** — **20 checks** over the tree, in under a second. They are the rules from
+- **`run.sh`** — **21 checks** over the tree, in under a second. They are the rules from
   §3, §4, §6, §5 **and now §1 and §2** that lived **only** in this file until now: no
   `Number()`/`parseFloat`
   on an amount, every `*_price` read carrying `::text` (§4.7), `bid_history.amount` coming
