@@ -9,7 +9,7 @@
 # ---------------------------------------------------------------------------
 # WHY THIS EXISTS
 #
-# `graph.check.mjs` prints 190 PASS lines. That proves 190 comparisons ran and
+# `graph.check.mjs` prints 199 PASS lines. That proves 199 comparisons ran and
 # agreed. It does NOT prove that any of them would have disagreed had the board
 # been wrong — and this particular file is unusually
 # exposed to that, because most of its assertions are anchored by a REGEX
@@ -33,7 +33,7 @@
 # ---------------------------------------------------------------------------
 # WHAT IS PROBED, AND WHAT IS NOT — SAID PLAINLY
 #
-# 147 probes against 190 assertions. The gap is not laziness and it is not
+# 157 probes against 199 assertions. The gap is not laziness and it is not
 # coverage theatre; it is five loops that generate one assertion per row of a
 # table, or per stated reading:
 #
@@ -158,6 +158,17 @@ cd "$(dirname "$0")/../.." || exit 1
 # `graph.check.mjs` and mutated as text by section J. The reason to accept the
 # added surface at all is that crossing 6 rests on a shipped `WITH CHECK`, and a
 # pin nothing can break is not a pin.
+#
+# SECTION M ADDED FIVE MORE EXECUTABLE FILES on 2026-08-15, and the same
+# paragraph covers them for the same reason. `lib/money.ts` is the module §9.6
+# argues from; `excluded-features.check.sh` is one of the three artefacts S0-11
+# §7 counts; the closing migration holds the `end_time` gate the pause note is
+# about. Every one of those assertions claims something about a file OTHER than
+# the contract stating it, and an assertion about another file that cannot be
+# broken by changing that file is not an assertion, it is a sentence. The safety
+# argument is unchanged and it is still the harness's: refuse on dirty, arm the
+# trap after the refusal, `git checkout --` before reading the verdict. Nothing
+# below runs SQL or imports TypeScript — both are read as text.
 neg_files "docs/v2/TICKETS.md
 docs/v2/SPEC.md
 docs/decisions/README.md
@@ -169,7 +180,13 @@ TEAM.md
 GITHUB_PLAN.md
 docs/v2/TRACKER_PROPOSAL.md
 tests/v2/graph.check.mjs
-supabase/migrations/20260812120000_bid02_bid_acceptance.sql"
+supabase/migrations/20260812120000_bid02_bid_acceptance.sql
+docs/contracts/S0-11-auction-record.md
+docs/contracts/S0-12-money.md
+docs/contracts/BID-02-bid-operation.md
+lib/money.ts
+tests/integration/excluded-features.check.sh
+supabase/migrations/20260814000000_bid15_closing_and_extension.sql"
 
 neg_run "node --no-warnings tests/v2/graph.check.mjs"
 
@@ -1118,4 +1135,103 @@ neg_probe "TRACKER_PROPOSAL.md lists the register's own O items under each recor
 neg_probe "TRACKER_PROPOSAL.md's tracking table still overshoots the register by exactly the shared item" \
   'perl -pi -e '"'"'s/\| O20, O21, O22, \*\*O23\*\* \| 4 \|/| O20, O21, O22 | 3 |/'"'"' docs/v2/TRACKER_PROPOSAL.md'
 
-neg_report "V2-GRAPH-NEGATIVE" 147
+# ---------------------------------------------------------------------------
+# M. THE CONTRACTS — rank 5 in CLAUDE.md §2, and the only rank that WINS
+#    against an older document.
+#
+# That property is the whole reason section M exists, and it is worth stating
+# once more here because it changes what a probe is FOR. Everywhere else in
+# this suite, a stale line is a line that has stopped being true. In a contract
+# it is a line that has stopped being true AND still out-ranks the decision
+# that superseded it — so a session obeying the authority order correctly is
+# led into the defect by doing exactly the right thing. The stale copy is
+# armed, not merely wrong.
+#
+# Two of these nine are DERIVED, not pinned, and they are supposed to go red:
+#
+#   * the `bid_increment` census recomputes all three artefacts, so the day
+#     `V2-A3` amends them, S0-11 §7's "the prohibition stands" becomes false
+#     and the census reports it. That is not a false positive. That is the
+#     notice asking to be rewritten by the ticket that invalidated it.
+#   * the `lib/money.ts` inventory reports the day an `addSar` appears, which
+#     is precisely when §9.6's "the primitive does not exist" stops holding.
+#
+# A probe cannot distinguish "red because broken" from "red because fixed" —
+# nothing can, they are the same measurement. What the probes below establish
+# is the weaker and still necessary fact: each of these nine CAN reach red.
+# ---------------------------------------------------------------------------
+
+# The armed-stale-copy detector itself. The mutation is not "delete the
+# amendment from S0-11" — S0-11 says "pause" seventeen times and one deletion
+# would not silence it. It is the realistic shape instead: a SECOND contract
+# grows a sentence restating the superseded rule. `S0-12` mentions `place_bid`
+# four times and `pause` zero times, so it is exactly the file where that
+# sentence would land unnoticed.
+neg_probe "every contract stating the end_time door rule names BOTH doors, not just place_bid" \
+  'perl -pi -e '"'"'s{^}{"`end_time` may only be moved by `place_bid`.\n\n"}e if $. == 1'"'"' docs/contracts/S0-12-money.md'
+
+# S0-11 §7 counts three artefacts. These narrow one of them — and narrowing
+# INT-08 is not a hypothetical: `D-01` records it as the expected response the
+# day a `bid_increment` column lands, and CLAUDE.md §9 says the ONE acceptable
+# form is narrowing it in the same PR as a test proving the server still takes
+# a non-multiple. Do it without that, and three artefacts quietly become two.
+#
+# TWO PROBES, BECAUSE THE FIRST ONE MISSED AND THAT IS THE FINDING. INT-08
+# counts twice on one line — `count_ts` over TypeScript, `count_sql` over SQL —
+# and each carries its own copy of the alternation. The assertion originally
+# asked whether the pattern appeared ANYWHERE IN THE FILE, so deleting the TS
+# half left the SQL half matching and the check stayed green. Which half is
+# deleted is not a coin flip either: a `bid_increment` COLUMN is SQL and the
+# BUTTON carrying it is TypeScript, so D-01's own change lands on the TS half
+# alone — the exact half the file-wide check could not see. Both are probed
+# now, because each hides a different thing and neither implies the other.
+neg_probe "all three artefacts S0-11 §7 says prohibit bid_increment still do" \
+  'perl -pi -e '"'"'s/bid_\?increment\|//'"'"' tests/integration/excluded-features.check.sh'
+
+neg_probe "all three artefacts S0-11 §7 says prohibit bid_increment still do" \
+  'perl -pi -e '"'"'s/\(bid_\?increment\|min_\?raise\)/(min_?raise)/'"'"' tests/integration/excluded-features.check.sh'
+
+# The count beside the list. Counted as a word, like every other total here.
+neg_probe "S0-11 §7's notice states the artefact count it actually lists" \
+  'perl -pi -e '"'"'s/Three artefacts prohibit that column today/Four artefacts prohibit that column today/'"'"' docs/contracts/S0-11-auction-record.md'
+
+# §8 and §8.1 are two views of one set of boxes. The mutation reflows one box
+# into prose — the tidy-up that loses a signature line without touching a word
+# of its content, which is §8.1's own finding about what a signature covers.
+#
+# It is NOT "tick a box": the counter matches `[ x]`, deliberately, because a
+# check that goes red when a reviewer finally signs is a check that gets
+# deleted rather than obeyed.
+neg_probe "S0-11 §8's tick list and §8.1's status table cover the same number of boxes" \
+  'perl -pi -e '"'"'s/^- \[ \] \*\*§6\*\* —/- **§6** —/'"'"' docs/contracts/S0-11-auction-record.md'
+
+neg_probe "S0-11 §8.1's stated untouched-box count is the one its own table produces" \
+  'perl -pi -e '"'"'s/^Ten boxes are untouched/Nine boxes are untouched/'"'"' docs/contracts/S0-11-auction-record.md'
+
+# §9.6's inventory, broken from the DOCUMENT side: drop one name and the list
+# still reads as a complete sentence. This is the failure mode that produced
+# the inventory in the first place — the section was first written from a
+# partial grep listing six of the ten, and an incomplete enumeration presented
+# as exhaustive is a lie the check would then have frozen in place.
+neg_probe "S0-12 §9.6's inventory of lib/money.ts is exactly the module's exported values" \
+  'perl -pi -e '"'"'s/`isSar`, //'"'"' docs/contracts/S0-12-money.md'
+
+neg_probe "S0-12 §9.6's stated export counts match the module" \
+  'perl -pi -e '"'"'s/\*\*ten, of which nine are$/**eleven, of which nine are/'"'"' docs/contracts/S0-12-money.md'
+
+# …and from the CODE side. `addSar` is not an arbitrary name: it is one of the
+# two candidate answers §9.6 states for the gap rule 1 leaves open, so this is
+# the exact line a future session writes. Read as text; nothing imports it.
+neg_probe "no addition primitive has appeared in lib/money.ts while §9.6 still says none exists" \
+  'perl -pi -e '"'"'s{^}{"export function addSar(a: string, b: string): string { return a + b; }\n"}e if $. == 1'"'"' lib/money.ts'
+
+# The pause note in BID-02. Its argument rests on a measured fact — one session
+# flag gating two doors — and the note is long, which is what makes deleting it
+# the plausible mutation rather than a contrived one. The overload outlives the
+# comment describing it, so losing the comment loses the only warning that a
+# pause reaching for `dalal.in_place_bid` also holds the bids-insert gate open
+# for the whole transaction.
+neg_probe "BID-02's pause note still describes a real overload — one flag, both gates" \
+  'perl -pi -e '"'"'s/READ THIS BEFORE IMPLEMENTING PAUSE/Historical note/'"'"' docs/contracts/BID-02-bid-operation.md'
+
+neg_report "V2-GRAPH-NEGATIVE" 157
