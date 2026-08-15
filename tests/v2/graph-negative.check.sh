@@ -9,7 +9,7 @@
 # ---------------------------------------------------------------------------
 # WHY THIS EXISTS
 #
-# `graph.check.mjs` prints ninety-three PASS lines. That proves ninety-three
+# `graph.check.mjs` prints 137 PASS lines. That proves 137
 # comparisons ran and agreed. It does NOT prove that any of them would have
 # disagreed had the board been wrong — and this particular file is unusually
 # exposed to that, because most of its assertions are anchored by a REGEX
@@ -33,20 +33,26 @@
 # ---------------------------------------------------------------------------
 # WHAT IS PROBED, AND WHAT IS NOT — SAID PLAINLY
 #
-# Fifty-two probes against ninety-three assertions. The gap is not laziness and
-# it is not coverage theatre; it is three loops that generate one assertion per
+# 82 probes against 137 assertions. The gap is not laziness and
+# it is not coverage theatre; it is four loops that generate one assertion per
 # row of a table:
 #
 #   * `decisions index: D-0n's open items …`   — six, one per record
 #   * `D-0n: its §5 open items …`              — six, one per record
 #   * `reach of On` / `reach denominator …`    — one pair per reach row
+#   * `reach of Rn` / `R reach denominator …`  — one pair per R reach row
 #
 # A probe kills one member of each family, which proves the loop body can fail.
 # It does not prove the loop VISITS every row — that is a different question,
 # and it is the one that got this suite twice. So it is asserted inside
 # `graph.check.mjs` itself, by counting: `every row of the reach table was
-# parsed` and `decisions index: every D-record row was parsed`. Probes 41 and 7
-# break those two counters, which is what makes the family probes meaningful.
+# parsed`, `every row of the R reach table was parsed` and `decisions index:
+# every D-record row was parsed`. Probes 41, 7 and the section-G row-deletion
+# probe break those counters, which is what makes the family probes meaningful.
+#
+# The R reach table gets a second, stronger counter — `the R reach table names
+# exactly the records that conflict with the PRD` — because counting rows alone
+# is what let a deleted row and its denominator drop together, twice.
 #
 # ---------------------------------------------------------------------------
 # THE MUTATIONS ARE REALISTIC ON PURPOSE
@@ -56,17 +62,26 @@
 # from one copy of the graph and not the other. Two are deliberate vandalism
 # (probes 50 and 52) because the thing being probed is the suite's own
 # blind-spot guard, and nothing subtle triggers it.
+#
+# One probe (G6) mutates `tests/v2/graph.check.mjs` rather than a document. It
+# has to: the assertion it targets guards a hypothetical the checker measures on
+# a throwaway copy of the board, and the only way to prove that guard is real is
+# to remove the line that puts the real board back.
 # ============================================================================
 set -uo pipefail
 cd "$(dirname "$0")/../.." || exit 1
 . tests/lib/negative.sh
 
+# `graph.check.mjs` is declared as a mutation surface for one probe only (G6),
+# which breaks the checker's own restore-the-board line to prove the assertion
+# guarding it is not decorative. Everything else here mutates documents.
 neg_files "docs/v2/TICKETS.md
 docs/v2/SPEC.md
 docs/decisions/README.md
 docs/decisions/D-04-ai-product-surface.md
 docs/decisions/D-05-deposit.md
-docs/ai/local-model.md"
+docs/ai/local-model.md
+tests/v2/graph.check.mjs"
 
 neg_run "node --no-warnings tests/v2/graph.check.mjs"
 
@@ -280,7 +295,7 @@ neg_probe "every O-id discussed in the reach section is pinned by a row or a che
 
 # ---------------------------------------------------------------------------
 # F. The suite's own blind-spot guards. These fire before any assertion runs,
-#    and they are the difference between a red build and ninety-three vacuous
+#    and they are the difference between a red build and 137 vacuous
 #    passes. Nothing subtle triggers them, so these three mutations are blunt.
 # ---------------------------------------------------------------------------
 neg_probe "the reach section could not be located" \
@@ -297,4 +312,161 @@ neg_probe "TICKETS.md states what is unblocked" \
 neg_probe "a table shape changed and every assertion below would pass vacuously" \
   'perl -pi -e '"'"'s/^\| \*\*(V2-[^*]+)\*\* \|/| $1 |/'"'"' docs/v2/TICKETS.md'
 
-neg_report "V2-GRAPH-NEGATIVE" 52
+# ---------------------------------------------------------------------------
+# G. THE RATIFICATION GATE — the `ratification` column and the `R` register.
+#
+# These are new on 2026-08-15 and they are the highest-risk block in the file,
+# for a reason worth stating: the column was added to fix a defect whose entire
+# signature was "a check that is green because it is looking at nothing." Nine
+# structural assertions and a second closure went in at once, and the run they
+# first produced was 43 fresh PASS lines. That is precisely the evidence that
+# proves nothing — the whole board parsed identically before the column existed,
+# because the row regex is not anchored at the end of the line.
+#
+# One of these probes already earned its place before this file was committed:
+# the pin rule as first written auto-exempted R5 and R6 (they conflict with
+# nothing, so the code excused them), which made it unfallible for every id that
+# two other checks did not already catch. Writing the probe is what showed it.
+# ---------------------------------------------------------------------------
+echo
+echo "==> the ratification gate"
+echo
+
+# G1. The two registers must not mix. README.md says so in bold and the failure
+#     is silent in both directions: an R in `blocked on` looks like a question
+#     nobody can answer, an O in `ratification` looks like a signature nobody
+#     can give.
+neg_probe "no 'blocked on' cell names an R-id" \
+  'perl -pi -e '"'"'s/\| — \| — \|$/| **R1** | — |/ if /^\| \*\*V2-C4\*\*/'"'"' docs/v2/TICKETS.md'
+
+neg_probe "no 'depends on' cell names an R-id" \
+  'perl -pi -e '"'"'s/\| V2-B1 \|/| V2-B1, R2 |/ if /^\| \*\*V2-B2\*\*/'"'"' docs/v2/TICKETS.md'
+
+neg_probe "no 'ratification' cell names an O-id or a ticket" \
+  'perl -pi -e '"'"'s/\*\*R3\*\* \|$/**R3, O31** |/ if /^\| \*\*V2-A19\*\*/'"'"' docs/v2/TICKETS.md'
+
+# G2. The R register is whole — the same three questions the O register answers,
+#     asked one register over, because that is where the hole was this time.
+neg_probe "R-ids run 1..N with no gap and no duplicate" \
+  'perl -pi -e '"'"'s/^\| \*\*R6\*\*/| **R7**/'"'"' docs/decisions/README.md'
+
+neg_probe "every R names a decision record that exists on disk" \
+  'perl -pi -e '"'"'s/\[D-02\]\(D-02-categories\.md\)/[D-09](D-09-nope.md)/ if /^\| \*\*R1\*\*/'"'"' docs/decisions/README.md'
+
+neg_probe "every decision record has exactly one R row" \
+  'perl -pi -e '"'"'s/\[D-05\]\(D-05-deposit\.md\)/[D-04](D-04-ai-product-surface.md)/ if /^\| \*\*R6\*\*/'"'"' docs/decisions/README.md'
+
+neg_probe "every R-id cited in the V2 docs or the decisions index exists in the R register" \
+  'perl -pi -e '"'"'s{$}{"\n\nSee also `R8`, which is not a thing."}e if /^### The second gate/'"'"' docs/v2/TICKETS.md'
+
+# G3. THE PROBE THIS WHOLE SECTION EXISTS FOR.
+#
+# Clearing V2-A19's cell reproduces the original defect exactly: D-03's pause is
+# live on `main`, PRD.md:784 still says anti-sniping is the single exception,
+# and the ticket that implements it renders with nothing in the column. Before
+# the column existed this was not a mutation — it was the committed state.
+neg_probe "every R that conflicts with PRD.md is carried by at least one ticket" \
+  'perl -pi -e '"'"'s/\*\*R3\*\* \|$/— |/ if /^\| \*\*V2-A19\*\*/'"'"' docs/v2/TICKETS.md'
+
+# The opposite error, which is the one a careful session makes: gating a ticket
+# on a record the PRD is merely SILENT about. R5 is D-04, the AI surface; rule 4
+# makes it safe to build. A gate there is a gate the owner never asked for.
+neg_probe "no ticket is gated on an R that does not conflict with PRD.md" \
+  'perl -pi -e '"'"'s/\| \*\*O12\*\* \| — \|/| **O12** | **R5** |/ if /^\| \*\*V2-A6\*\*/'"'"' docs/v2/TICKETS.md'
+
+# G4. The figures the section states about itself.
+neg_probe "TICKETS.md: records conflicting with the PRD" \
+  'perl -pi -e '"'"'s/\*\*Four of the six conflict/**Three of the six conflict/'"'"' docs/v2/TICKETS.md'
+
+neg_probe "TICKETS.md: R register size" \
+  'perl -pi -e '"'"'s/Four of the six conflict/Four of the five conflict/'"'"' docs/v2/TICKETS.md'
+
+neg_probe "TICKETS.md: tickets carrying an R directly" \
+  'perl -pi -e '"'"'s/\*\*Ten tickets carry one directly/**Nine tickets carry one directly/'"'"' docs/v2/TICKETS.md'
+
+neg_probe "TICKETS.md: the directly-carrying list matches the board" \
+  'perl -pi -e '"'"'s/`V2-A1`, `V2-B4` \(`R1`\)/`V2-A1` (`R1`)/'"'"' docs/v2/TICKETS.md'
+
+# Grouping, probed WITHOUT changing the total. V2-B4 moves from R1 to R2: ten
+# tickets are still listed, all ten are still the right ten, and two groups are
+# now wrong. A count assertion cannot see this and the list assertion cannot
+# either — only the per-group one can.
+neg_probe "TICKETS.md: the tickets listed under R1" \
+  'perl -pi -e '"'"'s/`V2-A1`, `V2-B4` \(`R1`\); `V2-C2`, `V2-A2`, `V2-B7` \(`R2`\)/`V2-A1` (`R1`); `V2-C2`, `V2-A2`, `V2-B7`, `V2-B4` (`R2`)/'"'"' docs/v2/TICKETS.md'
+
+# The unstated-precondition assertions. Naming the WRONG R keeps the sentence
+# well-formed and the figure correct, and makes the claim false — which is the
+# shape the whole section is about.
+neg_probe "needs R4 ratified to be a ready-count" \
+  'perl -pi -e '"'"'s/that `R1` is ratified/that `R4` is ratified/'"'"' docs/v2/TICKETS.md'
+
+neg_probe "needs R1+R4 ratified to be a ready-count" \
+  'perl -pi -e '"'"'s/that `R1` \*\*and\*\* `R2` are ratified/that `R1` **and** `R4` are ratified/'"'"' docs/v2/TICKETS.md'
+
+neg_probe "TICKETS.md: unblocked but not cleared, today" \
+  'perl -pi -e '"'"'s/\*\*Today zero unblocked tickets/**Today two unblocked tickets/'"'"' docs/v2/TICKETS.md'
+
+neg_probe "TICKETS.md: unblocked but not cleared after O1/O2" \
+  'perl -pi -e '"'"'s/becomes \*\*five\*\*/becomes **four**/'"'"' docs/v2/TICKETS.md'
+
+neg_probe "TICKETS.md: which tickets ratification holds after O1/O2" \
+  'perl -pi -e '"'"'s/, `V2-A17` — every one/ — every one/'"'"' docs/v2/TICKETS.md'
+
+neg_probe "reach of R1" \
+  'perl -pi -e '"'"'s/\*\*28 of 40\*\*/**27 of 40**/ if /^\| \*\*R1\*\*/'"'"' docs/v2/TICKETS.md'
+
+# The exact historical defect, reproduced one table over: a cell that says
+# "**21 of 40 each**" stops matching a regex that wants `**` after the
+# denominator, and the loop silently visits one row fewer.
+neg_probe "every row of the R reach table was parsed" \
+  'perl -pi -e '"'"'s/\*\*21 of 40\*\*/**21 of 40 each**/ if /^\| \*\*R2\*\*/'"'"' docs/v2/TICKETS.md'
+
+# And the OTHER historical defect: deleting a row drops the count and the
+# denominator together, so counting rows cannot see it. This is the assertion
+# that can — the table's membership is pinned to the register, not to itself.
+neg_probe "the R reach table names exactly the records that conflict with the PRD" \
+  'perl -ni -e '"'"'print unless /^\| \*\*R3\*\* \| D-03/'"'"' docs/v2/TICKETS.md'
+
+neg_probe "TICKETS.md: tickets downstream of an unratified decision" \
+  'perl -pi -e '"'"'s/\*\*36 of the 40 tickets sit downstream/**35 of the 40 tickets sit downstream/'"'"' docs/v2/TICKETS.md'
+
+# The list, probed without touching the count — swapping one id for another
+# keeps "four" correct and makes the four wrong.
+neg_probe "TICKETS.md: which tickets are untouched by ratification" \
+  'perl -pi -e '"'"'s/`V2-B2`, `V2-B3` — \*\*the same four/`V2-B2`, `V2-A18` — **the same four/'"'"' docs/v2/TICKETS.md'
+
+neg_probe "TICKETS.md: R3's reach on the wide reading" \
+  'perl -pi -e '"'"'s/reach goes 1 → 3\*\*/reach goes 1 → 4**/'"'"' docs/v2/TICKETS.md'
+
+neg_probe "TICKETS.md: the records that gate no ticket are the ones that conflict with nothing" \
+  'perl -pi -e '"'"'s/\*\*`R5` and `R6` carry no ticket/**`R5` and `R4` carry no ticket/'"'"' docs/v2/TICKETS.md'
+
+# The pin rule. Rewording the sentence that pins R5 and R6 un-pins them both —
+# which is the realistic version of the failure, and the one that showed the
+# first draft of this check was auto-exempting them and could never fire.
+neg_probe "every R-id discussed in the ratification section is pinned" \
+  'perl -pi -e '"'"'s/carry no ticket at all\*\*/gate nothing whatsoever**/'"'"' docs/v2/TICKETS.md'
+
+# G5. The two guards that fire before any assertion runs.
+neg_probe "ratification rows — a table shape changed" \
+  'perl -pi -e '"'"'s/^\| \*\*(R\d+)\*\* \|/| $1 |/'"'"' docs/decisions/README.md'
+
+# The 6th column is REQUIRED by the row regex, so a row written with five cells
+# does not parse at all. Same label as the probe in section B, deliberately: it
+# is a different way to break the same counter, and it is the one that proves
+# the required-column design does what it was chosen for. An optional group here
+# would read a forgotten cell as "no ratification needed" and stay green.
+neg_probe "TICKETS.md header: ticket count" \
+  'perl -pi -e '"'"'s/ \| — \|$/ |/ if /^\| \*\*V2-B3\*\*/'"'"' docs/v2/TICKETS.md'
+
+# G6. The check that guards THIS FILE's own honesty, not the board's.
+#
+# `R3's reach on the wide reading` mutates the parsed board in memory to answer
+# a hypothetical the owner has to decide. If that mutation leaked, every figure
+# printed after it would be wrong and all of them would agree with each other —
+# the failure mode with no symptom. So the restore is asserted, and the only way
+# to probe an assertion about the checker is to break the checker.
+neg_probe "the hypothetical was discarded" \
+  'perl -pi -e '"'"'s/^  for \(const \[t, arr\] of saved\) board\.get\(t\)\.ratif = arr;.*$/  \/\/ restore removed by probe/'"'"' tests/v2/graph.check.mjs'
+
+neg_report "V2-GRAPH-NEGATIVE" 82

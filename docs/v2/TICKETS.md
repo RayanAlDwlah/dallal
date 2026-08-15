@@ -75,49 +75,49 @@ words what an uncapped door does — *"without it a contested auction never ends
 finalizes, and never has a winner."* That is why the extension cap is a `CHECK` constraint
 and not an `if`, and it is reachable through pause today.
 
-| id | lane | ticket | depends on | blocked on |
-|---|---|---|---|---|
-| **V2-00** | — | Land #155, get `main` green, then merge #167 | — | — |
-| **V2-C1** | C | Contract: category + category-specific fields → `docs/contracts/V2-C1-category-fields.md` | V2-00 | **O1, O2** |
-| **V2-C2** | C | Contract: auction images → `docs/contracts/V2-C2-auction-images.md` | V2-00 | **O20** |
-| **V2-C3** | C | Contract: the bid button → `docs/contracts/V2-C3-bid-button.md` | V2-00 | **O25, O26, O27, O28, O29, O30** |
-| **V2-C4** | C | Contract: create-auction payload → `docs/contracts/V2-C4-create-auction.md` | V2-C1, V2-C2, V2-C3 | — |
-| **V2-C5** | C | Contract: AI task I/O → `docs/contracts/V2-C5-ai-tasks.md` | V2-C1 | — |
-| **V2-C6** | C | Contract: session + lot → `docs/contracts/V2-C6-session-lot.md` | V2-C4 | **O4, O23** |
-| **V2-C7** | C | Contract: image enhancement → `docs/contracts/V2-C7-image-enhancement.md` | V2-C2 | **O24** |
-| **V2-C8** | C | Contract: search filters → `docs/contracts/V2-C8-search-filters.md` | V2-C1 | — |
-| **V2-A1** | A | Categories: normalized tables, field definitions, validated `jsonb`, label→slug | V2-00, V2-C1 | **O1, O2** |
-| **V2-A2** | A | Auction images: bucket, ordered 1–10, cover at position 0, server-side count | V2-00, V2-C2 | **O20, O21** |
-| **V2-A3** | A | `bid_increment` + INT-08 narrowing + the BR-32 survival test | V2-00, V2-C3 | **O25, O26, O27, O30** |
-| **V2-A4** | A | Starting-price suggestion — SQL, a **range**, a comparable count | V2-A1 | **O14, O34** |
-| **V2-A5** | A | Create-auction server action — incl. **BR-38's 5 min–7 days** | V2-A1, V2-A2, V2-A3, V2-C4 | — |
-| **V2-A6** | A | `lib/ai/` — adapter, schemas, `AI_ENABLED`, `server-only`, the guard | V2-00, V2-C5 | **O12** |
-| **V2-A7** | A | **VLM** task: images → title / description / category | V2-A6, V2-A1 | — |
-| **V2-A8** | A | Model task: Arabic sentence → category, city, keywords. **No amount, no filter values** | V2-A6, V2-A1, V2-C8 | — |
-| **V2-A9** | A | Grounded Q&A — seller's **description and specifications only** | V2-A6, V2-A5 | — |
-| **V2-A10** | A | Sessions + lots schema | V2-A1, V2-A2, V2-A3, V2-C6 | **O4, O8, O10, O23** |
-| **V2-A11** | A | Open / close a lot — **incl. the server-side extension-window refusal** | V2-A10 | **O5** |
-| **V2-A12** | A | Host powers: advance, end session | V2-A11 | **O6, O7** |
-| **V2-A13** | A | Deposit as an eligibility gate + *rejected bids never extend* | V2-A10 | **O17, O18** |
-| **V2-A14** | A | **Image-processing provider spike** — timeboxed, produces options, ships no product code | V2-00 | — |
-| **V2-A15** | A | **Original and derived image storage** — the original is never overwritten | V2-A2, V2-C7 | **O20, O21** |
-| **V2-A16** | A | **The enhancement pipeline** + «رجّع الأصلية» server side | V2-A14, V2-A15 | **O24** |
-| **V2-A17** | A | **Deterministic filters**: brand, minimum year, price band, ending ≤ 24 h | V2-A1, V2-C8 | — |
-| **V2-A18** | A | **Provider capability contract test** — vision + structured output | V2-A6 | — |
-| **V2-A19** | A | **Pause / resume** — atomic, host-only, `end_time` forward by the paused duration | V2-A10, V2-A11 | **O31, O32, O33** |
-| **V2-A20** | A | **Qualify the production provider** — run V2-A18 against it, record the evidence, and check the record | V2-A18 | **O11** |
-| **V2-B1** | B | Design tokens: colours, type scale, money rendering | V2-00 | — |
-| **V2-B2** | B | The auction card — one component, everywhere | V2-B1 | — |
-| **V2-B3** | B | The top bar | V2-B1 | — |
-| **V2-B4** | B | Category picker + filter bar | V2-B1, V2-C1 | **O3** |
-| **V2-B5** | B | The bid button | V2-B1, V2-C3 | **O25, O28, O29** |
-| **V2-B6** | B | The four-step create wizard | V2-B2, V2-B4, V2-C4 | — |
-| **V2-B7** | B | Image uploader — drag-reorder, cover, 1–10, limits | V2-B6, V2-C2 | **O22** |
-| **V2-B8** | B | AI surfaces: suggestion card, editable chips, Q&A box | V2-B6, V2-C5 | **O13** |
-| **V2-B9** | B | Create-session wizard | V2-B6, V2-C6 | **O8, O16** |
-| **V2-B10** | B | Session card + the live room | V2-B2, V2-C6 | **O15, O32** |
-| **V2-B11** | B | Host control room | V2-B10 | **O9, O19, O32, O33** |
-| **V2-B12** | B | **Enhancement surface**: «حسّن الصور» · «رجّع الأصلية» · «صور معدّلة» | V2-B7, V2-C7 | **O24** |
+| id | lane | ticket | depends on | blocked on | ratification |
+|---|---|---|---|---|---|
+| **V2-00** | — | Land #155, get `main` green, then merge #167 | — | — | — |
+| **V2-C1** | C | Contract: category + category-specific fields → `docs/contracts/V2-C1-category-fields.md` | V2-00 | **O1, O2** | **R1** |
+| **V2-C2** | C | Contract: auction images → `docs/contracts/V2-C2-auction-images.md` | V2-00 | **O20** | **R2** |
+| **V2-C3** | C | Contract: the bid button → `docs/contracts/V2-C3-bid-button.md` | V2-00 | **O25, O26, O27, O28, O29, O30** | **R4** |
+| **V2-C4** | C | Contract: create-auction payload → `docs/contracts/V2-C4-create-auction.md` | V2-C1, V2-C2, V2-C3 | — | — |
+| **V2-C5** | C | Contract: AI task I/O → `docs/contracts/V2-C5-ai-tasks.md` | V2-C1 | — | — |
+| **V2-C6** | C | Contract: session + lot → `docs/contracts/V2-C6-session-lot.md` | V2-C4 | **O4, O23** | — |
+| **V2-C7** | C | Contract: image enhancement → `docs/contracts/V2-C7-image-enhancement.md` | V2-C2 | **O24** | — |
+| **V2-C8** | C | Contract: search filters → `docs/contracts/V2-C8-search-filters.md` | V2-C1 | — | — |
+| **V2-A1** | A | Categories: normalized tables, field definitions, validated `jsonb`, label→slug | V2-00, V2-C1 | **O1, O2** | **R1** |
+| **V2-A2** | A | Auction images: bucket, ordered 1–10, cover at position 0, server-side count | V2-00, V2-C2 | **O20, O21** | **R2** |
+| **V2-A3** | A | `bid_increment` + INT-08 narrowing + the BR-32 survival test | V2-00, V2-C3 | **O25, O26, O27, O30** | **R4** |
+| **V2-A4** | A | Starting-price suggestion — SQL, a **range**, a comparable count | V2-A1 | **O14, O34** | — |
+| **V2-A5** | A | Create-auction server action — incl. **BR-38's 5 min–7 days** | V2-A1, V2-A2, V2-A3, V2-C4 | — | — |
+| **V2-A6** | A | `lib/ai/` — adapter, schemas, `AI_ENABLED`, `server-only`, the guard | V2-00, V2-C5 | **O12** | — |
+| **V2-A7** | A | **VLM** task: images → title / description / category | V2-A6, V2-A1 | — | — |
+| **V2-A8** | A | Model task: Arabic sentence → category, city, keywords. **No amount, no filter values** | V2-A6, V2-A1, V2-C8 | — | — |
+| **V2-A9** | A | Grounded Q&A — seller's **description and specifications only** | V2-A6, V2-A5 | — | — |
+| **V2-A10** | A | Sessions + lots schema | V2-A1, V2-A2, V2-A3, V2-C6 | **O4, O8, O10, O23** | — |
+| **V2-A11** | A | Open / close a lot — **incl. the server-side extension-window refusal** | V2-A10 | **O5** | — |
+| **V2-A12** | A | Host powers: advance, end session | V2-A11 | **O6, O7** | — |
+| **V2-A13** | A | Deposit as an eligibility gate + *rejected bids never extend* | V2-A10 | **O17, O18** | — |
+| **V2-A14** | A | **Image-processing provider spike** — timeboxed, produces options, ships no product code | V2-00 | — | — |
+| **V2-A15** | A | **Original and derived image storage** — the original is never overwritten | V2-A2, V2-C7 | **O20, O21** | — |
+| **V2-A16** | A | **The enhancement pipeline** + «رجّع الأصلية» server side | V2-A14, V2-A15 | **O24** | — |
+| **V2-A17** | A | **Deterministic filters**: brand, minimum year, price band, ending ≤ 24 h | V2-A1, V2-C8 | — | — |
+| **V2-A18** | A | **Provider capability contract test** — vision + structured output | V2-A6 | — | — |
+| **V2-A19** | A | **Pause / resume** — atomic, host-only, `end_time` forward by the paused duration | V2-A10, V2-A11 | **O31, O32, O33** | **R3** |
+| **V2-A20** | A | **Qualify the production provider** — run V2-A18 against it, record the evidence, and check the record | V2-A18 | **O11** | — |
+| **V2-B1** | B | Design tokens: colours, type scale, money rendering | V2-00 | — | — |
+| **V2-B2** | B | The auction card — one component, everywhere | V2-B1 | — | — |
+| **V2-B3** | B | The top bar | V2-B1 | — | — |
+| **V2-B4** | B | Category picker + filter bar | V2-B1, V2-C1 | **O3** | **R1** |
+| **V2-B5** | B | The bid button | V2-B1, V2-C3 | **O25, O28, O29** | **R4** |
+| **V2-B6** | B | The four-step create wizard | V2-B2, V2-B4, V2-C4 | — | — |
+| **V2-B7** | B | Image uploader — drag-reorder, cover, 1–10, limits | V2-B6, V2-C2 | **O22** | **R2** |
+| **V2-B8** | B | AI surfaces: suggestion card, editable chips, Q&A box | V2-B6, V2-C5 | **O13** | — |
+| **V2-B9** | B | Create-session wizard | V2-B6, V2-C6 | **O8, O16** | — |
+| **V2-B10** | B | Session card + the live room | V2-B2, V2-C6 | **O15, O32** | — |
+| **V2-B11** | B | Host control room | V2-B10 | **O9, O19, O32, O33** | — |
+| **V2-B12** | B | **Enhancement surface**: «حسّن الصور» · «رجّع الأصلية» · «صور معدّلة» | V2-B7, V2-C7 | **O24** | — |
 
 ### Unblocked, startable, and how many people can actually work
 
@@ -129,11 +129,16 @@ labelled with the first.
 | term | means | property of |
 |---|---|---|
 | **unblocked** | no open owner question anywhere in its dependency chain | the question graph |
-| **startable** (= `ready`) | unblocked **and** every dependency already merged | a moment in time |
+| **cleared** | no unratified contradiction of `PRD.md` anywhere in that chain | the ratification gate |
+| **startable** (= `ready`) | unblocked **and** cleared **and** every dependency already merged | a moment in time |
 | **wave** | how many merges deep it sits behind `V2-00` | the schedule |
 
 **Four tickets are unblocked: V2-A14, V2-B1, V2-B2, V2-B3.** That is the honest answer to
 *"what has no open question in it."*
+
+**All four are also cleared**, so *unblocked* and *cleared* pick out the same set today and
+the distinction costs nothing to ignore. It stops being free the moment `O1` and `O2` are
+answered — the section after next is that measurement.
 
 **Two of them can be started: V2-A14, V2-B1.** `V2-B2` and `V2-B3` both depend on `V2-B1`,
 which is not merged, so they are unblocked and **not yet startable**.
@@ -164,6 +169,101 @@ Both tables above are asserted by [`tests/v2/graph.check.mjs`](../../tests/v2/gr
 > not an oversight in a cell — the numbering scheme had a hole in it, and the hole was
 > shaped exactly like good news. The six are now `O25`–`O30` (`SPEC.md` §4.3), and D-01 §5a
 > records the measurement.
+
+### The second gate — `ready` has two halves and the board could only write one
+
+[`docs/decisions/README.md`](../decisions/README.md) carries an **`R` register**: per decision
+record, what `PRD.md` still says instead. **Four of the six conflict with the ratified document
+today** — categories (`R1`), 1–10 images (`R2`), pause moving `end_time` (`R3`), and the
+seller-set increment (`R4`, itself conditional on `O25`). That register's precedence table is
+not ambiguous about what a conflict means:
+
+> **says the opposite** → superseding a ratified requirement → **The owner ratifies, or nothing
+> is safe.**
+
+**An `R` is not an `O`, and the two registers must not be merged** — `README.md` says so in
+bold and it is right. An `O` is a question **nobody has answered**, and the ticket must not
+answer it. An `R` is a question the owner **has** answered, where the ratified document does
+not say so yet. Opposite shapes, opposite remedies.
+
+So the ids existed, four of them said *not safe to build*, and **there was nowhere on this
+board to cite them.** That is the D-01 failure reproduced one register over, in the same week
+this board wrote D-01's up. There the questions had no ids; here the ids had no column. Both
+render identically — a cell that says nothing, and nothing is indistinguishable from ready.
+
+The **`ratification`** column is that citation. It names the `R` items a ticket's **own
+deliverable** would put in front of users ahead of the PRD — not what it inherits, which the
+dependency closure already propagates for free. **Ten tickets carry one directly:** `V2-C1`,
+`V2-A1`, `V2-B4` (`R1`); `V2-C2`, `V2-A2`, `V2-B7` (`R2`); `V2-A19` (`R3`); `V2-C3`, `V2-A3`,
+`V2-B5` (`R4`).
+
+**No number this board stated was wrong.** Two were true only under a precondition nobody had
+written down, and both are further down this page:
+
+| the board says | still exactly right | what it was silently assuming |
+|---|---|---|
+| answering `O1`+`O2` moves the unblocked set **4 → 9** | yes — *unblocked* is the question graph | that `R1` is ratified |
+| adding `O20` moves it **9 → 10** | yes | that `R1` **and** `R2` are ratified |
+
+That is the whole defect, and it is worth being precise about how small it looks: nobody
+miscounted, nothing drifted, and no cell was stale. A true sentence was simply load-bearing
+for a claim it did not make.
+
+**Today zero unblocked tickets are held by ratification alone.** Answer `O1` and `O2` and that
+becomes **five** — `V2-C1`, `V2-C5`, `V2-C8`, `V2-A1`, `V2-A17` — every one of them unblocked,
+**none of them ready**, all four waiting on one signature. Before this column, all five would
+have read as startable.
+
+| item | record | the PRD today | reach |
+|---|---|---|---|
+| **R1** | D-02 — categories | out of scope; `FR-CREATE-03` forbids optional fields | **28 of 40** |
+| **R2** | D-06 — 1 to 10 images | `FR-CREATE-15`: exactly one image | **21 of 40** |
+| **R4** | D-01 — the seller-set increment | `FR-CREATE-03`, **if** `O25` says the field is optional | **19 of 40** |
+| **R3** | D-03 — pause moves `end_time` | `BR-16`: anti-sniping is *the single exception* | **1 of 40** |
+
+**`R5` and `R6` carry no ticket at all**, and that is the register working rather than
+failing. `PRD.md` is silent about the AI surface (D-04) and about the deposit (D-05) — silence
+is gap-filling, `README.md` rule 4 makes gap-filling safe to build, and a ratification gate on
+either would be a gate nobody asked for. **The absence of a cell is a claim here too**, so it
+is asserted: the records that gate no ticket must be exactly the records that contradict
+nothing.
+
+**36 of the 40 tickets sit downstream of at least one unratified decision.** The four that do
+not are `V2-A14`, `V2-B1`, `V2-B2`, `V2-B3` — **the same four that are unblocked.** That is not
+a coincidence: every other ticket on this board reaches a user through the category contract,
+the image contract or the bid contract.
+
+`R3` is the one to read twice, because its reach of **1** is the same shape as `O31`'s. It is
+the lowest number in the table and it is the only row that is **already live on `main`** —
+`CLAUDE.md` §5 carries the pause amendment today and `PRD.md:784` still says anti-sniping is
+the single exception. Low reach is not low stakes; it never was.
+
+Every figure in this section is recomputed from the board by
+[`tests/v2/graph.check.mjs`](../../tests/v2/graph.check.mjs), which also asserts that no `R`
+appears in a *blocked on* cell, that no `O` appears in a *ratification* cell, and that every
+conflicting record is carried by at least one ticket.
+
+> **Two things here are the owner's to answer, and this board must not answer either.**
+>
+> **1. `PRD.md:411` puts *search* out of scope and no `R` item covers it.** `R1` quotes that
+> line for categories — but the sentence reads *"categories, search, **and recommendations**"*,
+> and `V2-C8`, `V2-A17` and `V2-A8` build search. They carry no `R` of their own; they inherit
+> `R1` through `V2-C1`, which is a weaker and different claim. Either ratifying D-02 covers
+> search, or search needs its own record and its own `R`. **Opening a seventh row here would
+> be inventing a product decision** (`TEAM.md` rule 16, `CLAUDE.md` §8), so it is not opened.
+>
+> *(That id is deliberately not spelled out above. Two independent checks in
+> `graph.check.mjs` — "every cited `R` exists" and the pin rule — both went red on the draft
+> that did spell it, and they were right to: a citation of an id that does not exist is
+> indistinguishable from a renumber nobody finished. The same thing happened one file over,
+> where a `run.sh` comment demonstrating a backslash-tab flagged its own file.)*
+>
+> **2. Does `R3` reach past `V2-A19`?** `V2-A11` (open/close a lot) and `V2-A12` (host powers)
+> are host operations on a live lot that the PRD also does not describe — but *silence* is
+> `R5`/`R6`-shaped (gap-filling, safe to build under rule 4), not `R3`-shaped (direct
+> contradiction of `BR-16`). This board took the narrow reading and put `R3` on `V2-A19` alone.
+> On the wide reading **`R3`'s reach goes 1 → 3** (`V2-A11`, `V2-A12`, `V2-A19`) — measured, by
+> adding the two cells and re-running the closure, then discarding the edit.
 
 A previous draft of this board claimed phase 1 had *"no cross-track dependency at all"* and
 that nine tickets could run in parallel. **Both were wrong**: `V2-B4` needs the category

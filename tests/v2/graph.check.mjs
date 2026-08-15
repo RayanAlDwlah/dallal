@@ -80,16 +80,38 @@ const word2num = (s) => {
 
 // A cell may say "**O1, O2**" or "V2-A1, V2-C1" or "**no ticket** — see below".
 const idsIn = (cell) => cell.match(/\bV2-(?:00|[A-C]\d+)\b|\bO\d+\b/g) ?? [];
+// An `R` item is NOT an `O` item. decisions/README.md says so in bold — "these
+// are not `O` items and must not be merged into that register" — so they get
+// their own matcher, and the structural checks below assert the two never mix.
+const rIdsIn = (cell) => cell.match(/\bR\d+\b/g) ?? [];
 
 // ---------------------------------------------------------------------------
 // Parse the two tables
+//
+// The board's 6th column is `ratification`, and this regex REQUIRES it. That is
+// deliberate: a row written with five cells does not parse, board.size drops,
+// and the header's ticket count goes red. The alternative — an optional group —
+// would read a forgotten cell as "no ratification needed", which is the exact
+// shape of the defect this column exists to remove. A missing cell must be
+// loud, because `—` and "nobody filled this in" are indistinguishable and the
+// board has now been bitten by that twice (D-01 §5 → O25–O30, and this).
 // ---------------------------------------------------------------------------
-const board = new Map(); // V2-xx -> {deps, blocked}
+const board = new Map(); // V2-xx -> {deps, blocked, ratif}
 for (const line of TICKETS.split("\n")) {
   const m = line.match(
-    /^\|\s*\*\*(V2-[^*]+)\*\*\s*\|([^|]*)\|([^|]*)\|([^|]*)\|([^|]*)\|/,
+    /^\|\s*\*\*(V2-[^*]+)\*\*\s*\|([^|]*)\|([^|]*)\|([^|]*)\|([^|]*)\|([^|]*)\|/,
   );
-  if (m) board.set(m[1].trim(), { deps: idsIn(m[4]), blocked: idsIn(m[5]) });
+  if (m) {
+    board.set(m[1].trim(), {
+      deps: idsIn(m[4]),
+      blocked: idsIn(m[5]),
+      ratif: rIdsIn(m[6]),
+      // kept verbatim so the cross-contamination checks can read the raw cells
+      rawDeps: m[4],
+      rawBlocked: m[5],
+      rawRatif: m[6],
+    });
+  }
 }
 
 const register = new Map(); // O-n -> tickets the register says it blocks
@@ -98,10 +120,28 @@ for (const line of SPEC.split("\n")) {
   if (m) register.set(m[1], idsIn(m[4]));
 }
 
-if (board.size === 0 || register.size === 0) {
+// The R register lives in decisions/README.md, not SPEC.md, because it is a
+// property of a decision record and not of a ticket.
+//   | id | record | the PRD today | conflict? | what ratifying it requires |
+const rRegister = new Map(); // R-n -> {record, conflict}
+for (const line of DEC_README.split("\n")) {
+  const m = line.match(
+    /^\|\s*\*\*(R\d+)\*\*\s*\|([^|]*)\|([^|]*)\|([^|]*)\|([^|]*)\|/,
+  );
+  if (m) {
+    rRegister.set(m[1], {
+      record: (m[2].match(/\bD-\d+\b/) ?? [null])[0],
+      // "**YES — direct**", "**depends on an open item**", "no"
+      conflicts: !/^\s*no\s*$/i.test(m[4].replace(/\*/g, "")),
+    });
+  }
+}
+
+if (board.size === 0 || register.size === 0 || rRegister.size === 0) {
   console.log(
-    `FAIL  parsed ${board.size} tickets and ${register.size} register rows — ` +
-      `a table shape changed and every assertion below would pass vacuously`,
+    `FAIL  parsed ${board.size} tickets, ${register.size} register rows and ` +
+      `${rRegister.size} ratification rows — a table shape changed and every ` +
+      `assertion below would pass vacuously`,
   );
   process.exit(1);
 }
@@ -109,7 +149,7 @@ if (board.size === 0 || register.size === 0) {
 // ---------------------------------------------------------------------------
 // The closure. `answered` lets a caller ask "what opens up if these are decided?"
 // ---------------------------------------------------------------------------
-const startableWith = (answered = new Set()) => {
+const closure = (answered, ratified) => {
   const memo = new Map();
   const walk = (id, seen) => {
     if (memo.has(id)) return memo.get(id);
@@ -118,12 +158,34 @@ const startableWith = (answered = new Set()) => {
     const n = board.get(id);
     if (!n) return false;
     const ok = n.blocked.every((o) => answered.has(o)) &&
+      n.ratif.every((r) => ratified.has(r)) &&
       n.deps.every((d) => walk(d, new Set(seen)));
     memo.set(id, ok);
     return ok;
   };
   return [...board.keys()].filter((id) => id !== "V2-00" && walk(id, new Set()));
 };
+
+// UNBLOCKED asks only the question graph: is any O-item on this chain still
+// open? It is the property TICKETS.md's glossary defines, and it deliberately
+// ignores ratification — so `ALL_RATIFIED` is passed, not the real state.
+const ALL_RATIFIED = new Set([...rRegister.keys()]);
+const startableWith = (answered = new Set()) => closure(answered, ALL_RATIFIED);
+
+// CLEARED adds the second gate, and it is the one `ready` actually needs.
+// decisions/README.md's precedence table is unambiguous about the case where a
+// record supersedes a ratified requirement: "The owner ratifies, or nothing is
+// safe." A ticket whose deliverable is the thing PRD.md forbids is therefore
+// not ready, however many owner questions have been answered — and until the
+// `ratification` column existed there was no id it could cite to say so, which
+// is the D-01 failure one register over.
+//
+// `ratified` is the set the owner has actually moved into PRD.md. Today that is
+// EMPTY, and every figure below that passes a non-empty set is answering a
+// hypothetical — which is exactly why the sentences those figures back now name
+// the ratification out loud instead of assuming it.
+const clearedWith = (answered = new Set(), ratified = new Set()) =>
+  closure(answered, ratified);
 
 // UNBLOCKED IS NOT STARTABLE, and conflating them is what made this board
 // report 2.3x the parallelism it had.
@@ -138,8 +200,14 @@ const startableWith = (answered = new Set()) => {
 //
 // Waves answer the schedule question the closure cannot: wave 1 is what starts
 // when V2-00 merges, wave N is what starts when wave N-1 has.
+//
+// Waves are computed from CLEARED, not from unblocked. A wave answers "who can
+// claim work the day V2-00 merges", and a ticket the PRD forbids cannot be
+// claimed however many questions have been answered. The two sets are the same
+// today; they stop being the same the day O1 and O2 are answered, and the
+// figure below that states the gap is what makes that visible in advance.
 const waves = () => {
-  const unblocked = new Set(startableWith());
+  const unblocked = new Set(clearedWith());
   const out = [];
   const merged = new Set(["V2-00"]); // the unblock step is wave 0 by definition
   let remaining = new Set(unblocked);
@@ -168,6 +236,22 @@ const reachOf = (os) => {
     const n = board.get(id);
     if (!n) return false;
     return n.blocked.some((o) => os.includes(o)) ||
+      n.deps.some((d) => walk(d, new Set(seen)));
+  };
+  for (const id of board.keys()) if (id !== "V2-00" && walk(id, new Set())) hit.add(id);
+  return hit;
+};
+
+// The same walk over the ratification column. An R sits upstream of a ticket if
+// the ticket carries it, or carries a dependency that does.
+const reachOfR = (rs) => {
+  const hit = new Set();
+  const walk = (id, seen) => {
+    if (seen.has(id)) return false;
+    seen.add(id);
+    const n = board.get(id);
+    if (!n) return false;
+    return n.ratif.some((r) => rs.includes(r)) ||
       n.deps.some((d) => walk(d, new Set(seen)));
   };
   for (const id of board.keys()) if (id !== "V2-00" && walk(id, new Set())) hit.add(id);
@@ -353,6 +437,113 @@ chk(
   [],
 );
 
+// ---------------------------------------------------------------------------
+// 2d. THE RATIFICATION GATE — the third register, and the one that had no
+//     column until 2026-08-15.
+//
+// decisions/README.md's `R` register records, per decision record, what the
+// ratified PRD still says instead. Four of the six conflict with PRD.md today.
+// The register had ids from the day it was written — and no ticket could cite
+// them, because the board had five columns and none of them was for this.
+//
+// That is the D-01 failure reproduced exactly, one register over, and the
+// board's own record of it (decisions/README.md, under the index) is the
+// clearest statement of why it is not cosmetic:
+//
+//     "They had no ids, so no ticket could cite them, so three tickets carried
+//      `blocked on: —` and the board counted them startable."
+//
+// Here the ids existed and the COLUMN did not, which produces the same render:
+// V2-C1, V2-A1, V2-B4, V2-C2, V2-A2, V2-B7, V2-A19, V2-C3, V2-A3 and V2-B5 all
+// implement something PRD.md currently forbids, and every one of them would
+// have read as ready the moment its O-items were answered.
+//
+// The checks below hold three separate things, and they fail differently:
+//   - the two registers stay separate       (README.md's bold instruction)
+//   - the R register is whole and reciprocal (no id without a row, no row
+//     without a record, no conflicting record without a ticket carrying it)
+//   - the column is REACHABLE from the closure, so it changes an answer
+// ---------------------------------------------------------------------------
+console.log();
+console.log("--- the ratification gate: R is not O, and both must stay that way");
+
+// An id in the wrong column is the failure that "must not be merged into that
+// register" is warning about, and it is silent: R4 sitting in `blocked on`
+// would make the ticket look blocked by a question nobody can answer, because
+// no such O-item exists. Three assertions, one per direction that can leak.
+chk(
+  "no 'blocked on' cell names an R-id — a ratification is not an open question",
+  [...board].filter(([, v]) => rIdsIn(v.rawBlocked).length).map(([t]) => t).sort(),
+  [],
+);
+chk(
+  "no 'depends on' cell names an R-id — a ratification is not a ticket",
+  [...board].filter(([, v]) => rIdsIn(v.rawDeps).length).map(([t]) => t).sort(),
+  [],
+);
+chk(
+  "no 'ratification' cell names an O-id or a ticket",
+  [...board].filter(([, v]) => idsIn(v.rawRatif).length).map(([t]) => t).sort(),
+  [],
+);
+
+const rNums = [...rRegister.keys()].map((r) => Number(r.slice(1))).sort((a, b) => a - b);
+chk(
+  "R-ids run 1..N with no gap and no duplicate",
+  rNums,
+  Array.from({ length: rRegister.size }, (_, i) => i + 1),
+);
+
+// One R per decision record, both directions. A seventh record cannot be added
+// without saying what PRD.md says instead; an R cannot name a record that is
+// not on disk. run.sh holds the prose half of this rule; this is the data half.
+chk(
+  "every R names a decision record that exists on disk",
+  [...rRegister].filter(([, v]) => !v.record || !RECORDS.has(v.record))
+    .map(([r]) => r).sort(byNum),
+  [],
+);
+chk(
+  "every decision record has exactly one R row",
+  [...RECORDS.keys()].filter(
+    (d) => [...rRegister.values()].filter((v) => v.record === d).length !== 1,
+  ).sort(),
+  [],
+);
+
+const rCitedAnywhere = new Set();
+for (const src of [TICKETS, SPEC, DEC_README]) {
+  for (const m of src.matchAll(/\bR(\d+)\b/g)) rCitedAnywhere.add(`R${m[1]}`);
+}
+chk(
+  "every R-id cited in the V2 docs or the decisions index exists in the R register",
+  [...rCitedAnywhere].filter((r) => !rRegister.has(r)).sort(byNum),
+  [],
+);
+
+// THE ANTI-HOLE CHECK, and the reason this section is worth its length.
+//
+// It is reciprocal on purpose. A conflicting record with no ticket carrying it
+// is a decision being built with PRD.md saying the opposite and nothing on the
+// board admitting it — the original defect. A non-conflicting record carried by
+// a ticket is the opposite error: R5 and R6 are gap-filling, README.md rule 4
+// makes them safe to build, and blocking a ticket on them would invent a gate
+// the owner never asked for.
+const carriedBy = new Map([...rRegister.keys()].map((r) => [r, []]));
+for (const [t, v] of board) for (const r of v.ratif) carriedBy.get(r)?.push(t);
+chk(
+  "every R that conflicts with PRD.md is carried by at least one ticket",
+  [...rRegister].filter(([r, v]) => v.conflicts && carriedBy.get(r).length === 0)
+    .map(([r]) => r).sort(byNum),
+  [],
+);
+chk(
+  "no ticket is gated on an R that does not conflict with PRD.md",
+  [...rRegister].filter(([r, v]) => !v.conflicts && carriedBy.get(r).length > 0)
+    .map(([r]) => r).sort(byNum),
+  [],
+);
+
 console.log();
 console.log("--- the totals both documents state about themselves");
 
@@ -492,6 +683,233 @@ const canStart = grab(
 if (canStart) {
   chk("TICKETS.md: wave-1 count — how many people can work at once", word2num(canStart[1]), computedWaves[0]?.length);
   chk("TICKETS.md: wave-1 list", idsIn(canStart[2]).sort(), computedWaves[0]);
+}
+
+// ---------------------------------------------------------------------------
+// The figures the ratification section states about itself.
+//
+// Every one of these is a number in prose describing a graph, which is the
+// category of thing this whole file exists for. The two that matter most are
+// the last two: "zero today" and "five the day O1 and O2 are answered". The
+// second is the one a reader acts on, and it is the number that did not exist
+// before the column did — those five tickets read as startable, and the board
+// had no way to say otherwise.
+// ---------------------------------------------------------------------------
+console.log();
+console.log("--- the ratification section's own figures");
+
+const cleared = clearedWith();
+const conflictingR = [...rRegister].filter(([, v]) => v.conflicts).map(([r]) => r).sort(byNum);
+
+const rCount = grab(
+  TICKETS,
+  /\*\*([A-Za-z-]+) of the ([a-z-]+) conflict with the ratified document\s+today\*\*/,
+  "TICKETS.md states how many records conflict with the PRD",
+);
+if (rCount) {
+  chk("TICKETS.md: records conflicting with the PRD", word2num(rCount[1]), conflictingR.length);
+  chk("TICKETS.md: R register size", word2num(rCount[2]), rRegister.size);
+}
+
+// The grouped list, checked per group. A correct total next to a ticket filed
+// under the wrong R is still a lie, and it is the more likely error of the two:
+// the count is written once and the grouping is written ten times.
+const direct = grab(
+  TICKETS,
+  /\*\*([A-Za-z-]+) tickets carry one directly:\*\*([^.]*)\./,
+  "TICKETS.md lists the tickets that carry a ratification directly",
+);
+if (direct) {
+  chk(
+    "TICKETS.md: tickets carrying an R directly",
+    word2num(direct[1]),
+    [...board.values()].filter((v) => v.ratif.length).length,
+  );
+  chk(
+    "TICKETS.md: the directly-carrying list matches the board",
+    idsIn(direct[2]).sort(),
+    [...board].filter(([, v]) => v.ratif.length).map(([t]) => t).sort(),
+  );
+  for (const group of direct[2].split(";")) {
+    const r = rIdsIn(group);
+    if (r.length !== 1) {
+      fail++;
+      console.log(`FAIL  a group in the directly-carrying list names ${r.length} R-ids, not 1`);
+      continue;
+    }
+    chk(`TICKETS.md: the tickets listed under ${r[0]}`, idsIn(group).sort(), carriedBy.get(r[0]).sort());
+  }
+}
+
+// The two sentences that were true under an unstated precondition. Both halves
+// are asserted: the figure still holds, AND it holds only once the named R is
+// ratified — the second half is checked by passing exactly that set.
+const assume1 = grab(
+  TICKETS,
+  /\| answering `O1`\+`O2` moves the unblocked set \*\*(\d+) → (\d+)\*\* \|[^|]*\| that `(R\d+)` is ratified \|/,
+  "TICKETS.md names what the O1/O2 figure assumes",
+);
+if (assume1) {
+  chk("TICKETS.md: unblocked before O1/O2, restated", Number(assume1[1]), startable.length);
+  chk(
+    "TICKETS.md: unblocked after O1/O2, restated",
+    Number(assume1[2]),
+    startableWith(new Set(["O1", "O2"])).length,
+  );
+  chk(
+    `TICKETS.md: that figure needs ${assume1[3]} ratified to be a ready-count`,
+    clearedWith(new Set(["O1", "O2"]), new Set([assume1[3]])).length,
+    Number(assume1[2]),
+  );
+}
+
+const assume2 = grab(
+  TICKETS,
+  /\| adding `O20` moves it \*\*(\d+) → (\d+)\*\* \|[^|]*\| that `(R\d+)` \*\*and\*\* `(R\d+)` are ratified \|/,
+  "TICKETS.md names what the O20 figure assumes",
+);
+if (assume2) {
+  chk(
+    "TICKETS.md: unblocked after O1/O2/O20, restated",
+    Number(assume2[2]),
+    startableWith(new Set(["O1", "O2", "O20"])).length,
+  );
+  chk(
+    `TICKETS.md: that figure needs ${assume2[3]}+${assume2[4]} ratified to be a ready-count`,
+    clearedWith(new Set(["O1", "O2", "O20"]), new Set([assume2[3], assume2[4]])).length,
+    Number(assume2[2]),
+  );
+}
+
+const heldToday = grab(
+  TICKETS,
+  /\*\*Today ([a-z-]+) unblocked tickets are held by ratification alone\.\*\*/,
+  "TICKETS.md states how many unblocked tickets ratification holds today",
+);
+if (heldToday) {
+  chk(
+    "TICKETS.md: unblocked but not cleared, today",
+    word2num(heldToday[1]),
+    startable.filter((t) => !cleared.includes(t)).length,
+  );
+}
+
+const heldAfter = grab(
+  TICKETS,
+  /becomes \*\*([a-z-]+)\*\* — ([^—]+) —/,
+  "TICKETS.md states how many O1/O2 releases that ratification then holds",
+);
+if (heldAfter) {
+  const u = startableWith(new Set(["O1", "O2"]));
+  const c = clearedWith(new Set(["O1", "O2"]));
+  chk("TICKETS.md: unblocked but not cleared after O1/O2", word2num(heldAfter[1]), u.filter((t) => !c.includes(t)).length);
+  chk(
+    "TICKETS.md: which tickets ratification holds after O1/O2",
+    idsIn(heldAfter[2]).sort(),
+    u.filter((t) => !c.includes(t)).sort(),
+  );
+}
+
+const rAssertedHere = new Set();
+const rReachRows = TICKETS.split("\n").filter((l) => /^\| \*\*R\d+\*\*/.test(l));
+let rRows = 0;
+for (const line of rReachRows) {
+  const m = line.match(/^\| \*\*(R\d+)\*\* \| [^|]* \| [^|]* \| \*\*(\d+) of (\d+)\*\* \|/);
+  if (!m) continue;
+  rRows++;
+  rAssertedHere.add(m[1]);
+  chk(`reach of ${m[1]}`, Number(m[2]), reachOfR([m[1]]).size);
+  chk(`reach denominator on the ${m[1]} row`, Number(m[3]), tickets);
+}
+chk("every row of the R reach table was parsed", rRows, rReachRows.length);
+chk(
+  "the R reach table names exactly the records that conflict with the PRD",
+  [...rAssertedHere].sort(byNum),
+  conflictingR,
+);
+
+const downstream = grab(
+  TICKETS,
+  /\*\*(\d+) of the (\d+) tickets sit downstream of at least one unratified\s+decision\.\*\* The ([a-z-]+) that do\s+not are ([^—]+) —/,
+  "TICKETS.md states how much of the board sits downstream of an unratified decision",
+);
+if (downstream) {
+  const reached = reachOfR(conflictingR);
+  const untouched = [...board.keys()].filter((t) => t !== "V2-00" && !reached.has(t)).sort();
+  chk("TICKETS.md: tickets downstream of an unratified decision", Number(downstream[1]), reached.size);
+  chk("TICKETS.md: that figure's denominator", Number(downstream[2]), tickets);
+  chk("TICKETS.md: how many are untouched by ratification", word2num(downstream[3]), untouched.length);
+  chk("TICKETS.md: which tickets are untouched by ratification", idsIn(downstream[4]).sort(), untouched);
+}
+
+// The wide reading of R3 is stated as a measurement, so it is measured — on a
+// throwaway copy of the board, because the narrow reading is what is committed.
+// A hypothetical in prose is still a number, and an unchecked one rots exactly
+// like the rest. This is the assertion that stops the owner being handed a
+// made-up figure to decide against.
+const r3wide = grab(
+  TICKETS,
+  /\*\*`R3`'s reach goes (\d+) → (\d+)\*\* \(([^)]+)\)/,
+  "TICKETS.md states what R3's reach becomes on the wide reading",
+);
+if (r3wide) {
+  chk("TICKETS.md: R3's reach on the narrow reading", Number(r3wide[1]), reachOfR(["R3"]).size);
+  const widened = idsIn(r3wide[3]).filter((t) => board.has(t));
+  const saved = new Map(widened.map((t) => [t, [...board.get(t).ratif]]));
+  for (const t of widened) if (!board.get(t).ratif.includes("R3")) board.get(t).ratif.push("R3");
+  const wide = reachOfR(["R3"]).size;
+  for (const [t, arr] of saved) board.get(t).ratif = arr; // put the real board back
+  chk("TICKETS.md: R3's reach on the wide reading", Number(r3wide[2]), wide);
+  // The restore is asserted, not assumed. A hypothetical that leaks would make
+  // every figure after this point quietly wrong, and all of them would agree.
+  chk("the hypothetical was discarded — R3's real reach is unchanged", reachOfR(["R3"]).size, Number(r3wide[1]));
+}
+
+// The same pin rule as the O reach section: an R named in this section costs a
+// row or a checked sentence. "O11 reaches none" is the precedent — prose that
+// reads as verified because it sits beside numbers that are.
+const rSection = TICKETS.match(
+  /\n### The second gate — [^\n]*\n([\s\S]*?)(?=\n### |\n## |$)/,
+);
+if (!rSection) {
+  fail++;
+  console.log(
+    "FAIL  the ratification section could not be located\n" +
+      "        the '### The second gate' heading was renamed",
+  );
+} else {
+  // R5 and R6 are named in this section and have no reach row, because they
+  // conflict with nothing and gate no ticket. The first draft of this pin check
+  // auto-exempted them on exactly that reasoning — which made the check
+  // unfallible: every conflicting item is forced to have a row by the assertion
+  // above, so the only id left that could ever trip it was one absent from the
+  // register, and two other checks already catch that. An exemption computed
+  // from the data is not a pin; it is the check agreeing with itself.
+  //
+  // So they are pinned the same way everything else is: by a sentence that
+  // states a fact and is checked against the graph.
+  const silent = grab(
+    TICKETS,
+    /\*\*`(R\d+)` and `(R\d+)` carry no ticket at all\*\*/,
+    "TICKETS.md names the records that gate nothing",
+  );
+  if (silent) {
+    rAssertedHere.add(silent[1]).add(silent[2]);
+    chk(
+      "TICKETS.md: the records that gate no ticket are the ones that conflict with nothing",
+      [silent[1], silent[2]].sort(byNum),
+      [...rRegister].filter(([r]) => carriedBy.get(r).length === 0).map(([r]) => r).sort(byNum),
+    );
+  }
+  if (direct) for (const r of rIdsIn(direct[2])) rAssertedHere.add(r);
+  if (assume1) rAssertedHere.add(assume1[3]);
+  if (assume2) rAssertedHere.add(assume2[3]).add(assume2[4]);
+  chk(
+    "every R-id discussed in the ratification section is pinned by a row or a checked sentence",
+    [...new Set(rSection[1].match(/\bR\d+\b/g) ?? [])]
+      .filter((r) => !rAssertedHere.has(r)).sort(byNum),
+    [],
+  );
 }
 
 console.log();
