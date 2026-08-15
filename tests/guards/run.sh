@@ -5,7 +5,7 @@
 #   ./tests/guards/run.sh
 #
 # Needs nothing: no Docker, no node, no network, no credentials. It reads the
-# tree and asserts nineteen facts about it. It finishes in under a second,
+# tree and asserts twenty facts about it. It finishes in under a second,
 # which is deliberate: a guard nobody minds running is a guard that runs.
 #
 # ---------------------------------------------------------------------------
@@ -89,7 +89,7 @@ set -uo pipefail
 ROOT="$(cd "$(dirname "$0")/../.." && pwd)"
 cd "$ROOT" || exit 1
 
-EXPECTED=19
+EXPECTED=20
 pass=0
 fail=0
 
@@ -447,6 +447,29 @@ done <<EOF
 $(dec_status)
 EOF
 chk "every unratified decision record is in the R register" "$unqueued" 0
+
+# ===========================================================================
+# SELF — CLAUDE.md §9 describes this file; it has to describe it correctly
+# ===========================================================================
+echo
+echo "--- self"
+
+# S1. §9 tells a reader how many checks this suite runs. That sentence went
+# stale TWICE IN TWO COMMITS — 15 -> 17 with §9 still saying fifteen, then
+# 17 -> 19 with §9 still saying seventeen — and both times the document that
+# exists to describe the guard layer was quietly wrong about it. Nobody would
+# have noticed by reading; the number is the last thing anyone re-reads.
+#
+# So the number is no longer maintained by hand. It is written as a DIGIT in
+# §9 so this can parse it, and this compares it to EXPECTED. Add a check, and
+# the suite tells you which sentence to update instead of leaving it wrong.
+#
+# Note the shape: it compares §9's number to EXPECTED, not to the number of
+# chk() calls. EXPECTED is already compared to the calls that actually ran, at
+# the bottom of this file, and that comparison is what catches a check dying
+# mid-run. Chaining to it rather than re-deriving keeps one source, not two.
+claimed="$(perl -ne 'if (/^- \*\*`run\.sh`\*\* — \*\*(\d+) checks\*\*/) { print "$1\n"; exit }' CLAUDE.md)"
+chk "CLAUDE.md §9's stated check count matches EXPECTED" "${claimed:-absent}" "$EXPECTED"
 
 # ---------------------------------------------------------------------------
 ran=$((pass + fail))

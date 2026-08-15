@@ -342,8 +342,8 @@ migration:
 
 Three things in `tests/guards/` are new and each answers a different question:
 
-- **`run.sh`** — seventeen checks over the tree, in under a second. They are the rules from
-  §3, §4, §6, §5 **and now §1** that lived **only** in this file until now: no
+- **`run.sh`** — **20 checks** over the tree, in under a second. They are the rules from
+  §3, §4, §6, §5 **and now §1 and §2** that lived **only** in this file until now: no
   `Number()`/`parseFloat`
   on an amount, every `*_price` read carrying `::text` (§4.7), `bid_history.amount` coming
   from `sar_text()`, no money column declared bare `numeric`, no second formatter outside
@@ -364,7 +364,22 @@ Three things in `tests/guards/` are new and each answers a different question:
   precise inversion of a useful guard. Both strip quoted text first, because this
   repository retires a rule by quoting it, and a check that cannot tell *"we deleted
   this"* from *"we require this"* earns an ignore list within a week.
-- **`negative.sh`** — breaks all seventeen rules on purpose and asserts each one is caught. A
+
+  **Two more come from §2** — the ratification gate in `docs/decisions/README.md`. §2 puts
+  `PRD.md` first and says product decisions live there and nowhere else; `docs/decisions/`
+  is the holding area for one the owner has made and nobody has written into the PRD yet.
+  A sweep on 2026-08-15 found that **three of the six records do not merely fill a gap in
+  the PRD — they contradict it**, which by §2 means the PRD wins and the record loses. The
+  sharpest is live on `main` right now: §5 above says `end_time` has **two doors**, and
+  `PRD.md:784` still says *"the single exception"*. So one check pins the status
+  vocabulary — it is what would have caught `DECIDED in shape`, which three records
+  actually wore — and one asserts every unratified record appears in the owner's queue.
+  **Neither ratifies anything. Only the owner edits `PRD.md`.**
+
+  The twentieth check is this section: **the count above must equal `EXPECTED` in
+  `run.sh`.** It went stale twice in two commits before that existed, which is the whole
+  argument — a number maintained by hand in a file nobody re-reads is a number that lies.
+- **`negative.sh`** — breaks all 20 rules on purpose and asserts each one is caught. A
   check that stays green while its rule is violated is reported as a **failure of the
   check**. This is not ceremony: it found two real defects in `run.sh` the first time it
   ran. **A guard that cannot fail is worse than no guard.**

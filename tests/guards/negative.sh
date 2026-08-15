@@ -9,8 +9,8 @@
 # ---------------------------------------------------------------------------
 # WHY THIS EXISTS
 #
-# `./tests/guards/run.sh` printing nineteen PASS lines proves one thing: that
-# nineteen commands ran and returned the numbers expected. It does NOT prove
+# `./tests/guards/run.sh` printing twenty PASS lines proves one thing: that
+# twenty commands ran and returned the numbers expected. It does NOT prove
 # that any of them would have returned a different number had the rule been
 # broken. A check with a typo'd pattern, a swallowed exit code, or a path that
 # matches nothing passes exactly as loudly as a check that works — and it
@@ -61,7 +61,8 @@ lib/supabase/config.ts
 components/bidding/bid-panel.tsx
 TEAM.md
 docs/decisions/D-01-bid-increment-button.md
-docs/decisions/README.md"
+docs/decisions/README.md
+CLAUDE.md"
 
 STAGED_ENV=".env.guardnegative"
 
@@ -130,7 +131,7 @@ trap restore EXIT
 
 pass=0
 fail=0
-EXPECTED=19
+EXPECTED=20
 
 # probe LABEL_SUBSTRING  MUTATION_COMMAND
 #
@@ -255,6 +256,13 @@ probe "declares one of the three defined statuses" \
 # filed for, one file over.
 probe "every unratified decision record is in the R register" \
   "perl -ni -e 'print unless /^\\| \\*\\*R1\\*\\* \\|/' docs/decisions/README.md"
+
+# --- self ------------------------------------------------------------------
+# The failure this reproduces is the one that actually happened, twice, in two
+# consecutive commits: a check was added and §9's sentence describing the suite
+# was left saying the old number. Here that is one digit.
+probe "CLAUDE.md §9's stated check count matches EXPECTED" \
+  "perl -pi -e 's{^- \\*\\*.run\\.sh.\\*\\* — \\*\\*\\d+ checks\\*\\*}{- **\`run.sh\`** — **99 checks**}' CLAUDE.md"
 
 # ---------------------------------------------------------------------------
 ran=$((pass + fail))
