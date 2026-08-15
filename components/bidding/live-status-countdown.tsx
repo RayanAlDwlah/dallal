@@ -59,12 +59,42 @@ import type { AuctionStatus } from "@/lib/auctions/detail";
  *
  * ## What this deliberately does NOT do
  *
- * **It does not touch `endsAt`.** The snapshot carries it (`live-snapshot.ts`
- * `:208`) and threading it through here would be one more line — and that line
- * is #140, which is assigned to @m7ya505 and asks a question neither of us has
- * answered. Feeding it from here would settle #140 quietly, which is the one
- * thing `live-price-region.tsx:88` warns against and the reason that file left
- * `status` alone in the first place. It stays the server value.
+ * **It now DOES take `endsAt` from the snapshot — AUC-13 / #140, @m7ya505.**
+ * This paragraph used to say the opposite, and the reason it did was correct at
+ * the time: threading it silently would have settled #140 without anyone
+ * deciding it. It is decided now, so the carve-out is gone rather than deleted
+ * — see "the jump" below for the half that is still NOT decided.
+ *
+ * Why it had to move: under `BR-36` as amended, an accepted bid in the final
+ * 15 seconds pushes `end_time` forward 30 seconds, repeating to a cap of 20 —
+ * ten minutes. A countdown seeded once at render reaches zero while the auction
+ * is still taking bids. That is not a stale display, it is a false one: the
+ * viewer reads "ended" and leaves an auction that is live.
+ *
+ * `??` here, and `||` one line above, and the difference is not style:
+ *   - `status` has TWO sources that DISAGREE inside the EC-04 window —
+ *     `serverStatus` is clock-derived (`presentedStatus()`) while the snapshot
+ *     carries the STORED flag — so `ended` must latch one-way or the badge
+ *     un-ends. That is `||`.
+ *   - `endsAt` has ONE source. The snapshot is always the newer read of the
+ *     same field, and an extension only ever moves it forward. There is
+ *     nothing to latch, so `??` is exactly right: the live value when there is
+ *     one, the server's when there is not (`RT-R7` — the display works without
+ *     realtime, and never renders a blank).
+ * Do not "make these consistent". They are answering different questions.
+ *
+ * **It does not announce the jump, and that is #146 — still open.** The moment
+ * the live value lands, a countdown at `00:00:02` becomes `00:00:32` in front
+ * of the viewer. No document in this repository says what they should see when
+ * that happens — not `PRD.md`, not `ARCHITECTURE.md`, not a contract — and
+ * `TEAM.md` rule 16 says a session raises that, it does not answer it.
+ *
+ * So nothing is added here: no message, no motion, no badge, no new element.
+ * The number simply becomes correct. That is the ONLY option that invents
+ * nothing — announcing the extension would be telling the viewer a bid was
+ * placed, which is information about auction behaviour and a decision someone
+ * has to make. #146 decides whether to announce it; this file only stops
+ * lying about the time.
  *
  * **It does not flip the badge off a client clock.** That is the "badge clock"
  * question inside #129 — whether the four EC-04 surfaces should agree — and it
@@ -93,7 +123,12 @@ export interface LiveStatusCountdownProps {
    * a blank and never a wrong one.
    */
   serverStatus: AuctionStatus;
-  /** Server-supplied, forwarded untouched. See "does NOT do" above — this is #140. */
+  /**
+   * The server render's end time. Still required and still used: it is what the
+   * countdown runs on until the first snapshot lands, and after a reconnect it
+   * is never re-read — so this is the `RT-R7` floor, not a leftover. The LIVE
+   * value overrides it when there is one (AUC-13 / #140).
+   */
   endsAt: string;
   /** The server clock at read time, so a wrong client clock cannot mislead. */
   serverNow: string;
@@ -119,7 +154,7 @@ export function LiveStatusCountdown({
   return (
     <StatusCountdown
       status={ended ? "ended" : "active"}
-      endsAt={endsAt}
+      endsAt={snapshot?.auction.endsAt ?? endsAt}
       serverNow={serverNow}
     />
   );
