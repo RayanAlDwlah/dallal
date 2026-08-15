@@ -123,8 +123,32 @@ chk "no physical left/right spacing or alignment" \
 # candidate — it sets no element's width. The first version of this check
 # flagged image-frame.tsx's own `sizes` defaults, which is a false positive on
 # the file implementing the rule in check 1b.
+#
+# THE NARROWING THAT FIXED THAT FALSE POSITIVE ALSO OPENED A HOLE (#169 review).
+# The inline-style arm read `width:[[:space:]]*[0-9]+vw`, which requires a digit
+# IMMEDIATELY after the colon. In JSX the value is quoted, so it never matched:
+#
+#     style={{ width: "100vw" }}      passed
+#     style={{ minWidth: "100vw" }}   passed — `minWidth` does not contain `width`
+#     style={{width:"100vw"}}         passed
+#
+# The arm is now `[Ww]idth["']?:[[:space:]]*["']?[0-9]+vw` — the capital covers
+# `minWidth`/`maxWidth`, and the optional quotes cover both the JSX form and a
+# quoted key. Measured on all six shapes plus both `sizes` defaults:
+#
+#     the three above + w-[420px] + w-screen + w-[100vw]   -> all caught
+#     "(min-width: 1024px) 33vw, … 100vw"                  -> not caught
+#     "(min-width: 1024px) 60vw, 100vw"                    -> not caught
+#     the whole tree with the new pattern                  -> 0 matches
+#
+# `min-width: 1024px` survives because the digits after the colon are followed
+# by `px`, not `vw` — the arm still requires the unit, which is what keeps the
+# `sizes` strings out.
+#
+# LATENT, NOT LIVE: `grep -rn "style={{" app components` returns 0 today. This
+# restores a guard that had quietly weakened, it does not fix a live defect.
 chk "no fixed width at or above 375 px, no viewport-width units" \
-    "$(code | grep -cE '\b(w|min-w)-\[(3[7-9][0-9]|[4-9][0-9]{2}|[0-9]{4,})px\]|\bw-screen\b|\b(w|min-w)-\[[0-9]+vw\]|width:[[:space:]]*[0-9]+vw' || true)" 0
+    "$(code | grep -cE '\b(w|min-w)-\[(3[7-9][0-9]|[4-9][0-9]{2}|[0-9]{4,})px\]|\bw-screen\b|\b(w|min-w)-\[[0-9]+vw\]|[Ww]idth["'"'"']?:[[:space:]]*["'"'"']?[0-9]+vw' || true)" 0
 
 # --- 4. Interactive primitives carry the 44 px target -----------------------
 # NFR-USA-08. Checked on the primitives rather than on every call site: these
