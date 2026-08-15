@@ -15,6 +15,24 @@
 >
 > Installed versions are pinned and recorded in `docs/scaffold-notes.md` §1.
 
+> **⚠ Partly superseded on 2026-08-15 — ownership is no longer authorization.**
+> The stack decision above is untouched and still binding. What is stale is every sentence in
+> this file that assigns a *person* to a surface: the author line's «owns `S0-07`, `S0-08`,
+> `S0-09`», §5's «Abdulrahman owns the flows behind them» and «Mohammed builds; Rayan owns the
+> behaviour».
+>
+> **Nobody owns a file** (`CLAUDE.md` §1). Read each of those as *who to ask for review*.
+>
+> §11's realtime sentence has been **rewritten rather than annotated**, because it was the
+> only one in this file phrased as a live prohibition on a named person. Its technical half
+> never depended on who typed it and is unchanged: **one subscription per auction, one update
+> mechanism, never two** — a second one is how a price appears to move backwards (`RT-X5`).
+> That is an invariant, not a boundary.
+>
+> This file was missed by the first governance sweep because `CLAUDE.md` §1's list of stale
+> documents named only the five at the repository root. That list is now explicitly
+> non-exhaustive.
+
 ---
 
 ## 1. The one real conflict: Next.js **or** Vite, not both
@@ -216,7 +234,7 @@ The variable contract is unchanged: `app/layout.tsx` still applies `ui.variable`
 
 **`useOptimistic` must not be used for bid submission.** An optimistic update paints the bid as accepted before the server has ruled. Under concurrency the server rejects roughly half of contested bids (BR-12), so an optimistic UI would routinely show a bid landing and then snatch it back — and PRD FR-BID-16 requires the user to be told **definitively** whether their bid was accepted. Submit, wait for the decision, then render it. The bid button's loading state covers the gap.
 
-**Realtime belongs in a Client Component that owns exactly one subscription.** The page shell stays a Server Component and renders the authoritative first paint from a server read; a single client component subscribes per auction and pushes updates in. Do not subscribe in more than one component on the same page — duplicate subscriptions are how a price appears to move backwards (RT-X5), and Mohammed must not add a second update mechanism alongside Rayan's (TEAM.md §10.4).
+**Realtime belongs in a Client Component that owns exactly one subscription.** The page shell stays a Server Component and renders the authoritative first paint from a server read; a single client component subscribes per auction and pushes updates in. Do not subscribe in more than one component on the same page — duplicate subscriptions are how a price appears to move backwards (RT-X5). **One update mechanism per page, never a second one alongside it** — whoever writes it (TEAM.md §10.4). This sentence used to name two people; the invariant never depended on who typed it.
 
 ---
 

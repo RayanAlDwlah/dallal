@@ -1,5 +1,6 @@
 "use client";
 
+import { Alert } from "@/components/ui/alert";
 import { Money } from "@/components/ui/money";
 import { useLiveAuction } from "@/lib/bidding/use-live-auction";
 
@@ -62,14 +63,39 @@ import { useLiveAuction } from "@/lib/bidding/use-live-auction";
  * contact control, no shipping, no "complete your purchase". The result display
  * IS the end of the flow (FR-DETAIL-21a, FR-END-17a, PRD §19.0, SC-67).
  *
- * NOT personalised: PRD G6's "the winner sees that they won" would need this
- * component to know the viewer IS the winner, and the snapshot deliberately
- * carries winnerName only — no id to compare (FR-BID-22a). Adding one is a
- * data-exposure decision, not a rendering one, and is not taken here.
+ * PERSONALISED NOW — BID-18 / #161, FR-END-14 and SC-36, both **Must**.
+ *
+ * This paragraph used to say the component could not know the viewer is the
+ * winner, and that was true: the snapshot carries `winnerName` and no id to
+ * compare (FR-BID-22a), and inventing one here would have been a data-exposure
+ * decision taken in a rendering file.
+ *
+ * It still is not taken here. What arrives is `viewerDisplayName` — read from
+ * the verified server session by `getViewer()` (identity, @Dem4t) — and the
+ * comparison happens below against the LIVE snapshot's `winnerName`, not
+ * against a value frozen at render. The distinction is the whole point: an
+ * auction that ends UNDER the viewer delivers its winner through the
+ * subscription (BID-17), and a boolean decided at server-render time would be
+ * false forever on exactly that path — the frozen-prop defect this repository
+ * has now shipped three times (#138, #140, #160). Display name is the one
+ * public identity (CLAUDE.md §6) and is unique (BR-39), so the comparison is
+ * sound; no internal identifier enters any payload — FR-BID-22a and #166 are
+ * untouched by this file. The rendering half asks the question; the identity
+ * half answers it with a name the server already vouched for.
  */
 export interface OutcomeBannerProps {
   /** Which auction is being viewed. Passed by the detail page shell (AUC-11). */
   auctionId: string;
+  /**
+   * The verified session's public display name, or null for a visitor
+   * (`CLAUDE.md` §6 — identity is never taken from the client). Read
+   * server-side by the page and passed in; this file never fetches it.
+   *
+   * Optional and defaulting to null on purpose: every other viewer — seller,
+   * losing bidder, signed-out visitor — renders exactly what they rendered
+   * before, so the shared record below is unchanged for them (FR-END-16).
+   */
+  viewerDisplayName?: string | null;
 }
 
 /*
@@ -86,7 +112,7 @@ export interface OutcomeBannerProps {
  * so the doubling is now the LIVE, expected state — visible, not forgotten —
  * until Rayan and Mohammed settle it together.
  */
-export function OutcomeBanner({ auctionId }: OutcomeBannerProps) {
+export function OutcomeBanner({ auctionId, viewerDisplayName = null }: OutcomeBannerProps) {
   const { snapshot } = useLiveAuction(auctionId);
 
   /*
@@ -101,6 +127,16 @@ export function OutcomeBanner({ auctionId }: OutcomeBannerProps) {
 
   const { winnerName, finalPrice, bidCount } = snapshot.auction;
   const won = winnerName !== null && finalPrice !== null;
+
+  /*
+   * IDENTITY HALF (@Dem4t). Compared against the LIVE winnerName — the
+   * snapshot's, never a value frozen at server render — so an auction ending
+   * under the viewer personalises on the same update that flips the status
+   * (BID-17), with no reload. Both operands are display names: unique (BR-39),
+   * the only public identity (CLAUDE.md §6), no internal id involved
+   * (FR-BID-22a). Null viewer → false → the shared record, unchanged.
+   */
+  const viewerIsWinner = viewerDisplayName !== null && winnerName === viewerDisplayName;
 
   /*
    * ended + no winner + bids exist: unreachable per schema — finalization
@@ -123,6 +159,50 @@ export function OutcomeBanner({ auctionId }: OutcomeBannerProps) {
 
       {won ? (
         <div className="mt-2 flex flex-col gap-2">
+          {/*
+           * FR-END-14 / SC-36 — BOTH graded Must, and both unmet until now:
+           * naming the winner is not telling the viewer they ARE the winner.
+           * cp3_winner had to recognise their own display name and infer it,
+           * from a block byte-identical to the seller's and a passer-by's.
+           *
+           * ADDED ABOVE THE RECORD, REPLACING NOTHING. Swapping the `الفائز`
+           * row out for the winner would fix FR-END-14 by breaking FR-END-16,
+           * which requires ANY viewer — the winner included — to see the winner
+           * and the final price. So the shared record stays whole for everyone
+           * and the winner gains a sentence addressed to them.
+           *
+           * `Alert tone="success"` rather than bespoke markup: it already
+           * carries `role="status"` and `aria-live="polite"`, which is exactly
+           * right here — this block can appear WHILE the viewer is watching
+           * (BID-17), and a win that only exists visually is not a statement to
+           * a screen-reader user. Reusing the primitive also keeps the tone
+           * inside the design system instead of inventing a green.
+           *
+           * ⚠️ SC-67 / BR-34 / FR-END-17a — the wording is deliberately a
+           * STATEMENT OF FACT and nothing else. No payment, no contact, no
+           * collection, no shipping, no "what happens next", because none of
+           * those exist: SAR amounts are simulated and no money moves. The
+           * price is named as `مزايدتك الفائزة` — what they bid — rather than
+           * anything owed, for the same reason.
+           */}
+          {viewerIsWinner ? (
+            <Alert tone="success">
+              <p className="text-base font-bold">
+                {/* Decorative: a screen reader announcing "party popper" before
+                    the sentence would bury the sentence. */}
+                <span aria-hidden="true">🎉 </span>
+                فزت بهذا المزاد
+              </p>
+              <p className="mt-1 flex flex-wrap items-baseline gap-x-1">
+                <span>مزايدتك الفائزة</span>
+                {/* Through `Money` — never a hand-rolled island. BR-21 puts no
+                    ceiling on this value, and `Money` is the only path carrying
+                    the scrollable digit island (NFR-DAT-08, CLAUDE.md §4.6). */}
+                <Money amount={finalPrice} size="md" />
+              </p>
+            </Alert>
+          ) : null}
+
           <div className="flex flex-col gap-0.5">
             <span className="text-ink-3 text-xs font-bold">الفائز</span>
             <p className="min-w-0 text-base font-semibold">

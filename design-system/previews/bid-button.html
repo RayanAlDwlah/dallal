@@ -1,0 +1,79 @@
+<!-- @dsCard group="Bidding" name="Bid button" subtitle="Button with the seller's increment, plus its confirmation" -->
+<!doctype html>
+<html lang="ar" dir="rtl">
+<meta charset="utf-8">
+<title>زر المزايدة</title>
+<style>
+@import url("https://fonts.googleapis.com/css2?family=IBM+Plex+Sans+Arabic:wght@400;500;600&family=Rubik:wght@500;600;700&display=swap");
+:root{--canvas:#07090D;--surface:#0F1219;--raised:#161A23;--hair:rgba(255,255,255,.08);--ink:#E9EDF5;--ink2:#9AA4B8;--ink3:#5C6579;--gold:#F5B942;--gold-dim:#C98A16;--teal:#2DD4BF;--red:#FF4D5E;--f-display:"Rubik",system-ui,sans-serif;--f-body:"IBM Plex Sans Arabic",system-ui,sans-serif}
+*{box-sizing:border-box}
+body{margin:0;padding:40px;direction:rtl;background:var(--canvas);color:var(--ink);font-family:var(--f-body);line-height:1.7;-webkit-font-smoothing:antialiased}
+h1{font-family:var(--f-display);font-size:28px;font-weight:600;margin:0 0 4px}
+p.sub{color:var(--ink2);margin:0 0 8px;font-size:15px;max-width:60ch}
+h2{font-size:13px;color:var(--ink3);font-weight:500;letter-spacing:.04em;margin:36px 0 14px}
+.num{font-variant-numeric:tabular-nums}
+.sar{font-size:.62em;color:var(--ink2);font-weight:500;margin-inline-start:6px}
+
+.bid{display:inline-flex;align-items:center;justify-content:center;gap:10px;height:56px;padding:0 28px;border:0;border-radius:12px;background:var(--gold);color:#1A1204;font-family:var(--f-display);font-size:19px;font-weight:600;font-variant-numeric:tabular-nums;cursor:pointer;transition:transform .15s ease-out,box-shadow .15s ease-out;box-shadow:0 0 0 0 rgba(245,185,66,0)}
+.bid:hover{transform:translateY(-1px);box-shadow:0 0 28px rgba(245,185,66,.35)}
+.bid:active{transform:translateY(0) scale(.985)}
+.bid[disabled]{background:var(--raised);color:var(--ink3);box-shadow:inset 0 0 0 1px var(--hair);cursor:not-allowed}
+.bid.wide{width:100%}
+.bid .plus{font-size:15px;opacity:.7;font-weight:500}
+
+.note{font-size:13px;color:var(--ink3);margin-top:10px}
+.panel{background:var(--surface);border-radius:20px;padding:24px;box-shadow:inset 0 0 0 1px var(--hair);max-width:420px}
+.cur{font-family:var(--f-display);font-size:15px;color:var(--ink2)}
+.cur b{color:var(--ink);font-weight:600}
+
+.scrim{background:rgba(4,6,10,.72);border-radius:24px;padding:48px 24px;display:flex;justify-content:center}
+.dialog{background:var(--raised);border-radius:28px;padding:28px;width:100%;max-width:400px;box-shadow:inset 0 0 0 1px var(--hair),0 24px 64px rgba(0,0,0,.6)}
+.dialog h3{font-family:var(--f-display);font-size:20px;font-weight:600;margin:0 0 6px}
+.dialog p{color:var(--ink2);font-size:14px;margin:0 0 20px}
+.amt{font-family:var(--f-display);font-size:38px;font-weight:700;color:var(--gold);font-variant-numeric:tabular-nums;line-height:1.2}
+.from{font-size:13px;color:var(--ink3);font-variant-numeric:tabular-nums;margin-top:2px}
+.acts{display:flex;gap:10px;margin-top:24px}
+.acts button{flex:1;height:48px;border-radius:12px;font-family:var(--f-body);font-size:15px;font-weight:600;cursor:pointer;border:0}
+.ok{background:var(--gold);color:#1A1204}
+.no{background:transparent;color:var(--ink2);box-shadow:inset 0 0 0 1px var(--hair)}
+</style>
+<h1>زر المزايدة</h1>
+<p class="sub">ما فيه حقل رقم في أي مكان. المزايدة زر واحد مكتوب جواه المبلغ اللي حدّده البائع. سبب القرار: كتابة رقم كبير كانت تمدّد الحقل وتوسّع الصفحة.</p>
+<p class="sub" style="color:var(--ink3);font-size:13px">المبالغ بصيغة واحدة في كل مكان: <span class="num">1,250.00</span><span class="sar">SAR</span> — بلا حد أعلى، وبلا اختصار مهما طال الرقم.</p>
+
+<h2>الحالة الأساسية — الزيادة من البائع</h2>
+<div class="row" style="display:flex;gap:14px;flex-wrap:wrap">
+  <button class="bid"><span class="plus">زايد بـ</span><span class="num">500</span></button>
+  <button class="bid"><span class="plus">زايد بـ</span><span class="num">1,000</span></button>
+  <button class="bid"><span class="plus">زايد بـ</span><span class="num">10</span></button>
+</div>
+<p class="note">البائع يختار المضاعف. الزر ما يقبل غيره.</p>
+
+<h2>عرض السعر مع الزر</h2>
+<div class="panel">
+  <p class="cur">السعر الحالي <b class="num">48,500.00</b><span class="sar">SAR</span></p>
+  <button class="bid wide" style="margin-top:14px"><span class="plus">زايد بـ</span><span class="num">500</span></button>
+  <p class="note">تصير مزايدتك <span class="num">49,000.00</span><span class="sar">SAR</span></p>
+</div>
+
+<h2>باقي الحالات</h2>
+<div style="display:flex;gap:14px;flex-wrap:wrap">
+  <button class="bid" disabled>جارٍ الإرسال…</button>
+  <button class="bid" disabled>انتهى المزاد</button>
+  <button class="bid" disabled>سجّل الدخول للمزايدة</button>
+</div>
+
+<h2>التأكيد — «متأكد؟»</h2>
+<div class="scrim">
+  <div class="dialog">
+    <h3>تأكيد المزايدة</h3>
+    <p>ساعة رولكس ديت‑جست 41</p>
+    <div class="amt"><span class="num">49,000.00</span><span class="sar">SAR</span></div>
+    <div class="from">من <span class="num">48,500.00</span> · زيادة <span class="num">500</span></div>
+    <div class="acts">
+      <button class="ok">تأكيد</button>
+      <button class="no">إلغاء</button>
+    </div>
+  </div>
+</div>
+</html>

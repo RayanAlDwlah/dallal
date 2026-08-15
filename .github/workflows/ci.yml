@@ -98,7 +98,7 @@ jobs:
         run: ./tests/guards/run.sh
 
       # A guard that cannot fail is worse than no guard: it reports green for
-      # its own reasons while the rule it names rots. This breaks all fifteen
+      # its own reasons while the rule it names rots. This breaks all twenty
       # rules on purpose and asserts the suite catches every one. It mutates
       # tracked files and restores them, which is why fetch-depth is 0 above.
       - name: guards — prove every check can fail
@@ -110,6 +110,35 @@ jobs:
         run: ./tests/guards/ci-coverage.sh
 
       # --- the credential-free suites --------------------------------------
+      # The V2 dependency graph is written twice — SPEC.md §4.3's `blocks`
+      # column and TICKETS.md's `blocked on` column — and both documents state
+      # their own totals in English prose. SPEC.md says two copies of a graph
+      # drift "in the direction that makes the plan look better", then claimed
+      # they had been reconciled "mechanically": true once, by hand, with no
+      # way for the next editor to fail. This is that sentence made runnable.
+      - name: V2 — the board's two copies of the graph agree, and its counts are real
+        run: node --no-warnings tests/v2/graph.check.mjs
+
+      # …and the same demand made of it that `negative.sh` makes of the guards.
+      # Every defect this check has ever found was found by a probe, and every
+      # one of those probes lived in /tmp until now. 52 of them, each breaking
+      # one stated number or one edge on purpose.
+      - name: V2 — prove the board check can fail
+        run: ./tests/v2/graph-negative.check.sh
+
+      # The same failure one level out, in prose. CLAUDE.md §1 carries the
+      # seven-step workflow; TEAM.md §7 and SPEC.md §5.1 each restated it, and
+      # three copies that agree are a problem only on the day one is edited.
+      # This extracts the steps FROM CLAUDE.md and refuses a second copy.
+      - name: governance — the seven-step workflow is written exactly once
+        run: node --no-warnings tests/governance/workflow.check.mjs
+
+      # Sixteen probes, one per step of the loop plus the section-level rules.
+      # Two of this check's assertions exist because a probe came back MISSED;
+      # the probes are now committed rather than remembered.
+      - name: governance — prove the workflow check can fail
+        run: ./tests/governance/workflow-negative.check.sh
+
       - name: INT-08 — the excluded-features audit
         run: ./tests/integration/excluded-features.check.sh
 
@@ -139,6 +168,12 @@ jobs:
       # one that does — ci-coverage.sh said UNWIRED for exactly that reason.
       - name: AUC — the create form survives a rejection (image + review)
         run: node --no-warnings tests/auction/create-form-recovery.check.mjs
+
+      # BID-18 (#161) — FR-END-14 and SC-36 are both Must and both had zero
+      # implementation. The rendering half only; the server-side decision that
+      # feeds `viewerIsWinner` is asserted by its own owner's suite.
+      - name: BID-18 — the winner is told they won (FR-END-14, SC-36)
+        run: node --no-warnings tests/auction/winner-statement.check.mjs
 
       # #147 — every *.check.mjs must actually LOAD. This suite arrives with
       # #155, which cannot wire it here because this file does not exist on

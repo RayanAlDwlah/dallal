@@ -1,0 +1,78 @@
+<!-- @dsCard group="Navigation" name="Top bar" subtitle="Search, nav, bell, and the circular avatar" -->
+<!doctype html>
+<html lang="ar" dir="rtl">
+<meta charset="utf-8">
+<title>الشريط العلوي</title>
+<style>
+@import url("https://fonts.googleapis.com/css2?family=IBM+Plex+Sans+Arabic:wght@400;500;600&family=Rubik:wght@500;600;700&display=swap");
+:root{--canvas:#07090D;--surface:#0F1219;--raised:#161A23;--hair:rgba(255,255,255,.08);--ink:#E9EDF5;--ink2:#9AA4B8;--ink3:#5C6579;--gold:#F5B942;--teal:#2DD4BF;--red:#FF4D5E;--f-display:"Rubik",system-ui,sans-serif;--f-body:"IBM Plex Sans Arabic",system-ui,sans-serif}
+*{box-sizing:border-box}
+body{margin:0;padding:40px;direction:rtl;background:var(--canvas);color:var(--ink);font-family:var(--f-body);line-height:1.7;-webkit-font-smoothing:antialiased}
+h1{font-family:var(--f-display);font-size:28px;font-weight:600;margin:0 0 4px}
+p.sub{color:var(--ink2);margin:0 0 32px;font-size:15px;max-width:62ch}
+h2{font-size:13px;color:var(--ink3);font-weight:500;letter-spacing:.04em;margin:34px 0 14px}
+
+.bar{display:flex;align-items:center;gap:20px;height:64px;padding:0 20px;background:rgba(15,18,25,.8);backdrop-filter:blur(16px);border-radius:18px;box-shadow:inset 0 0 0 1px var(--hair)}
+.logo{font-family:var(--f-display);font-size:21px;font-weight:700;letter-spacing:-.01em}
+.logo span{color:var(--gold)}
+.search{flex:1;max-width:360px;position:relative}
+.search input{width:100%;height:40px;border:0;border-radius:999px;background:var(--raised);color:var(--ink);font-family:var(--f-body);font-size:14px;padding-inline:38px 16px;box-shadow:inset 0 0 0 1px var(--hair);outline:none}
+.search input::placeholder{color:var(--ink3)}
+.search input:focus{box-shadow:inset 0 0 0 1px var(--teal),0 0 0 3px rgba(45,212,191,.15)}
+.search .ic{position:absolute;inset-inline-start:14px;inset-block-start:11px;color:var(--ink3);font-size:15px}
+nav{display:flex;gap:4px;margin-inline-start:auto}
+nav a{color:var(--ink2);text-decoration:none;font-size:14px;font-weight:500;padding:8px 14px;border-radius:10px;transition:.15s}
+nav a:hover{color:var(--ink);background:rgba(255,255,255,.05)}
+nav a.on{color:var(--ink);background:rgba(255,255,255,.07)}
+nav a.cta{color:#1A1204;background:var(--gold);font-weight:600}
+.bell{position:relative;width:38px;height:38px;border-radius:50%;background:transparent;border:0;color:var(--ink2);cursor:pointer;font-size:17px;display:grid;place-items:center;transition:.15s}
+.bell:hover{background:rgba(255,255,255,.06);color:var(--ink)}
+.bell .dot{position:absolute;inset-block-start:7px;inset-inline-end:8px;width:8px;height:8px;border-radius:50%;background:var(--red);box-shadow:0 0 0 2px var(--surface),0 0 8px var(--red)}
+.av{width:38px;height:38px;border-radius:50%;cursor:pointer;background:linear-gradient(140deg,#2A3140,#171C26);display:grid;place-items:center;font-family:var(--f-display);font-weight:600;font-size:14px;color:var(--ink2);box-shadow:inset 0 0 0 1px var(--hair);transition:.15s}
+.av:hover{box-shadow:inset 0 0 0 1px var(--hair),0 0 0 3px rgba(245,185,66,.25)}
+
+.toast{max-width:390px;background:var(--raised);border-radius:16px;padding:14px 16px;box-shadow:inset 0 0 0 1px var(--hair),0 16px 40px rgba(0,0,0,.55);display:flex;gap:12px;align-items:flex-start}
+.toast .bar2{width:3px;align-self:stretch;border-radius:2px;background:var(--gold)}
+.toast p{margin:0;font-size:14px}
+.toast small{color:var(--ink2);font-size:13px;display:block;font-variant-numeric:tabular-nums}
+.toast button{margin-inline-start:auto;background:transparent;border:0;color:var(--gold);font-family:var(--f-body);font-size:14px;font-weight:600;cursor:pointer;white-space:nowrap}
+.sar{font-size:.85em;color:var(--ink3);margin-inline-start:4px}
+</style>
+<h1>الشريط العلوي</h1>
+<p class="sub">ما فيه زر مكتوب عليه «حسابي». الهوية صورة دائرية في الطرف، تضغطها تروح لملفك.</p>
+
+<h2>مسجّل دخول</h2>
+<div class="bar">
+  <div class="logo">دلال<span>.</span></div>
+  <div class="search"><span class="ic">⌕</span><input placeholder="ابحث عن سيارة، ساعة، أرض…"></div>
+  <nav>
+    <a class="on" href="#">المزادات</a>
+    <a href="#">الجلسات</a>
+    <a class="cta" href="#">أنشئ</a>
+  </nav>
+  <button class="bell" aria-label="الإشعارات">◔<span class="dot"></span></button>
+  <div class="av" title="ملفي الشخصي">ر</div>
+</div>
+
+<h2>زائر</h2>
+<div class="bar">
+  <div class="logo">دلال<span>.</span></div>
+  <div class="search"><span class="ic">⌕</span><input placeholder="ابحث عن سيارة، ساعة، أرض…"></div>
+  <nav>
+    <a href="#">المزادات</a>
+    <a href="#">الجلسات</a>
+    <a href="#">دخول</a>
+    <a class="cta" href="#">إنشاء حساب</a>
+  </nav>
+</div>
+
+<h2>إشعار «زايد عليك»</h2>
+<div class="toast">
+  <div class="bar2"></div>
+  <div>
+    <p>أحد زايد عليك</p>
+    <small>ساعة رولكس ديت‑جست 41 · صار السعر 49,000.00<span class="sar">SAR</span></small>
+  </div>
+  <button>زايد بـ 500</button>
+</div>
+</html>

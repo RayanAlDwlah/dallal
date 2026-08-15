@@ -13,55 +13,80 @@ wins. Supabase (PostgreSQL 17) + Next.js on Vercel. It is a **demonstration** �
 amounts are simulated and **no money changes hands**. There is no payment, no purchase, no
 shipping, no messaging, no admin interface.
 
-### Ownership is split by **responsibility, not by file**
+### Nobody owns a file. Work is claimed, not assigned.
 
-The line is **presentation vs. behaviour**, not feature area. A single component routinely
-contains both, and each half has a different owner.
+**No developer, no account and no Claude session permanently owns a file or a feature.**
+Any available contributor may claim any **ready** ticket. What used to be called ownership
+is now **temporary responsibility for a ticket you have claimed** — it lasts until that
+ticket merges, and it is *not* an authorization boundary.
 
-| Responsibility | Owner | GitHub |
+This replaces the previous model, in which each area had a permanent owner and a session
+was told to refuse work outside it. That model produced its own failure: **work stopped
+because the nominal owner was unavailable**, on tickets that were fully specified and ready
+to build.
+
+### Stewards advise. They do not gate.
+
+Some areas are **sensitive** — the atomic bid operation, the money representation, identity
+and authorization, the closing and extension path. Each has a **steward** who knows it best
+and who should be asked to review a change to it:
+
+| Sensitive area | Steward | GitHub |
 |---|---|---|
-| **All presentation** — every screen, layout, component, visual state, the design system | Mohammed | `@m7ya505` |
-| **Bidding behaviour** — validation, submission, the atomic operation, concurrency, current-price correctness, realtime bidding behaviour, closing, winner determination, bid recording and order | Rayan | `@RayanAlDwlah` |
-| **Authentication and identity behaviour and data** — auth logic, session, authorization, identity data | Abdulrahman | `@Dem4t` |
+| Bidding, concurrency, closing, extension, current-price correctness | Rayan | `@RayanAlDwlah` |
+| Authentication, session, authorization, identity data | Abdulrahman | `@Dem4t` |
+| The design system and presentation consistency | Mohammed | `@m7ya505` |
 
-Mohammed's presentation ownership is total: auction screens, the bid panel, bid history,
-the outcome and winner views, and the login / registration / password-reset / profile
-screens. Layout, typography, spacing, colour, motion, responsive behaviour, loading, empty
-and error states, and the presentation side of accessibility are all his.
-
-### What this means in practice
-
-- **Mohammed may restyle a component that contains Rayan's bidding logic**, or
-  Abdulrahman's auth logic, as long as **behaviour and contracts are unchanged**.
-- **Mohammed must not** change bid validation, bid calculation, concurrency behaviour,
-  realtime behaviour, closing logic, winner determination, or bid-recording semantics —
-  nor any authentication behaviour or identity data logic.
-- **Rayan may implement bidding behaviour inside a component Mohammed presents**, but must
-  not redesign that presentation without coordinating with Mohammed first.
+**A steward's absence must not block a ready, well-specified ticket.** Request the review,
+say in the PR that you requested it, and proceed. A steward reviews for correctness — they
+do not hold a veto over who may write the code.
 
 ### The rule for an AI session — read this before you stop
 
-**Do not write code you do not own.** That rule is unchanged; the boundary it points at
-has moved.
+**"Do not write code you do not own" is deleted.** It is no longer a rule on this project,
+and a session that refuses work by citing it is citing something that does not exist.
 
-Before refusing a task, decide which half it touches:
+Before starting, check these instead:
 
-- **Presentation-only change on Mohammed's task** → he owns it. **Do not block it merely
-  because the file also contains someone else's business logic.** Implement the visual
-  change, preserve the existing behaviour exactly, rewrite no business rule, alter no
-  contract, move no data ownership.
-- **The change requires altering another owner's behaviour or data** → **stop and ask that
-  owner.** Say so plainly; do not implement it helpfully.
+1. **Is the ticket ready?** Dependencies merged, acceptance criteria concrete, no unanswered
+   product decision. If it is not ready, say what is missing.
+2. **Is it claimed by someone else?** If yes, do not duplicate the work.
+3. **Does it touch a sensitive area?** Then request the steward's review in the PR — and
+   keep going.
+4. **Does it require a product decision nobody has made?** **Stop and ask.** This is the
+   only remaining reason to refuse, it has nothing to do with ownership, and §8 and rule 16
+   of `TEAM.md` are unchanged and absolute.
 
-File-level ownership statements elsewhere in the repository do not override this model.
+The distinction that matters is now **"is this decided?"**, never **"is this mine?"**
 
-> **Status of this amendment.** Recorded here by the project owner in `5b5e698`. It was
-> propagated into `TEAM.md`, `GITHUB_PLAN.md`, `ARCHITECTURE.md` and `README.md` in
-> `ea0d861` — including the per-issue behaviour/presentation split for the bidding UI
-> issues (`BID-06`, `BID-07`, `BID-10`, `BID-18`), whose presentation half is Mohammed's
-> and whose behaviour half stays with Rayan. Should any document still disagree with this
-> section on **ownership**, this section governs; they remain authoritative on everything
-> else, per §2.
+### The workflow, in seven steps
+
+1. **Check dependencies and confirm the issue is `ready`.**
+2. **Claim it** — assign yourself in GitHub — **before writing code.**
+3. **One branch per ticket:** `feature/<ticket-id>-<short-name>`, e.g.
+   `feature/V2-A3-bid-increment`.
+4. The ticket declares an **expected change surface** — the files it is likely to touch.
+   That is a planning aid and a conflict predictor, **not exclusive access**.
+5. **If two tickets need the same file, merge the shared contract or foundation first.**
+   The contract is a real ticket with a real file, not an informal agreement.
+6. **Every PR states:** the files changed, the verification evidence, the remaining risks,
+   and the handoff notes for whoever picks up next.
+7. **After merge, any available contributor claims the next ready ticket.**
+
+> **Status of this amendment.** Recorded by the project owner on **2026-08-15**, replacing
+> the presentation/behaviour ownership split recorded in `5b5e698` and propagated in
+> `ea0d861`. Where **any other document in this repository** still describes permanent
+> ownership, an ownership matrix, a per-developer branch, or a right of refusal based on who
+> owns something, **this section governs and that text is stale.** Those documents remain
+> authoritative on everything else, per §2.
+>
+> **That list used to be five paths, and treating it as exhaustive already cost something.**
+> The first sweep named `TEAM.md`, `GITHUB_PLAN.md`, `ARCHITECTURE.md`, `README.md` and
+> `docs/v2/*` — all at the root — and banner-ed every one. A mechanical sweep on 2026-08-15
+> then found `design/STACK.md` §11 still carrying *"Mohammed must not add a second update
+> mechanism alongside Rayan's"*: a live prohibition, addressed to a named person, in a file
+> the list did not name. **A closed list is a promise that somebody enumerated correctly.**
+> `tests/guards/run.sh` now checks it instead of trusting it — see §9.
 
 ---
 
@@ -69,10 +94,13 @@ File-level ownership statements elsewhere in the repository do not override this
 
 1. **`PRD.md`** — what the product must do. Product decisions live here and **nowhere else**.
 2. **`ARCHITECTURE.md`** — how it is built.
-3. **`TEAM.md`** — who owns what, and the collaboration rules.
+3. **`TEAM.md`** — the collaboration rules. **Its ownership matrix is superseded by §1**;
+   everything else in it stands.
 4. **`GITHUB_PLAN.md`** — the issue breakdown.
-5. **`docs/contracts/*.md`** — agreed interface contracts between two owners. **Where a
-   contract and an older document disagree, the contract wins** — that is what it is for.
+5. **`docs/contracts/*.md`** — agreed interface contracts between two pieces of work.
+   **Where a contract and an older document disagree, the contract wins** — that is what it
+   is for. A contract is a **ticket with a file**, and §1 step 5 says it merges before the
+   tickets that depend on it.
 6. **`docs/decisions/*.md`** — decisions the product owner has **made** but that are not
    in `PRD.md` yet. Read `docs/decisions/README.md` before building anything that is not
    already an issue. A record marked `OPEN` means **do not build it**; a record's "Still
@@ -170,11 +198,73 @@ Four properties are not negotiable and each is asserted in `tests/bidding/closin
 
 - the **cap is a `CHECK` constraint**, not an `if`. Without it a contested auction never
   ends, never finalizes, and never has a winner
-- `end_time` moves **forward only, in 30-second quanta, only inside `place_bid`**, and only
-  together with `extension_count + 1`. Every other shape raises
+- `end_time` moves **forward only** — never backwards, under any mechanism, ever. Inside
+  `place_bid` it moves **in 30-second quanta only, and only together with
+  `extension_count + 1`**. Every other shape raises. **There is now exactly one other door;
+  see the amendment below**
 - a **rejected** bid never extends — otherwise an ineligible bidder holds an auction open
   forever with bids that never count
 - **at the cap a late bid is still accepted.** The cap ends the extending, not the bidding
+
+### The amendment: pause is a second door on `end_time` — decided 2026-08-15
+
+The owner decided it, in these words:
+
+> **Pause is supported: a host-only atomic DB operation pauses/resumes a lot and moves
+> `end_time` forward by the paused duration. Update the existing invariant and tests
+> explicitly.**
+
+This is V2 work (`docs/decisions/D-03-sessions.md`). It is recorded here, in the file that
+governs `end_time`, because the invariant above is the thing it changes — and a session
+reading only §5 must not conclude that a pause implementation is a violation.
+
+**What is unchanged, and is still absolute:**
+
+- `end_time` **moves forward only.** Never backwards, under any mechanism, by any caller,
+  ever. Pause does not become an exception to this; a resume *adds* the paused duration.
+- **`place_bid` still owns extension.** The 30-second quantum, the `extension_count + 1`
+  lockstep and the `CHECK`-constrained cap of 20 are untouched. Pause never increments
+  `extension_count`, and an extension never records paused time.
+
+**What changed:** the sentence *"only inside `place_bid`"* is now *"inside `place_bid`,
+**or** inside the pause/resume operation"*. Those are the only two doors. Everything else
+still raises.
+
+**The pause door has its own conditions, and each one is a requirement:**
+
+- **Host-only.** The caller must be the host of the session that owns the lot, decided from
+  the verified server session — never a client-supplied id (§6). A bidder pausing a lot they
+  are losing is the attack this exists to refuse.
+- **Atomic.** Pause and resume are one DB operation each, taking the same row lock
+  `place_bid` takes. A pause that reads-then-writes races a bid landing in the same
+  millisecond, and the loser of that race is the auction's correctness.
+- **Forward by the paused duration, and nothing else.** `end_time` gains exactly the
+  wall-clock interval between pause and resume — not a rounded quantum, not a fixed amount.
+- **A paused lot accepts no bids.** Eligibility is still the server clock against `end_time`
+  (`LC-03`), so the pause must also refuse bids explicitly; the clock alone will not, because
+  `end_time` has moved *away*.
+
+**The tests must change, explicitly — this is not optional and not a follow-up.**
+`tests/bidding/closing.sql` section K currently asserts five refusal shapes, and one of them
+is about to become a lie:
+
+- `'end_time cannot be moved outside place_bid'` (line ~345, matching `%only be extended by
+  place_bid%`) **is now wrong as named and as worded.** Rename it and re-word the raised
+  message to name both doors. Do not delete it — the refusal it tests is still the majority
+  case; it is the *set* of permitted callers that grew by one.
+- The other four (`cannot move backwards`, `cannot move by some other amount`, `cannot move
+  without the counter`, `the counter cannot move without end_time`) **stay exactly as they
+  are**, and must still pass, because pause changes none of them.
+- **New assertions are required** for the door itself: that a non-host is refused, that
+  resume moves `end_time` forward by the paused duration and by nothing else, that pause
+  never touches `extension_count`, that a paused lot refuses a bid, and that `end_time` still
+  cannot go backwards *through* the pause path.
+
+The trigger is `public.auctions_guard_update()` in
+`supabase/migrations/20260814000000_bid15_closing_and_extension.sql`, gated by the session
+flag `dalal.in_place_bid`. A second gate for the pause path is the obvious shape; whatever
+shape is chosen, **the guard must still refuse an unflagged update** — a pause implemented by
+turning the guard off is a pause that removed the invariant.
 
 **Two more rules that look like details and are not:**
 
@@ -247,13 +337,14 @@ migration:
 
 | job | cost | what it runs |
 |---|---|---|
-| `static` | seconds, no Docker | the three guard scripts, INT-06, INT-08, the realtime checks, `lint`, `typecheck`, `build` |
+| `static` | seconds, no Docker | the three guard scripts, the V2 board check, **the governance workflow check**, INT-06, INT-08, the realtime checks, `lint`, `typecheck`, `build` |
 | `database` | minutes, PostgreSQL 17 in Docker | `tests/auth/run.sh`, `tests/auction/run.sh`, `tests/bidding/run.sh` |
 
 Three things in `tests/guards/` are new and each answers a different question:
 
-- **`run.sh`** — fifteen checks over the tree, in under a second. They are the rules from
-  §3, §4, §6 and §5 that lived **only** in this file until now: no `Number()`/`parseFloat`
+- **`run.sh`** — **21 checks** over the tree, in under a second. They are the rules from
+  §3, §4, §6, §5 **and now §1 and §2** that lived **only** in this file until now: no
+  `Number()`/`parseFloat`
   on an amount, every `*_price` read carrying `::text` (§4.7), `bid_history.amount` coming
   from `sar_text()`, no money column declared bare `numeric`, no second formatter outside
   `lib/money.ts`, no `ر.س`, no Arabic-Indic digit, `dir="rtl"` declared exactly once and in
@@ -261,7 +352,34 @@ Three things in `tests/guards/` are new and each answers a different question:
   `NEXT_PUBLIC_*SERVICE_ROLE*`, and no `.order("created_at")` on bid history. It strips
   comments before matching, because this repository documents its absences and a plain grep
   reports the healthiest files as the worst offenders.
-- **`negative.sh`** — breaks all fifteen rules on purpose and asserts each one is caught. A
+
+  **The last two are the governance rules from §1**, added 2026-08-15, and they exist
+  because the prose alone had already failed once: no tracked document may re-introduce
+  *"do not write code you do not own"*, and no tracked document may forbid a **named
+  person** from touching something. They read `git ls-files '*.md'` — never `find` —
+  because the first version used `find`, reported four and twenty violations on a tree
+  whose tracked files were clean, and every single match came from `.claude/worktrees/`:
+  stale checkouts of this repository sitting inside it, git-ignored, absent from a CI
+  checkout. That check would have been **green in CI and red locally**, which is the
+  precise inversion of a useful guard. Both strip quoted text first, because this
+  repository retires a rule by quoting it, and a check that cannot tell *"we deleted
+  this"* from *"we require this"* earns an ignore list within a week.
+
+  **Two more come from §2** — the ratification gate in `docs/decisions/README.md`. §2 puts
+  `PRD.md` first and says product decisions live there and nowhere else; `docs/decisions/`
+  is the holding area for one the owner has made and nobody has written into the PRD yet.
+  A sweep on 2026-08-15 found that **three of the six records do not merely fill a gap in
+  the PRD — they contradict it**, which by §2 means the PRD wins and the record loses. The
+  sharpest is live on `main` right now: §5 above says `end_time` has **two doors**, and
+  `PRD.md:784` still says *"the single exception"*. So one check pins the status
+  vocabulary — it is what would have caught `DECIDED in shape`, which three records
+  actually wore — and one asserts every unratified record appears in the owner's queue.
+  **Neither ratifies anything. Only the owner edits `PRD.md`.**
+
+  The twentieth check is this section: **the count above must equal `EXPECTED` in
+  `run.sh`.** It went stale twice in two commits before that existed, which is the whole
+  argument — a number maintained by hand in a file nobody re-reads is a number that lies.
+- **`negative.sh`** — breaks all 20 rules on purpose and asserts each one is caught. A
   check that stays green while its rule is violated is reported as a **failure of the
   check**. This is not ceremony: it found two real defects in `run.sh` the first time it
   ran. **A guard that cannot fail is worse than no guard.**
@@ -269,6 +387,95 @@ Three things in `tests/guards/` are new and each answers a different question:
   either named by CI or listed in its allowlist **with a reason**. Write a new test file and
   forget to wire it up, and this goes red. Three suites are on that allowlist today; all
   three need credentials to a real project, and this repository is public (§6).
+
+A fourth now runs beside them, on the planning documents rather than the tree:
+
+- **`tests/v2/graph.check.mjs`** — the V2 dependency graph is **written twice**, as
+  `SPEC.md` §4.3's *blocks* column and `TICKETS.md`'s *blocked on* column, and both
+  documents also state their own totals in English. This diffs the two copies and recomputes
+  every stated number — ticket count, dependency edges, blocking edges, register size, reach,
+  and the startable closure. `SPEC.md` already warned that two copies of a graph drift *"in
+  the direction that makes the plan look better"* and then claimed they had been reconciled
+  *"mechanically"*; that was true once, by hand, and unverifiable by the next reader.
+  **The same failure as the stale count above, one directory over: a number maintained by
+  hand in a document nobody re-reads.**
+
+  It ran clean on its first execution — all ten stated numbers correct — and the board was
+  **still wrong**, because six real blockers (`D-01` §5, now `O25`–`O30`) had no ids, and an
+  item with no id appears in neither copy. Three tickets read `blocked on: —` and were
+  counted startable; the true figure was four, not seven. **A consistency check cannot see a
+  question that was never written down as data**, which is why `README.md` rule 5 — every gap
+  carries an id — is a mechanism and not a filing convention.
+
+  It then ran clean a second time over a board where `O11` — *which hosted provider* — was
+  recorded as blocking **nothing**, in both copies, in agreement. The agreement was the
+  defect: the ticket that belonged in both was in neither, because the work had been reasoned
+  off the board with *"a deployment is not a row here."* **Two copies agreeing proves they are
+  the same graph, never that it is the right one.** Every figure the check *could* see was
+  right and the one sentence beside them that it could not see — *"`O11` reaches none"* — was
+  the false one, so the third rule this file now carries is: **if a number is worth writing in
+  prose, give it a row the check can reach.**
+
+  That rule lasted about an hour as prose. The change that added `O31`–`O33` stated their
+  reach in a paragraph and gave them no rows — the `O11` shape again, in the same file, by
+  the session that had just finished writing the lesson down. What caught it was not care:
+  it was a **negative probe** mutating a figure and observing that nothing went red. The
+  check now enforces the rule instead of relying on it — every `O`-id named anywhere in the
+  reach section must be pinned by a table row or by a sentence-level assertion, so adding an
+  id to that prose costs a row. **Write the rule in the guard, not only in the guide**; a
+  rule that lives only in a document is followed exactly as well as this one was.
+
+- **`tests/governance/workflow.check.mjs`** — the same failure again, in prose this time,
+  and about **this file**. §1's seven-step workflow was also written out as a numbered list
+  in `TEAM.md` §7 and in `docs/v2/SPEC.md` §5.1: three copies, in agreement, on the day they
+  were written. Agreement is the state in which a duplicated list looks harmless, and this
+  repository already holds the receipt for what comes next — when the ownership model was
+  amended, the amendment had to carry a list of other documents still describing the old one,
+  because each had restated it instead of pointing at it.
+
+  The steps are now written **once**, here, and the two restatements are gone; what those
+  sections legitimately added — what `ready` means on the V2 board, which lane a surface
+  belongs to, what to do when a steward is away — stayed. The check extracts each step's
+  distinctive phrasing **from this file** rather than carrying its own copy, so rewording a
+  step moves the detector with it, and then refuses to find those phrases in a numbered list
+  anywhere else. It also requires every document that discusses the workflow to cite §1 as
+  the governing statement.
+
+  Two of its own probes came back **MISSED** before it was committed, and both were real:
+  fingerprinting a step by its longest bolded phrase went blind when that one bold was
+  removed, and the vacuity guard fired the moment de-duplication succeeded, because the
+  detector it depended on had nothing left to detect. **A check is not finished when it
+  passes; it is finished when it has been made to fail on purpose.**
+
+That sentence was true of `tests/guards/` and a promise everywhere else. Those two document
+checks carry **107 assertions** and, until 2026-08-15, not one committed probe between them —
+the probes that found the four defects above lived in `/tmp` and were gone by the next
+session. So each now has a counterpart that runs in CI beside it:
+
+- **`tests/v2/graph-negative.check.sh`** — 52 probes against `graph.check.mjs`.
+- **`tests/governance/workflow-negative.check.sh`** — 16 probes against `workflow.check.mjs`,
+  including one per step of the seven-step loop, because a seven-long loop is short enough to
+  cover exhaustively and each step's copy is caught by a *different* fingerprint.
+- **`tests/lib/negative.sh`** — the shared harness they source. It is a library, refuses to be
+  executed, and exists so that the `git checkout --` restore loop and its **trap ordering**
+  are written once. That ordering is a safety property, not a style: on 2026-08-15 a trap
+  armed one block too early fired on the way out of the refusal that had just declined to
+  touch anything, and destroyed uncommitted work. `tests/guards/negative.sh` is deliberately
+  **not** converted to use it — rewriting a working safety mechanism for a cosmetic gain is
+  the trade this file exists to refuse.
+
+It adds a fourth verdict the original could not express. `CAUGHT` / `MISSED` / `BROKEN` assume
+the mutation happened; **`NO-OP` says it did not, and blames the probe.** That is not
+hypothetical — during PZ-8 a probe silently failed to edit its second file and reported
+`MISSED` against a check that was fine, and a reader chasing it would have "fixed" working
+code. A mutation that dirties nothing is now a failure of the suite.
+
+**Each suite's header names what it does not probe, and why.** Three loop families in the
+graph suite, and in the governance suite both an assertion whose falsification would mean
+untracking a hundred files and a limitation the check states about itself. An unprobed
+assertion that is written down is a known gap; an unprobed assertion that is not is a
+coverage claim that is quietly false — which is the same defect as the stale count, one level
+up, and the reason `ci-coverage.sh` exists at all.
 
 ### The rule when a guard goes red and you believe the code is right
 

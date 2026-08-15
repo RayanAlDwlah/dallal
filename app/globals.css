@@ -19,64 +19,93 @@
 @import "tailwindcss";
 
 /* ==========================================================================
-   1. Token layer — light is the default, defined on a bare :root
+   1. Token layer — V2: dark, and dark only
+
+   Ported from Rayan's V2 design system (`design-system/tokens.css` on
+   `feature/rayan-v2-spec`), which is a DARK design: "Dark futuristic · bento ·
+   editorial Arabic · RTL". Adopting it entirely means the product is dark, so
+   all three theme blocks that used to live here collapsed into this one.
+
+   COLOUR CARRIES MEANING IN THAT SYSTEM, it is not decoration:
+
+     gold  = money, prices, the primary action
+     teal  = live, active, realtime
+     red   = the final seconds, and errors
+     green = you won            (see the note under `brand`)
+
+   HOW HIS FOUR ROLES WERE MAPPED ONTO THE FOUR THIS APP ALREADY HAS. The app's
+   components name colours semantically — `bg-brand-weak`, `text-urge-text` —
+   never as hex, so re-pointing the values below re-skins every screen without
+   touching one component. Measured usage decided the mapping:
+
+     brand  43 uses   <- gold   the dominant slot: primary buttons AND money
+     stop   12 uses   <- red    errors, and his "final seconds"
+     urge    9 uses   <- teal   his "live/active"; the app uses `urge` for the
+                                concurrency-loss state, which is the live-bidding
+                                surface. Its rule was "brass, deliberately NOT
+                                red" (DESIGN_SYSTEM §8.1) — teal keeps that
+                                distinction and reads as live rather than wrong.
+     calm    8 uses   <- ink2   neutral/info, from his text ramp
+
+   `green = you won` has no slot of its own: the one `tone="success"` in the
+   tree is the winner statement (#161), and gold — money, the prize — carries it
+   without inventing a fifth namespace. If a green is wanted there later it is
+   one token and one `Alert` variant, and it is a design call, not a port.
+
+   WHAT WAS DELIBERATELY NOT PORTED: his `@import url(fonts.googleapis.com)`.
+   `app/fonts.ts` already loads IBM Plex Sans Arabic — the SAME family his tokens
+   ask for — through `next/font/local` from @fontsource, precisely because the
+   Google loader fetches during `next build` and "that is exactly how the Vercel
+   deployment broke". The typography already matches; copying the import would
+   only re-break the build.
    ========================================================================== */
 
 :root {
-  color-scheme: light dark;
+  color-scheme: dark;
 
-  --c-ground:#F4F6F4; --c-surface:#FFFFFF; --c-sunk:#EDF0ED;
-  --c-rule:#DCE1DC;   --c-rule-strong:#C3CBC4;
+  /* surfaces — canvas / surface / raised */
+  --c-ground:#07090D; --c-surface:#0F1219; --c-sunk:#161A23;
+  --c-rule:rgba(255,255,255,.08); --c-rule-strong:rgba(255,255,255,.14);
 
-  --c-text:#131A16;   --c-text-2:#4F5A54;  --c-text-3:#66716B;
+  /* text ramp.
 
-  --c-brand:#0F6B4F;  --c-brand-hover:#0B563F; --c-brand-weak:#E4F0EA;
-  --c-brand-line:#B7D6C7; --c-brand-text:#0B5540; --c-on-brand:#FFFFFF;
+     `--c-text-3` is #7A8398, NOT his #5C6579, and this is the one place the
+     port deviates from the source. Measured against all three surfaces:
 
-  --c-urge:#B4611A;   --c-urge-hover:#944E13;  --c-urge-weak:#FBEEE1;
-  --c-urge-line:#E8C8A5;  --c-urge-text:#8A4A11; --c-on-urge:#FFFFFF;
+       #5C6579  ground 3.41  surface 3.21  raised 2.98   <- fails AA
+       #7A8398  ground 5.24  surface 4.93  raised 4.58   <- passes on all three
 
-  --c-stop:#B3261E;   --c-stop-hover:#921C16;  --c-stop-weak:#FCEAE8;
-  --c-stop-line:#EFC0BB;  --c-stop-text:#98201A; --c-on-stop:#FFFFFF;
+     WCAG AA wants 4.5:1 for small text, and every caller of `text-ink-3` in
+     this tree is small: `text-ink-3 text-xs` labels at 12px — «الفائز»,
+     «السعر النهائي», «نتيجة المزاد». His previews are static HTML mockups and
+     nothing measured them against real callers.
 
-  --c-calm:#5A6570;   --c-calm-weak:#EEF0F2;   --c-calm-line:#D3D8DC;
-  --c-calm-text:#4A545E;  --c-on-calm:#FFFFFF;
+     The presentation side of accessibility is mine (CLAUDE.md §1), so this is
+     a call I make rather than a divergence to report. It is the smallest step
+     up the same ramp that clears the bar — still clearly the third, dimmest
+     tier, still between #9AA4B8 and the surfaces. */
+  --c-text:#E9EDF5;   --c-text-2:#9AA4B8;  --c-text-3:#7A8398;
 
-  --c-focus:#0F6B4F;
-}
+  /* gold — money, prices, the primary action */
+  --c-brand:#F5B942;  --c-brand-hover:#FFC95E; --c-brand-weak:rgba(245,185,66,.12);
+  --c-brand-line:#C98A16; --c-brand-text:#F5B942; --c-on-brand:#07090D;
 
-/* OS is dark AND the viewer has not explicitly chosen light */
-@media (prefers-color-scheme: dark) {
-  :root:not([data-theme="light"]) {
-    --c-ground:#0D1210; --c-surface:#141A17; --c-sunk:#1B2320;
-    --c-rule:#28322D;   --c-rule-strong:#3A4640;
-    --c-text:#E7ECE9;   --c-text-2:#A2AEA8;  --c-text-3:#87938C;
-    --c-brand:#35A87C;  --c-brand-hover:#47BC8F; --c-brand-weak:#10241C;
-    --c-brand-line:#1F4A38; --c-brand-text:#6FCBA4; --c-on-brand:#04160F;
-    --c-urge:#D98A3E;   --c-urge-hover:#E89E56;  --c-urge-weak:#2A1D0E;
-    --c-urge-line:#56391A;  --c-urge-text:#E8A868; --c-on-urge:#221201;
-    --c-stop:#D9544A;   --c-stop-hover:#E86D63;  --c-stop-weak:#2A1512;
-    --c-stop-line:#57241F;  --c-stop-text:#F08B82; --c-on-stop:#200504;
-    --c-calm:#8B96A0;   --c-calm-weak:#1B2226;   --c-calm-line:#333D45;
-    --c-calm-text:#9BA6B0;  --c-on-calm:#0C1114;
-    --c-focus:#6FCBA4;
-  }
-}
+  /* teal — live, active, realtime */
+  --c-urge:#2DD4BF;   --c-urge-hover:#5FE6D5;  --c-urge-weak:rgba(45,212,191,.12);
+  --c-urge-line:#1B8B7E;  --c-urge-text:#5FE6D5; --c-on-urge:#04211E;
 
-/* Explicit dark choice wins even when the OS is light */
-:root[data-theme="dark"] {
-  --c-ground:#0D1210; --c-surface:#141A17; --c-sunk:#1B2320;
-  --c-rule:#28322D;   --c-rule-strong:#3A4640;
-  --c-text:#E7ECE9;   --c-text-2:#A2AEA8;  --c-text-3:#87938C;
-  --c-brand:#35A87C;  --c-brand-hover:#47BC8F; --c-brand-weak:#10241C;
-  --c-brand-line:#1F4A38; --c-brand-text:#6FCBA4; --c-on-brand:#04160F;
-  --c-urge:#D98A3E;   --c-urge-hover:#E89E56;  --c-urge-weak:#2A1D0E;
-  --c-urge-line:#56391A;  --c-urge-text:#E8A868; --c-on-urge:#221201;
-  --c-stop:#D9544A;   --c-stop-hover:#E86D63;  --c-stop-weak:#2A1512;
-  --c-stop-line:#57241F;  --c-stop-text:#F08B82; --c-on-stop:#200504;
-  --c-calm:#8B96A0;   --c-calm-weak:#1B2226;   --c-calm-line:#333D45;
-  --c-calm-text:#9BA6B0;  --c-on-calm:#0C1114;
-  --c-focus:#6FCBA4;
+  /* red — the final seconds, and errors */
+  --c-stop:#FF4D5E;   --c-stop-hover:#FF6B79;  --c-stop-weak:rgba(255,77,94,.12);
+  --c-stop-line:#8E2A34;  --c-stop-text:#FF8A95; --c-on-stop:#2A0509;
+
+  /* neutral — info, secondary */
+  --c-calm:#9AA4B8;   --c-calm-weak:rgba(154,164,184,.10); --c-calm-line:rgba(255,255,255,.14);
+  --c-calm-text:#9AA4B8;  --c-on-calm:#07090D;
+
+  /* Gold, not the brand green it used to be: on #07090D a focus ring has to
+     survive against every surface here, and gold is the highest-contrast hue
+     in the palette. */
+  --c-focus:#F5B942;
 }
 
 /* ==========================================================================
@@ -146,13 +175,21 @@
   --text-money-sm:   15px;  --text-money-sm--line-height:   22px;
 
   /* --- radius, shadow, easing ------------------------------------------- */
-  --radius-sm: 6px;
-  --radius-md: 10px;
-  --radius-lg: 14px;
+  /* V2 shape: his --r-btn 12 / --r-card 20 / --r-panel 28. The app has three
+     steps rather than four, so `md` takes the button radius and `lg` the card;
+     28 has no caller here and inventing a fourth namespace for it would add a
+     token nothing uses. */
+  --radius-sm: 8px;
+  --radius-md: 12px;
+  --radius-lg: 20px;
 
-  --shadow-e1: 0 1px 2px rgb(0 0 0 / .06), 0 1px 1px rgb(0 0 0 / .04);
-  --shadow-e2: 0 2px 4px rgb(0 0 0 / .06), 0 8px 16px rgb(0 0 0 / .07);
-  --shadow-e3: 0 4px 8px rgb(0 0 0 / .07), 0 16px 32px rgb(0 0 0 / .10);
+  /* A DARK UI DOES NOT SHOW DROP SHADOWS, so V2 elevates with a hairline ring
+     and a deep glow instead — his --e-rest / --e-raised. The old ramp was three
+     black shadows at 4-10% opacity, which on #07090D is invisible: every card
+     in the product would have read as flat. */
+  --shadow-e1: inset 0 0 0 1px rgb(255 255 255 / .06);
+  --shadow-e2: inset 0 0 0 1px rgb(255 255 255 / .08), 0 8px 32px rgb(0 0 0 / .5);
+  --shadow-e3: inset 0 0 0 1px rgb(255 255 255 / .10), 0 16px 48px rgb(0 0 0 / .6);
 
   --ease-out-soft: cubic-bezier(.2, .7, .3, 1);
 

@@ -1,0 +1,218 @@
+<!-- @dsCard group="AI" name="Where the AI lives" subtitle="Five touchpoints, the hard boundaries, and the model config" -->
+<!doctype html>
+<html lang="ar" dir="rtl">
+<meta charset="utf-8">
+<title>الذكاء الاصطناعي في دلال</title>
+<style>
+@import url("https://fonts.googleapis.com/css2?family=IBM+Plex+Sans+Arabic:wght@400;500;600&family=Rubik:wght@500;600;700&display=swap");
+:root{--canvas:#07090D;--surface:#0F1219;--raised:#161A23;--hair:rgba(255,255,255,.08);--ink:#E9EDF5;--ink2:#9AA4B8;--ink3:#5C6579;--gold:#F5B942;--teal:#2DD4BF;--red:#FF4D5E;--green:#34D399;--purple:#7C3AED;--pink:#C4A6FF;--f-display:"Rubik",system-ui,sans-serif;--f-body:"IBM Plex Sans Arabic",system-ui,sans-serif}
+*{box-sizing:border-box}
+body{margin:0;padding:40px;direction:rtl;background:var(--canvas);color:var(--ink);font-family:var(--f-body);line-height:1.7;-webkit-font-smoothing:antialiased}
+h1{font-family:var(--f-display);font-size:28px;font-weight:600;margin:0 0 4px}
+p.sub{color:var(--ink2);margin:0 0 6px;font-size:15px;max-width:68ch}
+h2{font-size:13px;color:var(--ink3);font-weight:500;letter-spacing:.04em;margin:42px 0 14px}
+h3.t{font-family:var(--f-display);font-size:17px;font-weight:600;margin:0 0 4px}
+.num{font-variant-numeric:tabular-nums}
+.sar{font-size:.64em;color:var(--ink2);font-weight:500;margin-inline-start:5px}
+.note{font-size:13px;color:var(--ink3);margin-top:12px;max-width:74ch}
+code{font-family:ui-monospace,monospace;font-size:12px;color:var(--teal);direction:ltr;display:inline-block}
+.wrap{max-width:740px}
+
+.sp{width:26px;height:26px;border-radius:8px;background:rgba(124,58,237,.22);display:inline-grid;place-items:center;flex:none;vertical-align:middle}
+.sp svg{width:15px;height:15px;fill:none;stroke:var(--pink);stroke-width:1.7;stroke-linecap:round;stroke-linejoin:round}
+
+/* map */
+.map{display:grid;grid-template-columns:repeat(auto-fill,minmax(238px,1fr));gap:12px}
+.pt{background:var(--surface);border-radius:18px;padding:17px;box-shadow:inset 0 0 0 1px rgba(124,58,237,.2)}
+.pt .h{display:flex;align-items:center;gap:10px;margin-bottom:8px}
+.pt b{font-size:14.5px;font-weight:600}
+.pt .w{font-size:11.5px;color:var(--pink);background:rgba(124,58,237,.14);border-radius:7px;padding:2px 8px;display:inline-block;margin-bottom:8px}
+.pt p{margin:0;font-size:13px;color:var(--ink2)}
+
+.box{background:var(--surface);border-radius:22px;padding:22px;box-shadow:inset 0 0 0 1px var(--hair)}
+.aibox{background:linear-gradient(135deg,rgba(124,58,237,.12),rgba(45,212,191,.06));border-radius:18px;padding:16px 18px;box-shadow:inset 0 0 0 1px rgba(124,58,237,.28)}
+
+/* search */
+.sbar{display:flex;align-items:center;gap:11px;height:52px;border-radius:999px;background:var(--raised);padding-inline:18px 8px;box-shadow:inset 0 0 0 1px rgba(124,58,237,.32),0 0 24px rgba(124,58,237,.12);max-width:620px}
+.sbar .q{flex:1;font-size:15px;color:var(--ink)}
+.sbar .go{height:38px;padding:0 18px;border:0;border-radius:999px;background:rgba(124,58,237,.85);color:#fff;font-family:var(--f-body);font-size:13.5px;font-weight:600;cursor:pointer}
+.chips{display:flex;gap:8px;flex-wrap:wrap;margin-top:14px}
+.ch{display:inline-flex;align-items:center;gap:7px;height:32px;padding:0 13px;border-radius:999px;background:rgba(45,212,191,.11);color:var(--teal);font-size:13px;box-shadow:inset 0 0 0 1px rgba(45,212,191,.24);font-variant-numeric:tabular-nums}
+.ch .k{color:var(--ink3);font-size:11.5px}
+.ch .x{color:var(--ink3);cursor:pointer}
+
+/* images */
+.ba{display:grid;grid-template-columns:1fr 1fr;gap:14px;max-width:520px}
+.im{aspect-ratio:4/3;border-radius:15px;position:relative;box-shadow:inset 0 0 0 1px var(--hair);overflow:hidden}
+.im.before{background:linear-gradient(150deg,#241F1A,#161310)}
+.im.before::after{content:"";position:absolute;inset:0;background:radial-gradient(90% 90% at 70% 90%,rgba(0,0,0,.55),transparent)}
+.im.after{background:linear-gradient(150deg,#2A3140,#171C26)}
+.im.after::after{content:"";position:absolute;inset:0;background:radial-gradient(60% 70% at 45% 25%,rgba(255,255,255,.09),transparent)}
+.im .lb{position:absolute;inset-block-start:9px;inset-inline-start:9px;z-index:2;font-size:11px;font-weight:600;border-radius:7px;padding:2px 9px}
+.im.before .lb{background:rgba(0,0,0,.6);color:var(--ink3)}
+.im.after .lb{background:rgba(124,58,237,.85);color:#fff}
+.tools{display:flex;gap:8px;flex-wrap:wrap;margin-top:14px}
+.tool{height:36px;padding:0 14px;border-radius:10px;background:var(--raised);box-shadow:inset 0 0 0 1px var(--hair);color:var(--ink2);font-size:13.5px;display:grid;place-items:center;cursor:pointer}
+.tool:hover{color:var(--ink)}
+.tool.on{background:rgba(124,58,237,.22);color:var(--pink);box-shadow:inset 0 0 0 1px rgba(124,58,237,.4)}
+
+/* ask */
+.ask .q{display:flex;gap:10px;align-items:flex-start;margin-bottom:14px}
+.ask .q .av{width:28px;height:28px;border-radius:50%;background:linear-gradient(140deg,#2A3140,#171C26);display:grid;place-items:center;font-size:12px;color:var(--ink2);flex:none;box-shadow:inset 0 0 0 1px var(--hair)}
+.ask .q p{margin:0;font-size:14.5px}
+.ask .a{display:flex;gap:10px;align-items:flex-start}
+.ask .a p{margin:0;font-size:14.5px;color:var(--ink2)}
+.cite{margin-top:9px;font-size:12.5px;color:var(--ink3);border-inline-start:2px solid rgba(124,58,237,.5);padding-inline-start:10px}
+.unk{margin-top:14px;padding-top:14px;border-top:1px solid var(--hair)}
+.unk .a p{color:var(--ink2)}
+.askseller{margin-top:10px;height:36px;padding:0 16px;border:0;border-radius:10px;background:transparent;color:var(--gold);box-shadow:inset 0 0 0 1px rgba(245,185,66,.3);font-family:var(--f-body);font-size:13.5px;font-weight:600;cursor:pointer}
+.disc{font-size:12px;color:var(--ink3);margin-top:14px;padding-top:12px;border-top:1px solid var(--hair)}
+
+/* price suggest */
+.sug{display:flex;align-items:center;gap:18px;flex-wrap:wrap}
+.sug .r{font-family:var(--f-display);font-size:24px;font-weight:700;color:var(--pink);font-variant-numeric:tabular-nums}
+.sug .basis{font-size:13px;color:var(--ink2)}
+.sug button{height:38px;padding:0 16px;border:0;border-radius:10px;background:rgba(124,58,237,.85);color:#fff;font-family:var(--f-body);font-size:13.5px;font-weight:600;cursor:pointer;margin-inline-start:auto}
+
+/* boundaries */
+.never{list-style:none;margin:0;padding:0}
+.never li{display:flex;gap:12px;align-items:flex-start;padding:13px 0;border-bottom:1px solid var(--hair);font-size:14.5px}
+.never li:last-child{border:0}
+.never .no{width:22px;height:22px;border-radius:50%;background:rgba(255,77,94,.14);color:var(--red);display:grid;place-items:center;font-size:13px;flex:none;margin-top:3px;box-shadow:inset 0 0 0 1px rgba(255,77,94,.3)}
+.never b{font-weight:600;display:block}
+.never small{font-size:13px;color:var(--ink3);display:block}
+
+/* config */
+.cfg{max-width:560px}
+.fld{margin-bottom:16px}
+.fld label{display:block;font-size:13px;font-weight:600;margin-bottom:6px}
+.in{width:100%;height:44px;border:0;border-radius:11px;background:var(--raised);color:var(--ink);font-family:ui-monospace,monospace;font-size:13.5px;padding-inline:13px;box-shadow:inset 0 0 0 1px var(--hair);outline:none;direction:ltr;text-align:left}
+select.in{font-family:var(--f-body);font-size:14px;direction:rtl;text-align:start}
+.slider{display:flex;align-items:center;gap:14px}
+.track{flex:1;height:5px;border-radius:3px;background:var(--raised);position:relative;box-shadow:inset 0 0 0 1px var(--hair)}
+.track .f{position:absolute;inset-block:0;inset-inline-start:0;width:26%;background:var(--purple);border-radius:3px}
+.track .k{position:absolute;inset-block-start:-6px;inset-inline-start:calc(26% - 8px);width:16px;height:16px;border-radius:50%;background:var(--ink);box-shadow:0 2px 8px rgba(0,0,0,.5)}
+.slider .v{font-family:var(--f-display);font-size:15px;font-weight:600;font-variant-numeric:tabular-nums;min-width:34px;text-align:end}
+.test{display:flex;align-items:center;gap:10px;margin-top:6px}
+.test button{height:40px;padding:0 18px;border:0;border-radius:11px;background:transparent;color:var(--ink2);box-shadow:inset 0 0 0 1px var(--hair);font-family:var(--f-body);font-size:14px;font-weight:500;cursor:pointer}
+.ok{display:inline-flex;align-items:center;gap:7px;font-size:13.5px;color:var(--green)}
+.ok .d{width:7px;height:7px;border-radius:50%;background:var(--green);box-shadow:0 0 8px var(--green)}
+.keywarn{border-radius:12px;padding:12px 14px;background:rgba(255,77,94,.08);box-shadow:inset 0 0 0 1px rgba(255,77,94,.24);font-size:13px;color:#FFB3BB;margin-top:14px}
+</style>
+
+<h1>وين الذكاء الاصطناعي في دلال</h1>
+<p class="sub">مو زر «اسأل الذكاء» في زاوية الشاشة. خمس نقاط، كل وحدة في المكان اللي فيه المستخدم متعثّر أصلاً — والصلاحيات مقفلة بحيث ما يقدر يلمس المزايدة ولا السعر ولا النتيجة.</p>
+
+<h2>الخريطة — الخمس نقاط</h2>
+<div class="map">
+  <div class="pt"><div class="h"><span class="sp"><svg viewBox="0 0 24 24"><path d="M12 3l1.9 5.1L19 10l-5.1 1.9L12 17l-1.9-5.1L5 10l5.1-1.9z"/></svg></span><b>يكتب الإعلان</b></div><span class="w">خطوة 2 من إنشاء المزاد</span><p>يقرأ صورك ويقترح عنوانًا ووصفًا وتصنيفًا. أنت تعدّل أو ترفض.</p></div>
+  <div class="pt"><div class="h"><span class="sp"><svg viewBox="0 0 24 24"><rect x="3.2" y="4.6" width="17.6" height="14.8" rx="2.4"/><circle cx="8.6" cy="9.6" r="1.5"/><path d="M3.6 16.4l4.6-4 3.6 3 3.4-3.4 5.2 5"/></svg></span><b>يصلّح الصور</b></div><span class="w">خطوة 1 من إنشاء المزاد</span><p>خلفية نظيفة، إضاءة معدّلة، قصّ للمقاس. الأصل محفوظ دائمًا.</p></div>
+  <div class="pt"><div class="h"><span class="sp"><svg viewBox="0 0 24 24"><circle cx="10.8" cy="10.8" r="6.6"/><path d="M15.6 15.6l4.4 4.4"/></svg></span><b>يفهم البحث</b></div><span class="w">شريط البحث في الأعلى</span><p>تكتب طلبك بالعربي عادي، وهو يحوّله فلاتر تشوفها وتعدّلها.</p></div>
+  <div class="pt"><div class="h"><span class="sp"><svg viewBox="0 0 24 24"><path d="M20.4 13.4a7.6 7.6 0 0 1-8.2 7.5L4 21.2l1.6-6.4a7.6 7.6 0 1 1 14.8-1.4z"/><path d="M9.6 10.2a2.4 2.4 0 1 1 3.2 2.3v1.2"/><path d="M12.8 16.6h.01"/></svg></span><b>يجاوب عن القطعة</b></div><span class="w">صفحة المزاد</span><p>يجاوب من وصف البائع فقط. ما يعرف؟ يقول ما أعرف ويحوّلك للبائع.</p></div>
+  <div class="pt"><div class="h"><span class="sp"><svg viewBox="0 0 24 24"><path d="M4 18.4L9 12l3.6 3.4L20 6.4"/><path d="M20 11V6.4h-4.6"/></svg></span><b>يقترح سعر البداية</b></div><span class="w">خطوة 3 — للبائع وحده</span><p>من مزادات منتهية مشابهة. اقتراح لحقل، مو حكم على القطعة.</p></div>
+</div>
+<p class="note">ما فيه أيقونة سادسة في الشريط العلوي. البحث نفسه هو المدخل — إضافة زر ذكاء مستقل تعني شاشتين للبحث، ومستخدم يسأل نفسه أي وحدة يستخدم.</p>
+
+<h2>1 — البحث بالكلام العادي</h2>
+<div class="wrap">
+<div class="sbar"><span class="sp"><svg viewBox="0 0 24 24"><path d="M12 3l1.9 5.1L19 10l-5.1 1.9L12 17l-1.9-5.1L5 10l5.1-1.9z"/></svg></span><span class="q">أبي كامري موديل 2020 فوق تحت 60 ألف وينتهي اليوم</span><button class="go">ابحث</button></div>
+<div class="chips">
+  <span class="ch"><span class="k">تصنيف</span>سيارات ومركبات<span class="x">×</span></span>
+  <span class="ch"><span class="k">الماركة</span>تويوتا كامري<span class="x">×</span></span>
+  <span class="ch"><span class="k">من سنة</span>2020<span class="x">×</span></span>
+  <span class="ch"><span class="k">السعر الحالي أقل من</span>60,000.00 SAR<span class="x">×</span></span>
+  <span class="ch"><span class="k">ينتهي</span>خلال 24 ساعة<span class="x">×</span></span>
+</div>
+<p class="note">الشرائح مو زينة — هي <b>النتيجة نفسها</b>، معروضة قبل التنفيذ وقابلة للحذف. المستخدم يشوف كيف انفهم كلامه ويصحّحه بضغطة، بدل ما يعيد كتابة الجملة ويحزر وش اللي فهمه غلط. البحث العادي بكلمة وحدة يشتغل زي ما هو — ما تحوّل الشريط لمحادثة.</p>
+</div>
+
+<h2>2 — تصليح الصور</h2>
+<div class="wrap">
+<div class="box">
+  <div class="ba">
+    <div class="im before"><span class="lb">الأصلية</span></div>
+    <div class="im after"><span class="lb">بعد التصليح</span></div>
+  </div>
+  <div class="tools">
+    <span class="tool on">خلفية نظيفة</span>
+    <span class="tool on">تعديل الإضاءة</span>
+    <span class="tool">قصّ للمقاس</span>
+    <span class="tool">إزالة الانعكاس</span>
+    <span class="tool" style="color:var(--ink3)">↺ رجّع الأصلية</span>
+  </div>
+  <p class="note" style="margin-top:14px">الصورة الأصلية <b>ما تُحذف أبدًا</b> — تُحفظ جنب المعدّلة، و«رجّع الأصلية» شغّال لين بعد النشر. وصفحة المزاد تكتب «صور معدّلة» تحت المعرض إذا استُخدم التعديل.</p>
+</div>
+<p class="note">هذا حدّ أخلاقي مو تقني: مزاد فيه صورة مجمّلة بدون ما يُقال هو مزاد يضلّل مزايدًا يدفع بناءً عليها. التعديل مسموح، الإخفاء لا.</p>
+</div>
+
+<h2>3 — اسأل عن القطعة</h2>
+<div class="wrap">
+<div class="box ask">
+  <div class="q"><span class="av">ن</span><p>الساعة معها العلبة والأوراق؟ وكم مقاسها؟</p></div>
+  <div class="a"><span class="sp"><svg viewBox="0 0 24 24"><path d="M12 3l1.9 5.1L19 10l-5.1 1.9L12 17l-1.9-5.1L5 10l5.1-1.9z"/></svg></span>
+    <div><p>إي، البائع ذكر أن العلبة والأوراق كاملة. والمقاس 41 مم.</p>
+      <div class="cite">من وصف البائع: «…تظهر معها العلبة والأوراق» · من المواصفات: العلبة والأوراق = كاملة · الموديل 126334</div></div></div>
+
+  <div class="unk">
+    <div class="q"><span class="av">ن</span><p>متى آخر صيانة لها؟</p></div>
+    <div class="a"><span class="sp"><svg viewBox="0 0 24 24"><path d="M12 3l1.9 5.1L19 10l-5.1 1.9L12 17l-1.9-5.1L5 10l5.1-1.9z"/></svg></span>
+      <div><p>ما أعرف — البائع ما ذكر شيئًا عن الصيانة، وما راح أخمّن في شيء تدفع عليه.</p>
+        <button class="askseller">اسأل البائع</button></div></div>
+  </div>
+  <p class="disc">الإجابات من وصف البائع ومواصفاته فقط، ومولّدة آليًا — ما هي كلام البائع ولا ضمان منه.</p>
+</div>
+<p class="note">السطر الأخير هو أهم سطر في الصفحة. مساعد يقول «إي أصلية» عن ساعة بأربعين ألفًا ينقل مسؤولية ما يملكها. «ما أعرف» جواب صحيح، ولازم يكون جوابًا سهلاً على النموذج.</p>
+</div>
+
+<h2>4 — اقتراح سعر البداية — للبائع وحده</h2>
+<div class="wrap">
+<div class="aibox sug">
+  <div>
+    <div style="font-size:12.5px;color:var(--ink3)">اقتراح سعر البداية</div>
+    <div class="r"><span class="num">42,000</span> – <span class="num">47,000</span><span class="sar" style="color:rgba(196,166,255,.6)">SAR</span></div>
+    <div class="basis">من <span class="num">14</span> مزادًا منتهيًا لـ «رولكس ديت‑جست 41» آخر <span class="num">90</span> يومًا</div>
+  </div>
+  <button>استخدم 45,000.00</button>
+</div>
+<p class="note">ثلاثة قيود مكتوبة عشان ما تنكسر بعدين:</p>
+<p class="note" style="color:var(--ink2)">
+  <b>واحد:</b> يظهر للبائع في نموذج الإنشاء فقط. المزايد ما يشوفه ولا يعرف بوجوده — رقم كهذا معروض للمزايدين يصير مرساة تحدّد المزاد بدل ما تصفه.<br>
+  <b>اثنان:</b> يعبّي حقلاً، وخلاص. مو حدًّا أدنى، ولا سعرًا احتياطيًا، ولا تحذيرًا لو البائع اختار غيره. البائع يحط 1.00 ولا 900,000.00 وما يعترض عليه أحد.<br>
+  <b>ثلاثة:</b> يختفي إذا ما فيه مزادات مشابهة كافية. «تقديرنا 45,000» من مزادين اثنين هو تخمين بلبس واثق.
+</p>
+</div>
+
+<h2>الحدود — أشياء ما يسويها أبدًا</h2>
+<div class="wrap">
+<div class="box">
+<ul class="never">
+  <li><span class="no">✕</span><div><b>ما يزايد</b><small>ولا نيابة عن أحد، ولا «مزايدة تلقائية»، ولا اقتراح مبلغ داخل زر المزايدة. المزايدة فعل بشري بضغطة وتأكيد.</small></div></li>
+  <li><span class="no">✕</span><div><b>ما يقرر قبول مزايدة ولا رفضها</b><small>القبول قرار قاعدة البيانات داخل قفل الصف. ما فيه نموذج على هذا المسار، ولا حتى للتحقق.</small></div></li>
+  <li><span class="no">✕</span><div><b>ما ينهي مزادًا ولا يحدد فائزًا</b><small>الإغلاق بساعة الخادم مقابل وقت الانتهاء. لا رأي لنموذج في مين فاز.</small></div></li>
+  <li><span class="no">✕</span><div><b>ما يشوف بريدًا ولا معرّفًا داخليًا</b><small>اللي يوصله: الوصف، المواصفات، الصور، الاسم المعروض. البريد ما يخرج من نطاق المصادقة أصلاً — القيد بنيوي مو إعداد.</small></div></li>
+  <li><span class="no">✕</span><div><b>ما يخترع واقعة عن قطعة</b><small>ما هو في الوصف ما يُقال. «ما أعرف» + «اسأل البائع» هو المخرج المصمَّم.</small></div></li>
+  <li><span class="no">✕</span><div><b>ما ينشر شيئًا بنفسه</b><small>كل مخرجاته اقتراح في حقل قابل للتعديل. ما فيه مسار يخلق مزادًا أو يعدّل منشورًا بدون ضغطة إنسان.</small></div></li>
+</ul>
+</div>
+<p class="note">الست فوق مجتمعة تعني شيئًا واحدًا: <b>الذكاء الاصطناعي على مسار الإدخال والعرض فقط، وما يلمس مسار المال ولا مسار النتيجة.</b> لو انكسر النموذج أو انقطع الاتصال، المزادات تشتغل عادي والمزايدات تُقبل عادي — تختفي المساعدة، ما يتعطّل المنتج.</p>
+</div>
+
+<h2>الإعداد — النموذج والاتصال</h2>
+<div class="wrap">
+<div class="box cfg">
+  <div class="fld"><label>المزوّد</label>
+    <select class="in"><option>LM Studio — محلي على الجهاز</option><option>OpenAI-compatible endpoint</option><option>Anthropic API</option></select>
+  </div>
+  <div class="fld"><label>عنوان الخدمة</label><input class="in" value="http://localhost:1234/v1"></div>
+  <div class="fld"><label>النموذج</label><input class="in" value="qwen2.5-vl-7b-instruct"></div>
+  <div class="fld"><label>درجة العشوائية — temperature</label>
+    <div class="slider"><div class="track"><div class="f"></div><div class="k"></div></div><span class="v num">0.3</span></div>
+    <p style="font-size:12.5px;color:var(--ink3);margin:8px 0 0">منخفضة عمدًا. الوصف يوصف قطعة، ما يكتب قصة عنها.</p>
+  </div>
+  <div class="fld"><label>أقصى طول للمخرج</label><input class="in" value="800"></div>
+  <div class="test"><button>اختبر الاتصال</button><span class="ok"><span class="d"></span>متصل · استجابة 340 مللي ثانية</span></div>
+  <div class="keywarn">المفتاح يظل على الخادم. ما يوضع في متغيّر بيئة يبدأ بـ <code>NEXT_PUBLIC_</code>، وما ينزل للمتصفح، وكل نداء يمرّ من مسار خادم في دلال. المستودع عام.</div>
+</div>
+<p class="note">النموذج المكتوب هنا مثال — الاختيار قرارك. اللي يهم في التصميم: المزوّد والنموذج ودرجة العشوائية <b>إعدادات</b>، مو مبنيّة في الكود، عشان تبدّلها بدون نشر.</p>
+</div>
+</html>

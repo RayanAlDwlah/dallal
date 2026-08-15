@@ -9,8 +9,8 @@
 # ---------------------------------------------------------------------------
 # WHY THIS EXISTS
 #
-# `./tests/guards/run.sh` printing fifteen PASS lines proves one thing: that
-# fifteen commands ran and returned the numbers expected. It does NOT prove
+# `./tests/guards/run.sh` printing twenty PASS lines proves one thing: that
+# twenty commands ran and returned the numbers expected. It does NOT prove
 # that any of them would have returned a different number had the rule been
 # broken. A check with a typo'd pattern, a swallowed exit code, or a path that
 # matches nothing passes exactly as loudly as a check that works — and it
@@ -58,7 +58,12 @@ components/ui/money.tsx
 app/layout.tsx
 .env.example
 lib/supabase/config.ts
-components/bidding/bid-panel.tsx"
+components/bidding/bid-panel.tsx
+TEAM.md
+docs/decisions/D-01-bid-increment-button.md
+docs/decisions/README.md
+tests/guards/ci-coverage.sh
+CLAUDE.md"
 
 STAGED_ENV=".env.guardnegative"
 
@@ -101,11 +106,20 @@ restore() {
   git rm --cached --quiet "$STAGED_ENV" 2>/dev/null
   rm -f "$STAGED_ENV"
 }
-trap restore EXIT
-
 # --- refuse to run on a dirty tree -----------------------------------------
 # A restore is `git checkout --`, which is destructive to uncommitted work. It
 # is only safe because these files are known clean when we start.
+#
+# THE TRAP IS ARMED BELOW THIS BLOCK, NOT ABOVE IT, and that ordering is the
+# whole safety property. It used to be armed first — which meant the refusal
+# path printed "REFUSING TO RUN … commit or stash first", exited 1, and then
+# `git checkout --` ran on the way out and DISCARDED THE EXACT UNCOMMITTED WORK
+# the refusal had just declined to touch. Measured on 2026-08-15: a rewritten
+# docs/decisions/README.md, gone, with the reassuring message still on screen.
+#
+# A safety check that performs the damage it is refusing to risk is worse than
+# no safety check, because it is trusted. Nothing may be added between here and
+# the `trap` line that can exit.
 dirty="$(dirty_scope)"
 if [ -n "$dirty" ]; then
   echo "REFUSING TO RUN — these files have uncommitted changes and this script"
@@ -114,9 +128,11 @@ if [ -n "$dirty" ]; then
   exit 1
 fi
 
+trap restore EXIT
+
 pass=0
 fail=0
-EXPECTED=15
+EXPECTED=21
 
 # probe LABEL_SUBSTRING  MUTATION_COMMAND
 #
@@ -207,6 +223,78 @@ probe "no \"use client\" module mentions SERVICE_ROLE" \
 # --- bidding ---------------------------------------------------------------
 probe "no .order(\"created_at\")" \
   "perl -pi -e 's/\.order\(\"end_time\"/.order(\"created_at\"/' lib/auctions/listing.ts"
+
+# --- governance ------------------------------------------------------------
+# Both governance checks strip quotations before matching, because this
+# repository retires a rule by quoting it and a guard that cannot tell "we
+# deleted this" from "we require this" gets an ignore list within a week. That
+# stripping is also the way these two checks could go vacuous — strip too much
+# and they match nothing, forever, on every branch.
+#
+# These probes insert the banned sentences UNQUOTED, which is the only form
+# that is actually a violation. They are the reason the stripping can be
+# trusted: if it ever grew to swallow plain prose, both would report MISSED.
+probe "the deleted refusal rule has not come back" \
+  "perl -pi -e 's{^}{Do not write code you do not own.\n} if \$. == 1' TEAM.md"
+
+probe "forbids a named person from touching something" \
+  "perl -pi -e 's{^}{Mohammed must not touch the money formatter.\n} if \$. == 1' TEAM.md"
+
+# --- ratification ----------------------------------------------------------
+# The first mutation is not invented. `DECIDED in shape` is the exact string
+# three records carried until 2026-08-15, when it was removed BY HAND. This
+# probe is the difference between "we fixed it" and "it cannot come back".
+probe "declares one of the three defined statuses" \
+  "perl -pi -e 's{\\*\\*DECIDED\\*\\*}{**DECIDED in shape**} if \$. == 5' docs/decisions/D-01-bid-increment-button.md"
+
+# Drops D-02's row out of the R register while the record stays DECIDED — the
+# realistic shape, which is not vandalism but a table edit that loses a line.
+#
+# This probe is also the only thing that can tell the R-B check apart from a
+# check that never loops at all: its `unqueued` counter starts at 0 and the
+# assertion wants 0, so a loop body that never executes passes exactly as
+# loudly as one that examined every record. That is the vacuous pass #121 was
+# filed for, one file over.
+probe "every unratified decision record is in the R register" \
+  "perl -ni -e 'print unless /^\\| \\*\\*R1\\*\\* \\|/' docs/decisions/README.md"
+
+# --- portability -----------------------------------------------------------
+# The mutation is not invented: it is the escape the R-A check above carried
+# for three commits, which was green on every machine on this team and red in
+# CI on every push. Appending it to another guard script is the realistic
+# shape — that is where the next one gets copied from.
+#
+# THIS PROBE EARNED ITS KEEP THE FIRST TIME IT RAN. The check it probes was
+# written as `awk -v n="$BS"t`, and POSIX awk runs escape processing on a -v
+# assignment, so the needle was a literal TAB. The check was hunting real tab
+# characters after the word grep and could never fire on the defect it names.
+# It had already been committed, and the positive run said PASS. Nothing but a
+# probe was ever going to find that.
+#
+# Note what this probe can and cannot do. It proves the check FIRES. It cannot
+# prove the check was NEEDED, because a negative probe only ever asks "does red
+# appear when the rule is broken" — and one defect in this same area was a check
+# that was red UNCONDITIONALLY, which a probe reads as CAUGHT and calls healthy.
+# That class is caught by the positive run, in CI, on the other grep. Written
+# down because the gap is not obvious and the next reader will assume otherwise.
+#
+# The needle is assembled from $BS rather than typed, for the reason run.sh
+# gives one level down: a probe that breaks a rule by writing the forbidden
+# sequence into its own source makes the tree permanently red. The literal
+# two characters must never appear in this file. $BS expands HERE, at argument
+# construction, so the string reaching the mutation is correct while the bytes
+# on disk are clean. Measured: before this, the probe's own line was the single
+# violation the fixed check reported against an otherwise clean tree.
+BS='\'
+probe "backslash-escaped tab" \
+  "printf '%s\n' \"# GUARDNEGATIVE grep -cE 'a${BS}${BS}tb' /dev/null\" >> tests/guards/ci-coverage.sh"
+
+# --- self ------------------------------------------------------------------
+# The failure this reproduces is the one that actually happened, twice, in two
+# consecutive commits: a check was added and §9's sentence describing the suite
+# was left saying the old number. Here that is one digit.
+probe "CLAUDE.md §9's stated check count matches EXPECTED" \
+  "perl -pi -e 's{^- \\*\\*.run\\.sh.\\*\\* — \\*\\*\\d+ checks\\*\\*}{- **\`run.sh\`** — **99 checks**}' CLAUDE.md"
 
 # ---------------------------------------------------------------------------
 ran=$((pass + fail))

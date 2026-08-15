@@ -5,8 +5,8 @@
 #   ./tests/guards/run.sh
 #
 # Needs nothing: no Docker, no node, no network, no credentials. It reads the
-# tree and asserts fifteen facts about it. It finishes in under a second, which
-# is deliberate: a guard nobody minds running is a guard that runs.
+# tree and asserts twenty-one facts about it. It finishes in under a second,
+# which is deliberate: a guard nobody minds running is a guard that runs.
 #
 # ---------------------------------------------------------------------------
 # WHY THIS FILE EXISTS
@@ -89,7 +89,7 @@ set -uo pipefail
 ROOT="$(cd "$(dirname "$0")/../.." && pwd)"
 cd "$ROOT" || exit 1
 
-EXPECTED=15
+EXPECTED=21
 pass=0
 fail=0
 
@@ -334,6 +334,215 @@ echo "--- bidding"
 # any .order() naming created_at is the regression, whatever it is ordering.
 chk "no .order(\"created_at\") on any read in TypeScript" \
     "$(count_ts '\.order\(\s*.created_at')" 0
+
+# ===========================================================================
+# GOVERNANCE — CLAUDE.md §1
+# ===========================================================================
+echo
+echo "--- governance"
+
+# The rule these two watch is the newest one in CLAUDE.md and the least
+# code-shaped, which is exactly why it needs watching: it lives entirely in
+# prose, across nine documents, and the failure mode is a sentence coming back
+# rather than a line of code being written.
+#
+# G1 was measured, not predicted. The first governance sweep (ea6eb5f) worked
+# from CLAUDE.md §1's list of stale documents — TEAM.md, GITHUB_PLAN.md,
+# ARCHITECTURE.md, README.md, docs/v2/* — banner-ed all five, and stopped. A
+# mechanical sweep the next day found design/STACK.md §11 still saying
+# "Mohammed must not add a second update mechanism alongside Rayan's": a live
+# prohibition, on a named person, in a file nobody had thought to list. The
+# list was a promise that somebody enumerated correctly. This is not.
+#
+# Quotations are stripped first, and for the same reason comments are stripped
+# above: this repository RETIRES rules by quoting them, so «...», "..." and
+# *"..."* are where the dead sentences live. Without stripping, the documents
+# that did the work of retiring a rule are reported as its worst offenders,
+# somebody adds an ignore list, and the guard dies. The stripping is textual —
+# an unbalanced quote mark swallows to the next one. There is none today.
+# `git ls-files`, not `find` — and that is not a style preference. The first
+# version of this used find and reported got=4 / got=20 on a tree whose tracked
+# files were clean: every match came from .claude/worktrees/, four stale
+# checkouts of this same repository sitting inside it, ignored by git and
+# absent from a CI checkout. It would have been GREEN IN CI AND RED LOCALLY —
+# the exact inversion of a useful guard, and the shape the team has been bitten
+# by before (BSD wc padding, grep -P on macOS). The tracked tree is the subject.
+prose_md() {
+  git ls-files -z '*.md' 2>/dev/null | while IFS= read -r -d '' f; do
+    perl -0777 -pe 's{«.*?»}{}gs; s{\*"[^"]*"\*}{}gs; s{"[^"\n]*"}{}g' "$f"
+  done
+}
+count_md() { prose_md | grep -oiE "$1" | grep -c . ; }
+
+# G1. §1: '"Do not write code you do not own" is deleted. It is no longer a
+# rule on this project, and a session that refuses work by citing it is citing
+# something that does not exist.' A document may quote it to say it is dead —
+# CLAUDE.md §1 does, and that quotation is stripped above. Asserting it is not.
+chk "the deleted refusal rule has not come back" \
+    "$(count_md 'do not write code you do not own')" 0
+
+# G2. §1: 'A steward's absence must not block a ready, well-specified ticket.
+# Request the review, say in the PR that you requested it, and proceed.' The
+# shape that violates this is not the word "owns" — that survives legitimately
+# all over the tree as "who knows this best". It is an instruction addressed to
+# a NAMED PERSON forbidding them from touching something. That is a permission
+# boundary whatever it is called, and it is the thing that stopped work.
+chk "no document forbids a named person from touching something" \
+    "$(count_md '(mohammed|rayan|abdulrahman|dem4t|m7ya505|RayanAlDwlah)[^.]{0,40}(must not|may not|is not allowed to|shall not|cannot) (touch|change|edit|modify|add|write|alter|rename)')" 0
+
+# ===========================================================================
+# RATIFICATION — docs/decisions/README.md, "The ratification gate"
+# ===========================================================================
+echo
+echo "--- ratification"
+
+# CLAUDE.md §2: product decisions live in PRD.md and NOWHERE ELSE. This
+# directory is the holding area between a decision being made and the PRD
+# saying so, and the gap it spans is the one place a product decision can sit
+# unratified for a week while code gets written against it. R3 is that, today:
+# CLAUDE.md §5 says end_time has two doors, PRD.md:784 says "the single
+# exception". Both on main. Neither noticed by anything.
+#
+# These two do not ratify and cannot. They hold the QUEUE — the list the owner
+# reads. A queue nobody is required to update is a queue that is wrong.
+
+# The status cell only — `| Status | **VALUE** — ...` on one line of the header
+# table. Deliberately not the whole file: D-03 and D-05 both discuss the retired
+# `DECIDED in shape` in their own prose, and a file-wide match would call the
+# two records that documented the fix its only violators. Same lesson as the
+# comment stripping above, arrived at the same way.
+dec_files() { git ls-files -z 'docs/decisions/D-*.md' 2>/dev/null; }
+dec_status() { # -> one line per record: "D-0N-slug.md<TAB>STATUS"
+  dec_files | while IFS= read -r -d '' f; do
+    s="$(perl -ne 'if (/^\|\s*Status\s*\|\s*\*\*([A-Z][A-Z ]*[A-Z])\*\*/) { print "$1\n"; exit }' "$f")"
+    printf '%s\t%s\n' "${f##*/}" "${s:-NONE}"
+  done
+}
+
+# R-A. README rule 4: 'Status is one of — and it is one of exactly these three.'
+# This is the check that would have caught `DECIDED in shape`, which is not a
+# hypothetical: THREE records wore it, it read as "half-decided, proceed
+# carefully" when the truth was "decided, and here are four things nobody has
+# decided", and it was removed by hand on 2026-08-15. By hand is not a mechanism.
+#
+# The comparison is awk on whole FIELDS, not a regex on a suffix, and that is a
+# correction rather than a preference. This check spent three commits reading
+#
+#     grep -cvE '<backslash>t(DECIDED|OPEN|IN PRD)$'
+#
+# which was green here and RED IN CI on every one of them. GNU grep's ERE has
+# no such escape and reads it as a literal `t`, so nothing matched, `-cv`
+# counted all six records, and the check reported six violations against a tree
+# with none. macOS grep — BSD *and* the ugrep shim on this machine — accepts it
+# and returns zero. Measured on both, see the portability check below.
+#
+# A field comparison also rejects `FOO IN PRD`, which a `$`-anchored alternation
+# would have accepted.
+chk "every decision record declares one of the three defined statuses" \
+    "$(dec_status | awk -F'\t' '$2 != "DECIDED" && $2 != "OPEN" && $2 != "IN PRD" { n++ } END { print n+0 }')" 0
+
+# R-B. Every record that has not landed in the PRD must appear in the gate's R
+# register, so the owner's queue cannot silently lose an entry. A seventh
+# decision record is the realistic way that happens: written, indexed, and never
+# checked against what PRD.md already says — which is exactly how R1 (categories
+# are "out of scope", PRD.md:411) and R2 (FR-CREATE-15, "exactly one image")
+# went unnoticed until they were swept for.
+#
+# `IN PRD` records are exempt BY DEFINITION: ratified is what leaving this queue
+# means. That exemption is also the way this check could be defeated — mark
+# everything `IN PRD` and it goes quiet — which is why R-A above pins the
+# vocabulary and why only the owner may write that value (README rule 1).
+unqueued=0
+while IFS="$(printf '\t')" read -r base status; do
+  [ "$status" = "IN PRD" ] && continue
+  id="${base:0:4}"   # D-01-bid-increment-button.md -> D-01
+  grep -qE "^\| \*\*R[0-9]+\*\* \| \[$id\]" docs/decisions/README.md || unqueued=$((unqueued + 1))
+done <<EOF
+$(dec_status)
+EOF
+chk "every unratified decision record is in the R register" "$unqueued" 0
+
+# ===========================================================================
+# PORTABILITY — the guard layer runs on two greps and must mean the same thing
+# ===========================================================================
+echo
+echo "--- portability"
+
+# P1. No grep pattern may contain a backslash-t escape.
+#
+# This is not style. The R-A check above carried one for three commits and was
+# GREEN ON THIS MACHINE AND RED IN CI THE WHOLE TIME — the precise inversion §9
+# warns about, and the second time this repository has produced it. Measured,
+# all three on 2026-08-15:
+#
+#   ugrep 7.5.0 (the shim `grep` resolves to here)   escape honoured   -> 0
+#   /usr/bin/grep, BSD, macOS 15                     escape honoured   -> 0
+#   GNU grep, ubuntu-latest, in CI                   literal `t`       -> 6
+#
+# So the whole team's laptops agree with each other and disagree with the only
+# environment that gates a merge. Nobody would find that by reading; the local
+# run says PASS. Use a bracket expression, awk on fields, or `printf` the tab
+# into the pattern — the R-A check above now does the second.
+#
+# `\s` is deliberately NOT flagged: it is an extension in GNU, BSD and ugrep
+# alike, all three were measured, and all three agree. A portability rule that
+# bans things which actually work teaches people to ignore it.
+#
+# Comments are NOT stripped here, unlike every check above. A dead grep in a
+# comment is where the next one gets copied from, and this file is the most
+# copied-from file in the repository.
+#
+# The needle is assembled rather than written, because a check that greps for a
+# two-character sequence cannot contain that sequence and still pass — the
+# first draft matched its own source and was unconditionally red, which is the
+# same defect one turn later.
+#
+# The needle reaches awk through ENVIRON, and that is the SECOND correction
+# this one check has needed. It was first written as
+#
+#     awk -v n="$BS"t ... index($0,n)
+#
+# which is the same bug one tool over: POSIX awk runs escape processing on a
+# -v assignment, so `n` was set to a literal TAB and this check spent its whole
+# life looking for a real tab after the word grep. It could not fire. Measured
+# on 2026-08-15 by appending a line carrying the escape to a tracked .sh and
+# watching this report PASS (0) — found by the probe in negative.sh, which is
+# the entire argument for writing the probe instead of trusting the pass.
+#
+# ENVIRON is exempt from that processing. Doubling the backslash in the -v
+# assignment also works, and is one tidy-up away from being "simplified" back
+# to the broken form, so ENVIRON is preferred. That alternative is described
+# here rather than written out: this check greps for two characters, and a
+# comment demonstrating them next to the word grep would flag its own file.
+BS='\'
+chk "no grep pattern carries a backslash-escaped tab — GNU grep reads it as a literal t" \
+    "$(git grep -h -F -- "${BS}t" -- '*.sh' '*.yml' '*.yaml' 2>/dev/null \
+        | NEEDLE="${BS}t" awk -v g="gre""p" \
+            'index($0,g) && index($0,ENVIRON["NEEDLE"]) > index($0,g)' \
+        | grep -c .)" 0
+
+# ===========================================================================
+# SELF — CLAUDE.md §9 describes this file; it has to describe it correctly
+# ===========================================================================
+echo
+echo "--- self"
+
+# S1. §9 tells a reader how many checks this suite runs. That sentence went
+# stale TWICE IN TWO COMMITS — 15 -> 17 with §9 still saying fifteen, then
+# 17 -> 19 with §9 still saying seventeen — and both times the document that
+# exists to describe the guard layer was quietly wrong about it. Nobody would
+# have noticed by reading; the number is the last thing anyone re-reads.
+#
+# So the number is no longer maintained by hand. It is written as a DIGIT in
+# §9 so this can parse it, and this compares it to EXPECTED. Add a check, and
+# the suite tells you which sentence to update instead of leaving it wrong.
+#
+# Note the shape: it compares §9's number to EXPECTED, not to the number of
+# chk() calls. EXPECTED is already compared to the calls that actually ran, at
+# the bottom of this file, and that comparison is what catches a check dying
+# mid-run. Chaining to it rather than re-deriving keeps one source, not two.
+claimed="$(perl -ne 'if (/^- \*\*`run\.sh`\*\* — \*\*(\d+) checks\*\*/) { print "$1\n"; exit }' CLAUDE.md)"
+chk "CLAUDE.md §9's stated check count matches EXPECTED" "${claimed:-absent}" "$EXPECTED"
 
 # ---------------------------------------------------------------------------
 ran=$((pass + fail))
