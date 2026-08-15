@@ -162,6 +162,12 @@ jobs:
       - name: AUC — the create form survives a rejection (image + review)
         run: node --no-warnings tests/auction/create-form-recovery.check.mjs
 
+      # BID-18 (#161) — FR-END-14 and SC-36 are both Must and both had zero
+      # implementation. The rendering half only; the server-side decision that
+      # feeds `viewerIsWinner` is asserted by its own owner's suite.
+      - name: BID-18 — the winner is told they won (FR-END-14, SC-36)
+        run: node --no-warnings tests/auction/winner-statement.check.mjs
+
       # #147 — every *.check.mjs must actually LOAD. This suite arrives with
       # #155, which cannot wire it here because this file does not exist on
       # main yet. So the wiring lives on this branch instead.

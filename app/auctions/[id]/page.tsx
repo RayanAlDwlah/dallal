@@ -11,7 +11,7 @@ import { LiveStatusCountdown } from "@/components/bidding/live-status-countdown"
 import { OutcomeBanner } from "@/components/bidding/outcome-banner";
 import { Container, Page } from "@/components/layout/container";
 import { Alert } from "@/components/ui/alert";
-import { getVerifiedUserId } from "@/lib/auth/identity";
+import { getViewer } from "@/lib/auth/identity";
 import { readAuctionDetail } from "@/lib/auctions/detail";
 import { outcomePending, presentedStatus } from "@/lib/auctions/presentation";
 
@@ -74,14 +74,15 @@ export default async function AuctionDetailPage({
   const { id } = await params;
 
   /*
-   * Both reads issued together. getVerifiedUserId revalidates the token with
+   * Both reads issued together. getViewer revalidates the token with
    * the auth server and is cache()d for the request, so the layout's own call
    * and this one share one revalidation rather than issuing two.
    */
-  const [result, viewerId] = await Promise.all([
+  const [result, viewer] = await Promise.all([
     readAuctionDetail(id),
-    getVerifiedUserId(),
+    getViewer(),
   ]);
+  const viewerId = viewer?.id ?? null;
 
   /*
    * AUC-16 (#58) — FR-DETAIL-25 / EC-13. A non-existent auction gets a clear
@@ -297,7 +298,14 @@ export default async function AuctionDetailPage({
             disappear from inside — removal it can do, appearance of something
             never mounted it cannot.
           */}
-          <OutcomeBanner auctionId={auction.id} />
+          {/*
+            IDENTITY HALF of BID-18 (@Dem4t): the verified session display
+            name, read server-side by getViewer(). The banner compares it to
+            the LIVE winnerName so an auction ending under the viewer tells
+            its winner without a reload (FR-END-14, SC-36 - Must). Never an
+            internal id (FR-BID-22a, CLAUDE.md §6).
+          */}
+          <OutcomeBanner auctionId={auction.id} viewerDisplayName={viewer?.displayName ?? null} />
         </aside>
 
         <div className="flex flex-col gap-6 lg:col-start-1 lg:row-start-1">
