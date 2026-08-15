@@ -13,6 +13,8 @@ import {
   MIN_DURATION_MS,
   extensionFor,
   isSubmissionKey,
+  validateBidIncrement,
+  validateCategoryId,
   validateDescription,
   validateEndTime,
   validateImageSize,
@@ -64,6 +66,8 @@ export interface CreateAuctionState {
     startingPrice?: string;
     endTime?: string;
     image?: string;
+    category?: string;
+    bidIncrement?: string;
   };
 }
 
@@ -143,6 +147,15 @@ export async function createAuctionAction(
    */
   const endTime = field(formData, "endTime");
 
+  /*
+   * V2 — the category (a sub id when one was chosen, else the main's id) and
+   * the seller-set fixed increment. Both STRINGS end to end: the increment is
+   * an amount and is never parsed here (S0-12 §1); the category id is shape-
+   * checked and then the FK decides existence.
+   */
+  const categoryId = field(formData, "categoryId").trim();
+  const bidIncrement = field(formData, "bidIncrement").trim();
+
   const rawImage = formData.get("image");
   const image = rawImage instanceof File ? rawImage : null;
 
@@ -187,6 +200,8 @@ export async function createAuctionAction(
      * formats are…" and its signature was never read (FR-CREATE-18).
      */
     image: validateImageSize(image),
+    category: validateCategoryId(categoryId),
+    bidIncrement: validateBidIncrement(bidIncrement),
   };
 
   if (Object.values(fieldErrors).some(Boolean)) {
@@ -311,6 +326,18 @@ export async function createAuctionAction(
       name,
       description,
       image_path: imagePath,
+      /*
+       * V2 — the category and the immutable fixed increment. The increment is
+       * the STRING the seller chose; auctions_increment_shape re-checks the
+       * multiple-of-10 rule inside the database. Every auction created by
+       * this form is a V2 fixed-increment auction; V1 rows continue to exist
+       * and continue to work, they are just no longer created here.
+       */
+      /* Sent as the validated digit string; PostgREST casts to the integer
+       * column. No Number() anywhere near this insert — the neighbouring
+       * field IS an amount and the habit must not exist here (§4.1). */
+      category_id: categoryId,
+      bid_increment: bidIncrement,
       /* EC-21 — the intent this row belongs to. See STEP 4 and the migration. */
       submission_key: submissionKey,
     })

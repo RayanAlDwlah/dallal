@@ -1,9 +1,11 @@
 import Link from "next/link";
 
+import { BidButton } from "@/components/bidding/bid-button";
 import { BidPanel } from "@/components/bidding/bid-panel";
 import { Alert } from "@/components/ui/alert";
 import { loginPath } from "@/lib/auth/validation";
 import type { AuctionStatus } from "@/lib/auctions/detail";
+import type { Sar } from "@/lib/money";
 
 /**
  * MOHAMMED'S FILE — `@m7ya505`. AUC-15 (#57). What occupies the bid-control
@@ -51,9 +53,17 @@ export interface BidSlotProps {
   role: ViewerRole;
   /** The PRESENTED status from lib/auctions/presentation.ts, not the raw row. */
   status: AuctionStatus;
+  /**
+   * V2 — the server-computed next offer, non-null exactly when the auction is
+   * fixed-increment. It selects WHICH control the bidder cell mounts: the
+   * one-button control (V2), or the amount input (V1 legacy). It is display
+   * seed data, not authorization: the server recomputes the amount inside the
+   * lock regardless of what was drawn here.
+   */
+  nextOffer: Sar | null;
 }
 
-export function BidSlot({ auctionId, role, status }: BidSlotProps) {
+export function BidSlot({ auctionId, role, status, nextOffer }: BidSlotProps) {
   /*
    * FR-DETAIL-17 — ended, and nobody gets a control. Checked before the role,
    * because it applies to all three of them and a role-first shape would have
@@ -102,11 +112,15 @@ export function BidSlot({ auctionId, role, status }: BidSlotProps) {
       );
 
     /*
-     * FR-DETAIL-14 — the only cell that renders Rayan's component. It receives
-     * the auction id and nothing else; everything it needs beyond that is his
-     * to declare (S0-13, components/bidding/bid-panel.tsx).
+     * FR-DETAIL-14 — the bidder's control. V2 fixed-increment auctions get
+     * the one-button control; V1 legacy auctions keep the amount input,
+     * unchanged (S0-13, components/bidding/bid-panel.tsx).
      */
     case "bidder":
-      return <BidPanel auctionId={auctionId} />;
+      return nextOffer !== null ? (
+        <BidButton auctionId={auctionId} initialNextOffer={nextOffer} />
+      ) : (
+        <BidPanel auctionId={auctionId} />
+      );
   }
 }

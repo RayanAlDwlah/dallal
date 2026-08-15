@@ -70,6 +70,14 @@ export interface LiveAuctionState {
   winnerName: string | null;
   finalPrice: Sar | null;
   closedAt: string | null;
+  /**
+   * V2 — the only amount the one-button control may offer next, computed in
+   * SQL by public.next_offer() and re-read on every cue like the price it is
+   * derived from. Null on a V1 auction. Never computed here: current + step
+   * is amount arithmetic, and amount arithmetic in JS is the thing lib/money
+   * exists to forbid (CLAUDE.md §4.1).
+   */
+  nextOffer: Sar | null;
 }
 
 export interface BidHistoryEntry {
@@ -118,6 +126,8 @@ const AUCTION_SELECT = [
   "current_price::text",
   "final_price::text",
   "closed_at",
+  /* V2 computed column — already text by construction (it IS sar_text output). */
+  "next_offer",
   "winner:profiles!auctions_winner_id_fkey(display_name)",
   "bids(count)",
 ].join(", ");
@@ -150,6 +160,7 @@ interface LiveAuctionRow {
   current_price: string;
   final_price: string | null;
   closed_at: string | null;
+  next_offer: string | null;
   winner: { display_name: string } | null;
   bids: { count: number }[] | null;
 }
@@ -219,6 +230,7 @@ export async function readLiveSnapshot(auctionId: string): Promise<LiveSnapshot 
         winnerName: row.winner?.display_name ?? null,
         finalPrice: row.final_price === null ? null : sar(row.final_price),
         closedAt: row.closed_at,
+        nextOffer: row.next_offer === null ? null : sar(row.next_offer),
       },
       /*
        * THE ordering guarantee, and the only unconditional one on this path

@@ -221,6 +221,43 @@ export function validateImage(file: File | null): string | undefined {
   return validateImageSize(file) ?? validateImageType(file);
 }
 
+/* -------------------------------------------------------------------------
+   V2 — the category and the fixed increment
+   ------------------------------------------------------------------------- */
+
+/** The preset increments the form offers (V2). Custom stays possible. */
+export const INCREMENT_PRESETS = ["10", "50", "100", "500", "1000", "5000"] as const;
+
+/**
+ * V2 — the seller-set fixed increment: whole SAR, a multiple of 10, positive.
+ * STRING inspection only — no parse, no arithmetic (S0-12 §1). A positive
+ * whole multiple of 10 is exactly "digits, not all zero, ending in 0".
+ * Mirrored by auctions_increment_shape in the migration; the database is the
+ * authority.
+ */
+export function validateBidIncrement(raw: string): string | undefined {
+  const value = raw.trim();
+  if (!value) return "اختر مقدار الزيادة.";
+  if (!/^[0-9]+$/.test(value) || !/[1-9]/.test(value)) {
+    return "مقدار الزيادة يجب أن يكون رقمًا صحيحًا موجبًا.";
+  }
+  if (!value.endsWith("0")) {
+    return "مقدار الزيادة يجب أن يكون من مضاعفات 10.";
+  }
+  return undefined;
+}
+
+/**
+ * V2 — shape only: a positive integer id. Existence is the FK's decision
+ * (categories is reference data; the insert fails cleanly on a bad id).
+ */
+export function validateCategoryId(raw: string): string | undefined {
+  const value = raw.trim();
+  if (!value) return "اختر قسم المنتج.";
+  if (!/^[1-9][0-9]*$/.test(value)) return "اختر قسمًا صالحًا.";
+  return undefined;
+}
+
 /**
  * AUC-03 / EC-21 — the shape of a submission key.
  *

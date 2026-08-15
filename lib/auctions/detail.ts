@@ -79,6 +79,18 @@ export interface AuctionDetail {
   winnerName: string | null;
   finalPrice: Sar | null;
   closedAt: string | null;
+  /**
+   * V2 — the seller-set fixed increment, immutable, or null on a V1
+   * legacy open-amount auction. This is the mode discriminator: null mounts
+   * the amount input (BidPanel), non-null mounts the one-button control.
+   */
+  bidIncrement: Sar | null;
+  /**
+   * V2 — the only amount the button can offer, computed in SQL by
+   * public.next_offer() and travelling as text (S0-12 §6). Null on V1 rows.
+   * Ages the moment it is rendered; the live snapshot supersedes it.
+   */
+  nextOffer: Sar | null;
 }
 
 export type AuctionDetailResult =
@@ -127,6 +139,13 @@ const DETAIL_SELECT = [
   "winner_id",
   "final_price::text",
   "closed_at",
+  /*
+   * V2 — bid_increment carries the ::text cast like every sar_amount column;
+   * next_offer is the computed column (a function of the row) and is already
+   * text by construction, so there is nothing to cast.
+   */
+  "bid_increment::text",
+  "next_offer",
   "owner:profiles!auctions_owner_id_fkey(display_name)",
   "winner:profiles!auctions_winner_id_fkey(display_name)",
   "bids(count)",
@@ -147,6 +166,8 @@ interface AuctionDetailRow {
   winner_id: string | null;
   final_price: string | null;
   closed_at: string | null;
+  bid_increment: string | null;
+  next_offer: string | null;
   owner: { display_name: string } | null;
   winner: { display_name: string } | null;
   bids: { count: number }[] | null;
@@ -229,6 +250,8 @@ export const readAuctionDetail = cache(async (id: string): Promise<AuctionDetail
       winnerName: data.winner?.display_name ?? null,
       finalPrice: data.final_price === null ? null : sar(data.final_price),
       closedAt: data.closed_at,
+      bidIncrement: data.bid_increment === null ? null : sar(data.bid_increment),
+      nextOffer: data.next_offer === null ? null : sar(data.next_offer),
     },
   };
 });

@@ -63,7 +63,14 @@ interface AuctionRow {
   bids: { count: number }[] | null;
 }
 
-export async function listActiveAuctions(): Promise<AuctionListing> {
+export async function listActiveAuctions(
+  /**
+   * V2 — restrict to a category family (a main id plus its sub ids), computed
+   * by lib/categories/catalog.ts. Undefined lists everything, which is every
+   * V1 call site unchanged.
+   */
+  categoryIds?: number[],
+): Promise<AuctionListing> {
   const supabase = await createClient();
 
   /*
@@ -111,13 +118,19 @@ export async function listActiveAuctions(): Promise<AuctionListing> {
    * not one. Raised for the team rather than fixed silently here, since it
    * affects AUC-11's detail read and BID-09's realtime re-read too.
    */
-  const { data, error } = await supabase
+  let query = supabase
     .from("auctions")
     .select(
       "id, name, image_path, starting_price::text, current_price::text, end_time, bids(count)",
     )
     .eq("status", "active")
-    .gt("end_time", serverNow)
+    .gt("end_time", serverNow);
+
+  if (categoryIds && categoryIds.length > 0) {
+    query = query.in("category_id", categoryIds);
+  }
+
+  const { data, error } = await query
     .order("end_time", { ascending: true })
     .limit(LISTING_LIMIT)
     .returns<AuctionRow[]>();

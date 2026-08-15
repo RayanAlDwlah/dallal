@@ -225,7 +225,12 @@ export default async function AuctionDetailPage({
             bid-slot.tsx, including the one that mounts Rayan's BidPanel; it
             still receives the auction id and nothing else (S0-13).
           */}
-          <BidSlot auctionId={auction.id} role={role} status={status} />
+          <BidSlot
+            auctionId={auction.id}
+            role={role}
+            status={status}
+            nextOffer={auction.nextOffer}
+          />
 
           {/*
             AUC-17 (#59) — the seller's own view of their completed auction,

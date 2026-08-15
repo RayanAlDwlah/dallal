@@ -4,6 +4,7 @@ import { Page } from "@/components/layout/container";
 import { Card, CardBody } from "@/components/ui/card";
 import { getSessionState } from "@/lib/auth/identity";
 import { loginPath } from "@/lib/auth/validation";
+import { listCategories } from "@/lib/categories/catalog";
 
 import { CreateAuctionForm } from "./create-auction-form";
 
@@ -41,6 +42,9 @@ export default async function CreateAuctionPage() {
     redirect(loginPath("/auctions/new", state === "expired" ? "expired" : "required"));
   }
 
+  /* V2 — the catalog for the category picker. Reference data, public read. */
+  const categories = await listCategories();
+
   return (
     <Page
       title="أنشئ مزادًا"
@@ -49,7 +53,7 @@ export default async function CreateAuctionPage() {
     >
       <Card>
         <CardBody>
-          <CreateAuctionForm />
+          <CreateAuctionForm categories={categories} />
         </CardBody>
       </Card>
     </Page>

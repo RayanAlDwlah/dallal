@@ -1,10 +1,12 @@
 import Link from "next/link";
 
 import { ActiveListing } from "@/components/auction/active-listing";
+import { CategoryRail } from "@/components/category/category-rail";
 import { Page } from "@/components/layout/container";
 import { Alert } from "@/components/ui/alert";
 import { EmptyState } from "@/components/ui/empty-state";
 import { listActiveAuctions } from "@/lib/auctions/listing";
+import { listMainCategories } from "@/lib/categories/catalog";
 import { getVerifiedUserId } from "@/lib/auth/identity";
 
 /**
@@ -29,9 +31,10 @@ import { getVerifiedUserId } from "@/lib/auth/identity";
  * pagination (FR-LIST-12, S6).
  */
 export default async function ListingPage() {
-  const [{ entries, serverNow, failed }, viewerId] = await Promise.all([
+  const [{ entries, serverNow, failed }, viewerId, categories] = await Promise.all([
     listActiveAuctions(),
     getVerifiedUserId(),
+    listMainCategories(),
   ]);
 
   /*
@@ -45,6 +48,10 @@ export default async function ListingPage() {
       title="المزادات النشطة"
       description="تصفّح المزادات المفتوحة، الأقرب انتهاءً أولاً."
     >
+      {/* V2 — the browse rail. Above the grid on every state including empty:
+          an empty CATEGORY must still offer the way to the others. */}
+      <CategoryRail categories={categories} activeSlug={null} />
+
       {failed ? (
         /*
          * A failed read is NOT an empty marketplace. Showing FR-LIST-08's

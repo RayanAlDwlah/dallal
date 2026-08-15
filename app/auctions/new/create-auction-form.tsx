@@ -8,14 +8,19 @@ import { Button } from "@/components/ui/button";
 import { Field } from "@/components/ui/field";
 import { Input, Textarea } from "@/components/ui/input";
 import { Money } from "@/components/ui/money";
+import { cn } from "@/lib/cn";
 import { trySar, type Sar } from "@/lib/money";
+import type { Category } from "@/lib/categories/catalog";
 import {
   ACCEPTED_IMAGE_TYPES,
   DESCRIPTION_MAX_LENGTH,
   DESCRIPTION_MIN_LENGTH,
+  INCREMENT_PRESETS,
   MAX_IMAGE_MB,
   NAME_MAX_LENGTH,
   NAME_MIN_LENGTH,
+  validateBidIncrement,
+  validateCategoryId,
   validateDescription,
   validateEndTime,
   validateImage,
@@ -123,7 +128,7 @@ function newSubmissionKey(): string {
   ].join("-");
 }
 
-export function CreateAuctionForm() {
+export function CreateAuctionForm({ categories }: { categories: Category[] }) {
   const [state, formAction, pending] = useActionState<CreateAuctionState, FormData>(
     createAuctionAction,
     {},
@@ -134,6 +139,26 @@ export function CreateAuctionForm() {
   const [startingPrice, setStartingPrice] = useState("");
   const [endsAt, setEndsAt] = useState("");
   const [imageName, setImageName] = useState<string | null>(null);
+
+  /*
+   * V2 — the two-level category choice. `mainId` drives which subs are
+   * offered; what SUBMITS is `categoryId` below — the sub when one is chosen,
+   * else the main. Changing the main clears a sub that no longer belongs.
+   */
+  const [mainId, setMainId] = useState("");
+  const [subId, setSubId] = useState("");
+  const mains = categories.filter((c) => c.parentId === null);
+  const subs = mainId
+    ? categories.filter((c) => String(c.parentId) === mainId)
+    : [];
+  const categoryId = subId || mainId;
+
+  /*
+   * V2 — the fixed increment: preset chips or a custom multiple of 10. One
+   * string is what submits, whichever way it was chosen.
+   */
+  const [increment, setIncrement] = useState("");
+  const [customIncrement, setCustomIncrement] = useState(false);
 
   /*
    * The File itself, not just its name — because React destroys the input.
@@ -224,6 +249,8 @@ export function CreateAuctionForm() {
     description: description ? validateDescription(description) : undefined,
     startingPrice: startingPrice ? validateStartingPrice(startingPrice) : undefined,
     endTime: endsAtError,
+    category: categoryId ? validateCategoryId(categoryId) : undefined,
+    bidIncrement: increment ? validateBidIncrement(increment) : undefined,
   };
 
   const errorFor = (key: keyof typeof liveErrors) =>
@@ -279,10 +306,14 @@ export function CreateAuctionForm() {
     !startingPrice ||
     !endsAt ||
     !imageName ||
+    !categoryId ||
+    !increment ||
     Boolean(liveErrors.name) ||
     Boolean(liveErrors.description) ||
     Boolean(liveErrors.startingPrice) ||
     Boolean(liveErrors.endTime) ||
+    Boolean(liveErrors.category) ||
+    Boolean(liveErrors.bidIncrement) ||
     Boolean(imageError);
 
   function startReview() {
@@ -361,6 +392,54 @@ export function CreateAuctionForm() {
           )}
         </Field>
 
+        {/* V2 — the two-column category choice from categories.html: main
+            first, subs appear for the chosen main. What submits is the sub
+            when one is chosen, else the main (see `categoryId`). */}
+        <Field
+          label="قسم المنتج"
+          hint="اختر القسم الرئيسي، وقسمًا فرعيًا إن وجد."
+          error={errorFor("category")}
+          required
+        >
+          {(props) => (
+            <div className="flex flex-col gap-2 sm:flex-row">
+              <select
+                {...props}
+                value={mainId}
+                onChange={(event) => {
+                  setMainId(event.target.value);
+                  setSubId("");
+                }}
+                className="border-rule bg-surface min-h-tap w-full rounded-md border px-3"
+              >
+                <option value="">القسم الرئيسي…</option>
+                {mains.map((c) => (
+                  <option key={c.id} value={String(c.id)}>
+                    {c.nameAr}
+                  </option>
+                ))}
+              </select>
+              <select
+                aria-label="القسم الفرعي"
+                value={subId}
+                onChange={(event) => setSubId(event.target.value)}
+                disabled={subs.length === 0}
+                className="border-rule bg-surface min-h-tap w-full rounded-md border px-3 disabled:opacity-50"
+              >
+                <option value="">
+                  {subs.length === 0 ? "بدون قسم فرعي" : "الفرعي (اختياري)…"}
+                </option>
+                {subs.map((c) => (
+                  <option key={c.id} value={String(c.id)}>
+                    {c.nameAr}
+                  </option>
+                ))}
+              </select>
+              <input type="hidden" name="categoryId" value={categoryId} />
+            </div>
+          )}
+        </Field>
+
         <Field
           label="سعر البداية"
           /*
@@ -392,6 +471,68 @@ export function CreateAuctionForm() {
             <Money amount={pricePreview} size="sm" />
           </p>
         ) : null}
+
+        {/* V2 — the fixed increment (create-auction.html presets). ONE string
+            submits; the server and the DB constraint re-check multiple-of-10.
+            The buttons are type="button": choosing a preset must not submit. */}
+        <Field
+          label="مقدار الزيادة"
+          hint="كل مزايدة تزيد على السعر بهذا المبلغ بالضبط — لا يتغيّر بعد النشر."
+          error={errorFor("bidIncrement")}
+          required
+        >
+          {(props) => (
+            <div className="flex flex-col gap-2">
+              <div className="flex flex-wrap items-center gap-2">
+                {INCREMENT_PRESETS.map((preset) => {
+                  const active = !customIncrement && increment === preset;
+                  return (
+                    <button
+                      key={preset}
+                      type="button"
+                      onClick={() => {
+                        setCustomIncrement(false);
+                        setIncrement(preset);
+                      }}
+                      className={cn(
+                        "min-h-tap num rounded-full border px-4 text-sm font-semibold",
+                        active
+                          ? "bg-brand text-on-brand border-brand"
+                          : "border-rule bg-surface text-ink-2",
+                      )}
+                    >
+                      {preset}
+                    </button>
+                  );
+                })}
+                <button
+                  type="button"
+                  onClick={() => {
+                    setCustomIncrement(true);
+                    setIncrement("");
+                  }}
+                  className={cn(
+                    "min-h-tap rounded-full border px-4 text-sm font-semibold",
+                    customIncrement
+                      ? "bg-brand text-on-brand border-brand"
+                      : "border-rule bg-surface text-ink-2",
+                  )}
+                >
+                  مبلغ آخر
+                </button>
+              </div>
+              {customIncrement ? (
+                <AmountInput
+                  {...props}
+                  value={increment}
+                  onValueChange={setIncrement}
+                  placeholder="من مضاعفات 10"
+                />
+              ) : null}
+              <input type="hidden" name="bidIncrement" value={increment} />
+            </div>
+          )}
+        </Field>
 
         <Field
           label="وقت انتهاء المزاد"
@@ -459,6 +600,10 @@ export function CreateAuctionForm() {
           rawPrice={startingPrice}
           endTime={formatEndTime(toInstant(endsAt))}
           imageName={imageName}
+          categoryName={
+            categories.find((c) => String(c.id) === categoryId)?.nameAr ?? null
+          }
+          increment={trySar(increment)}
         />
       ) : null}
 
@@ -518,6 +663,8 @@ function ReviewPanel({
   rawPrice,
   endTime,
   imageName,
+  categoryName,
+  increment,
 }: {
   name: string;
   description: string;
@@ -527,6 +674,10 @@ function ReviewPanel({
   rawPrice: string;
   endTime: string;
   imageName: string | null;
+  /** V2 — the chosen category's Arabic name (sub when chosen, else main). */
+  categoryName: string | null;
+  /** V2 — the fixed increment, already validated as a whole multiple of 10. */
+  increment: Sar | null;
 }) {
   return (
     <section
@@ -573,6 +724,16 @@ function ReviewPanel({
             <bdi className="num font-semibold break-all">{rawPrice}</bdi>
           )}
         </ReviewRow>
+
+        {categoryName ? (
+          <ReviewRow label="القسم">{categoryName}</ReviewRow>
+        ) : null}
+
+        {increment ? (
+          <ReviewRow label="مقدار الزيادة">
+            <Money amount={increment} size="sm" />
+          </ReviewRow>
+        ) : null}
 
         <ReviewRow label="ينتهي في">
           <bdi className="num">{endTime}</bdi>
