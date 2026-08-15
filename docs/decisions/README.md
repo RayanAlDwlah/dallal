@@ -182,10 +182,25 @@ column. Register: [`docs/v2/SPEC.md` §4.3](../v2/SPEC.md).
 > register of twenty-four — none of them a new question, all of them written down already,
 > in prose, under headings that read as settled.
 
-**None of the six is `IN PRD`, and three of them contradict it** — `R1`, `R2`, `R3` in the
-ratification gate above. That is an owner action, not a contributor judgement, and it is
-tracked apart from the `O` register on purpose: an `O` item is unanswered, an `R` item is
-answered and unratified.
+**None of the six is `IN PRD`. Three contradict it directly** — `R1`, `R2`, `R3` — **and one
+contradicts it conditionally**: `R4`, which needs nothing ratified *if* the seller-set
+increment is required, and needs `FR-CREATE-03` reopened if it is optional. Nobody has
+answered that (`O25`), so `R4` is carried as a gate, not waved through.
+
+All four are in the ratification gate above. That is an owner action, not a contributor
+judgement, and it is tracked apart from the `O` register on purpose: an `O` item is
+unanswered, an `R` item is answered and unratified.
+
+> **This sentence said "three of them contradict it" while the table above it listed four
+> rows that are not `no`.** Both readings were defensible — `R4`'s cell says *depends on an
+> open item*, so "three contradict" is true of the direct ones — and that is exactly why it
+> went unnoticed: nothing was wrong, one number was just answering a narrower question than
+> the sentence around it asked. `docs/v2/TICKETS.md` then gated three tickets on `R4`, and
+> the two documents disagreed about how many decisions were holding work.
+>
+> Prose is not a gate (`CLAUDE.md` §9), so the count is no longer written by hand. Two
+> assertions in `tests/v2/graph.check.mjs` re-derive both lists from the `conflict?` column
+> and fail if either drifts.
 
 **O4** — is a lot an `auctions` row or a separate entity — is now the expensive one. The two
 that used to outrank it (how category fields are stored, and what a pause does to the clock)

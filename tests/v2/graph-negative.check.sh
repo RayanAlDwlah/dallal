@@ -9,7 +9,7 @@
 # ---------------------------------------------------------------------------
 # WHY THIS EXISTS
 #
-# `graph.check.mjs` prints 138 PASS lines. That proves 138
+# `graph.check.mjs` prints 143 PASS lines. That proves 143
 # comparisons ran and agreed. It does NOT prove that any of them would have
 # disagreed had the board been wrong — and this particular file is unusually
 # exposed to that, because most of its assertions are anchored by a REGEX
@@ -33,7 +33,7 @@
 # ---------------------------------------------------------------------------
 # WHAT IS PROBED, AND WHAT IS NOT — SAID PLAINLY
 #
-# 83 probes against 138 assertions. The gap is not laziness and
+# 88 probes against 143 assertions. The gap is not laziness and
 # it is not coverage theatre; it is four loops that generate one assertion per
 # row of a table:
 #
@@ -309,7 +309,7 @@ neg_probe "every O-id discussed in the reach section is pinned by a row or a che
 
 # ---------------------------------------------------------------------------
 # F. The suite's own blind-spot guards. These fire before any assertion runs,
-#    and they are the difference between a red build and 138 vacuous
+#    and they are the difference between a red build and 143 vacuous
 #    passes. Nothing subtle triggers them, so these three mutations are blunt.
 # ---------------------------------------------------------------------------
 neg_probe "the reach section could not be located" \
@@ -483,6 +483,38 @@ neg_probe "TICKETS.md header: ticket count" \
 neg_probe "the hypothetical was discarded" \
   'perl -pi -e '"'"'s/^  for \(const \[t, arr\] of saved\) board\.get\(t\)\.ratif = arr;.*$/  \/\/ restore removed by probe/'"'"' tests/v2/graph.check.mjs'
 
+# ---------------------------------------------------------------------------
+# H. The decisions index restates the direct/conditional split in prose, one
+#    document over from the table it summarises. That sentence said "three"
+#    while its own table listed four non-`no` rows — nothing false, just a
+#    narrower question than the sentence was read as asking.
+#
+#    Both mutations below are the realistic ones: a count updated on one side
+#    of a reclassification and not the other.
+# ---------------------------------------------------------------------------
+neg_probe "decisions index: how many records contradict the PRD directly" \
+  'perl -pi -e '"'"'s/\*\*None of the six is `IN PRD`\. Three contradict/**None of the six is `IN PRD`. Four contradict/'"'"' docs/decisions/README.md'
+
+# The count stays right and the membership goes wrong — the error a reader is
+# least likely to spot, because the number they check first still agrees.
+neg_probe "decisions index: which records contradict the PRD directly" \
+  'perl -pi -e '"'"'s/— `R1`, `R2`, `R3` —/— `R1`, `R2`, `R4` —/'"'"' docs/decisions/README.md'
+
+# The sentence wraps mid-clause, and `perl -pi` sees one line at a time, so this
+# anchors on the end of the first line rather than on the phrase that spans both.
+neg_probe "decisions index: how many contradict it conditionally" \
+  'perl -pi -e '"'"'s/\*\*and one$/**and two/'"'"' docs/decisions/README.md'
+
+neg_probe "decisions index: which record contradicts it conditionally" \
+  'perl -pi -e '"'"'s/contradicts it conditionally\*\*: `R4`/contradicts it conditionally**: `R5`/'"'"' docs/decisions/README.md'
+
+# The cross-document half: the split can be internally consistent and still fail
+# to account for a record the V2 board gates ten tickets on. Reclassifying R1 to
+# `no` keeps the index's own two counts self-consistent — it drops out of both
+# lists at once — while TICKETS.md still carries it on three tickets.
+neg_probe "decisions index: the split accounts for every record gating a V2 ticket" \
+  'perl -pi -e '"'"'s/\| \*\*YES — direct\*\* \|/| no |/ if /^\| \*\*R1\*\* \|/'"'"' docs/decisions/README.md'
+
 # G7. The check that guards the PROBE MECHANISM, not the board and not the
 # checker's arithmetic.
 #
@@ -501,4 +533,4 @@ neg_probe "the hypothetical was discarded" \
 neg_probe "no assertion label is findable only by matching a different one" \
   'perl -pi -e '"'"'s/"TICKETS.md: unblocked once O1 and O2 are answered"/"TICKETS.md: unblocked before O1\/O2 — after, that is"/'"'"' tests/v2/graph.check.mjs'
 
-neg_report "V2-GRAPH-NEGATIVE" 83
+neg_report "V2-GRAPH-NEGATIVE" 88

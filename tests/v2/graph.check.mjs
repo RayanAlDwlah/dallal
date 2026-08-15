@@ -140,6 +140,11 @@ for (const line of DEC_README.split("\n")) {
       record: (m[2].match(/\bD-\d+\b/) ?? [null])[0],
       // "**YES — direct**", "**depends on an open item**", "no"
       conflicts: !/^\s*no\s*$/i.test(m[4].replace(/\*/g, "")),
+      // A conflict that holds today, vs one that holds only if an open item is
+      // answered a particular way. Both gate a ticket; only the first can be
+      // described as contradicting the PRD right now, and conflating them is
+      // what let the index say "three" while its own table listed four.
+      direct: /^\s*yes\b/i.test(m[4].replace(/\*/g, "")),
     });
   }
 }
@@ -716,6 +721,36 @@ const rCount = grab(
 if (rCount) {
   chk("TICKETS.md: records conflicting with the PRD", word2num(rCount[1]), conflictingR.length);
   chk("TICKETS.md: R register size", word2num(rCount[2]), rRegister.size);
+}
+
+// The decisions index restates the same split in prose, one document over, and
+// it got it wrong: "three of them contradict it" next to a table with four
+// non-`no` rows. Neither number was false — "three" was true of the DIRECT
+// conflicts — but the sentence was read as the count of records holding work,
+// and TICKETS.md gates ten tickets on four. Both lists are now re-derived from
+// the `conflict?` column rather than counted by hand.
+const idxSplit = grab(
+  DEC_README,
+  /\*\*None of the six is `IN PRD`\. ([A-Za-z-]+) contradict it directly\*\* — ((?:`R\d+`(?:, )?)+) — \*\*and\s+([a-z-]+)\s+contradicts it conditionally\*\*: `(R\d+)`/,
+  "decisions index states the direct/conditional split",
+);
+if (idxSplit) {
+  const directR = [...rRegister].filter(([, v]) => v.direct).map(([r]) => r).sort(byNum);
+  const conditionalR = conflictingR.filter((r) => !directR.includes(r));
+  chk("decisions index: how many records contradict the PRD directly", word2num(idxSplit[1]), directR.length);
+  chk("decisions index: which records contradict the PRD directly", rIdsIn(idxSplit[2]).sort(byNum), directR);
+  chk("decisions index: how many contradict it conditionally", word2num(idxSplit[3]), conditionalR.length);
+  chk("decisions index: which record contradicts it conditionally", [idxSplit[4]], conditionalR);
+  // The claim that motivated the edit: every record that gates a ticket on the
+  // V2 board is one this sentence accounts for. Not implied by the two counts —
+  // they could both be right about a register the board disagrees with.
+  const gating = new Set();
+  for (const [, v] of board) for (const r of v.ratif) gating.add(r);
+  chk(
+    "decisions index: the split accounts for every record gating a V2 ticket",
+    [...gating].sort(byNum).filter((r) => !directR.includes(r) && !conditionalR.includes(r)),
+    [],
+  );
 }
 
 // The grouped list, checked per group. A correct total next to a ticket filed
