@@ -7,7 +7,8 @@ import { AmountInput } from "@/components/ui/amount-input";
 import { Button } from "@/components/ui/button";
 import { Field } from "@/components/ui/field";
 import { Input, Textarea } from "@/components/ui/input";
-import { formatSarWithSuffix, trySar } from "@/lib/money";
+import { Money } from "@/components/ui/money";
+import { trySar, type Sar } from "@/lib/money";
 import {
   ACCEPTED_IMAGE_TYPES,
   DESCRIPTION_MAX_LENGTH,
@@ -34,7 +35,9 @@ import { createAuctionAction, type CreateAuctionState } from "./actions";
  *    an *uncontrolled* form once a form action resolves. A 2000-character
  *    description must not evaporate because the image was the wrong type
  *    (EC-08). The file input is the sole exception: no browser lets a page
- *    repopulate one.
+ *    repopulate one — so the chosen File is held in state and re-attached to
+ *    the FormData on submit instead. See `imageFile` and `submit` below; the
+ *    input stays empty after a rejection, the payload does not.
  *  - **The end time is submitted as an absolute instant.** The picker gives a
  *    naked wall-clock string with no zone, and the server would resolve it
  *    against ITS timezone — reading a Riyadh seller's 10:30 as 10:30 UTC. The
@@ -132,7 +135,60 @@ export function CreateAuctionForm() {
   const [endsAt, setEndsAt] = useState("");
   const [imageName, setImageName] = useState<string | null>(null);
 
-  const [reviewing, setReviewing] = useState(false);
+  /*
+   * The File itself, not just its name — because React destroys the input.
+   *
+   * React resets the <form> once the action completes (react-dom's `r`
+   * dispatcher calls requestFormReset, and the commit phase calls
+   * form.reset()). Every controlled field is re-applied from state on the next
+   * render and survives; a file input CANNOT be controlled, so the seller's
+   * chosen file is gone and no browser lets a page put it back.
+   *
+   * Measured on 2026-08-15 against a live server: after a rejected submission
+   * `input[name=image].files.length` was 0 while the page still read
+   * "الملف المختار: watch.png" — `imageName` is state and survived. `incomplete`
+   * consults `imageName`, so review stayed enabled, the seller confirmed again,
+   * and the server answered "اختر صورة للمنتج." — an inescapable loop, with the
+   * screen asserting the opposite of the truth at every turn.
+   *
+   * Keeping the File and re-attaching it in `submit` below is deterministic:
+   * it does not depend on when the reset lands relative to an effect, and it
+   * does not try to write back into a file input, which is not permitted.
+   */
+  const [imageFile, setImageFile] = useState<File | null>(null);
+
+  /*
+   * The review view is a REQUEST, not a fact — a server rejection revokes it.
+   *
+   * A rejection returns to the review screen, and every message it carries is
+   * a `fieldErrors` entry rendered by a `Field` inside the `hidden` block
+   * below, so the seller sees the confirm button do nothing at all. Measured
+   * on 2026-08-15 against a live server: an end time that was valid when it
+   * was typed and stale by the time it was confirmed came back as
+   * `fieldErrors.endTime`, into a node with a 0x0 rect and a hidden ancestor.
+   *
+   * Dropping back to the fields is the fix rather than echoing the text above
+   * the panel, because the message belongs against the input the seller has to
+   * change and that is where `Field` already puts it. `reviewing` is DERIVED
+   * rather than corrected after the fact: an effect that calls setState here
+   * would be a cascading render, and React's own guidance is to compute it.
+   *
+   * The rejection is identified by the action-state object itself, so
+   * `startReview` can dismiss the one it has already answered for and let the
+   * seller back in. Nothing about the payload moves — the block is hidden,
+   * never unmounted — and `submissionKey` is untouched, so this stays the same
+   * intent being corrected rather than a second one.
+   */
+  const [reviewRequested, setReviewRequested] = useState(false);
+  const [answeredRejection, setAnsweredRejection] = useState<CreateAuctionState | null>(
+    null,
+  );
+
+  const serverRejected =
+    state !== answeredRejection &&
+    Boolean(state.fieldErrors && Object.values(state.fieldErrors).some(Boolean));
+
+  const reviewing = reviewRequested && !serverRejected;
 
   /*
    * One key per intent, minted on the first move to review and kept across
@@ -194,8 +250,27 @@ export function CreateAuctionForm() {
   const [imageError, setImageError] = useState<string | undefined>(undefined);
 
   function changeImage(file: File | null) {
+    setImageFile(file);
     setImageName(file?.name ?? null);
     setImageError(file ? validateImage(file) : undefined);
+  }
+
+  /*
+   * Re-attach the retained File when the input has been emptied by the reset
+   * described above. `formData.get("image")` on an empty file input is still a
+   * File — an empty one — so the test is the size, not the presence.
+   *
+   * This never overrides a real choice: on the first submission, and after the
+   * seller picks a different file, the input holds it and the branch is skipped.
+   * The server re-validates either way (SEC-V6); this only stops the client
+   * from silently sending nothing.
+   */
+  function submit(formData: FormData) {
+    const inForm = formData.get("image");
+    if (imageFile && (!(inForm instanceof File) || inForm.size === 0)) {
+      formData.set("image", imageFile);
+    }
+    return formAction(formData);
   }
 
   const incomplete =
@@ -211,13 +286,23 @@ export function CreateAuctionForm() {
     Boolean(imageError);
 
   function startReview() {
-    if (incomplete) return;
+    /*
+     * Re-read the clock here and not only on the change event: an end time
+     * that was five minutes ahead when it was typed can be four by the time
+     * the seller reaches this button, and `endsAtError` is only ever as fresh
+     * as the last keystroke. Without this the seller bounces between the two
+     * views — the server rejecting a time the client still believes in.
+     */
+    const endTimeNow = endsAt ? validateEndTime(toInstant(endsAt), Date.now()) : undefined;
+    if (endTimeNow !== endsAtError) setEndsAtError(endTimeNow);
+    if (incomplete || endTimeNow) return;
     if (!submissionKey) setSubmissionKey(newSubmissionKey());
-    setReviewing(true);
+    setAnsweredRejection(state);
+    setReviewRequested(true);
   }
 
   return (
-    <form action={formAction} className="flex flex-col gap-5">
+    <form action={submit} className="flex flex-col gap-5">
       {state.error ? <Alert tone="error">{state.error}</Alert> : null}
 
       {/* FR-CREATE-24 / FR-CREATE-25 stated BEFORE the fields, not after the
@@ -301,7 +386,10 @@ export function CreateAuctionForm() {
         {pricePreview && !errorFor("startingPrice") ? (
           <p className="text-ink-2 -mt-3 text-sm">
             سيُعرض السعر هكذا:{" "}
-            <bdi className="num font-semibold">{formatSarWithSuffix(pricePreview)}</bdi>
+            {/* INT-06 wave 2 — the seller types this value and BR-21 puts no
+                ceiling on it, so this is the likeliest wide amount in the whole
+                product. It was a bare <bdi> with no containment. */}
+            <Money amount={pricePreview} size="sm" />
           </p>
         ) : null}
 
@@ -367,7 +455,8 @@ export function CreateAuctionForm() {
         <ReviewPanel
           name={name}
           description={description}
-          price={pricePreview ? formatSarWithSuffix(pricePreview) : startingPrice}
+          price={pricePreview}
+          rawPrice={startingPrice}
           endTime={formatEndTime(toInstant(endsAt))}
           imageName={imageName}
         />
@@ -399,7 +488,7 @@ export function CreateAuctionForm() {
              * if the in-flight submit did land, publishing again resolves to
              * that same auction rather than a second one.
              */
-            onClick={() => setReviewing(false)}
+            onClick={() => setReviewRequested(false)}
           >
             رجوع للتعديل
           </Button>
@@ -426,12 +515,16 @@ function ReviewPanel({
   name,
   description,
   price,
+  rawPrice,
   endTime,
   imageName,
 }: {
   name: string;
   description: string;
-  price: string;
+  /** The parsed amount when the typed string is a valid Sar, else null. */
+  price: Sar | null;
+  /** What the seller actually typed — shown verbatim when it is not yet valid. */
+  rawPrice: string;
   endTime: string;
   imageName: string | null;
 }) {
@@ -468,11 +561,17 @@ function ReviewPanel({
         </ReviewRow>
 
         <ReviewRow label="سعر البداية">
-          {/* The currency indicator stays OUTSIDE the isolate (CLAUDE.md §3) —
-              formatSarWithSuffix already returns the canonical "1,250.00 SAR",
-              so the isolate wraps the whole rendered string exactly as Money
-              does elsewhere. */}
-          <bdi className="num font-semibold">{price}</bdi>
+          {/* INT-06 wave 2 — <Money> rather than a hand-rolled <bdi>. It is the
+              only element carrying `max-w-full min-w-0 overflow-x-auto`, and
+              the seller can type an arbitrarily wide price (BR-21). When the
+              typed string is not yet a valid amount there is nothing to format,
+              so it is shown verbatim — isolated, because a partial number is
+              still a digit run inside RTL text. */}
+          {price ? (
+            <Money amount={price} size="sm" />
+          ) : (
+            <bdi className="num font-semibold break-all">{rawPrice}</bdi>
+          )}
         </ReviewRow>
 
         <ReviewRow label="ينتهي في">
@@ -484,9 +583,14 @@ function ReviewPanel({
         </ReviewRow>
       </dl>
 
-      <p className="text-ink-2 text-xs">
-        أول مزايدة بمبلغ <bdi className="num">{price}</bdi> بالضبط مقبولة.
-      </p>
+      {/* Only stated once the amount is well formed — "a first bid of exactly
+          <nothing> is accepted" is not a sentence, and BR-29 is the rule this
+          screen exists to make unmistakable (FR-CREATE-26a). */}
+      {price ? (
+        <p className="text-ink-2 text-xs">
+          أول مزايدة بمبلغ <Money amount={price} size="sm" /> بالضبط مقبولة.
+        </p>
+      ) : null}
     </section>
   );
 }
