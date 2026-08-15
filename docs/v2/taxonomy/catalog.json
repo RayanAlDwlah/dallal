@@ -1,0 +1,1399 @@
+{
+  "$schema_note": "F0 taxonomy evidence catalog. Data/evidence only — no schema, routes, or pickers.",
+  "generated_by": "tools/taxonomy/build-catalog.mjs",
+  "sources": {
+    "repository_records": [
+      "docs/decisions/D-02-categories.md",
+      "design-system/previews/categories.html"
+    ],
+    "external_read_directly": [
+      "haraj.com.sa/all-sections/"
+    ],
+    "external_read_for_comparison_per_D02": [
+      "Emirates Auction",
+      "Infath (إنفاذ)",
+      "Soum",
+      "Mazadak"
+    ],
+    "external_inaccessible_per_D02": [
+      "المزاد الحر",
+      "مزاد عُمان",
+      "السوق المفتوح"
+    ],
+    "excluded_classified_categories": [
+      "وظائف",
+      "خدمات",
+      "تعليم وتدريب",
+      "برمجة وتصاميم",
+      "أطعمة ومشروبات",
+      "حفلات ومناسبات",
+      "سفر وسياحة",
+      "مطلوب",
+      "مفقودات"
+    ]
+  },
+  "counts": {
+    "categories": 13,
+    "subcategories_named": 61,
+    "subcategories_anonymous_unresolved": 11,
+    "subcategories_claimed_total": 110,
+    "subcategories_unrepresented_in_any_view": 38
+  },
+  "categories": [
+    {
+      "slug": "vehicles",
+      "label_ar": "سيارات ومركبات",
+      "sort_order": 1,
+      "active": true,
+      "icon_key": "i-car",
+      "source_label_ar": "سيارات ومركبات",
+      "rail_alias_ar": null,
+      "on_filter_rail_in_prototype": true,
+      "sources": [
+        "docs/decisions/D-02-categories.md#1",
+        "design-system/previews/categories.html#grid"
+      ],
+      "evidence_class": "direct-repository-record",
+      "display_count_example": "1,284"
+    },
+    {
+      "slug": "plates-numbers",
+      "label_ar": "لوحات وأرقام مميزة",
+      "sort_order": 2,
+      "active": true,
+      "icon_key": "i-plate",
+      "source_label_ar": "لوحات وأرقام مميزة",
+      "rail_alias_ar": "لوحات وأرقام",
+      "on_filter_rail_in_prototype": true,
+      "sources": [
+        "docs/decisions/D-02-categories.md#1",
+        "design-system/previews/categories.html#grid"
+      ],
+      "evidence_class": "direct-repository-record",
+      "display_count_example": "417"
+    },
+    {
+      "slug": "real-estate",
+      "label_ar": "عقارات",
+      "sort_order": 3,
+      "active": true,
+      "icon_key": "i-estate",
+      "source_label_ar": "عقارات",
+      "rail_alias_ar": null,
+      "on_filter_rail_in_prototype": true,
+      "sources": [
+        "docs/decisions/D-02-categories.md#1",
+        "design-system/previews/categories.html#grid"
+      ],
+      "evidence_class": "direct-repository-record",
+      "display_count_example": "903"
+    },
+    {
+      "slug": "watches-jewelry",
+      "label_ar": "ساعات ومجوهرات",
+      "sort_order": 4,
+      "active": true,
+      "icon_key": "i-watch",
+      "source_label_ar": "ساعات ومجوهرات",
+      "rail_alias_ar": null,
+      "on_filter_rail_in_prototype": true,
+      "sources": [
+        "docs/decisions/D-02-categories.md#1",
+        "design-system/previews/categories.html#grid"
+      ],
+      "evidence_class": "direct-repository-record",
+      "display_count_example": "652"
+    },
+    {
+      "slug": "electronics",
+      "label_ar": "أجهزة وإلكترونيات",
+      "sort_order": 5,
+      "active": true,
+      "icon_key": "i-device",
+      "source_label_ar": "أجهزة وإلكترونيات",
+      "rail_alias_ar": "إلكترونيات",
+      "on_filter_rail_in_prototype": true,
+      "sources": [
+        "docs/decisions/D-02-categories.md#1",
+        "design-system/previews/categories.html#grid"
+      ],
+      "evidence_class": "direct-repository-record",
+      "display_count_example": "1,096"
+    },
+    {
+      "slug": "furniture",
+      "label_ar": "أثاث ومفروشات",
+      "sort_order": 6,
+      "active": true,
+      "icon_key": "i-sofa",
+      "source_label_ar": "أثاث ومفروشات",
+      "rail_alias_ar": null,
+      "on_filter_rail_in_prototype": false,
+      "sources": [
+        "docs/decisions/D-02-categories.md#1",
+        "design-system/previews/categories.html#grid"
+      ],
+      "evidence_class": "direct-repository-record",
+      "display_count_example": "738"
+    },
+    {
+      "slug": "collectibles",
+      "label_ar": "نوادر ومقتنيات",
+      "sort_order": 7,
+      "active": true,
+      "icon_key": "i-medal",
+      "source_label_ar": "نوادر ومقتنيات",
+      "rail_alias_ar": null,
+      "on_filter_rail_in_prototype": false,
+      "sources": [
+        "docs/decisions/D-02-categories.md#1",
+        "design-system/previews/categories.html#grid"
+      ],
+      "evidence_class": "direct-repository-record",
+      "display_count_example": "289"
+    },
+    {
+      "slug": "livestock",
+      "label_ar": "مواشي وحيوانات",
+      "sort_order": 8,
+      "active": true,
+      "icon_key": "i-livestock",
+      "source_label_ar": "مواشي وحيوانات",
+      "rail_alias_ar": "مواشي",
+      "on_filter_rail_in_prototype": true,
+      "sources": [
+        "docs/decisions/D-02-categories.md#1",
+        "design-system/previews/categories.html#grid"
+      ],
+      "evidence_class": "direct-repository-record",
+      "display_count_example": "561"
+    },
+    {
+      "slug": "heavy-equipment",
+      "label_ar": "معدات وآلات ثقيلة",
+      "sort_order": 9,
+      "active": true,
+      "icon_key": "i-gear",
+      "source_label_ar": "معدات وآلات ثقيلة",
+      "rail_alias_ar": "معدات",
+      "on_filter_rail_in_prototype": true,
+      "sources": [
+        "docs/decisions/D-02-categories.md#1",
+        "design-system/previews/categories.html#grid"
+      ],
+      "evidence_class": "direct-repository-record",
+      "display_count_example": "334"
+    },
+    {
+      "slug": "art",
+      "label_ar": "فنون وتحف",
+      "sort_order": 10,
+      "active": true,
+      "icon_key": "i-art",
+      "source_label_ar": "فنون وتحف",
+      "rail_alias_ar": null,
+      "on_filter_rail_in_prototype": false,
+      "sources": [
+        "docs/decisions/D-02-categories.md#1",
+        "design-system/previews/categories.html#grid"
+      ],
+      "evidence_class": "direct-repository-record",
+      "display_count_example": "176"
+    },
+    {
+      "slug": "fashion",
+      "label_ar": "أزياء وحقائب",
+      "sort_order": 11,
+      "active": true,
+      "icon_key": "i-bag",
+      "source_label_ar": "أزياء وحقائب",
+      "rail_alias_ar": null,
+      "on_filter_rail_in_prototype": false,
+      "sources": [
+        "docs/decisions/D-02-categories.md#1",
+        "design-system/previews/categories.html#grid"
+      ],
+      "evidence_class": "direct-repository-record",
+      "display_count_example": "482"
+    },
+    {
+      "slug": "outdoors",
+      "label_ar": "رياضة وصيد ورحلات",
+      "sort_order": 12,
+      "active": true,
+      "icon_key": "i-tent",
+      "source_label_ar": "رياضة وصيد ورحلات",
+      "rail_alias_ar": null,
+      "on_filter_rail_in_prototype": false,
+      "sources": [
+        "docs/decisions/D-02-categories.md#1",
+        "design-system/previews/categories.html#grid"
+      ],
+      "evidence_class": "direct-repository-record",
+      "display_count_example": "213"
+    },
+    {
+      "slug": "misc",
+      "label_ar": "منقولات متنوعة",
+      "sort_order": 13,
+      "active": true,
+      "icon_key": "i-box",
+      "source_label_ar": "منقولات متنوعة",
+      "rail_alias_ar": null,
+      "on_filter_rail_in_prototype": false,
+      "sources": [
+        "docs/decisions/D-02-categories.md#1",
+        "design-system/previews/categories.html#grid"
+      ],
+      "evidence_class": "direct-repository-record",
+      "display_count_example": "128"
+    }
+  ],
+  "subcategories": [
+    {
+      "slug": "used-cars",
+      "parent_slug": "vehicles",
+      "label_ar": "سيارات مستعملة",
+      "source_label_ar": "سيارات مستعملة",
+      "aliases_ar": [],
+      "sort_order": 1,
+      "active": true,
+      "sources": [
+        "design-system/previews/categories.html#grid"
+      ],
+      "evidence_class": "direct-prototype-named",
+      "slug_evidence": "proposed"
+    },
+    {
+      "slug": "classic-cars",
+      "parent_slug": "vehicles",
+      "label_ar": "كلاسيكية",
+      "source_label_ar": "كلاسيكية",
+      "aliases_ar": [],
+      "sort_order": 2,
+      "active": true,
+      "sources": [
+        "design-system/previews/categories.html#grid"
+      ],
+      "evidence_class": "direct-prototype-named",
+      "slug_evidence": "proposed"
+    },
+    {
+      "slug": "motorcycles",
+      "parent_slug": "vehicles",
+      "label_ar": "دراجات نارية",
+      "source_label_ar": "دراجات نارية",
+      "aliases_ar": [],
+      "sort_order": 3,
+      "active": true,
+      "sources": [
+        "design-system/previews/categories.html#grid"
+      ],
+      "evidence_class": "direct-prototype-named",
+      "slug_evidence": "proposed"
+    },
+    {
+      "slug": "trucks-trailers",
+      "parent_slug": "vehicles",
+      "label_ar": "شاحنات ومقطورات",
+      "source_label_ar": "شاحنات ومقطورات",
+      "aliases_ar": [],
+      "sort_order": 4,
+      "active": true,
+      "sources": [
+        "design-system/previews/categories.html#grid"
+      ],
+      "evidence_class": "direct-prototype-named",
+      "slug_evidence": "proposed"
+    },
+    {
+      "slug": "boats-jetski",
+      "parent_slug": "vehicles",
+      "label_ar": "قوارب وجت سكي",
+      "source_label_ar": "قوارب وجت سكي",
+      "aliases_ar": [],
+      "sort_order": 5,
+      "active": true,
+      "sources": [
+        "design-system/previews/categories.html#grid"
+      ],
+      "evidence_class": "direct-prototype-named",
+      "slug_evidence": "proposed"
+    },
+    {
+      "slug": "damaged",
+      "parent_slug": "vehicles",
+      "label_ar": "متضررة",
+      "source_label_ar": "متضررة",
+      "aliases_ar": [],
+      "sort_order": 6,
+      "active": true,
+      "sources": [
+        "design-system/previews/categories.html#grid"
+      ],
+      "evidence_class": "direct-prototype-named",
+      "slug_evidence": "proposed"
+    },
+    {
+      "slug": "auto-parts",
+      "parent_slug": "vehicles",
+      "label_ar": "قطع غيار",
+      "source_label_ar": "قطع غيار",
+      "aliases_ar": [],
+      "sort_order": 7,
+      "active": true,
+      "sources": [
+        "design-system/previews/categories.html#grid"
+      ],
+      "evidence_class": "direct-prototype-named",
+      "slug_evidence": "proposed"
+    },
+    {
+      "slug": "car-plates",
+      "parent_slug": "plates-numbers",
+      "label_ar": "لوحات سيارات",
+      "source_label_ar": "لوحات سيارات",
+      "aliases_ar": [],
+      "sort_order": 1,
+      "active": true,
+      "sources": [
+        "design-system/previews/categories.html#grid"
+      ],
+      "evidence_class": "direct-prototype-named",
+      "slug_evidence": "proposed"
+    },
+    {
+      "slug": "mobile-numbers",
+      "parent_slug": "plates-numbers",
+      "label_ar": "أرقام جوال",
+      "source_label_ar": "أرقام جوال",
+      "aliases_ar": [],
+      "sort_order": 2,
+      "active": true,
+      "sources": [
+        "design-system/previews/categories.html#grid"
+      ],
+      "evidence_class": "direct-prototype-named",
+      "slug_evidence": "proposed"
+    },
+    {
+      "slug": "transport-plates",
+      "parent_slug": "plates-numbers",
+      "label_ar": "لوحات نقل",
+      "source_label_ar": "لوحات نقل",
+      "aliases_ar": [],
+      "sort_order": 3,
+      "active": true,
+      "sources": [
+        "design-system/previews/categories.html#grid"
+      ],
+      "evidence_class": "direct-prototype-named",
+      "slug_evidence": "proposed"
+    },
+    {
+      "slug": "motorcycle-plates",
+      "parent_slug": "plates-numbers",
+      "label_ar": "لوحات دراجات",
+      "source_label_ar": "لوحات دراجات",
+      "aliases_ar": [],
+      "sort_order": 4,
+      "active": true,
+      "sources": [
+        "design-system/previews/categories.html#grid"
+      ],
+      "evidence_class": "direct-prototype-named",
+      "slug_evidence": "proposed"
+    },
+    {
+      "slug": "land",
+      "parent_slug": "real-estate",
+      "label_ar": "أراضٍ",
+      "source_label_ar": "أراضٍ",
+      "aliases_ar": [],
+      "sort_order": 1,
+      "active": true,
+      "sources": [
+        "design-system/previews/categories.html#grid"
+      ],
+      "evidence_class": "direct-prototype-named",
+      "slug_evidence": "proposed"
+    },
+    {
+      "slug": "apartments",
+      "parent_slug": "real-estate",
+      "label_ar": "شقق",
+      "source_label_ar": "شقق",
+      "aliases_ar": [],
+      "sort_order": 2,
+      "active": true,
+      "sources": [
+        "design-system/previews/categories.html#grid"
+      ],
+      "evidence_class": "direct-prototype-named",
+      "slug_evidence": "proposed"
+    },
+    {
+      "slug": "villas",
+      "parent_slug": "real-estate",
+      "label_ar": "فلل",
+      "source_label_ar": "فلل",
+      "aliases_ar": [],
+      "sort_order": 3,
+      "active": true,
+      "sources": [
+        "design-system/previews/categories.html#grid"
+      ],
+      "evidence_class": "direct-prototype-named",
+      "slug_evidence": "proposed"
+    },
+    {
+      "slug": "buildings",
+      "parent_slug": "real-estate",
+      "label_ar": "عمائر",
+      "source_label_ar": "عمائر",
+      "aliases_ar": [],
+      "sort_order": 4,
+      "active": true,
+      "sources": [
+        "design-system/previews/categories.html#grid"
+      ],
+      "evidence_class": "direct-prototype-named",
+      "slug_evidence": "proposed"
+    },
+    {
+      "slug": "shops-offices",
+      "parent_slug": "real-estate",
+      "label_ar": "محلات ومكاتب",
+      "source_label_ar": "محلات ومكاتب",
+      "aliases_ar": [],
+      "sort_order": 5,
+      "active": true,
+      "sources": [
+        "design-system/previews/categories.html#grid"
+      ],
+      "evidence_class": "direct-prototype-named",
+      "slug_evidence": "proposed"
+    },
+    {
+      "slug": "warehouses",
+      "parent_slug": "real-estate",
+      "label_ar": "مستودعات",
+      "source_label_ar": "مستودعات",
+      "aliases_ar": [],
+      "sort_order": 6,
+      "active": true,
+      "sources": [
+        "design-system/previews/categories.html#grid"
+      ],
+      "evidence_class": "direct-prototype-named",
+      "slug_evidence": "proposed"
+    },
+    {
+      "slug": "mens-watches",
+      "parent_slug": "watches-jewelry",
+      "label_ar": "ساعات رجالية",
+      "source_label_ar": "ساعات رجالية",
+      "aliases_ar": [],
+      "sort_order": 1,
+      "active": true,
+      "sources": [
+        "design-system/previews/categories.html#grid"
+      ],
+      "evidence_class": "direct-prototype-named",
+      "slug_evidence": "proposed"
+    },
+    {
+      "slug": "womens-watches",
+      "parent_slug": "watches-jewelry",
+      "label_ar": "ساعات نسائية",
+      "source_label_ar": "ساعات نسائية",
+      "aliases_ar": [],
+      "sort_order": 2,
+      "active": true,
+      "sources": [
+        "design-system/previews/categories.html#grid"
+      ],
+      "evidence_class": "direct-prototype-named",
+      "slug_evidence": "proposed"
+    },
+    {
+      "slug": "gold",
+      "parent_slug": "watches-jewelry",
+      "label_ar": "ذهب",
+      "source_label_ar": "ذهب",
+      "aliases_ar": [],
+      "sort_order": 3,
+      "active": true,
+      "sources": [
+        "design-system/previews/categories.html#grid"
+      ],
+      "evidence_class": "direct-prototype-named",
+      "slug_evidence": "proposed"
+    },
+    {
+      "slug": "diamonds-gemstones",
+      "parent_slug": "watches-jewelry",
+      "label_ar": "ألماس وأحجار كريمة",
+      "source_label_ar": "ألماس وأحجار",
+      "aliases_ar": [
+        "ألماس وأحجار"
+      ],
+      "sort_order": 4,
+      "active": true,
+      "sources": [
+        "design-system/previews/categories.html#grid",
+        "design-system/previews/categories.html#picker"
+      ],
+      "evidence_class": "direct-prototype-named",
+      "slug_evidence": "proposed"
+    },
+    {
+      "slug": "luxury-pens-accessories",
+      "parent_slug": "watches-jewelry",
+      "label_ar": "أقلام وإكسسوارات فاخرة",
+      "source_label_ar": "أقلام فاخرة",
+      "aliases_ar": [
+        "أقلام فاخرة"
+      ],
+      "sort_order": 5,
+      "active": true,
+      "sources": [
+        "design-system/previews/categories.html#grid",
+        "design-system/previews/categories.html#picker"
+      ],
+      "evidence_class": "direct-prototype-named",
+      "slug_evidence": "proposed"
+    },
+    {
+      "slug": "silver",
+      "parent_slug": "watches-jewelry",
+      "label_ar": "فضة",
+      "source_label_ar": "فضة",
+      "aliases_ar": [],
+      "sort_order": 6,
+      "active": true,
+      "sources": [
+        "design-system/previews/categories.html#picker"
+      ],
+      "evidence_class": "direct-prototype-named",
+      "slug_evidence": "proposed"
+    },
+    {
+      "slug": "phones",
+      "parent_slug": "electronics",
+      "label_ar": "جوالات",
+      "source_label_ar": "جوالات",
+      "aliases_ar": [],
+      "sort_order": 1,
+      "active": true,
+      "sources": [
+        "design-system/previews/categories.html#grid"
+      ],
+      "evidence_class": "direct-prototype-named",
+      "slug_evidence": "proposed"
+    },
+    {
+      "slug": "laptops-computers",
+      "parent_slug": "electronics",
+      "label_ar": "لابتوب وكمبيوتر",
+      "source_label_ar": "لابتوب وكمبيوتر",
+      "aliases_ar": [],
+      "sort_order": 2,
+      "active": true,
+      "sources": [
+        "design-system/previews/categories.html#grid"
+      ],
+      "evidence_class": "direct-prototype-named",
+      "slug_evidence": "proposed"
+    },
+    {
+      "slug": "cameras",
+      "parent_slug": "electronics",
+      "label_ar": "كاميرات",
+      "source_label_ar": "كاميرات",
+      "aliases_ar": [],
+      "sort_order": 3,
+      "active": true,
+      "sources": [
+        "design-system/previews/categories.html#grid"
+      ],
+      "evidence_class": "direct-prototype-named",
+      "slug_evidence": "proposed"
+    },
+    {
+      "slug": "video-games",
+      "parent_slug": "electronics",
+      "label_ar": "ألعاب إلكترونية",
+      "source_label_ar": "ألعاب إلكترونية",
+      "aliases_ar": [],
+      "sort_order": 4,
+      "active": true,
+      "sources": [
+        "design-system/previews/categories.html#grid"
+      ],
+      "evidence_class": "direct-prototype-named",
+      "slug_evidence": "proposed"
+    },
+    {
+      "slug": "audio",
+      "parent_slug": "electronics",
+      "label_ar": "صوتيات",
+      "source_label_ar": "صوتيات",
+      "aliases_ar": [],
+      "sort_order": 5,
+      "active": true,
+      "sources": [
+        "design-system/previews/categories.html#grid"
+      ],
+      "evidence_class": "direct-prototype-named",
+      "slug_evidence": "proposed"
+    },
+    {
+      "slug": "majlis",
+      "parent_slug": "furniture",
+      "label_ar": "مجالس",
+      "source_label_ar": "مجالس",
+      "aliases_ar": [],
+      "sort_order": 1,
+      "active": true,
+      "sources": [
+        "design-system/previews/categories.html#grid"
+      ],
+      "evidence_class": "direct-prototype-named",
+      "slug_evidence": "proposed"
+    },
+    {
+      "slug": "bedrooms",
+      "parent_slug": "furniture",
+      "label_ar": "غرف نوم",
+      "source_label_ar": "غرف نوم",
+      "aliases_ar": [],
+      "sort_order": 2,
+      "active": true,
+      "sources": [
+        "design-system/previews/categories.html#grid"
+      ],
+      "evidence_class": "direct-prototype-named",
+      "slug_evidence": "proposed"
+    },
+    {
+      "slug": "office-furniture",
+      "parent_slug": "furniture",
+      "label_ar": "مكاتب",
+      "source_label_ar": "مكاتب",
+      "aliases_ar": [],
+      "sort_order": 3,
+      "active": true,
+      "sources": [
+        "design-system/previews/categories.html#grid"
+      ],
+      "evidence_class": "direct-prototype-named",
+      "slug_evidence": "proposed"
+    },
+    {
+      "slug": "rugs-curtains",
+      "parent_slug": "furniture",
+      "label_ar": "سجاد وستائر",
+      "source_label_ar": "سجاد وستائر",
+      "aliases_ar": [],
+      "sort_order": 4,
+      "active": true,
+      "sources": [
+        "design-system/previews/categories.html#grid"
+      ],
+      "evidence_class": "direct-prototype-named",
+      "slug_evidence": "proposed"
+    },
+    {
+      "slug": "home-appliances",
+      "parent_slug": "furniture",
+      "label_ar": "أجهزة منزلية",
+      "source_label_ar": "أجهزة منزلية",
+      "aliases_ar": [],
+      "sort_order": 5,
+      "active": true,
+      "sources": [
+        "design-system/previews/categories.html#grid"
+      ],
+      "evidence_class": "direct-prototype-named",
+      "slug_evidence": "proposed"
+    },
+    {
+      "slug": "coins-currency",
+      "parent_slug": "collectibles",
+      "label_ar": "عملات ومسكوكات",
+      "source_label_ar": "عملات ومسكوكات",
+      "aliases_ar": [],
+      "sort_order": 1,
+      "active": true,
+      "sources": [
+        "design-system/previews/categories.html#grid"
+      ],
+      "evidence_class": "direct-prototype-named",
+      "slug_evidence": "proposed"
+    },
+    {
+      "slug": "stamps",
+      "parent_slug": "collectibles",
+      "label_ar": "طوابع",
+      "source_label_ar": "طوابع",
+      "aliases_ar": [],
+      "sort_order": 2,
+      "active": true,
+      "sources": [
+        "design-system/previews/categories.html#grid"
+      ],
+      "evidence_class": "direct-prototype-named",
+      "slug_evidence": "proposed"
+    },
+    {
+      "slug": "heritage-items",
+      "parent_slug": "collectibles",
+      "label_ar": "تراثيات",
+      "source_label_ar": "تراثيات",
+      "aliases_ar": [],
+      "sort_order": 3,
+      "active": true,
+      "sources": [
+        "design-system/previews/categories.html#grid"
+      ],
+      "evidence_class": "direct-prototype-named",
+      "slug_evidence": "proposed"
+    },
+    {
+      "slug": "sports-memorabilia",
+      "parent_slug": "collectibles",
+      "label_ar": "مقتنيات رياضية",
+      "source_label_ar": "مقتنيات رياضية",
+      "aliases_ar": [],
+      "sort_order": 4,
+      "active": true,
+      "sources": [
+        "design-system/previews/categories.html#grid"
+      ],
+      "evidence_class": "direct-prototype-named",
+      "slug_evidence": "proposed"
+    },
+    {
+      "slug": "camels",
+      "parent_slug": "livestock",
+      "label_ar": "إبل",
+      "source_label_ar": "إبل",
+      "aliases_ar": [],
+      "sort_order": 1,
+      "active": true,
+      "sources": [
+        "design-system/previews/categories.html#grid"
+      ],
+      "evidence_class": "direct-prototype-named",
+      "slug_evidence": "proposed"
+    },
+    {
+      "slug": "sheep-goats",
+      "parent_slug": "livestock",
+      "label_ar": "أغنام وماعز",
+      "source_label_ar": "أغنام وماعز",
+      "aliases_ar": [],
+      "sort_order": 2,
+      "active": true,
+      "sources": [
+        "design-system/previews/categories.html#grid"
+      ],
+      "evidence_class": "direct-prototype-named",
+      "slug_evidence": "proposed"
+    },
+    {
+      "slug": "horses",
+      "parent_slug": "livestock",
+      "label_ar": "خيل",
+      "source_label_ar": "خيل",
+      "aliases_ar": [],
+      "sort_order": 3,
+      "active": true,
+      "sources": [
+        "design-system/previews/categories.html#grid"
+      ],
+      "evidence_class": "direct-prototype-named",
+      "slug_evidence": "proposed"
+    },
+    {
+      "slug": "falcons-birds",
+      "parent_slug": "livestock",
+      "label_ar": "صقور وطيور",
+      "source_label_ar": "صقور وطيور",
+      "aliases_ar": [],
+      "sort_order": 4,
+      "active": true,
+      "sources": [
+        "design-system/previews/categories.html#grid"
+      ],
+      "evidence_class": "direct-prototype-named",
+      "slug_evidence": "proposed"
+    },
+    {
+      "slug": "pets",
+      "parent_slug": "livestock",
+      "label_ar": "أليفة",
+      "source_label_ar": "أليفة",
+      "aliases_ar": [],
+      "sort_order": 5,
+      "active": true,
+      "sources": [
+        "design-system/previews/categories.html#grid"
+      ],
+      "evidence_class": "direct-prototype-named",
+      "slug_evidence": "proposed"
+    },
+    {
+      "slug": "construction-equipment",
+      "parent_slug": "heavy-equipment",
+      "label_ar": "معدات إنشاء",
+      "source_label_ar": "معدات إنشاء",
+      "aliases_ar": [],
+      "sort_order": 1,
+      "active": true,
+      "sources": [
+        "design-system/previews/categories.html#grid"
+      ],
+      "evidence_class": "direct-prototype-named",
+      "slug_evidence": "proposed"
+    },
+    {
+      "slug": "agricultural-equipment",
+      "parent_slug": "heavy-equipment",
+      "label_ar": "زراعية",
+      "source_label_ar": "زراعية",
+      "aliases_ar": [],
+      "sort_order": 2,
+      "active": true,
+      "sources": [
+        "design-system/previews/categories.html#grid"
+      ],
+      "evidence_class": "direct-prototype-named",
+      "slug_evidence": "proposed"
+    },
+    {
+      "slug": "generators-pumps",
+      "parent_slug": "heavy-equipment",
+      "label_ar": "مولدات ومضخات",
+      "source_label_ar": "مولدات ومضخات",
+      "aliases_ar": [],
+      "sort_order": 3,
+      "active": true,
+      "sources": [
+        "design-system/previews/categories.html#grid"
+      ],
+      "evidence_class": "direct-prototype-named",
+      "slug_evidence": "proposed"
+    },
+    {
+      "slug": "workshop-equipment",
+      "parent_slug": "heavy-equipment",
+      "label_ar": "معدات ورش",
+      "source_label_ar": "معدات ورش",
+      "aliases_ar": [],
+      "sort_order": 4,
+      "active": true,
+      "sources": [
+        "design-system/previews/categories.html#grid"
+      ],
+      "evidence_class": "direct-prototype-named",
+      "slug_evidence": "proposed"
+    },
+    {
+      "slug": "scrap",
+      "parent_slug": "heavy-equipment",
+      "label_ar": "سكراب",
+      "source_label_ar": "سكراب",
+      "aliases_ar": [],
+      "sort_order": 5,
+      "active": true,
+      "sources": [
+        "design-system/previews/categories.html#grid"
+      ],
+      "evidence_class": "direct-prototype-named",
+      "slug_evidence": "proposed"
+    },
+    {
+      "slug": "paintings",
+      "parent_slug": "art",
+      "label_ar": "لوحات",
+      "source_label_ar": "لوحات",
+      "aliases_ar": [],
+      "sort_order": 1,
+      "active": true,
+      "sources": [
+        "design-system/previews/categories.html#grid"
+      ],
+      "evidence_class": "direct-prototype-named",
+      "slug_evidence": "proposed"
+    },
+    {
+      "slug": "arabic-calligraphy",
+      "parent_slug": "art",
+      "label_ar": "خط عربي",
+      "source_label_ar": "خط عربي",
+      "aliases_ar": [],
+      "sort_order": 2,
+      "active": true,
+      "sources": [
+        "design-system/previews/categories.html#grid"
+      ],
+      "evidence_class": "direct-prototype-named",
+      "slug_evidence": "proposed"
+    },
+    {
+      "slug": "sculptures",
+      "parent_slug": "art",
+      "label_ar": "منحوتات",
+      "source_label_ar": "منحوتات",
+      "aliases_ar": [],
+      "sort_order": 3,
+      "active": true,
+      "sources": [
+        "design-system/previews/categories.html#grid"
+      ],
+      "evidence_class": "direct-prototype-named",
+      "slug_evidence": "proposed"
+    },
+    {
+      "slug": "handmade-rugs",
+      "parent_slug": "art",
+      "label_ar": "سجاد يدوي",
+      "source_label_ar": "سجاد يدوي",
+      "aliases_ar": [],
+      "sort_order": 4,
+      "active": true,
+      "sources": [
+        "design-system/previews/categories.html#grid"
+      ],
+      "evidence_class": "direct-prototype-named",
+      "slug_evidence": "proposed"
+    },
+    {
+      "slug": "luxury-bags",
+      "parent_slug": "fashion",
+      "label_ar": "حقائب فاخرة",
+      "source_label_ar": "حقائب فاخرة",
+      "aliases_ar": [],
+      "sort_order": 1,
+      "active": true,
+      "sources": [
+        "design-system/previews/categories.html#grid"
+      ],
+      "evidence_class": "direct-prototype-named",
+      "slug_evidence": "proposed"
+    },
+    {
+      "slug": "abayas",
+      "parent_slug": "fashion",
+      "label_ar": "عبايات",
+      "source_label_ar": "عبايات",
+      "aliases_ar": [],
+      "sort_order": 2,
+      "active": true,
+      "sources": [
+        "design-system/previews/categories.html#grid"
+      ],
+      "evidence_class": "direct-prototype-named",
+      "slug_evidence": "proposed"
+    },
+    {
+      "slug": "menswear",
+      "parent_slug": "fashion",
+      "label_ar": "أزياء رجالية",
+      "source_label_ar": "أزياء رجالية",
+      "aliases_ar": [],
+      "sort_order": 3,
+      "active": true,
+      "sources": [
+        "design-system/previews/categories.html#grid"
+      ],
+      "evidence_class": "direct-prototype-named",
+      "slug_evidence": "proposed"
+    },
+    {
+      "slug": "footwear",
+      "parent_slug": "fashion",
+      "label_ar": "أحذية",
+      "source_label_ar": "أحذية",
+      "aliases_ar": [],
+      "sort_order": 4,
+      "active": true,
+      "sources": [
+        "design-system/previews/categories.html#grid"
+      ],
+      "evidence_class": "direct-prototype-named",
+      "slug_evidence": "proposed"
+    },
+    {
+      "slug": "perfumes",
+      "parent_slug": "fashion",
+      "label_ar": "عطور",
+      "source_label_ar": "عطور",
+      "aliases_ar": [],
+      "sort_order": 5,
+      "active": true,
+      "sources": [
+        "design-system/previews/categories.html#grid"
+      ],
+      "evidence_class": "direct-prototype-named",
+      "slug_evidence": "proposed"
+    },
+    {
+      "slug": "hunting-gear",
+      "parent_slug": "outdoors",
+      "label_ar": "معدات صيد",
+      "source_label_ar": "معدات صيد",
+      "aliases_ar": [],
+      "sort_order": 1,
+      "active": true,
+      "sources": [
+        "design-system/previews/categories.html#grid"
+      ],
+      "evidence_class": "direct-prototype-named",
+      "slug_evidence": "proposed"
+    },
+    {
+      "slug": "camping",
+      "parent_slug": "outdoors",
+      "label_ar": "تخييم",
+      "source_label_ar": "تخييم",
+      "aliases_ar": [],
+      "sort_order": 2,
+      "active": true,
+      "sources": [
+        "design-system/previews/categories.html#grid"
+      ],
+      "evidence_class": "direct-prototype-named",
+      "slug_evidence": "proposed"
+    },
+    {
+      "slug": "atv-recreational",
+      "parent_slug": "outdoors",
+      "label_ar": "دباب ومركبات ترفيهية",
+      "source_label_ar": "دباب ومركبات ترفيهية",
+      "aliases_ar": [],
+      "sort_order": 3,
+      "active": true,
+      "sources": [
+        "design-system/previews/categories.html#grid"
+      ],
+      "evidence_class": "direct-prototype-named",
+      "slug_evidence": "proposed"
+    },
+    {
+      "slug": "sports-equipment",
+      "parent_slug": "outdoors",
+      "label_ar": "معدات رياضية",
+      "source_label_ar": "معدات رياضية",
+      "aliases_ar": [],
+      "sort_order": 4,
+      "active": true,
+      "sources": [
+        "design-system/previews/categories.html#grid"
+      ],
+      "evidence_class": "direct-prototype-named",
+      "slug_evidence": "proposed"
+    },
+    {
+      "slug": "general",
+      "parent_slug": "misc",
+      "label_ar": "كل ما لا يندرج تحت قسم",
+      "source_label_ar": "كل ما لا يندرج تحت قسم",
+      "aliases_ar": [],
+      "sort_order": 1,
+      "active": true,
+      "sources": [
+        "design-system/previews/categories.html#grid"
+      ],
+      "evidence_class": "direct-prototype-named",
+      "slug_evidence": "proposed"
+    }
+  ],
+  "unresolved": [
+    {
+      "parent_slug": "vehicles",
+      "count": 2,
+      "kind": "anonymous-placeholder",
+      "note": "Grid shows +2 for this category; 0 resolved by the picker. No source names the remainder.",
+      "sources": [
+        "design-system/previews/categories.html#grid"
+      ]
+    },
+    {
+      "parent_slug": "real-estate",
+      "count": 2,
+      "kind": "anonymous-placeholder",
+      "note": "Grid shows +2 for this category; 0 resolved by the picker. No source names the remainder.",
+      "sources": [
+        "design-system/previews/categories.html#grid"
+      ]
+    },
+    {
+      "parent_slug": "electronics",
+      "count": 3,
+      "kind": "anonymous-placeholder",
+      "note": "Grid shows +3 for this category; 0 resolved by the picker. No source names the remainder.",
+      "sources": [
+        "design-system/previews/categories.html#grid"
+      ]
+    },
+    {
+      "parent_slug": "furniture",
+      "count": 2,
+      "kind": "anonymous-placeholder",
+      "note": "Grid shows +2 for this category; 0 resolved by the picker. No source names the remainder.",
+      "sources": [
+        "design-system/previews/categories.html#grid"
+      ]
+    },
+    {
+      "parent_slug": "collectibles",
+      "count": 2,
+      "kind": "anonymous-placeholder",
+      "note": "Grid shows +2 for this category; 0 resolved by the picker. No source names the remainder.",
+      "sources": [
+        "design-system/previews/categories.html#grid"
+      ]
+    }
+  ],
+  "category_fields": [
+    {
+      "parent_slug": "vehicles",
+      "evidence": {
+        "source_labels_ar": [
+          "الماركة",
+          "الموديل",
+          "سنة الصنع",
+          "الممشى",
+          "ناقل الحركة",
+          "حالة الفحص"
+        ],
+        "source": "design-system/previews/categories.html#fields-table",
+        "evidence_class": "direct-prototype-named",
+        "optional_never_blocks_publish": true
+      },
+      "proposed_validation_metadata": {
+        "status": "PROPOSED — reversible, not owner-approved",
+        "note": "Field keys, types, units, options and constraints are NOT in any source. T1 must not treat these as evidence."
+      }
+    },
+    {
+      "parent_slug": "plates-numbers",
+      "evidence": {
+        "source_labels_ar": [
+          "نص اللوحة أو الرقم",
+          "عدد الخانات",
+          "نوع اللوحة",
+          "المشغّل"
+        ],
+        "source": "design-system/previews/categories.html#fields-table",
+        "evidence_class": "direct-prototype-named",
+        "optional_never_blocks_publish": true
+      },
+      "proposed_validation_metadata": {
+        "status": "PROPOSED — reversible, not owner-approved",
+        "note": "Field keys, types, units, options and constraints are NOT in any source. T1 must not treat these as evidence."
+      }
+    },
+    {
+      "parent_slug": "real-estate",
+      "evidence": {
+        "source_labels_ar": [
+          "المدينة والحي",
+          "المساحة (م²)",
+          "الواجهة",
+          "عرض الشارع",
+          "رقم الصك"
+        ],
+        "source": "design-system/previews/categories.html#fields-table",
+        "evidence_class": "direct-prototype-named",
+        "optional_never_blocks_publish": true
+      },
+      "proposed_validation_metadata": {
+        "status": "PROPOSED — reversible, not owner-approved",
+        "note": "Field keys, types, units, options and constraints are NOT in any source. T1 must not treat these as evidence."
+      }
+    },
+    {
+      "parent_slug": "watches-jewelry",
+      "evidence": {
+        "source_labels_ar": [
+          "الماركة",
+          "الموديل/المرجع",
+          "سنة الصنع",
+          "العلبة والأوراق",
+          "الحالة"
+        ],
+        "source": "design-system/previews/categories.html#fields-table",
+        "evidence_class": "direct-prototype-named",
+        "optional_never_blocks_publish": true
+      },
+      "proposed_validation_metadata": {
+        "status": "PROPOSED — reversible, not owner-approved",
+        "note": "Field keys, types, units, options and constraints are NOT in any source. T1 must not treat these as evidence."
+      }
+    },
+    {
+      "parent_slug": "electronics",
+      "evidence": {
+        "source_labels_ar": [
+          "الماركة",
+          "الموديل",
+          "السعة",
+          "الحالة",
+          "الضمان"
+        ],
+        "source": "design-system/previews/categories.html#fields-table",
+        "evidence_class": "direct-prototype-named",
+        "optional_never_blocks_publish": true
+      },
+      "proposed_validation_metadata": {
+        "status": "PROPOSED — reversible, not owner-approved",
+        "note": "Field keys, types, units, options and constraints are NOT in any source. T1 must not treat these as evidence."
+      }
+    },
+    {
+      "parent_slug": "furniture",
+      "evidence": {
+        "source_labels_ar": [
+          "عدد القطع",
+          "الخامة",
+          "المقاس",
+          "الحالة"
+        ],
+        "source": "design-system/previews/categories.html#fields-table",
+        "evidence_class": "direct-prototype-named",
+        "optional_never_blocks_publish": true
+      },
+      "proposed_validation_metadata": {
+        "status": "PROPOSED — reversible, not owner-approved",
+        "note": "Field keys, types, units, options and constraints are NOT in any source. T1 must not treat these as evidence."
+      }
+    },
+    {
+      "parent_slug": "collectibles",
+      "evidence": {
+        "source_labels_ar": [
+          "السنة",
+          "بلد المنشأ",
+          "شهادة توثيق",
+          "الحالة"
+        ],
+        "source": "design-system/previews/categories.html#fields-table",
+        "evidence_class": "direct-prototype-named",
+        "optional_never_blocks_publish": true
+      },
+      "proposed_validation_metadata": {
+        "status": "PROPOSED — reversible, not owner-approved",
+        "note": "Field keys, types, units, options and constraints are NOT in any source. T1 must not treat these as evidence."
+      }
+    },
+    {
+      "parent_slug": "livestock",
+      "evidence": {
+        "source_labels_ar": [
+          "النوع/السلالة",
+          "العدد",
+          "العمر",
+          "الوزن التقريبي",
+          "الموقع"
+        ],
+        "source": "design-system/previews/categories.html#fields-table",
+        "evidence_class": "direct-prototype-named",
+        "optional_never_blocks_publish": true
+      },
+      "proposed_validation_metadata": {
+        "status": "PROPOSED — reversible, not owner-approved",
+        "note": "Field keys, types, units, options and constraints are NOT in any source. T1 must not treat these as evidence."
+      }
+    },
+    {
+      "parent_slug": "heavy-equipment",
+      "evidence": {
+        "source_labels_ar": [
+          "الماركة",
+          "الموديل",
+          "سنة الصنع",
+          "ساعات التشغيل",
+          "حالة التشغيل"
+        ],
+        "source": "design-system/previews/categories.html#fields-table",
+        "evidence_class": "direct-prototype-named",
+        "optional_never_blocks_publish": true
+      },
+      "proposed_validation_metadata": {
+        "status": "PROPOSED — reversible, not owner-approved",
+        "note": "Field keys, types, units, options and constraints are NOT in any source. T1 must not treat these as evidence."
+      }
+    },
+    {
+      "parent_slug": "art",
+      "evidence": {
+        "source_labels_ar": [
+          "الفنان",
+          "السنة",
+          "المقاس",
+          "الخامة",
+          "شهادة أصالة"
+        ],
+        "source": "design-system/previews/categories.html#fields-table",
+        "evidence_class": "direct-prototype-named",
+        "optional_never_blocks_publish": true
+      },
+      "proposed_validation_metadata": {
+        "status": "PROPOSED — reversible, not owner-approved",
+        "note": "Field keys, types, units, options and constraints are NOT in any source. T1 must not treat these as evidence."
+      }
+    },
+    {
+      "parent_slug": "fashion",
+      "evidence": {
+        "source_labels_ar": [
+          "الماركة",
+          "المقاس",
+          "الحالة",
+          "الأصلية والملحقات"
+        ],
+        "source": "design-system/previews/categories.html#fields-table",
+        "evidence_class": "direct-prototype-named",
+        "optional_never_blocks_publish": true
+      },
+      "proposed_validation_metadata": {
+        "status": "PROPOSED — reversible, not owner-approved",
+        "note": "Field keys, types, units, options and constraints are NOT in any source. T1 must not treat these as evidence."
+      }
+    },
+    {
+      "parent_slug": "outdoors",
+      "evidence": {
+        "source_labels_ar": [
+          "النوع",
+          "الماركة",
+          "الحالة"
+        ],
+        "source": "design-system/previews/categories.html#fields-table",
+        "evidence_class": "direct-prototype-named",
+        "optional_never_blocks_publish": true
+      },
+      "proposed_validation_metadata": {
+        "status": "PROPOSED — reversible, not owner-approved",
+        "note": "Field keys, types, units, options and constraints are NOT in any source. T1 must not treat these as evidence."
+      }
+    },
+    {
+      "parent_slug": "misc",
+      "evidence": {
+        "source_labels_ar": [],
+        "source": "design-system/previews/categories.html#fields-table",
+        "evidence_class": "direct-prototype-named",
+        "optional_never_blocks_publish": true
+      },
+      "proposed_validation_metadata": {
+        "status": "PROPOSED — reversible, not owner-approved",
+        "note": "Field keys, types, units, options and constraints are NOT in any source. T1 must not treat these as evidence."
+      }
+    }
+  ]
+}
