@@ -1872,18 +1872,36 @@ if (!section) {
   // V2-A3 names only one. Each membership is recomputed. When V2-A3 lands and
   // amends all three, this SHOULD go red — the notice's "the prohibition
   // stands" becomes false at that moment and the notice is what must change.
+  //
+  // INT-08 spells it as a regex alternation, not a literal — the first draft of
+  // this line asked for /bid_increment/ and reported a check that has been
+  // there all along as missing.
+  //
+  // The second draft asked for the alternation ANYWHERE IN THE FILE, and the
+  // negative probe caught that one too: INT-08 counts twice, once over
+  // TypeScript and once over SQL, and each half carries its own copy of the
+  // pattern. Deleting the TS half left the SQL half matching and the assertion
+  // green. That is not a hypothetical narrowing — it is the LIKELIEST one,
+  // because a `bid_increment` column is SQL and the button carrying it is
+  // TypeScript, so D-01's change lands on the TS half alone. Scope to the one
+  // `chk` and measure the two halves as two separate facts.
+  const int08Block = INT08.match(/^chk "no bid increment \/ minimum raise"[\s\S]*?\n(?=chk )/m) ?? [""];
   chk(
     "all three artefacts S0-11 §7 says prohibit bid_increment still do",
     {
       "S0-11 §7 row": /❌ `bid_increment`/.test(S011),
       "S0-12 §9.5": /\*\*No re-added checks\.\*\* No increment/.test(S012),
-      // INT-08 spells it as a regex alternation, not a literal — the first
-      // draft of this line asked for /bid_increment/ and reported a check that
-      // has been there all along as missing.
-      INT08: /bid_\?increment/.test(INT08),
+      "INT-08 (TS half)": /count_ts '[^']*bid_\?increment/.test(int08Block[0]),
+      "INT-08 (SQL half)": /count_sql '[^']*bid_\?increment/.test(int08Block[0]),
       "S0-11 §10 countersigned it as holding": /No `bid_increment`/.test(S011),
     },
-    { "S0-11 §7 row": true, "S0-12 §9.5": true, INT08: true, "S0-11 §10 countersigned it as holding": true },
+    {
+      "S0-11 §7 row": true,
+      "S0-12 §9.5": true,
+      "INT-08 (TS half)": true,
+      "INT-08 (SQL half)": true,
+      "S0-11 §10 countersigned it as holding": true,
+    },
   );
   chk(
     "S0-11 §7's notice states the artefact count it actually lists",
