@@ -47,7 +47,7 @@ import { readFileSync } from "node:fs";
 
 const BANNER = "components/bidding/outcome-banner.tsx";
 
-const EXPECTED = 15;
+const EXPECTED = 22;
 let pass = 0;
 let fail = 0;
 
@@ -102,8 +102,13 @@ function audit(text) {
   const src = code(text);
   const block = winnerBlock(src);
   return {
-    acceptsProp: /\bviewerIsWinner\b[^;]*?:\s*boolean/.test(src),
-    defaultsToFalse: /viewerIsWinner\s*=\s*false/.test(src),
+    // The identity half (@Dem4t, #161): the NAME crosses, never a boolean
+    // frozen at server render — a frozen flag is false forever on the one
+    // path that matters: the auction ending under its winner (BID-17).
+    acceptsProp: /\bviewerDisplayName\b[^;]*?:\s*string\s*\|\s*null/.test(src),
+    defaultsToFalse: /viewerDisplayName\s*=\s*null/.test(src),
+    // Derived inside, against the LIVE snapshot winnerName.
+    comparesLive: /winnerName\s*===\s*viewerDisplayName/.test(src),
     // The statement renders ONLY behind the flag. An ungated sentence would
     // tell the seller and every passer-by that they won.
     gated: /\{\s*viewerIsWinner\s*\?/.test(src),
@@ -130,8 +135,9 @@ const text = read(BANNER);
 const a = audit(text);
 
 console.log(`\n-- ${BANNER} --`);
-chk("accepts a viewerIsWinner boolean", a.acceptsProp, true);
-chk("defaults to false — every other viewer is unchanged", a.defaultsToFalse, true);
+chk("accepts viewerDisplayName: string | null — a name, not a frozen flag", a.acceptsProp, true);
+chk("defaults to null — every other viewer is unchanged", a.defaultsToFalse, true);
+chk("compares against the LIVE snapshot winnerName (no frozen boolean)", a.comparesLive, true);
 chk("the statement is gated on it", a.gated, true);
 chk("addresses the viewer in the second person (FR-END-14)", a.addressesViewer, true);
 chk("names the amount alongside it (FR-END-14)", a.namesTheAmount, true);
@@ -144,6 +150,27 @@ chk("invents no loss message (FR-END-15 is a should, unworded)", a.inventsLossSt
 // THE CONTROLS. Each pair's first check guards the mutation itself: a probe
 // that edited nothing would make its partner pass for no reason at all.
 // --------------------------------------------------------------------------
+// --------------------------------------------------------------------------
+// THE WIRING. The first shipped draft of this feature accepted the prop and
+// nothing passed it: default false, statement unreachable, suite green —
+// built-but-unconsumed, the defect this repository has now produced FIVE
+// times (#138, #140, #160 twice, and this file's own first draft). So the
+// suite reads the page too: the prop must be passed, and must come from the
+// server-verified session (getViewer), never from anything client-supplied.
+// --------------------------------------------------------------------------
+const PAGE = "app/auctions/[id]/page.tsx";
+const pageSrc = code(read(PAGE));
+function auditPage(src) {
+  return {
+    passesProp: /<OutcomeBanner\b[^>]*viewerDisplayName=\{/.test(src),
+    fromVerifiedSession: /getViewer\(\)/.test(src),
+  };
+}
+const pg = auditPage(pageSrc);
+console.log(`\n-- ${PAGE} — the wiring --`);
+chk("the page passes viewerDisplayName to OutcomeBanner", pg.passesProp, true);
+chk("the name comes from getViewer() — the verified session", pg.fromVerifiedSession, true);
+
 console.log("\n-- control A: the gate removed — everyone is told they won --");
 const ungated = text.replace(/\{viewerIsWinner \? \(/, "{true ? (");
 chk("the mutation actually changed the source", ungated !== text, true);
@@ -161,6 +188,16 @@ console.log("\n-- control C: a next step offered (SC-67) --");
 const nextStep = text.replace(/فزت بهذا المزاد/, "فزت بهذا المزاد — تواصل مع البائع للاستلام");
 chk("the mutation actually changed the source", nextStep !== text, true);
 chk("offering a next step FAILS the audit", audit(nextStep).offersNextStep, true);
+
+console.log("\n-- control D: the page stops passing the prop (built-but-unwired) --");
+const unwired = pageSrc.replace(/ viewerDisplayName=\{[^}]*\}/, "");
+chk("the mutation actually changed the source", unwired !== pageSrc, true);
+chk("an unwired banner FAILS the audit", !auditPage(unwired).passesProp, true);
+
+console.log("\n-- control E: the comparison re-frozen into a boolean prop --");
+const frozen = text.replace(/winnerName === viewerDisplayName/, "viewerIsWinnerFrozen");
+chk("the mutation actually changed the source", frozen !== text, true);
+chk("a frozen flag FAILS the audit", !audit(frozen).comparesLive, true);
 
 // --------------------------------------------------------------------------
 // A run that exits 0 having asserted nothing is the failure this project keeps

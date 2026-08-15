@@ -70,24 +70,32 @@ import { useLiveAuction } from "@/lib/bidding/use-live-auction";
  * compare (FR-BID-22a), and inventing one here would have been a data-exposure
  * decision taken in a rendering file.
  *
- * It still is not taken here. `viewerIsWinner` arrives already decided, from
- * the verified server session — no identifier enters any payload, so
- * FR-BID-22a and #166 are untouched by this file. The rendering half asks the
- * question; it does not answer it.
+ * It still is not taken here. What arrives is `viewerDisplayName` — read from
+ * the verified server session by `getViewer()` (identity, @Dem4t) — and the
+ * comparison happens below against the LIVE snapshot's `winnerName`, not
+ * against a value frozen at render. The distinction is the whole point: an
+ * auction that ends UNDER the viewer delivers its winner through the
+ * subscription (BID-17), and a boolean decided at server-render time would be
+ * false forever on exactly that path — the frozen-prop defect this repository
+ * has now shipped three times (#138, #140, #160). Display name is the one
+ * public identity (CLAUDE.md §6) and is unique (BR-39), so the comparison is
+ * sound; no internal identifier enters any payload — FR-BID-22a and #166 are
+ * untouched by this file. The rendering half asks the question; the identity
+ * half answers it with a name the server already vouched for.
  */
 export interface OutcomeBannerProps {
   /** Which auction is being viewed. Passed by the detail page shell (AUC-11). */
   auctionId: string;
   /**
-   * True only when the verified server session belongs to the winner
-   * (`CLAUDE.md` §6 — identity is never taken from the client). Decided
-   * server-side and passed in; this file never derives it.
+   * The verified session's public display name, or null for a visitor
+   * (`CLAUDE.md` §6 — identity is never taken from the client). Read
+   * server-side by the page and passed in; this file never fetches it.
    *
-   * Optional and defaulting to `false` on purpose: every other viewer — seller,
+   * Optional and defaulting to null on purpose: every other viewer — seller,
    * losing bidder, signed-out visitor — renders exactly what they rendered
    * before, so the shared record below is unchanged for them (FR-END-16).
    */
-  viewerIsWinner?: boolean;
+  viewerDisplayName?: string | null;
 }
 
 /*
@@ -104,7 +112,7 @@ export interface OutcomeBannerProps {
  * so the doubling is now the LIVE, expected state — visible, not forgotten —
  * until Rayan and Mohammed settle it together.
  */
-export function OutcomeBanner({ auctionId, viewerIsWinner = false }: OutcomeBannerProps) {
+export function OutcomeBanner({ auctionId, viewerDisplayName = null }: OutcomeBannerProps) {
   const { snapshot } = useLiveAuction(auctionId);
 
   /*
@@ -119,6 +127,16 @@ export function OutcomeBanner({ auctionId, viewerIsWinner = false }: OutcomeBann
 
   const { winnerName, finalPrice, bidCount } = snapshot.auction;
   const won = winnerName !== null && finalPrice !== null;
+
+  /*
+   * IDENTITY HALF (@Dem4t). Compared against the LIVE winnerName — the
+   * snapshot's, never a value frozen at server render — so an auction ending
+   * under the viewer personalises on the same update that flips the status
+   * (BID-17), with no reload. Both operands are display names: unique (BR-39),
+   * the only public identity (CLAUDE.md §6), no internal id involved
+   * (FR-BID-22a). Null viewer → false → the shared record, unchanged.
+   */
+  const viewerIsWinner = viewerDisplayName !== null && winnerName === viewerDisplayName;
 
   /*
    * ended + no winner + bids exist: unreachable per schema — finalization
