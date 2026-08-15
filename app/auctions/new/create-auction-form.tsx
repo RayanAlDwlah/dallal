@@ -132,7 +132,39 @@ export function CreateAuctionForm() {
   const [endsAt, setEndsAt] = useState("");
   const [imageName, setImageName] = useState<string | null>(null);
 
-  const [reviewing, setReviewing] = useState(false);
+
+  /*
+   * The review view is a REQUEST, not a fact — a server rejection revokes it.
+   *
+   * A rejection returns to the review screen, and every message it carries is
+   * a `fieldErrors` entry rendered by a `Field` inside the `hidden` block
+   * below, so the seller sees the confirm button do nothing at all. Measured
+   * on 2026-08-15 against a live server: an end time that was valid when it
+   * was typed and stale by the time it was confirmed came back as
+   * `fieldErrors.endTime`, into a node with a 0x0 rect and a hidden ancestor.
+   *
+   * Dropping back to the fields is the fix rather than echoing the text above
+   * the panel, because the message belongs against the input the seller has to
+   * change and that is where `Field` already puts it. `reviewing` is DERIVED
+   * rather than corrected after the fact: an effect that calls setState here
+   * would be a cascading render, and React's own guidance is to compute it.
+   *
+   * The rejection is identified by the action-state object itself, so
+   * `startReview` can dismiss the one it has already answered for and let the
+   * seller back in. Nothing about the payload moves — the block is hidden,
+   * never unmounted — and `submissionKey` is untouched, so this stays the same
+   * intent being corrected rather than a second one.
+   */
+  const [reviewRequested, setReviewRequested] = useState(false);
+  const [answeredRejection, setAnsweredRejection] = useState<CreateAuctionState | null>(
+    null,
+  );
+
+  const serverRejected =
+    state !== answeredRejection &&
+    Boolean(state.fieldErrors && Object.values(state.fieldErrors).some(Boolean));
+
+  const reviewing = reviewRequested && !serverRejected;
 
   /*
    * One key per intent, minted on the first move to review and kept across
@@ -211,9 +243,19 @@ export function CreateAuctionForm() {
     Boolean(imageError);
 
   function startReview() {
-    if (incomplete) return;
+    /*
+     * Re-read the clock here and not only on the change event: an end time
+     * that was five minutes ahead when it was typed can be four by the time
+     * the seller reaches this button, and `endsAtError` is only ever as fresh
+     * as the last keystroke. Without this the seller bounces between the two
+     * views — the server rejecting a time the client still believes in.
+     */
+    const endTimeNow = endsAt ? validateEndTime(toInstant(endsAt), Date.now()) : undefined;
+    if (endTimeNow !== endsAtError) setEndsAtError(endTimeNow);
+    if (incomplete || endTimeNow) return;
     if (!submissionKey) setSubmissionKey(newSubmissionKey());
-    setReviewing(true);
+    setAnsweredRejection(state);
+    setReviewRequested(true);
   }
 
   return (
@@ -399,7 +441,7 @@ export function CreateAuctionForm() {
              * if the in-flight submit did land, publishing again resolves to
              * that same auction rather than a second one.
              */
-            onClick={() => setReviewing(false)}
+            onClick={() => setReviewRequested(false)}
           >
             رجوع للتعديل
           </Button>
