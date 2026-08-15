@@ -15,11 +15,11 @@ restating the dependency graph, delete that part and link instead.
 | | |
 |---|---|
 | **Run id** | `e33684e-20260815T0250` |
-| **Last updated** | 2026-08-15, after reading **`TEAM.md`** and **`GITHUB_PLAN.md`** inward — sources of truth **#3 and #4**, the last two `CLAUDE.md` §2 names that nothing had read against V2, and **the two that gate the next task**. Five crossings, in a **third category**: these documents configure the issue tracker rather than describe the system, so a crossing is a **team** decision — not the owner's ratification and not a steward's amendment. One row is his and is marked. Three crossings were **measured against the live tracker** and the documents and the tracker *agree* — the finding is that neither has room for V2. Also corrected: the `ARCHITECTURE.md` sweep under-counted its own last finding (13 occurrences, 4 documents, 7 of them in `PRD.md`, so the fix is the **owner's**, not the steward's), and this page's claim that issue creation waits *solely* on the owner. Nothing decided, nothing reclassified |
+| **Last updated** | 2026-08-15, after writing the **tracker-configuration proposal** the previous sweep's three team gates were waiting on — [`TRACKER_PROPOSAL.md`](TRACKER_PROPOSAL.md), posted on #168. **The first artefact of this run that is a question rather than a record**, and governed differently for that reason: nine assertions that all *derive* and none that pin its prose, nine probes that mutate **the proposal** rather than the documents it describes. **Nothing was created** — no label, no milestone, no issue, `PRD.md` unopened. The finding is that **gate 3 dissolved**: `GITHUB_PLAN.md:163` and `TEAM.md:1090` already chose GitHub's native blocked-by links over a label, for this exact shape of problem, so it needs no tracker change at all and S0-14's AC ends up *more* strongly satisfied — which corrects the previous item, the second consecutive correction of the sweep before it. One defect in the first posted draft (six pinned lines claimed, seven real, one of the six deliberately untouched) was caught by writing the check, not by reading, and the posted comment was edited to match the file |
 | **Branch** | `feature/rayan-v2-spec` |
-| **HEAD** | `1c96f5b` + this commit |
-| **Base** | **48 commits ahead of `origin/main`** at `1c96f5b`, and it contains `.github/workflows/ci.yml`, which `main` does not. Everything through `1c96f5b` **is pushed**; this commit may not be. Push, never force-push — #168 is open and others may be reading it |
-| **CI status** | **`static` GREEN on `ubuntu-latest` at `1c96f5b`** ([run 31874041504](https://github.com/RayanAlDwlah/dallal/actions/runs/31874041504)), reporting `181 passed, 0 failed` and `138 caught, 0 not caught (0 no-op), 138 of 138 probes reached` — **byte-identical to the macOS clean-tree figures**, as at `00352f4` ([31873126786](https://github.com/RayanAlDwlah/dallal/actions/runs/31873126786), `172`/`126`), `61e102f` and `81578ae`. **No figure on this page is macOS-only**, now across four commits, the last two of which added mutation surfaces — a shipped migration, then two root documents — which is exactly where a platform difference would surface. Worth stating rather than assuming: this file records a `grep`-dialect divergence that made a suite pass locally and go red in CI, and a probe count is precisely the quantity such a divergence moves. **`database` still RED** on the pre-existing #147 (`auth` and `bidding` pass; `auction` does not), which **PR #155 fixes and only a human can merge** — so the *run* conclusion reads `failure` while `static` is green. **Read the job, not the run** |
+| **HEAD** | `f031b28` + this commit |
+| **Base** | **50 commits ahead of `origin/main`** at `f031b28`, and it contains `.github/workflows/ci.yml`, which `main` does not. Push, never force-push — #168 is open and others may be reading it |
+| **CI status** | Local, clean tree, at `f031b28`: `190 passed, 0 failed` and `147 caught, 0 not caught (0 no-op), 147 of 147 probes reached`; guards `21/21`, ci-coverage `21 suites, 0 unwired`, governance `14/14`. **The `ubuntu-latest` figures for this commit are recorded below once the run reports** — do not copy the previous commit's forward. At `1c96f5b` `static` was **GREEN on `ubuntu-latest`** ([run 31874041504](https://github.com/RayanAlDwlah/dallal/actions/runs/31874041504)) with `181`/`138`, **byte-identical to the macOS clean-tree figures**, as at `00352f4`, `61e102f` and `81578ae` — no figure on this page has been macOS-only across four commits, the last three of which added mutation surfaces. **`database` still RED** on the pre-existing #147 (`auth` and `bidding` pass; `auction` does not), which **PR #155 fixes and only a human can merge** — so the *run* conclusion reads `failure` while `static` is green. **Read the job, not the run** |
 | **Operator** | unattended Claude session, owner asleep, reviewing later |
 
 ---
@@ -384,7 +384,18 @@ declaring it out of scope.
    defect and *not* a live risk, because `CLAUDE.md` §3 states it and four guards enforce it.
    The fifth is the owner's: `bid increment` is still under *"Things nobody may build"*. See
    the section below.
-11. Only then create the V2 issues.
+11. ~~**A tracker-configuration proposal the team can answer in one reading**~~ — **done**,
+    `f031b28`. Item 10 named three team gates; a sweep names a problem and this names the
+    options. [`docs/v2/TRACKER_PROPOSAL.md`](TRACKER_PROPOSAL.md) — three gates, three named
+    options each, one recommendation each, the exact document edits every option requires
+    *including the merged acceptance criteria it falsifies*, and what stays untouched.
+    **Nothing was created**: no label, no milestone, no issue, and `PRD.md` was not opened.
+    Posted on #168 as
+    [`#issuecomment-5301370669`](https://github.com/RayanAlDwlah/dallal/pull/168#issuecomment-5301370669).
+    Its own correction is the part worth reading — **gate 3 turned out to be far cheaper than
+    item 10 implied**, which makes this the second consecutive item to correct the sweep before
+    it. See the section below.
+12. Only then create the V2 issues.
 
 **Blocked, with the reason:**
 
@@ -398,6 +409,11 @@ declaring it out of scope.
   so that four documents forbid**. Those are team decisions, takeable without the owner but
   not by one session alone. **Creating the issues today would mean inventing a taxonomy in the
   tracker**, which is `CLAUDE.md` §8's failure mode wearing a different hat.
+  **Item 11 has now put all three in front of the team as named options**, so what is missing
+  is a *reply*, not more analysis — and only two of the three turned out to change the tracker
+  at all. Writing gate 3's options out showed it needs **no label and no milestone**: the
+  mechanism it wants was already chosen, by the same two documents, for the same shape of
+  problem. Analysis that shrinks the ask is worth more here than analysis that lengthens it.
 - **`V2-00`** — needs a human to merge #155; protection forbids a self-merge.
 - **Six tickets behind an unanswered question raised by this run** — `V2-A4` (`O14`, `O34`),
   `V2-A19` (`O31`, `O32`, `O33`), `V2-A20` (`O11`), `V2-C3`/`V2-A3`/`V2-B5` (`O25`–`O30`). The
@@ -446,10 +462,18 @@ the research passes behind `O14` and `O24` that produce *options* rather than de
 > Both are sweeps, not decisions, so both are safe to run unattended; anything they find is a
 > blockquote question, a steward note or a team note, never a reclassification.
 >
-> **But the honest next move is not another sweep.** Item 11's three team-decision gates are
-> now named and evidenced, and a fifth sweep does not move them. What moves them is a proposal
-> the owner or the other two developers can say yes or no to in one reading — which is work,
-> not a decision, and therefore in scope.
+> **But the honest next move was not another sweep, and it was taken** — item 11. The three
+> team-decision gates were named and evidenced, and a fifth sweep would not have moved them;
+> what moves them is a proposal somebody can say yes or no to in one reading, which is work
+> rather than a decision and therefore in scope. **It paid immediately**: writing gate 3's
+> options out reduced it from *"four documents forbid the only label that fits"* to *"one
+> clause of the reason is stale, and the mechanism these documents already chose does the job
+> with no label at all."* A fifth sweep would have re-found the prohibition and re-reported it
+> as a wall.
+>
+> The two surfaces above stay unread, and they are still the right sweeps if this run needs
+> one — but they are now **behind a reply**, not in front of it, and a session that opens
+> `docs/contracts/` before reading #168's latest comment is optimising the wrong queue.
 >
 > One caution earned in item 9, worth more than the finding: the two lists must stay separate.
 > Six `> **n.` items now sit below the owner's eight and are numbered `1..6` like his. They are
@@ -1093,6 +1117,71 @@ the whole argument for having it — none of the four was visible by reading:
 Fixed in `1c96f5b`, committed **separately** from the sweep so the failures and their fixes are
 both in the history rather than only the green end state.
 
+---
+
+### `TRACKER_PROPOSAL.md` at `f031b28` — the first artefact of this run that is a question
+
+Ten sweeps in a row produced *records*: things that are true, written down. This is the first
+that is a **decision request** — and it behaves differently enough to be worth naming, because
+the next session will write more of them.
+
+**A record is re-read and argued with. A proposal is read once and acted on.** That asymmetry
+is the whole risk: somebody replies *"2A"* to an area table that no longer covers every ticket,
+and the drift stops being a documentation defect and becomes a decision. So every assertion
+attached to it **derives**, and none pins its prose — a decision request must stay rewritable
+by whoever answers it, while the arithmetic underneath may not move. Nine assertions
+(190 total) and nine probes (147), and **every probe mutates the proposal, never the documents
+it describes**: sections A–K prove the board notices when the tree moves; L proves the board
+notices when the proposal stops describing the tree.
+
+**What it proposes**, in one line each, with the recommendation:
+
+| gate | recommended | creates | falsifies |
+|---|---|---|---|
+| **1** V2 has no milestone | one `M5 — V2` | +1 milestone | `GITHUB_PLAN.md:214`, and S0-03's merged AC |
+| **2** no `area:` fits; `type:feature` means *MVP* | +3 `area:` (`sessions`, `ai`, `images`), +3 `track:` | +6 labels, 22 → 28 | `TEAM.md:1076`, `GITHUB_PLAN.md:151`, `:144`, and S0-03's AC again |
+| **3** no way to say "blocked on a product question" | GitHub's native issue relationships, six tracking issues | **nothing** | nothing — one clause of a *reason* is stale |
+
+**The finding is gate 3, and it corrects item 10.** That sweep reported three gates of roughly
+equal weight. Writing the options out, gate 3 dissolved: `GITHUB_PLAN.md:163` and `TEAM.md:1090`
+**already dropped the `blocked` label** in favour of *"GitHub's native 'blocked by' Issue links"*,
+in writing, for exactly this shape of problem. Using them applies an existing team decision
+rather than overturning one. The `needs-decision` prohibition survives **intact**, all four
+copies of it; `GITHUB_PLAN.md:271` (S0-14), which makes preserving that prohibition a merged
+ticket's AC, ends up satisfied *more* strongly than before. Only the premise attached to the
+rule — *"`PRD.md` v3.0 has zero open product questions"* — is stale, and that is one clause in
+two lines.
+
+**`O23` is the argument, not a footnote.** It is mapped to *both* `D-03` and `D-06` in
+`SPEC.md`, so the tracking table sums to **35 for 34 questions**. Under native relationships
+that costs nothing — an issue can be blocked by two. A label cannot express it at all:
+`needs-decision` on `V2-A10` says *blocked*, not *by which of two unrelated decisions*, and
+removing it when `D-03` closes marks the ticket ready while `D-06` is still open. That
+overshoot is asserted and probed, precisely so a later tidy-up cannot make the table
+internally consistent and the paragraph beside it a lie.
+
+**A defect in the first posted draft, caught by writing the check rather than by reading.**
+The closing paragraph claimed six pinned lines would break, naming `GITHUB_PLAN.md:271` — which
+the proposal deliberately does **not** edit — and omitting `TEAM.md:1095` and
+`GITHUB_PLAN.md:164`, which it does. The real figure is **seven of eighteen**. It now sits in a
+table, per gate, and the arithmetic (18 total, 7 edited, 11 untouched) is derived from
+`BOARD_LINES` on every run. The posted comment was edited to match the file, so the two are not
+allowed to disagree.
+
+**Two things it does not do**, stated because the temptation in both directions was real:
+
+- **It creates nothing.** No label, no milestone, no issue, no `PRD.md` edit. Executing it
+  unilaterally is the invented-taxonomy failure the sweep warned about, wearing the sweep's own
+  clothes.
+- **It leaves crossing 5 alone.** `bid increment` under `TEAM.md:1334`'s *"things nobody may
+  build"* is the owner's, it is `D-01`, and a process proposal is not the place to move it.
+
+**Nine probes, nine CAUGHT, zero NO-OP, on the first run** — which by this run's own standard is
+the result deserving least trust, so it is recorded with the caveat rather than as a boast. The
+harness that reports it has been shown to discriminate MISSED, BROKEN and NO-OP, and it caught
+three real defects the previous section's first run.
+
+---
 
 ## Decisions and assumptions made by this run
 
@@ -1102,7 +1191,7 @@ both in the history rather than only the green end state.
 | — | Treat the red Vercel check on #155/#165/#167/#168 as **not a code signal** | Vercel returned `api-deployments-free-per-day`, "try again in 24 hours" | yes |
 | — | `PRD.md` is **not touched** by this run | owner: "the owner will ratify it manually" | n/a |
 | — | The untracked migration is **never staged and never edited** | `git status` shows it untracked at every commit in this run | n/a |
-| — | Every board number is **machine-derived**, never hand-counted | `tests/v2/graph.check.mjs`, 181 assertions | it is a procedure |
+| — | Every board number is **machine-derived**, never hand-counted | `tests/v2/graph.check.mjs`, 190 assertions | it is a procedure |
 | — | A **shipped migration** may be a declared mutation surface for a text probe, where `PRD.md` may not | the two are not the same risk: the harness refuses on a dirty tree, restores with `git checkout --`, and runs no SQL — and crossing 6 rests on a live `WITH CHECK`, so a pin nothing can break is not a pin. `PRD.md` stays out because the owner ratifies it by hand | yes — remove it from `neg_files` and the two probes go NO-OP, loudly |
 | — | `PRD.md` is not a **mutation surface** either — not even for a probe that would restore it | an interrupted run must not be able to leave the file the owner ratifies broken; the probe breaks the checker's expectation instead | it is a procedure |
 | — | An **unratified decision blocks a ticket**, exactly as an unanswered question does | not invented here: `docs/decisions/README.md:82` already records the precedence rule, and `CLAUDE.md` §2 already orders the sources. The **`R`→ticket mapping** is judgment, and the rule used is stated in prose for the owner to correct | yes — it is a column, and the owner ratifying anything empties it |
@@ -1110,6 +1199,9 @@ both in the history rather than only the green end state.
 | — | `TEAM.md` and `GITHUB_PLAN.md` are **process** documents, so a crossing in them is a **team** decision — a third category alongside the owner's and the steward's | neither carries an ADR with a reversal condition nor an owner's ratification clause; what they contain is tracker configuration. The one product row in them is marked as the owner's and not counted with the rest | yes — it is a column in the section above |
 | — | Reporting a sweep's **negative results** and its own **caught defects** is part of the sweep, not decoration | a sweep that only reports hits is not measuring; and four of this one's defects — two wrong line numbers, a phantom citation, and a MISSED probe caused by prose added elsewhere — were invisible by reading | it is a procedure |
 | — | A new check is not trusted until a **negative probe** makes it fail | four real check defects found this way, two of them in PZ-8 | it is a procedure |
+| — | A **decision request** is governed differently from a record: every assertion on it DERIVES, and none pins its prose | a record is re-read and argued with; a proposal is read once and acted on, so a stale one gets *approved*. What may not drift is its arithmetic — the area coverage against the board, the guard-pin claims against `BOARD_LINES`, the tracking grouping against `SPEC.md`. What must stay free is its wording, so whoever answers can rewrite it | yes — it is nine `chk` calls in one block |
+| — | A proposal's probes mutate **the proposal**, not the documents it describes | sections A–K prove the board notices when the tree moves; section L proves the board notices when the proposal stops describing the tree. Those are different failures and only one of them ends in somebody approving the wrong thing | it is a procedure |
+| — | Writing the **options** is worth more than another sweep once the gates are named | gate 3 went from *"four documents forbid the only label that fits"* to *"the mechanism was already chosen; one clause of the reason is stale"* — a fifth sweep would have re-found the prohibition and re-reported it as a wall | it is a procedure |
 
 **No product decision was invented.** Every unresolved one is an `O`-id in
 [`SPEC.md` §4.3](SPEC.md).
