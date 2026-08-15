@@ -5,7 +5,7 @@
 #   ./tests/guards/run.sh
 #
 # Needs nothing: no Docker, no node, no network, no credentials. It reads the
-# tree and asserts fifteen facts about it. It finishes in under a second, which
+# tree and asserts seventeen facts about it. It finishes in under a second, which
 # is deliberate: a guard nobody minds running is a guard that runs.
 #
 # ---------------------------------------------------------------------------
@@ -89,7 +89,7 @@ set -uo pipefail
 ROOT="$(cd "$(dirname "$0")/../.." && pwd)"
 cd "$ROOT" || exit 1
 
-EXPECTED=15
+EXPECTED=17
 pass=0
 fail=0
 
@@ -334,6 +334,75 @@ echo "--- bidding"
 # any .order() naming created_at is the regression, whatever it is ordering.
 chk "no .order(\"created_at\") on any read in TypeScript" \
     "$(count_ts '\.order\(\s*.created_at')" 0
+
+# ===========================================================================
+# GOVERNANCE — CLAUDE.md §10, S0-17 (#102)
+# ===========================================================================
+echo
+echo "--- governance"
+
+# The one rule here that is not about our code at all: a BUILD TOOL has write
+# access to the files that govern every AI session on this project.
+#
+# `next dev` upserts a delimited block into an agent-rules file. It used to
+# write it into CLAUDE.md — the file §2 puts at the top of the source-of-truth
+# hierarchy. S0-17 moved it to AGENTS.md, which CLAUDE.md imports, because
+# `writeAgentFiles()` takes the AGENTS.md branch whenever that file exists and
+# then leaves CLAUDE.md byte-identical. Measured against the real function on
+# four cases, including a future version with different block text.
+#
+# Neither check below tries to STOP Next.js changing its text — it will, and
+# that is its business. They stop the change being SILENT (§9), which is the
+# whole failure S0-17 was opened about: an innocuous diff inside somebody's
+# unrelated PR, in a file nobody re-reads because it is always there.
+
+BLOCK_START='<!-- BEGIN:nextjs-agent-rules -->'
+
+# G1. The managed block still says what we last read. A version bump rewrites
+# it, this goes red, and somebody has to look at the new text before it lands.
+#
+# `diff` rather than a checksum, deliberately: this suite has to say the same
+# thing on WSL and on macOS, and the sha256 binary is named differently on the
+# two. `diff` is POSIX, it is on both, and when it fires it PRINTS WHAT
+# CHANGED — which is the acknowledgement the check exists to force, not a hex
+# string that tells the reader nothing.
+extracted_block() {
+  perl -0777 -ne 'print $1 if /(\Q<!-- BEGIN:nextjs-agent-rules -->\E.*?\Q<!-- END:nextjs-agent-rules -->\E)/s' \
+    AGENTS.md 2>/dev/null
+}
+# LINE ENDINGS ARE STRIPPED FROM BOTH SIDES BEFORE COMPARING, and that is the
+# fix for a real red build, not defensiveness. @m7ya505 hit it on a CLEAN
+# checkout on Windows: `core.autocrlf=true` writes `agents-rules.expected` to
+# disk with CRLF, while the block extracted from AGENTS.md and re-emitted here
+# carries bare LF — so the two differed by one byte per line and the check went
+# red on a tree nobody had touched. CI never saw it: `ubuntu-latest` checks out
+# LF, so the guard was green for two of us and red for the third.
+#
+# A check that fails on a clean tree gets deleted by the third person who meets
+# it, which is exactly how this rule would have died.
+#
+# Compared as strings rather than through `diff`, deliberately: `diff` against a
+# normalised copy needs either a temp file or `<(...)`, and process substitution
+# is a bashism that breaks under `sh` — fixing a portability bug with a
+# portability bug. `$( )` also strips trailing newlines from both sides, which
+# is the same normalisation the old `printf '%s\n'` was there to supply.
+expected_block="$(tr -d '\r' < tests/guards/agents-rules.expected 2>/dev/null)"
+actual_block="$(extracted_block | tr -d '\r')"
+chk "the Next.js agent-rules block matches tests/guards/agents-rules.expected" \
+    "$([ "$actual_block" = "$expected_block" ] && echo same || echo differs)" same
+
+# G2. The diversion is still in place. Delete AGENTS.md and the next `next dev`
+# writes the block straight back into CLAUDE.md — silently, because it is a
+# file everyone has stopped reading the bottom of. G1 would stay green through
+# that (it reads AGENTS.md, which would be gone and would extract to nothing —
+# hence G1 comparing against a file rather than testing for absence).
+#
+# Counted on the RAW file, not a comment-stripped view: §10 discusses this
+# block in prose, and the marker is HTML-comment syntax, so a stripping view
+# would delete the very thing being counted. The prose deliberately never
+# writes the marker out in full.
+chk "CLAUDE.md does not host the agent-rules block — AGENTS.md does" \
+    "$(grep -cF "$BLOCK_START" CLAUDE.md 2>/dev/null || true)" 0
 
 # ---------------------------------------------------------------------------
 ran=$((pass + fail))

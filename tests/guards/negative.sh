@@ -9,8 +9,8 @@
 # ---------------------------------------------------------------------------
 # WHY THIS EXISTS
 #
-# `./tests/guards/run.sh` printing fifteen PASS lines proves one thing: that
-# fifteen commands ran and returned the numbers expected. It does NOT prove
+# `./tests/guards/run.sh` printing seventeen PASS lines proves one thing: that
+# seventeen commands ran and returned the numbers expected. It does NOT prove
 # that any of them would have returned a different number had the rule been
 # broken. A check with a typo'd pattern, a swallowed exit code, or a path that
 # matches nothing passes exactly as loudly as a check that works — and it
@@ -58,7 +58,9 @@ components/ui/money.tsx
 app/layout.tsx
 .env.example
 lib/supabase/config.ts
-components/bidding/bid-panel.tsx"
+components/bidding/bid-panel.tsx
+AGENTS.md
+CLAUDE.md"
 
 STAGED_ENV=".env.guardnegative"
 
@@ -101,11 +103,25 @@ restore() {
   git rm --cached --quiet "$STAGED_ENV" 2>/dev/null
   rm -f "$STAGED_ENV"
 }
-trap restore EXIT
-
 # --- refuse to run on a dirty tree -----------------------------------------
 # A restore is `git checkout --`, which is destructive to uncommitted work. It
 # is only safe because these files are known clean when we start.
+#
+# ⚠️ THE TRAP IS INSTALLED *AFTER* THIS CHECK, AND THE ORDER IS THE WHOLE POINT.
+#
+# It used to be installed above, which meant `exit 1` here ran `restore` on the
+# way out — so the refusal path executed `git checkout --` over every file in
+# TOUCHED and discarded exactly the uncommitted work it had just refused to
+# touch. The message said "Commit or stash first" and then destroyed the thing
+# it was warning about.
+#
+# Measured, not imagined: it ate an unstaged fix to components/ui/money.tsx
+# during #156, on a run that printed the refusal and exited 1.
+#
+# Nothing has been mutated at this point, so there is nothing to restore and no
+# window between the two lines. Do not "tidy" the trap back to the top with the
+# other setup: this script's whole licence to run `git checkout --` is that the
+# files were verified clean FIRST.
 dirty="$(dirty_scope)"
 if [ -n "$dirty" ]; then
   echo "REFUSING TO RUN — these files have uncommitted changes and this script"
@@ -114,9 +130,11 @@ if [ -n "$dirty" ]; then
   exit 1
 fi
 
+trap restore EXIT
+
 pass=0
 fail=0
-EXPECTED=15
+EXPECTED=17
 
 # probe LABEL_SUBSTRING  MUTATION_COMMAND
 #
@@ -207,6 +225,21 @@ probe "no \"use client\" module mentions SERVICE_ROLE" \
 # --- bidding ---------------------------------------------------------------
 probe "no .order(\"created_at\")" \
   "perl -pi -e 's/\.order\(\"end_time\"/.order(\"created_at\"/' lib/auctions/listing.ts"
+
+# --- governance ------------------------------------------------------------
+# G1: exactly what a Next.js version bump does — the managed block's TEXT
+# changes while its markers stay put. This is the case S0-17 was opened about,
+# so it is the one that must not be able to pass silently.
+probe "matches tests/guards/agents-rules.expected" \
+  "perl -pi -e 's/^This version has breaking changes.*\$/GUARDNEGATIVE rewritten by a future next dev./' AGENTS.md"
+
+# G2: the diversion being undone. Reproduced the way it would actually happen
+# — AGENTS.md gone and the block back at the end of CLAUDE.md — rather than by
+# editing CLAUDE.md alone, because that is what `next dev` does when the file
+# it prefers is missing, and a probe that models the wrong cause proves the
+# wrong thing.
+probe "CLAUDE.md does not host the agent-rules block" \
+  "rm -f AGENTS.md && cat tests/guards/agents-rules.expected >> CLAUDE.md"
 
 # ---------------------------------------------------------------------------
 ran=$((pass + fail))
