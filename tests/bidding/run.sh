@@ -31,6 +31,9 @@ MIGRATIONAUC18="$ROOT/supabase/migrations/20260814130000_auc18_auction_authoriza
 MIGRATIONBID08="$ROOT/supabase/migrations/20260814140000_bid08_realtime_foundation.sql"
 MIGRATIONBID09="$ROOT/supabase/migrations/20260814200000_bid09_history_order_key.sql"
 MIGRATIONBID30="$ROOT/supabase/migrations/20260814210000_bid30_auction_delete_guard.sql"
+MIGRATIONV2CAT="$ROOT/supabase/migrations/20260815200000_v2_categories.sql"
+MIGRATIONV2AUC="$ROOT/supabase/migrations/20260815210000_v2_auction_fields.sql"
+MIGRATIONV2BID="$ROOT/supabase/migrations/20260815220000_v2_place_bid_button.sql"
 CONTRACT="$ROOT/docs/contracts/BID-02-bid-operation.md"
 
 # The migration is committed AND printed in the contract. Two copies of one
@@ -63,7 +66,8 @@ docker exec "$CONTAINER" pg_isready -U postgres -q || { echo "postgres never bec
 echo "    $(docker exec "$CONTAINER" psql -U postgres -tAc 'select version();' | cut -c1-40)"
 
 cp "$HERE/lib/supabase-shim.sql" "$HERE/acceptance.sql" "$HERE/closing.sql" \
-   "$HERE/realtime.sql" "$HERE/terminal.sql" "$HERE/sweep.sql" "$HERE/concurrency.sh" "$WORK/"
+   "$HERE/realtime.sql" "$HERE/terminal.sql" "$HERE/sweep.sql" \
+   "$HERE/increment.sql" "$HERE/concurrency.sh" "$WORK/"
 cp "$MIGRATION"       "$WORK/01-migration.sql"
 cp "$MIGRATION15"     "$WORK/02-bid15.sql"
 cp "$MIGRATIONAUC"    "$WORK/03-auc01.sql"
@@ -71,12 +75,15 @@ cp "$MIGRATIONAUC18"  "$WORK/04-auc18.sql"
 cp "$MIGRATIONBID08"  "$WORK/05-bid08.sql"
 cp "$MIGRATIONBID09"  "$WORK/06-bid09.sql"
 cp "$MIGRATIONBID30"  "$WORK/07-bid30.sql"
+cp "$MIGRATIONV2CAT"  "$WORK/08-v2cat.sql"
+cp "$MIGRATIONV2AUC"  "$WORK/09-v2auc.sql"
+cp "$MIGRATIONV2BID"  "$WORK/10-v2bid.sql"
 # contract-sync.awk names the seed 04-seed.sql because it was the fourth thing
-# applied when it was written. It is now the eighth, and it is still the last:
-# every migration goes on before any fixture does, exactly as production sees
-# them. Renaming it here rather than in the awk keeps the awk about the
+# applied when it was written. It is now the eleventh, and it is still the
+# last: every migration goes on before any fixture does, exactly as production
+# sees them. Renaming it here rather than in the awk keeps the awk about the
 # contract and this file about the order.
-mv "$WORK/04-seed.sql" "$WORK/08-seed.sql"
+mv "$WORK/04-seed.sql" "$WORK/11-seed.sql"
 docker cp "$WORK/." "$CONTAINER":/t/ >/dev/null
 
 echo "==> applying the Supabase shim (auth schema, auth.uid, PostgREST roles)"
@@ -106,7 +113,8 @@ docker exec "$CONTAINER" psql -U postgres -v ON_ERROR_STOP=1 -q -f /t/supabase-s
 #             that it says so. The trigger applies either way and, by design,
 #             cannot fail a bid on a stack with no realtime at all (RT-R7).
 echo "==> applying the migrations, then the test-only seed"
-for f in 01-migration 02-bid15 03-auc01 04-auc18 05-bid08 06-bid09 07-bid30 08-seed; do
+for f in 01-migration 02-bid15 03-auc01 04-auc18 05-bid08 06-bid09 07-bid30 \
+         08-v2cat 09-v2auc 10-v2bid 11-seed; do
   printf '    %-14s ' "$f"
   if docker exec "$CONTAINER" psql -U postgres -v ON_ERROR_STOP=1 -q -f "/t/$f.sql" 2>/tmp/err; then
     echo ok
@@ -160,6 +168,7 @@ suite closing    50          # BID-15/BID-16 — finalization and the extension
 suite terminal   30          # BID-19 — terminal-state enforcement, + BR-30 delete guard (#124)
 suite realtime   33          # BID-08 — the broadcast payload, coverage, RT-R7
 suite sweep      22          # BID-21 — gap-filling: SC-28, SC-57, SC-72, SC-73, SC-75, SC-15
+suite increment  15          # V2 — place_bid_v2, next_offer, and the BR-32 boundary
 
 # EXPECTED catches a suite that aborts partway; nothing above catches a suite
 # line that VANISHES. A merge conflict resolved by taking one side can drop a
@@ -168,7 +177,7 @@ suite sweep      22          # BID-21 — gap-filling: SC-28, SC-57, SC-72, SC-7
 # #114's run.sh conflict) were caught by reading, not by structure; this is
 # the structure (#116). Same logic as EXPECTED, one level up. Keep the number
 # in step with the `suite` lines above.
-EXPECTED_SUITES=5
+EXPECTED_SUITES=6
 if [ "$suites" -ne "$EXPECTED_SUITES" ]; then
   echo
   echo "!! expected $EXPECTED_SUITES suites, only $suites ran — a suite line is missing. Treating as failure."

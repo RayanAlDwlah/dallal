@@ -111,8 +111,14 @@ chk "no auction update/delete call in code" \
 # re-adding one is classified as a bug rather than an improvement.
 chk "no reserve price anywhere" \
     "$(( $(count_ts '\b(reserve_?price|reservePrice)\b') + $(count_sql '\breserve_?price\b') ))" 0
-chk "no bid increment / minimum raise" \
-    "$(( $(count_ts '\b(bid_?increment|bidIncrement|min_?raise|minRaise|increment_?step)\b') + $(count_sql '\b(bid_?increment|min_?raise)\b') ))" 0
+# NARROWED 2026-08-15, exactly as CLAUDE.md §9 pre-committed: `bid_increment`
+# is now a real column (V2 fixed-increment auctions, D-01 ratified by the
+# owner's approved architecture) and is no longer a violation. What is STILL
+# banned is a minimum-raise ENFORCEMENT identifier — the server accepts any
+# amount above current on every auction (BR-32), and the companion test
+# demanded by that same paragraph lives in tests/bidding/increment.sql #7.
+chk "no minimum-raise enforcement identifier" \
+    "$(( $(count_ts '\b(min_?raise|minRaise|increment_?step|minimum_?increment)\b') + $(count_sql '\b(min_?raise|increment_?step|minimum_?increment)\b') ))" 0
 chk "no price ceiling or max-bid identifier" \
     "$(( $(count_ts '\b(max_?price|maxPrice|MAX_BID|price_?cap|bid_?ceiling)\b') + $(count_sql '\b(max_?price|price_?cap|bid_?ceiling)\b') ))" 0
 # The typmod ban is money's, and it is the most plausible-looking violation on
