@@ -355,7 +355,20 @@ declaring it out of scope.
    with the addendum naming `:2032` and `:2035` at
    [`#issuecomment-5301143245`](https://github.com/RayanAlDwlah/dallal/pull/168#issuecomment-5301143245).
    See the §21 section below.
-9. Only then create the V2 issues.
+9. ~~**`ARCHITECTURE.md`, read the same way**~~ — **done**, `5034e21`. Not `PRD.md` at all:
+   **source of truth #2**, which `CLAUDE.md` §2 ranks *above* this board and which the board
+   cited **zero times**, in either direction — and the other direction is worse, because
+   `ARCHITECTURE.md` contains **no V2 vocabulary at all** and no ticket changes it, including
+   the one `D-01` says is required. **Six crossings, and they are deliberately NOT a ninth
+   blockquote item**: `PRD.md:2025` forbids reinterpretation, so a PRD crossing is the owner's;
+   every `ADR` **carries its own reversal condition in writing**, so an architecture crossing
+   is a steward's (`CLAUDE.md` §1). That separation is now machine-asserted rather than left to
+   a regex boundary. The strongest of the six is **not prose**: a `WITH CHECK` live on `main`
+   refuses a lot with no `end_time` at insert. Three negative results are recorded on purpose,
+   including a re-test of the §19.6 admin judgement this file flagged as most worth a second
+   reader — **it holds**. `ARCHITECTURE.md:1552`'s stale count is left **unfixed on purpose**
+   and says why. See the section below.
+10. Only then create the V2 issues.
 
 **Blocked, with the reason:**
 
@@ -389,8 +402,26 @@ the research passes behind `O14` and `O24` that produce *options* rather than de
 > this board builds, and `:1936` A-U7 was checked and **does not** break — a company hosting a
 > room is the case that would, so it is named rather than dropped.
 >
-> The remaining unread surface is **§21**. It is a sweep, not a decision, so it is safe to run
-> unattended; anything it finds is a blockquote question, never a reclassification.
+> **§21 has come off this list as well** — item 8 — and with it the last unread `PRD.md`
+> surface. What replaced it was **not** more of `PRD.md`: item 9 picked `ARCHITECTURE.md`,
+> **by authority rather than by adjacency**, which is the method fault the §21 write-up named.
+> Four consecutive sweeps had read the product document while the one ranked *above this board*
+> had never been read at all. If a later session is choosing a surface, that is the question to
+> ask — *which source of truth has nothing watching it?*, not *what is next to the thing I just
+> read?*
+>
+> **The remaining unread surfaces are now the six `D-0x` records read inward** (item 5 read them
+> *against* `PRD.md`; nobody has read them against what the board builds) and
+> **`TEAM.md`/`GITHUB_PLAN.md`**, which the governance amendment swept for ownership text but
+> which nobody has read for V2 crossings. Both are sweeps, not decisions, so both are safe to
+> run unattended; anything they find is a blockquote question or a steward note, never a
+> reclassification.
+>
+> One caution earned in item 9, worth more than the finding: the two lists must stay separate.
+> Six `> **n.` items now sit below the owner's eight and are numbered `1..6` like his. They are
+> a steward's list. Anything that merges them — widening a regex, promoting a crossing "so it
+> is not lost" — makes his page longer without making any of it his, and there is now an
+> assertion and a probe against exactly that.
 
 ---
 
@@ -842,6 +873,105 @@ or at `ARCHITECTURE.md`, not at `PRD.md`.
 
 ---
 
+### `ARCHITECTURE.md` at `5034e21` — the document one rank higher, which nothing was watching
+
+The paragraph above said where to aim next and this is that sweep. It is the first one whose
+target is **not `PRD.md`**, and the choice was made **by authority, not by adjacency** — the
+method fault the §21 section named. `CLAUDE.md` §2 ranks `ARCHITECTURE.md` **second, above this
+board**. Four consecutive sweeps had read the document one rank *below* it.
+
+**The zero-citation finding runs both ways, and the second direction is the worse one.** The
+board cites `ARCHITECTURE.md` zero times — counted mechanically across `SPEC.md`, `TICKETS.md`
+and `docs/ai/local-model.md`. Two records mention it once each and **both mentions are
+prospective**: `D-01`'s completion checklist has an unticked box for an ADR that does not exist,
+and `D-03`'s `O4` calls the lot-versus-auction choice *"an `ARCHITECTURE.md` decision with a
+large blast radius"*. Neither cites a line. In the other direction, `ARCHITECTURE.md` contains
+**no V2 vocabulary at all** — no session, host, lot, pause, deposit or model — and **no ticket
+on the board changes it**, including the one `D-01` says is required.
+
+#### Why the six are a separate list and not a ninth ratification item
+
+This is the judgement most worth a second reader, so it is argued from the documents rather than
+asserted. `PRD.md:2025` forbids a decision being *"reopened, reinterpreted, defaulted, or worked
+around during implementation"* — a PRD crossing can be closed **only by the owner**. Every `ADR`
+in `ARCHITECTURE.md` §20 instead **carries its own reversal condition in writing**: the document
+authorises its own amendment and names what triggers one. That makes these a **steward** matter
+(`CLAUDE.md` §1: *stewards advise, they do not gate*), and folding them into the owner's eight
+would lengthen his page without adding anything that is his to decide.
+
+The separation is fragile in a specific, mechanical way: six `> **n.` items now sit below the
+owner's eight and are numbered `1..6` exactly as his are. The blockquote capture in
+`graph.check.mjs` stops at the first non-blockquote line, so it is correct **today** — and the
+comment above it used to say the widening was safe *"because nothing in those paragraphs happens
+to be a numbered blockquote item"*. That clause stopped being true in this commit. It now carries
+a warning, an assertion (`the steward crossings have not been swept into the owner's blockquote`)
+and a probe that performs the promotion a helpful editor would perform.
+
+#### The one that is code
+
+Five of the six are prose. **Crossing 6 is a `WITH CHECK` that is live on `main`**:
+`20260812120000_bid02_bid_acceptance.sql:500` requires `end_time >= now() + interval '5 minutes'`
+at **insert** time, and `V2-A11` says a lot's `end_time` is *"computed when the lot opens, not at
+creation"*. If `O4` resolves to "a lot is an `auctions` row with a nullable `session_id`", the
+insert is refused with **42501**. It escalates the finding from *a document says* to *a
+deployment will fail*, and it **survives either answer to `O23`**, because the bound is evaluated
+against `now()` when the row is written rather than when the lot runs — checked explicitly,
+because "isn't this just `O23`?" is the first thing a reader will ask.
+
+That is also why `supabase/migrations/20260812120000_bid02_bid_acceptance.sql` is now a declared
+mutation surface in the negative suite — **the first executable file this harness mutates.** The
+safety argument is the harness's and is unchanged (dirty-tree refusal first, trap armed after,
+`git checkout --` restore before any verdict is read), nothing runs SQL, and the header says all
+of this out loud instead of letting the new surface appear as one more line in a list.
+
+#### Three negative results, one of them a re-test
+
+Recorded so nobody re-derives them: **`ARCHITECTURE.md:310`** (the admin row), **`:1372`**
+(ADR-1's reversal condition — *not* fired: pause is atomic, a lot advance is host-invoked, and
+closing already runs on `pg_cron`), and **§4.4/§24's native-mobile and public-API rows**.
+
+`:310` is the one that matters. This file recorded the §19.6 admin judgement as *"the one most
+worth a second reader's eye, since it is the only place the sweep decided a row did not apply"*.
+It has now been re-tested **from the second source of truth** rather than re-read in the first,
+and it **holds**. A flagged judgement that gets re-tested from a different document is worth more
+than one that gets re-read in the same one.
+
+#### Verification
+
+```
+V2 — graph.check.mjs   172 passed, 0 failed                                    (164)
+V2 — graph-negative    126 caught, 0 not caught (0 no-op), 126 of 126 reached  (115)
+```
+
+**The first sweep of the five to move `graph.check.mjs` at all.** The four before it added tuples
+to existing lists and the number stayed at 164 three commits running; this one adds eight `chk`
+calls, because a second document needed its own citation regex, its own dangling check, its own
+uncited check, its own self-count, and two pins that are not in a document. `guards` 21/21,
+`guards-negative` 21/21, `governance-workflow` 14 + 16, `ci-coverage` 21 suites / 0 unwired,
+`lint` 0 errors, `typecheck` clean — all on a clean tree, on macOS. The Linux figures are
+confirmed separately below the run header.
+
+The pin list carries **five kinds** — reversal condition, prose absolute, table row, stale count,
+and shipped constraint — and the probe budget stays **one per kind**, per the standing rule. The
+fifth kind is genuinely different and the suite header says why: prose rots when somebody rewords
+it; a policy changes when somebody changes **behaviour**.
+
+**The new checks caught a real defect on their first run.** `TICKETS.md still cites every
+ARCHITECTURE.md line its crossings section rests on` failed with three entries — `:174`, `:685`,
+`:1532` had been written in the shorthand `` `:NNN` `` form, which the `ARCHITECTURE.md` citation
+regex does not accept (the PRD regex has a bare-`:NNN` alternative; this one does not). Written
+by hand, verified by machine, and the machine was right.
+
+**One stale figure is left unfixed on purpose.** `ARCHITECTURE.md:1552` says `PRD.md` §21.1
+*"closes all fifteen"*; §21.1 holds **sixteen**, and `CLAUDE.md` §3 cites Q16 by name. The six
+crossings will touch §6.5, §8.5, §11.2, §14.2, §17.3 and §20 — the document should be amended
+**once** by its steward rather than twice, the second time for a word. The figure is pinned, so
+the day it *is* fixed, the paragraph explaining why it was left goes red rather than quietly
+describing a number that has moved. That pin is also a probe, which makes it the only mutation in
+the suite that is scheduled to become a real commit.
+
+---
+
 ## Decisions and assumptions made by this run
 
 | id | what | evidence | reversible? |
@@ -850,7 +980,8 @@ or at `ARCHITECTURE.md`, not at `PRD.md`.
 | — | Treat the red Vercel check on #155/#165/#167/#168 as **not a code signal** | Vercel returned `api-deployments-free-per-day`, "try again in 24 hours" | yes |
 | — | `PRD.md` is **not touched** by this run | owner: "the owner will ratify it manually" | n/a |
 | — | The untracked migration is **never staged and never edited** | `git status` shows it untracked at every commit in this run | n/a |
-| — | Every board number is **machine-derived**, never hand-counted | `tests/v2/graph.check.mjs`, 164 assertions | it is a procedure |
+| — | Every board number is **machine-derived**, never hand-counted | `tests/v2/graph.check.mjs`, 172 assertions | it is a procedure |
+| — | A **shipped migration** may be a declared mutation surface for a text probe, where `PRD.md` may not | the two are not the same risk: the harness refuses on a dirty tree, restores with `git checkout --`, and runs no SQL — and crossing 6 rests on a live `WITH CHECK`, so a pin nothing can break is not a pin. `PRD.md` stays out because the owner ratifies it by hand | yes — remove it from `neg_files` and the two probes go NO-OP, loudly |
 | — | `PRD.md` is not a **mutation surface** either — not even for a probe that would restore it | an interrupted run must not be able to leave the file the owner ratifies broken; the probe breaks the checker's expectation instead | it is a procedure |
 | — | An **unratified decision blocks a ticket**, exactly as an unanswered question does | not invented here: `docs/decisions/README.md:82` already records the precedence rule, and `CLAUDE.md` §2 already orders the sources. The **`R`→ticket mapping** is judgment, and the rule used is stated in prose for the owner to correct | yes — it is a column, and the owner ratifying anything empties it |
 | — | A new check is not trusted until a **negative probe** makes it fail | four real check defects found this way, two of them in PZ-8 | it is a procedure |
