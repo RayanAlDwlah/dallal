@@ -47,7 +47,7 @@ SAR is used purely as a realistic unit of price representation. The term **"Demo
 | Document | What it is | When to read it |
 |---|---|---|
 | **[PRD.md](PRD.md)** | Product requirements. **The product source of truth.** All fifteen product decisions are final; zero open questions | Before building anything |
-| **[TEAM.md](TEAM.md)** | Team ownership, branches, GitHub workflow, collaboration rules | Before your first commit |
+| **[TEAM.md](TEAM.md)** | Branches, GitHub workflow, collaboration rules. **Its ownership matrix is superseded by `CLAUDE.md` §1** | Before your first commit |
 | **[ARCHITECTURE.md](ARCHITECTURE.md)** | Technical architecture — platform split, trust boundary, data ownership, deployment | Before implementing bidding, authorization, or closing |
 | **[GITHUB_PLAN.md](GITHUB_PLAN.md)** | Milestones, Issues, dependencies, execution order | When picking up work |
 
@@ -55,47 +55,45 @@ SAR is used purely as a realistic unit of price representation. The term **"Demo
 
 ---
 
-## Team and ownership
+## Team, and how work is claimed
 
-| Developer | GitHub | Owns | Branch |
-|---|---|---|---|
-| **Abdulrahman** | [`@Dem4t`](https://github.com/Dem4t) | Authentication & identity **behaviour and data** | `feature/abdulrahman-auth` |
-| **Mohammed** | [`@m7ya505`](https://github.com/m7ya505) | Auction Management · **all presentation, product-wide** | `feature/mohammed-auctions` |
-| **Rayan** | [`@RayanAlDwlah`](https://github.com/RayanAlDwlah) | Bidding & Realtime **behaviour** | `feature/rayan-bidding` |
+**Nobody owns a file.** Work is claimed per ticket, by whoever is available. A contributor
+picks a ready ticket, claims it, branches `feature/<ticket-id>-<short-name>`, and ships it.
+The full model and its seven-step workflow are in `CLAUDE.md` §1, which governs.
 
-Ownership does not mean exclusive access — it means **coordinate with the owner before changing their area** (`TEAM.md` §7).
-
-**The axis is presentation vs. behaviour, not file.** A component routinely holds both, and
-each half has a different owner: Mohammed owns how every screen looks — including the bid
-panel, bid history, outcome views and the auth and profile screens — while Rayan owns what
-bidding does and Abdulrahman owns what authentication does. Restyling someone's component
-is fine; changing what it does without telling them is not. Full rules in `CLAUDE.md` §1
-and `TEAM.md` §7.
-
-### The auction detail page — the one file split by owner (S0-13)
-
-`/auctions/[id]` is where all three workstreams render. Left as a single file it conflicts
-on nearly every merge, so it is split into separately owned files **before** anyone builds
-on it (`TEAM.md` §11, `ARCHITECTURE.md` §14.6). This table is the record the S0-13
-acceptance criteria ask for; each file repeats it in its own header.
-
-| File | Owner | Filled by |
+| Contributor | GitHub | Reviews changes in (steward, not gate) |
 |---|---|---|
-| `app/auctions/[id]/page.tsx` | Mohammed | `AUC-11` — shell, layout, auction read |
-| `components/auction/detail/product-content.tsx` | Mohammed | `AUC-12` |
-| `components/auction/detail/status-countdown.tsx` | Mohammed | `AUC-13` |
-| `components/auction/detail/price-region.tsx` | Mohammed builds it — **Rayan supplies the value and its updates** | `AUC-14` |
-| `components/bidding/bid-panel.tsx` | Mohammed presents — **Rayan owns what it accepts and what submission does** | `BID-03`, `BID-04`, `BID-06` |
-| `components/bidding/bid-history.tsx` | Mohammed presents — **Rayan owns what is recorded and its order** | `BID-07` |
-| `components/bidding/outcome-banner.tsx` | Mohammed presents — **Rayan owns the outcome values and when they appear** | `BID-18`, `BID-17` |
+| **Rayan** | [`@RayanAlDwlah`](https://github.com/RayanAlDwlah) | Bidding, concurrency, closing, extension, current-price correctness |
+| **Abdulrahman** | [`@Dem4t`](https://github.com/Dem4t) | Authentication, session, authorization, identity data |
+| **Mohammed** | [`@m7ya505`](https://github.com/m7ya505) | Design system and presentation consistency |
 
-The page tells Rayan's components **which auction is being viewed, and nothing else** — the
-one prop S0-13 fixes. Everything they need beyond that is Rayan's to declare. The split is
-by responsibility, not by file (`CLAUDE.md` §1): Mohammed may restyle any row above without
-asking, provided behaviour and contracts are unchanged.
+A steward is someone to **request review from**, not someone to **wait for**. **A steward's
+absence must not block a ready, well-specified ticket.** The question before you write code
+is *"is this decided?"* — never *"is this mine?"*.
 
-**Mohammed must not add a second update mechanism.** One per-auction realtime subscription
-is owned upstream (`BID-08`/`BID-09`); a competing one is a defect, not an optimization
+### The auction detail page — the one file split ahead of time (S0-13)
+
+`/auctions/[id]` is where three workstreams render at once. Left as a single file it
+conflicts on nearly every merge, so it is split into separate files **before** anyone builds
+on it (`TEAM.md` §11, `ARCHITECTURE.md` §14.6). The split is about **merge conflicts, not
+permission** — any contributor may fill any row below.
+
+| File | Filled by | Contract it must not break |
+|---|---|---|
+| `app/auctions/[id]/page.tsx` | `AUC-11` — shell, layout, auction read | passes **only the auction id** downward |
+| `components/auction/detail/product-content.tsx` | `AUC-12` | — |
+| `components/auction/detail/status-countdown.tsx` | `AUC-13` | `end_time` is the server's, not the browser's |
+| `components/auction/detail/price-region.tsx` | `AUC-14` | current price arrives as a **string**, never a `Number` |
+| `components/bidding/bid-panel.tsx` | `BID-03`, `BID-04`, `BID-06` | the three checks that must not exist (`CLAUDE.md` §5) |
+| `components/bidding/bid-history.tsx` | `BID-07` | ordered by `bids.id`, never `created_at` |
+| `components/bidding/outcome-banner.tsx` | `BID-18`, `BID-17` | outcome comes from the server, not from a client comparison |
+
+The page tells the bidding components **which auction is being viewed, and nothing else** —
+the one prop S0-13 fixes. Restyle any row freely; the right-hand column is what a PR may not
+change without a decision behind it.
+
+**Do not add a second update mechanism.** One per-auction realtime subscription is
+established in `BID-08`/`BID-09`; a competing one is a defect, not an optimization
 (`TEAM.md` §10.4, `ARCHITECTURE.md` §14.6).
 
 `design/components/bidding/bid-panel.tsx` is a styled, behaviour-free draft kept as a
@@ -107,16 +105,18 @@ is owned upstream (`BID-08`/`BID-09`); a competing one is a defect, not an optim
 
 ```text
 main                              ← protected; no direct commits
-├── feature/abdulrahman-auth
-├── feature/mohammed-auctions
-└── feature/rayan-bidding
+├── feature/<ticket-id>-<short-name>      e.g. feature/V2-A3-bid-increment
+├── feature/<ticket-id>-<short-name>
+└── …
 ```
 
 - **Nobody commits directly to `main`.**
-- Work happens on your assigned feature branch.
+- **One branch per ticket**, named for the ticket — not one long-lived branch per person.
 - Changes reach `main` through a Pull Request.
 - **At least one teammate reviews** before merge.
 - Merge `main` into your branch before opening and before merging a PR.
+- A PR states its **changed files, verification evidence, remaining risks, and handoff
+  notes** (`CLAUDE.md` §1, step 6).
 
 Full workflow: `TEAM.md` §15–§18 and `GITHUB_PLAN.md` §11.
 
@@ -133,10 +133,11 @@ cd dallal
 ```
 
 ```bash
-git checkout feature/<your-branch>
+git checkout -b feature/<ticket-id>-<short-name>
 ```
 
-Then read `PRD.md`, `TEAM.md`, and `ARCHITECTURE.md`, and pick up your first Issue from `GITHUB_PLAN.md`.
+Then read `CLAUDE.md` §1 (how work is claimed), `PRD.md`, and `ARCHITECTURE.md`, and claim a
+**ready** Issue from `GITHUB_PLAN.md` — checking its dependencies first.
 
 ### Environment configuration
 

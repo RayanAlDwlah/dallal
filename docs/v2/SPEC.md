@@ -10,7 +10,8 @@ document says *what is being built and in what order*; the decisions it builds o
 | Date | 2026-08-15 |
 | Source | `design-system/previews/*.html` — **the prototype is the spec** |
 | Feasibility | measured, not assumed — [`docs/ai/local-model.md`](../ai/local-model.md) |
-| Tickets | [`TICKETS.md`](TICKETS.md) |
+| Tickets | [`TICKETS.md`](TICKETS.md) — **39 tickets plus the unblock step** |
+| Governance | `CLAUDE.md` §1 — nobody owns a file; work is **claimed**, per ticket |
 
 ---
 
@@ -18,16 +19,19 @@ document says *what is being built and in what order*; the decisions it builds o
 
 V1 is a working single-item auction: create, bid, close, winner, realtime, Arabic RTL,
 money that never touches a float. V2 keeps every one of those rules and adds four things —
-**a taxonomy** (13 categories), **a real create flow** (images first, up to ten, four
-steps), **an assistant** (three features, not five — measurement killed two), and **sessions**
-(a room of lots opened one at a time by a live host). The bid control becomes a **button**
-carrying a seller-set amount. The design system stops being a folder of HTML previews and
-becomes components.
+**a taxonomy** (13 categories), **a real create flow** (images first, one to ten, four
+steps), **an assistant** (five approved features, each built on the technology that can
+actually deliver it), and **sessions** (a room of lots opened one at a time by a live
+host). The bid control becomes a **button** carrying a seller-set amount. The design system
+stops being a folder of HTML previews and becomes components.
 
 ## 2. What does NOT change — read this first
 
-Everything in `CLAUDE.md` survives V2 unchanged. The four that a V2-sized diff is most
-likely to break, and where each is anchored:
+Everything in `CLAUDE.md` survives V2 unchanged, with **one amendment the owner made
+explicitly** and which is written into `CLAUDE.md` §5 itself, not left here: pause/resume
+becomes a second permitted caller of a forward `end_time` move. Nothing else moves.
+
+The four rules a V2-sized diff is most likely to break, and where each is anchored:
 
 | rule | anchored in |
 |---|---|
@@ -36,12 +40,21 @@ likely to break, and where each is anchored:
 | **Anti-sniping: 15 s → +30 s, cap 20, the cap is a `CHECK`** | `tests/bidding/closing.sql` |
 | **Email never public; identity from the verified server session** | `CLAUDE.md` §6 |
 
+And the bound that V2 does **not** get to redefine, because it already exists and is
+already enforced:
+
+> **Auction duration is 5 minutes to 7 days, inclusive, by server time** — `BR-38`,
+> `FR-CREATE-09/10/10a`, `SC-68`. It is a `CHECK` constraint today
+> (`supabase/migrations/20260812120000_bid02_bid_acceptance.sql:500-501`). D-06 §2 step 3
+> described the 5-minute floor as *"a new rule"* — **it is not new**, it is BR-38, and V2
+> enforces the existing range at both ends rather than inventing a floor.
+
 Three of the new features press directly on these, and each is called out where it does:
 
 - the **bid button** (D-01) looks like a minimum raise and is not — §2 of that record
 - the **deposit** (D-05) adds a *new rejection reason*, and a rejected bid must not extend
 - the **AI** (D-04) is kept away from money by measurement as much as by rule — the model
-  got the amount wrong ten times out of ten
+  got the amount wrong ten times out of ten, which is why the price suggestion is SQL
 
 ## 3. The four things being added
 
@@ -52,28 +65,62 @@ read directly, with everything that is a classified ad rather than an auction re
 away. **The category changes which extra fields the form asks for**, and those fields are
 optional and never block publishing.
 
+**Owner decision, 2026-08-15:** category-specific values are stored as **validated `jsonb`,
+backed by normalized category and field-definition tables**. The tables define which keys
+exist for a category and what shape each takes; the `jsonb` carries the values and is
+validated against those definitions server-side. This is neither of the two bad options
+D-02 §2.1 named — not sixty mostly-null columns, and not a free-for-all `jsonb` any session
+can write any key into.
+
 ### 3.2 The create flow — [D-06](../decisions/D-06-images-and-create-flow.md)
-Four steps: **الصور · التفاصيل · المزايدة · المراجعة**. Up to 10 images, JPG/PNG/WebP,
-5 MB each, drag to reorder, **first is the cover**. Images are step 1 for two stated reasons
-and the second one is structural: **the assistant cannot help before it has seen the thing.**
-The review step renders the *real card component*, not a text summary.
+Four steps: **الصور · التفاصيل · المزايدة · المراجعة**. JPG/PNG/WebP, 5 MB each, drag to
+reorder, **first is the cover**. Images are step 1 for two stated reasons and the second one
+is structural: **the assistant cannot help before it has seen the thing.** The review step
+renders the *real card component*, not a text summary.
+
+**Owner decision, 2026-08-15:** **every auction requires 1 to 10 images, validated
+server-side.** One is the floor, ten is the ceiling, and both are enforced where `SC-43`
+says a rule has to live — in the server, not in the form.
 
 ### 3.3 The assistant — [D-04](../decisions/D-04-ai-product-surface.md)
-Five features were approved. **Three are being built:**
 
-| | | |
+**Five features were approved and all five are being built.** What measurement determined
+is **which technology implements each one** — not which ones survive. A feature is not
+smaller because the correct implementation of it contains no language model; the price
+suggestion is *more* reliable for being SQL, not less.
+
+| # | feature | built with |
 |---|---|---|
-| ✅ | **يكتب الإعلان** | images → title, description, category. Vision + `json_schema`, ~11 s |
-| ✅ | **يفهم البحث** | Arabic → editable filter chips. **Category and city from the model; the price band from a deterministic parser** |
-| ✅ | **يجاوب عن القطعة** | from the seller's description only. «ما أعرف» must be easy |
-| ❌ | **يصلّح الصور** | not an LLM task at all — needs image processing. **Owner decision pending** (D-04 §5.1) |
-| ❌ | **يقترح سعر البداية** | not the LLM's job — it is a `percentile_cont` query. Exact, instant, free, and it cannot hallucinate an amount |
+| 1 | **يكتب الإعلان** | a **VLM** — images → title, description, category. Vision + `json_schema`, ~11 s measured |
+| 2 | **يصلّح الصور** | a **separate image-processing / image-model pipeline** — not the text model. Its own provider, its own cost, its own ticket (V2-A14 spike → V2-A16) |
+| 3 | **يفهم البحث** | **the model plus deterministic parsers** — category and city from the model; brand, minimum year, price band and «تنتهي خلال ٢٤ ساعة» from parsers that cannot hallucinate |
+| 4 | **يجاوب عن القطعة** | the model, grounded in **the seller's description and specifications only**. «ما أعرف» must be easy |
+| 5 | **يقترح سعر البداية** | **SQL / data analysis** over comparable ended auctions. Still the approved **seller-only** feature, and it returns a **range** with the comparable count beside it |
 
-Connection: LM Studio already speaks the OpenAI API. Three env vars —
-`AI_BASE_URL`, `AI_API_KEY`, `AI_MODEL`, **never `NEXT_PUBLIC_`** — are the whole
-integration, and swapping the free local model for a hosted one changes only those three
-values. The open question is *where the model runs in production*, because **Vercel cannot
-reach `127.0.0.1`** — three options in [`local-model.md`](../ai/local-model.md) §4.
+Measurement is recorded where it belongs — [`local-model.md`](../ai/local-model.md) — and
+it constrains *how*, never *whether*.
+
+#### 3.3.1 Where the model runs — decided, with one thing still to pick
+
+**Owner decision, 2026-08-15:** **LM Studio is for local development. Production uses a
+hosted OpenAI-compatible provider, selected through a capability check.**
+
+The adapter speaks the OpenAI API and reads `AI_BASE_URL`, `AI_API_KEY`, `AI_MODEL` —
+**never `NEXT_PUBLIC_`**. That is how the endpoint is *configured*.
+
+> **It is not a guarantee that any endpoint will work.** An earlier draft of this document
+> said swapping providers "changes only those three values". **That claim is withdrawn.**
+> Three variables point the client somewhere; they say nothing about whether what is there
+> accepts an image, honours `response_format: {type: "json_schema", strict: true}`, returns
+> the schema it was given, or holds an Arabic enum. A provider that fails any of those
+> breaks features 1, 3 and 4 at runtime, in production, with a green build behind it.
+
+So a provider is qualified by a **capability contract test** (**V2-A18**), run against the
+endpoint before it is used: vision input accepted, structured output returned and
+schema-valid, Arabic enum values preserved, and a measured latency. Configuration selects a
+provider; **the test qualifies it**.
+
+*Still to pick:* **which** hosted provider — `O11` in §4.
 
 ### 3.4 Sessions — [D-03](../decisions/D-03-sessions.md), and the deposit — [D-05](../decisions/D-05-deposit.md)
 A room of lots opened one at a time, built before the date and run live from a host control
@@ -82,62 +129,174 @@ can create one. Each lot is a complete auction with a **duration, not an absolut
 The deposit is **simulated** — no payment gateway, no card field, no amount that moves,
 anywhere — and it unlocks **bidding, not watching**.
 
+**Two owner decisions, 2026-08-15:**
+
+- **Pause is supported.** A **host-only atomic database operation** pauses and resumes a
+  lot, and **moves `end_time` forward by the paused duration**. The `CLAUDE.md` §5
+  invariant and `tests/bidding/closing.sql` are amended *explicitly* for it — the amendment
+  is written into `CLAUDE.md` §5 and the required test changes are named there. A pause
+  implemented by switching the guard off is a pause that removed the invariant.
+- **Deposit access expires when the session ends. There is no refund transaction.** Nothing
+  moves, because nothing ever moved — the row's entitlement simply stops applying. The
+  screen has to say so (`O15`), but there is no reversal to build.
+
 Sequenced **last**, by the owner: *«داخلة، بس آخر شي»*.
 
-## 4. The six questions that must be answered before the code they block
+## 4. What is decided, and what is still open
 
-Each of these is a place where `CLAUDE.md` §8's failure mode is waiting — *a confident
-session filling a gap with something reasonable*. None of them should be answered by
-whoever picks up the ticket.
+### 4.1 The vocabulary — corrected
 
-| # | question | in | blocks |
-|---|---|---|---|
-| Q1 | **How are category-specific fields stored?** columns / `jsonb` / side table | D-02 §4.1 | V2-A1, and every later migration |
-| Q2 | **Is «أوقف مؤقتًا» allowed to freeze a lot's clock?** `CLAUDE.md` §5 says `end_time` moves forward only, in 30 s quanta, only inside `place_bid`. **A pause as drawn contradicts a rule that has a test** | D-03 §4.1 | V2-A11, V2-B11 |
-| Q3 | **Is image editing (AI point 2) in scope now that it is known not to be an LLM?** | D-04 §5.1 | V2-B7 scope |
-| Q4 | **Where does the model run in production?** dev-only / tunnel / hosted | `local-model.md` §4 | V2-A6 deployment, not its code |
-| Q5 | **What happens to a deposit when the session ends?** | D-05 §4.1 | V2-A13, V2-B10 |
-| Q6 | **Is at least one image required?** AI point 1 cannot run with zero | D-06 §5.1 | V2-A2, V2-B7 |
+`docs/decisions/README.md` defines three statuses and **`DECIDED in shape` is not one of
+them.** It was invented by a session to describe a record that is decided *and* still
+carries unanswered sub-questions, and it did real damage: three records wore it, and it
+read as "half-decided, so proceed carefully" when the truth was "decided, and here are four
+separate things nobody has decided yet."
 
-**Q1 and Q2 are the expensive ones.** Q1 is a migration that is painful to reverse; Q2 is a
-contradiction with an existing asserted invariant, and the wrong answer makes
-`tests/bidding/closing.sql` a liar.
+The fix separates the two ideas, because they were never the same idea:
 
-## 5. How the work is split across two accounts
-
-Two Claude sessions that cannot see each other, working the same repository — which is
-exactly the condition `CLAUDE.md` was written for. The split is **by file surface**, so the
-two tracks can run at full speed without touching the same files:
-
-| | **Track A — the spine** | **Track B — the surface** |
+| | applies to | values |
 |---|---|---|
-| owns | `supabase/migrations/`, `lib/`, `tests/`, `app/api/` | `app/(routes)`, `components/`, `design-system/`, `styles/` |
-| builds | schema, server functions, RLS, the AI adapter, guards, tests | tokens, components, screens, RTL, states |
-| proves | a SQL suite or a `.check.mjs` | a preview that matches the prototype, INT-06 at 375 px |
+| **Status** | the **record** — was the decision made? | `DECIDED` · `OPEN` · `IN PRD` |
+| **Open item** | a **named gap** inside a decided record | `O1` … `O24`, each with an id, an owner-question, and the tickets it blocks |
 
-**Where they meet, a contract goes first.** `docs/contracts/` already exists for exactly
-this. Track A writes the contract — it owns the data shape — and Track B builds against the
-contract rather than against Track A's half-finished code. A ticket whose contract is not
-merged is not startable; the table in `TICKETS.md` marks these.
+A record can be `DECIDED` and still carry open items. That is normal and it is the whole
+purpose of the "Still open" section (`README.md` rule 2). What is **not** allowed is a gap
+with no id, because a gap with no id cannot appear in a ticket's *blocked on* column — and
+the register below exists so that every one of them can.
 
-The tracks are **not** "backend and frontend" as job titles. They are two disjoint sets of
-files, chosen so that two sessions never resolve the same conflict — `CLAUDE.md` §7:
-*whoever resolves a conflict is making a decision.*
+### 4.2 The six questions this board was waiting on — five decided, one narrowed
+
+| # | question | decision |
+|---|---|---|
+| Q1 | How are category-specific fields stored? | **DECIDED — validated `jsonb`, backed by normalized category and field-definition tables** |
+| Q2 | Is a pause allowed to freeze a lot's clock? | **DECIDED — pause is supported: a host-only atomic operation that moves `end_time` forward by the paused duration.** `CLAUDE.md` §5 and `closing.sql` are amended explicitly |
+| Q3 | Is image editing in scope now that it is known not to be an LLM? | **DECIDED — in scope**, as a separate image-processing pipeline with its own provider spike |
+| Q4 | Where does the model run in production? | **DECIDED in part — LM Studio for local dev; production on a hosted compatible provider selected through a capability check.** Which provider is `O11` |
+| Q5 | What happens to a deposit when the session ends? | **DECIDED — access expires with the session; there is no refund transaction** |
+| Q6 | Is at least one image required? | **DECIDED — 1 to 10 images, required, validated server-side** |
+
+### 4.3 The open register — twenty-four real blockers
+
+Every unresolved item from every decision record, given an id so a ticket can cite it.
+**None of these may be answered by whoever picks up the ticket** (`CLAUDE.md` §8). A ticket
+whose *blocked on* column names an id is not startable in the part that touches that id.
+
+| id | the question nobody has answered | from | blocks |
+|---|---|---|---|
+| **O1** | Is a category **required** on every auction? `misc` existing is not the same as the column being `not null` | D-02 | V2-A1, V2-C1 |
+| **O2** | Sub-category — **stored, or presentation only?** 110 appear in the picker; none appears on a card | D-02 | V2-A1, V2-C1 |
+| **O3** | **Which** categories appear on the filter bar, and is that set fixed or volume-driven? | D-02 | V2-B4 |
+| **O4** | Is a lot an `auctions` row with a nullable `session_id`, or a **separate entity**? Large blast radius on every query, policy and test | D-03 | V2-A10, V2-C6 |
+| **O5** | What happens to bids on a lot the **host closes early**? | D-03 | V2-A11 |
+| **O6** | «أنهِ الجلسة» with lots still waiting — unsold, rolled over, or become standalone auctions? | D-03 | V2-A12 |
+| **O7** | What if the **host never shows up**? Auto-run or hang are both decisions | D-03 | V2-A12 |
+| **O8** | «بدعوة فقط» — **invited how**, given there is no messaging and email is never exposed (§6)? | D-03 | V2-A10, V2-B9 |
+| **O9** | Does the attendance count expose anything? A count is safe; a list is not | D-03 | V2-B11 |
+| **O10** | **Can a session be cancelled?** `status` having exactly two values is a stated invariant | D-03 | V2-A10 |
+| **O11** | **Which** hosted provider, concretely? The capability test (V2-A18) says whether a candidate qualifies; it does not choose one | D-04 | **no ticket** — see below |
+| **O12** | Is `AI_ENABLED` **on or off by default**? | D-04 | V2-A6 |
+| **O13** | Is an AI-proposed **title** labelled the way an edited **image** is? The same argument applies and only images are covered | D-04 | V2-B8 |
+| **O14** | For the price suggestion: **what counts as "similar"**, and what is the **minimum sample** below which nothing is shown? | D-04 | V2-A4 |
+| **O15** | What does a **losing bidder** see about the deposit, now that access simply expires? | D-05 | V2-B10 |
+| **O16** | Is «بدون» the **default** preset? | D-05 | V2-B9 |
+| **O17** | Is «مبلغ آخر» **bounded**? `BR-21`/`SEC-R3` forbid a ceiling on a *price*; a deposit is not a price | D-05 | V2-A13 |
+| **O18** | Is the deposit stored as **`sar_amount`**? If stored, `CLAUDE.md` §4 applies in full. **Do not create a second money type** | D-05 | V2-A13 |
+| **O19** | Can the host **see who paid**? A list of entrants is a list of people | D-05 | V2-B11 |
+| **O20** | **Where do images live** — bucket, path convention, and the RLS on it? A storage path is an identifier printed in an `<img src>` | D-06 | V2-C2, V2-A2, V2-A15 |
+| **O21** | What happens to **abandoned uploads** in a product with no delete (`BR-30`, `BR-31`)? | D-06 | V2-A2, V2-A15 |
+| **O22** | Does **reordering images after publish** exist? Arguably not editing the auction — arguably is not a decision | D-06 | V2-B7 |
+| **O23** | Does a **session lot** use the same `BR-38` 5 min–7 day bound as a standalone auction? | D-03, D-06 | V2-A10, V2-C6 |
+| **O24** | **Which image-processing provider or library**, at what cost and what latency? *This one is answered by a ticket*: **V2-A14** is a timeboxed spike that produces the options; the owner picks from them | D-04 | V2-C7, V2-A16, V2-B12 |
+
+**`O11` blocks no ticket, and that is not an oversight.** `V2-A6` (the adapter) and `V2-A18`
+(the capability test) are both written and run against LM Studio on a laptop; neither needs
+a hosted provider chosen to be built or to pass. What `O11` gates is the **production
+deployment** — and a deployment is not a row on this board. It is listed here because it is
+genuinely unanswered and someone will otherwise answer it by typing a base URL into Vercel;
+it is kept out of the *blocked on* cells because counting it there would have made the board
+report more blocked work than exists. **23 of the 24 items block a ticket. This is the one
+that does not.**
+
+**The *blocks* column above and the *blocked on* column in `TICKETS.md` are the same graph,
+written twice.** Two copies of a graph drift — silently, and in the direction that makes the
+plan look better. They were checked against each other mechanically before this document was
+committed, and four disagreements were found and fixed rather than argued about: `O20` also
+blocks `V2-C2`, `O23` also blocks `V2-C6`, `O24` also blocks `V2-C7` and `V2-B12`, and `O11`
+blocks nothing. If you edit one column, re-derive the other; do not patch it by eye.
+
+**O4 is now the expensive one.** Q1 and Q2 were, and both are decided. O4 is what remains
+that is painful to reverse: it decides whether phase 4 is a migration on an existing table
+or a new entity, and every existing query, policy and test sits downstream of it.
+
+## 5. How the work is claimed, and what the lanes actually are
+
+**Nobody owns a lane.** `CLAUDE.md` §1 governs: no developer, no account and no Claude
+session permanently owns a file or a feature, and any available contributor may claim any
+**ready** ticket. A steward is someone to request review from — **a steward's absence must
+not block a ready, well-specified ticket.**
+
+An earlier draft of this section said Track A *"owns"* a set of directories and *"owns the
+data shape"*. **That is withdrawn.** What was actually useful in it was never ownership — it
+was the observation that two sessions working the same file at the same time resolve the
+same conflict twice, and `CLAUDE.md` §7 says whoever resolves a conflict is making a
+decision. That is a **scheduling** fact, not a permission one.
+
+So the lanes are **expected change surfaces**, declared by the ticket:
+
+| lane | the surface a ticket in it is expected to touch | what it proves with |
+|---|---|---|
+| **A — the spine** | `supabase/migrations/`, `lib/`, `tests/`, `app/api/` | a SQL suite or a `.check.mjs` |
+| **B — the surface** | `app/(routes)`, `components/`, `design-system/`, `styles/` | a preview matching the prototype, INT-06 at 375 px |
+| **C — the contracts** | `docs/contracts/` only | two consumers signing the header |
+
+A lane is a **prediction about which files a ticket will touch**, published so two
+in-flight tickets can be sequenced instead of collided. It is not a licence and not a
+fence. If a lane-B ticket genuinely needs a line in `lib/`, it writes the line — and says
+so in the PR's changed-files section, which is where a surprise gets noticed.
+
+### 5.1 The workflow — seven steps, per ticket
+
+1. **Check dependencies and confirm the issue is `ready`** — every id in its *depends on*
+   is merged, and no id in its *blocked on* is still open.
+2. **Claim the issue before coding.** Assign it to yourself. An unclaimed ticket is
+   available to anyone; a claimed one is not being done twice.
+3. **One branch per ticket:** `feature/<ticket-id>-<short-name>` — e.g.
+   `feature/V2-A3-bid-increment`. Not one long-lived branch per person.
+4. **The ticket declares an expected change surface, not exclusive file ownership.** If
+   your work lands outside the surface you declared, that is information for the PR, not a
+   violation.
+5. **If two tickets need the same file, merge the shared contract or foundation first.**
+   That is what the **C** lane is for, and why every contract in `TICKETS.md` now has a
+   ticket id and a real file path instead of a name like `contract-A1` that pointed at
+   nothing.
+6. **A PR carries four things:** changed files · verification evidence · remaining risks ·
+   handoff notes. Evidence means output, not the assertion that something passes.
+7. **After merge, any available contributor claims the next ready ticket.** Including a
+   ticket in a lane the previous one was not in.
+
+The only two things that legitimately stop you are: **the product question is not decided**
+(a `blocked on` id in §4.3), and **your change would break a stated contract**. Neither of
+them is a person.
 
 ## 6. The order
 
 ```
-  PHASE 0   unblock            #155 lands, main is green            both tracks blocked
+  PHASE 0   unblock            #155 lands, main is green            everything blocked
   PHASE 1   foundations        A: categories, images, increment     ── parallel ──
                                B: tokens, card, topbar, picker
-  PHASE 2   the create flow    A: server action   B: the wizard     needs Q1, Q6
-  PHASE 3   the assistant      A: adapter + 3 tasks  B: surfaces    needs Q3, Q4
-  PHASE 4   sessions           the largest, and last                needs Q2, Q5
+                               C: C1, C3 first — B4 and B5 need them
+  PHASE 2   the create flow    A: server action   B: the wizard     C2, C4 first
+  PHASE 3   the assistant      A: adapter, capability test, 4 tasks C5, C7, C8 first
+                               A: image pipeline (after the A14 spike)
+                               B: AI surfaces, enhancement surface
+  PHASE 4   sessions           the largest, and last                blocked on O4
+                               includes pause/resume + the closing.sql amendment
 ```
 
-Phase 1 is fully parallel and is where the two accounts pay off most. Phases 2–4 have one
-Track A ticket that Track B waits on, and the contract is what shortens that wait to
-roughly zero.
+Phase 1 is where parallel work pays off most — but **it is not dependency-free**, and an
+earlier draft claimed it was. `V2-B4` needs the category contract and `V2-B5` needs the bid
+contract; both are lane **C** tickets that must merge first (workflow step 5). Everything
+else in phase 1 is genuinely independent.
 
 ## 7. What "done" means for a V2 ticket
 
@@ -148,6 +307,7 @@ Unchanged from V1, and non-negotiable:
    test whose *name is the rule*. Not a follow-up issue — D-01 §3: *a follow-up issue is a
    promise, and promises are not mechanisms*
 3. **A guard that goes red is answered in a PR, never with an ignore** (`CLAUDE.md` §9)
-4. **PR, one approval, `main` protected** (§7)
+4. **PR, one approval, `main` protected** (§7), carrying the four things in §5.1 step 6
 5. **Every gap the ticket did not fill is written into its decision record's "Still open"**
-   — that list is the mechanism, and a ticket that quietly answers one has broken it
+   and given an `O` id in §4.3 — that register is the mechanism, and a ticket that quietly
+   answers an entry has broken it

@@ -2,7 +2,7 @@
 
 | Field | Value |
 |---|---|
-| Status | **DECIDED in shape** — by the product owner, 2026-08-15. Two of the five are **not buildable as drawn**; see §3 |
+| Status | **DECIDED** — by the product owner, 2026-08-15, and re-confirmed the same day. **All five features are approved and in scope.** Open items are listed in §5 and carry `O` ids |
 | Decided by | Rayan — [`@RayanAlDwlah`](https://github.com/RayanAlDwlah), product owner |
 | Evidence | `design-system/previews/ai.html`, approved. Feasibility measured in [`docs/ai/local-model.md`](../ai/local-model.md) |
 | Touches | create-auction, browse/search, auction detail; **never** the bidding path |
@@ -20,8 +20,8 @@ five features, each attached to a screen where the user already has a problem.
 | 1 | **يكتب الإعلان** — reads the uploaded images, proposes title, description, category | create-auction, **step 2** |
 | 2 | **يصلّح الصور** — background, lighting, crop, reflection | create-auction, **step 1** |
 | 3 | **يفهم البحث** — an Arabic sentence becomes **visible, editable filter chips** | browse |
-| 4 | **يجاوب عن القطعة** — answers from **the seller's description only** | auction detail |
-| 5 | **يقترح سعر البداية** — from similar **ended** auctions in the last 90 days | create-auction, **seller only** |
+| 4 | **يجاوب عن القطعة** — answers from **the seller's description and specifications only** | auction detail |
+| 5 | **يقترح سعر البداية** — from similar **ended** auctions | create-auction, **seller only** |
 
 **No sixth icon in the top bar.** That is part of the decision, not a summary of it.
 
@@ -38,29 +38,34 @@ edited. All three, or none.
 
 **2.2 «ما أعرف» must be an easy answer.**
 
-Point 4 answers *only* from the seller's description. A model that invents a service
-history for a car has invented a claim the seller never made, on a page where somebody is
-about to bid money on it. Refusing is the correct behaviour and the prompt must make
-refusing cheap.
+Point 4 answers *only* from the seller's description and the category specifications. A
+model that invents a service history for a car has invented a claim the seller never made,
+on a page where somebody is about to bid money on it. Refusing is the correct behaviour and
+the prompt must make refusing cheap.
 
 **2.3 Point 5 is seller-only.** A bidder must never see a machine's opinion of what an item
 is worth. That is not a permission detail — showing it to a bidder would make the platform
 a price authority.
 
-## 3. What measurement changed — read this before building anything above
+## 3. What measurement determined — the technology, not the scope
 
 [`docs/ai/local-model.md`](../ai/local-model.md) measured all five against
-`google/gemma-4-e4b` on the owner's machine. **Two of the five do not survive.**
+`google/gemma-4-e4b` on the owner's machine, before any of them was built. That was the
+point of measuring: **to find out what each feature is actually made of.**
 
-| # | verdict | why |
+**It did not remove anything from the product.** All five are approved and all five are in
+scope. What measurement changed is *which technology implements each one* — and in two
+cases the answer was not the text model.
+
+| # | built with | what the measurement said |
 |---|---|---|
-| 1 | ✅ **build** | vision + `json_schema`, ~11 s, correct, `reasoning_tokens: 0` |
-| 2 | ❌ **not an LLM at all** | no text or vision-language model outputs an edited image. This needs `rembg` / `sharp` / a hosted image model. It has been sitting inside the word "AI" and it is a **separate piece of work with a separate cost** |
-| 3 | ⚠️ **build, minus the price** | category / city / keywords measured correct — but **only with Arabic enum labels**, never English slugs. The **price band must come from a deterministic parser**, never the model |
-| 4 | ✅ **build** | short text, grounded in one document, easy refusal — the shape a small model is good at |
-| 5 | ❌ **not the LLM's job — it is SQL** | `percentile_cont` over ended auctions in the same category. Exact, instant, free, auditable, and it **cannot hallucinate an amount** |
+| 1 | **a VLM** | vision + `json_schema`, ~11 s, correct, `reasoning_tokens: 0` |
+| 2 | **a separate image-processing / image-model pipeline** | no text or vision-language model outputs an *edited image*. This is its own provider, its own cost and its own ticket — V2-A14 (spike) → V2-A16 (pipeline). **In scope, by owner decision** |
+| 3 | **the model plus deterministic parsers** | category and city measured correct — but **only with Arabic enum labels**, never English slugs. Brand, minimum year, price band and «تنتهي خلال ٢٤ ساعة» come from **parsers**, never the model |
+| 4 | **the model, grounded** | short text, grounded in one document, easy refusal — the shape a small model is good at |
+| 5 | **SQL / data analysis** | `percentile_cont` over comparable ended auctions. Exact, instant, free, auditable, and it **cannot hallucinate an amount** |
 
-### 3.1 The measurement behind killing the price fields
+### 3.1 The measurement behind keeping amounts away from the model
 
 Asked to extract filters from `ابي ساعة رولكس اقل من 50 الف بالرياض`, the model got the
 category, the city and the keywords right on every run — and got the **price wrong on
@@ -77,16 +82,28 @@ Ten runs, ten failures. It is not sampling noise.
 > rule 1 has no exception for "the model said so", and D-04 does not create one.
 
 Point 5 is the sharpest illustration in the whole product: it is filed under AI, it sounds
-like AI, and the correct implementation contains no model.
+like AI, and the correct implementation contains no model. **That makes it more reliable,
+not less of a feature** — a seller-facing price suggestion that cannot be wrong about
+arithmetic is a better version of the thing that was approved, delivered by the tool that
+can actually deliver it.
 
-## 4. The boundary — the answer to the `README.md` question
+### 3.2 Point 5, specified
 
-`docs/decisions/README.md` listed AI as open with the note *"'search and describe only' is a
-guess until it is decided."* It is now decided:
+Approved as the seller-only starting-price suggestion, and it ships with four things:
 
-**Allowed:** propose a title, a description, a category, filter chips, and an answer
-grounded in the seller's own text — each landing in a control the human can edit before
-anything is submitted.
+1. **a range**, not a single number — a point value reads as a valuation
+2. **the comparable count, on screen** — «مبني على 27 مزادًا مشابهًا»
+3. **a stated definition of "similar"**, in the contract and in the query
+4. **a minimum sample threshold**, below which **nothing is shown** — not a wider range,
+   not a caveat
+
+Items 3 and 4 need §5's `O14` answered before they can be built.
+
+## 4. The boundary
+
+**Allowed:** propose a title, a description, a category, filter chips, an enhanced *derived*
+image, and an answer grounded in the seller's own text — each landing in a control the human
+can edit, revert or ignore before anything is submitted.
 
 **Forbidden, structurally:** `place_bid`, `current_price`, `bids`, the winner, `end_time`,
 `extension_count`, any `sar_amount` value in either direction, any email address, any
@@ -97,22 +114,46 @@ Every AI output in the prototype is editable — the chips are editable, the tit
 editable, «رجّع الأصلية» works. That is the containment mechanism, not decoration.
 
 The guard: `tests/guards/run.sh` gains a check that no module under `lib/ai/` imports the
-bidding module or names a money identifier, and `negative.sh` gains the probe proving it
-can fail (`CLAUDE.md` §9).
+bidding module or names a money identifier, and that every module under `lib/ai/` carries
+**`import "server-only"`**; `negative.sh` gains the probes proving each can fail
+(`CLAUDE.md` §9).
+
+### 4.1 Where the model runs — decided
+
+**Owner decision, 2026-08-15:**
+
+> **LM Studio is for local development. Production uses a hosted OpenAI-compatible provider,
+> selected through a capability check.**
+
+The adapter reads `AI_BASE_URL`, `AI_API_KEY`, `AI_MODEL` — **never `NEXT_PUBLIC_`**. That
+is how an endpoint is *configured*.
+
+> **Configuration is not qualification.** An earlier draft of the V2 spec claimed that
+> swapping providers "changes only those three values". **That claim is withdrawn.** Three
+> variables point the client somewhere; they say nothing about whether what is there accepts
+> an image, honours `response_format: {type: "json_schema", strict: true}`, returns the
+> schema it was given, or preserves an Arabic enum. A provider failing any of those breaks
+> features 1, 3 and 4 at runtime, in production, behind a green build.
+
+So a candidate is qualified by a **capability contract test** — ticket **V2-A18** — which
+asserts vision input, strict structured output, schema validity, Arabic enum preservation,
+and records (does not assert) latency. **Which** provider is `O11`.
 
 ## 5. Still open — do NOT pick an answer
 
-1. **Is point 2 in scope at all now that it is known not to be an LLM?** It is a real
-   feature with a real cost and it was approved on the assumption it came free with the
-   others. **This needs a yes or a no from the owner.**
-2. **Where does the model actually run in production?** `docs/ai/local-model.md` §4 —
-   dev-only, tunnel, or a hosted OpenAI-compatible endpoint. The adapter makes it three env
-   vars, but somebody has to choose.
-3. **Is the AI on or off by default?** `AI_ENABLED` exists in the design; its default does
-   not.
-4. **Does an AI-proposed title get marked as AI-proposed once the seller accepts it?** §2.1
-   says edited *images* are labelled. Text is not mentioned, and the same argument applies.
-5. **What happens on the ~10 % of calls that take 30–50 s** (`local-model.md` §1.5)? A
-   spinner is not an answer; the screen must work with no suggestion at all.
-6. **Point 5's SQL — what is "similar"?** Same category is obvious. Same sub-category? Same
-   city? A minimum sample size below which no suggestion is shown? Each changes the number.
+Each carries the id it is cited by in [`docs/v2/SPEC.md` §4.3](../v2/SPEC.md) and in the
+tickets it blocks.
+
+| id | question | blocks |
+|---|---|---|
+| ~~1~~ | ~~**Is point 2 in scope now that it is known not to be an LLM?**~~ **ANSWERED — owner, 2026-08-15: yes, in scope**, as a separate image-processing pipeline. Struck, not deleted, so the numbering does not shift | — |
+| ~~2~~ | ~~**Where does the model run in production?**~~ **ANSWERED — LM Studio for local dev; hosted compatible provider in production, selected through a capability check** (§4.1) | — |
+| **O11** | **Which** hosted provider, concretely? V2-A18 says whether a candidate qualifies; it does not choose one | **no ticket.** V2-A6 and V2-A18 are both written and passing against LM Studio on a laptop. What this gates is the **production deployment**, which is not a row on the board — [`SPEC.md` §4.3](../v2/SPEC.md) says why it is deliberately absent from every *blocked on* cell |
+| **O12** | **Is the AI on or off by default?** `AI_ENABLED` exists in the design; its default does not | V2-A6 |
+| **O13** | **Does an AI-proposed title get marked as AI-proposed once the seller accepts it?** §2.1 labels edited *images*. Text is not mentioned and the same argument applies | V2-B8 |
+| **O24** | **Which image-processing provider or library** implements point 2, at what cost and latency? **V2-A14 is a timeboxed spike that produces the options — the owner picks from them** | V2-A16, V2-B12, V2-C7 |
+| **O14** | **Point 5's SQL — what is "similar", and what is the minimum sample?** Same category is obvious. Same sub-category? Same city? What window? Below what count is nothing shown? Each changes the number on the screen | V2-A4 |
+
+**Not open, and already answered by the design:** what happens on the ~10 % of calls that
+take 30–50 s (`local-model.md` §1.5). A spinner is not an answer — **every screen must work
+with no suggestion at all**, and that is a build requirement on V2-B8, not a question.

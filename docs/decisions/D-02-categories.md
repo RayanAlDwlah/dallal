@@ -76,7 +76,7 @@ like a UI detail. **Each category asks for different extra fields:**
 | `art` | الفنان · السنة · المقاس · الخامة · شهادة أصالة |
 | `fashion` | (per the prototype's table) |
 
-### 2.1 The trap this sets, named in advance
+### 2.1 The trap this sets — named in advance, and now avoided
 
 The obvious implementation is a column per field. Thirteen categories × five fields is
 **sixty-odd mostly-null columns on `auctions`**, and `BR-31` says an auction is immutable
@@ -85,11 +85,23 @@ after creation, so every one of them is dead weight forever.
 The other obvious implementation is one `jsonb attributes` column, which is unqueryable
 in practice and lets any session write any key.
 
-**Neither is decided here.** §4 lists it as open. What *is* decided is that the category
-determines the field set — how that is stored is an architecture decision that needs
-`ARCHITECTURE.md`, not a guess in a migration.
+**Owner decision, 2026-08-15 — it is neither:**
 
-**One thing is not negotiable regardless of the storage choice:** none of these fields is
+> Category-specific values are stored as **validated `jsonb`, backed by normalized category
+> and field-definition tables.**
+
+Three pieces, and the third is the one that makes it work:
+
+1. a **category table** — the thirteen, as rows, not as an `enum`
+2. a **field-definition table** — which keys exist for each category, and each key's type
+   and constraints. The list in §2 becomes data, not a `CASE` statement
+3. a **`jsonb` values column, validated server-side against those definitions** — a key no
+   definition allows is **rejected**, not stored
+
+That closes both traps at once: no mostly-null columns, and no free-for-all `jsonb` any
+session can write any key into. A new category or a new field is a row, not a migration.
+
+**One thing is not negotiable, and the storage decision does not soften it:** none of these fields is
 an amount. `المساحة`, `الممشى`, `عدد الخانات`, `الوزن` are quantities, not money. The
 `sar_amount` domain and `CLAUDE.md` §4 apply to `starting_price` and to bids, and adding a
 second money-shaped field here without saying so would be exactly the silent change §9
@@ -117,21 +129,30 @@ That sentence is a `CLAUDE.md` §3 statement and it belongs in the design system
 
 ## 4. Still open — do NOT pick an answer
 
-1. **How are the category-specific fields stored?** Columns, `jsonb`, or a side table.
-   This is an `ARCHITECTURE.md` decision (§2.1).
+Each open item carries the id it is cited by in
+[`docs/v2/SPEC.md` §4.3](../v2/SPEC.md) and in the tickets it blocks. Answered items are
+struck rather than deleted so the numbering does not shift.
+
+1. ~~**How are the category-specific fields stored?**~~ **ANSWERED — owner, 2026-08-15:
+   validated `jsonb`, backed by normalized category and field-definition tables.** §2.1.
 2. ~~**Are the extra fields required or optional?**~~ **ANSWERED** — `create-auction.html`
    step 2 says «مواصفات — اختيارية … الحقول تتغيّر حسب التصنيف. كلها اختيارية — **ما تمنع
    النشر**». Optional, and never a publish blocker. See [D-06](D-06-images-and-create-flow.md)
-   §2. Struck rather than deleted so the numbering below does not shift.
-3. **Is a category required on every auction?** `misc` exists, which suggests yes — but
-   "there is always a valid answer" is not the same as "the field is `not null`".
-4. **Fixed or extensible?** If the thirteen are fixed, they can be a Postgres `enum` or a
-   `check`. If a category can be added later, they need a table. These are different
-   migrations and the wrong one is expensive to undo.
-5. **Sub-category — stored, or presentation only?** 110 of them appear in the picker. The
-   prototype never shows one on a card or in a filter.
-6. **Which seven categories are on the filter bar, and why those?** (§3)
+   §2.
+3. **`O1` — Is a category required on every auction?** `misc` exists, which suggests yes —
+   but "there is always a valid answer" is not the same as "the field is `not null`".
+   *Blocks V2-C1, V2-A1 — and through V2-C1, most of the board.*
+4. ~~**Fixed or extensible?**~~ **ANSWERED by item 1, and stated here so nobody re-derives
+   it:** the storage decision says *normalized category tables*, so the thirteen are
+   **rows in a table**, not a Postgres `enum` and not a `check`. A category can be added
+   later without a migration. This is a consequence of a decision the owner made, not a
+   separate choice a session gets to make.
+5. **`O2` — Sub-category: stored, or presentation only?** 110 of them appear in the picker.
+   The prototype never shows one on a card or in a filter. *Blocks V2-C1, V2-A1.*
+6. **`O3` — Which categories are on the filter bar, and why those?** (§3) — and is the set
+   fixed, or driven by volume? *Blocks V2-B4.*
 7. **Does the AI pick the category?** `docs/ai/local-model.md` §1.2 measured that it can —
    but only with the **Arabic label** as the enum value, never the English slug. If the AI
    proposes a category, the mapping label → slug lives in `lib/ai/labels.ts` and the
-   proposal lands in an editable control.
+   proposal lands in an editable control. *Not blocking: [D-04](D-04-ai-product-surface.md)
+   §4 already settles the shape — the model proposes into a control the human can edit.*

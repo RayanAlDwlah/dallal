@@ -2,7 +2,7 @@
 
 | Field | Value |
 |---|---|
-| Status | **DECIDED in shape**, with named gaps — by the product owner, 2026-08-15 |
+| Status | **DECIDED** — by the product owner, 2026-08-15. Open items are listed in §4 and carry `O` ids. *(This record previously read `DECIDED in shape`, a status `README.md` does not define — see its §"The rules" item 4)* |
 | Decided by | Rayan — [`@RayanAlDwlah`](https://github.com/RayanAlDwlah), product owner |
 | Evidence | `design-system/previews/create-session.html`, `session-card.html`, approved |
 | Touches | a **new entity**, `BR-36` (extension), `LC-03`, `BR-31`, the closing path |
@@ -88,6 +88,40 @@ Live, during the session. What the prototype shows:
 - the lot list with states: past / **الآن** / بالانتظار
 - three controls: **أغلق وافتح القطعة 3** · **أوقف مؤقتًا** · **أنهِ الجلسة**
 
+### 3.0 «أوقف مؤقتًا» — DECIDED, and it moves an invariant
+
+**Owner decision, 2026-08-15:**
+
+> **Pause is supported.** A **host-only atomic database operation** pauses and resumes a
+> lot, and **moves `end_time` forward by the paused duration.** The existing invariant and
+> its tests are updated explicitly.
+
+This is the one V2 decision that amends a rule with a test asserting it, so it is written
+into **`CLAUDE.md` §5** in full — that section governs, and this is a pointer to it, not a
+second copy.
+
+**Unchanged and still absolute:** `end_time` moves **forward only**; `place_bid` remains
+the only caller that moves it in **30-second quanta**; **pause never increments
+`extension_count`**; the extension cap stays a `CHECK` constraint, not an `if`.
+
+**What changed:** the sentence *"only inside `place_bid`"* becomes *"inside `place_bid`,
+**or** inside the pause/resume operation"*. **One** additional door, named — not a general
+licence to move the clock.
+
+**Four conditions, all of them:**
+
+1. **Host-only**, from the verified server session — never a client-supplied id
+   (`CLAUDE.md` §6; this is a `SECURITY DEFINER` surface)
+2. **Atomic**, taking the same row lock as `place_bid`
+3. **Forward by the paused duration and by nothing else** — not a quantum, not a rounding,
+   not a minimum
+4. **A paused lot accepts no bids**
+
+`CLAUDE.md` §5 also names, assertion by assertion, what changes in
+`tests/bidding/closing.sql` — including that the guard **must still refuse an unflagged
+update**. A pause implemented by turning the guard off is a pause that removed the
+invariant. Ticket: **V2-A19**.
+
 ### 3.1 The one rule in here that is a correctness rule, not a UX rule
 
 > «أغلق وافتح القطعة 3» تنغلق تلقائيًا لمّا يخلص وقت القطعة — الزر للمضيف اللي يبي يسرّع،
@@ -115,30 +149,37 @@ The prototype itself is asking for this record to exist. That is why §4 is as l
 
 ## 4. Still open — do NOT pick an answer for any of these
 
-1. **What does «أوقف مؤقتًا» do to the open lot's clock?** If a pause freezes `end_time`,
-   then `end_time` moves **backwards in wall-clock terms** — and `CLAUDE.md` §5 says
-   `end_time` moves *forward only, in 30-second quanta, only inside `place_bid`*. **A pause
-   as currently drawn contradicts a rule with a test asserting it.** Either pause does not
-   touch the open lot, or the rule needs an explicit second door. **This is the most
-   important open question in this document.**
-2. **What happens to bids placed on a lot that the host closes early?** They are already
-   accepted and recorded. Presumably the highest wins immediately — but "presumably" is
-   how a product decision gets invented in code.
-3. **«أنهِ الجلسة» with lots still waiting** — do they end unsold, roll to another session,
-   or become standalone auctions?
-4. **What if the host never shows up?** A session with a start time and no host either
-   auto-runs or hangs forever. Both are decisions.
-5. **«بدعوة فقط» — invited how?** There is no messaging in this product (`CLAUDE.md` §1)
-   and email is never exposed (§6). A link? A code? This one is blocked on §6 and needs an
-   answer before it can be built at all.
-6. **Is a lot also a standalone auction row, or a separate entity?** «كل قطعة مزاد كامل»
-   suggests one table with a nullable `session_id`. That is an `ARCHITECTURE.md` decision
-   with a large blast radius on every existing query, `RLS` policy and test.
-7. **Does the attendance count («38 حاضر») expose anything?** A count is safe; a list is
-   not. §6 — display name is the only public identity.
-8. **Can a session be cancelled?** `CLAUDE.md` §5: there is no auction cancel, no edit, no
-   draft. A session that can be deleted before it starts is a **new lifecycle state**, and
-   `status` having exactly two values is a stated invariant.
+Each carries the id it is cited by in [`docs/v2/SPEC.md` §4.3](../v2/SPEC.md) and in the
+tickets it blocks. Answered items are struck rather than deleted so the numbering holds.
+
+1. ~~**What does «أوقف مؤقتًا» do to the open lot's clock?**~~ **ANSWERED — owner,
+   2026-08-15: pause is supported.** A host-only atomic operation moves `end_time` **forward
+   by the paused duration**. §3.0, and `CLAUDE.md` §5 carries the amended invariant and the
+   named test changes. Ticket **V2-A19**.
+2. **`O5` — What happens to bids placed on a lot that the host closes early?** They are
+   already accepted and recorded. Presumably the highest wins immediately — but "presumably"
+   is how a product decision gets invented in code. *Blocks V2-A11.*
+3. **`O6` — «أنهِ الجلسة» with lots still waiting** — do they end unsold, roll to another
+   session, or become standalone auctions? *Blocks V2-A12.*
+4. **`O7` — What if the host never shows up?** A session with a start time and no host
+   either auto-runs or hangs forever. Both are decisions. *Blocks V2-A12.*
+5. **`O8` — «بدعوة فقط»: invited how?** There is no messaging in this product
+   (`CLAUDE.md` §1) and email is never exposed (§6). A link? A code? This one is constrained
+   by §6 and needs an answer before it can be built at all. *Blocks V2-A10, V2-B9.*
+6. **`O4` — Is a lot also a standalone auction row, or a separate entity?** «كل قطعة مزاد
+   كامل» suggests one table with a nullable `session_id`. That is an `ARCHITECTURE.md`
+   decision with a large blast radius on every existing query, `RLS` policy and test.
+   **This is now the most expensive open question on the board** — the two that used to
+   outrank it are decided. *Blocks V2-C6, V2-A10, and through them all of phase 4.*
+7. **`O9` — Does the attendance count («38 حاضر») expose anything?** A count is safe; a list
+   is not. §6 — display name is the only public identity. *Blocks V2-B11.*
+8. **`O10` — Can a session be cancelled?** `CLAUDE.md` §5: there is no auction cancel, no
+   edit, no draft. A session that can be deleted before it starts is a **new lifecycle
+   state**, and `status` having exactly two values is a stated invariant. *Blocks V2-A10.*
+9. **`O23` — Does a lot's duration use the same `BR-38` bound** — 5 minutes to 7 days
+   inclusive — as a standalone auction? A lot carries a duration rather than an absolute end
+   time (§2 step 1), so the bound applies to a different quantity and may not transfer.
+   *Blocks V2-A10, V2-C6.* Raised in [D-06](D-06-images-and-create-flow.md) §5 item 6.
 
 ## 5. Sequencing
 

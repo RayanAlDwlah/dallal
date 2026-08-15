@@ -41,7 +41,7 @@
 16. Storage architecture
 17. Environment variables and secrets
 18. Deployment architecture
-19. Architectural ownership
+19. Architectural stewardship and the invariants
 20. Architecture Decision Records
 21. Cross-cutting concerns
 22. Verification spikes required before implementation
@@ -62,7 +62,7 @@ Architecture v1.0 reported six conflicts between `PRD.md` and `TEAM.md`, all cau
 | **C-4** | TEAM.md deferred Mohammed's M-03 and M-20/M-21 pending Q1, Q3, Q5, Q12 | All four closed. TEAM.md §13.2 now carries a decision table: **7-day maximum duration, SAR with no ceiling, no cancellation, no editing, no reserve, active-only listing** | ✅ Resolved |
 | **C-5** | TEAM.md deferred Rayan's R-03 and R-17 pending Q4, Q6, Q7, Q14 | All four closed. TEAM.md §13.3 now carries a decision table: **no increment, first bid may equal starting price, ~~fixed end time~~ *(Q7 reversed 2026-08-13 — see BR-36 as amended)*, leading bidder may re-bid** | ✅ Resolved |
 | **C-6** | Team Rule 16 and Risk 4 cited "15 unresolved, six blocking" | Rule 16 replaced with the PRD-as-source-of-truth rule; Risk 4 rewritten; `needs-decision` label removed and replaced with `verify` for **technical** items only | ✅ Resolved |
-| **G-1** | TEAM.md never mentioned currency, so SAR had no owner | TEAM.md §11 adds **The money representation rule (SAR)** — one representation, Mohammed owns input and display, Rayan owns bid and current-price correctness, both use the same PRD-defined representation, and **no developer may invent a different one**. Added to Sprint 0 as **S0-12** | ✅ Resolved |
+| **G-1** | TEAM.md never mentioned currency, so SAR had no agreed representation | TEAM.md §11 adds **The money representation rule (SAR)** — **one representation and one formatter**, `lib/money.ts`, used everywhere. Nobody may invent a second. Added to Sprint 0 as **S0-12**, contracted in `docs/contracts/S0-12-money.md`, and enforced by `tests/guards/run.sh` | ✅ Resolved |
 
 ### Consequences for this architecture
 
@@ -129,15 +129,22 @@ Result Displayed     ← terminal. Nothing follows (BR-34)
 
 **No `Cancelled` state. No Draft persistence. No transition out of Ended.** (PRD §12.0, §12.4.)
 
-### 3.3 Ownership boundaries taken from TEAM.md
+### 3.3 The domain map — review interest, not permission
 
-| Owner | Area | Architectural surface they own |
+> **Amended 2026-08-15.** This table used to be titled *"Ownership boundaries"* and assigned
+> an architectural surface to each developer. **Nobody owns a file or a surface any more**
+> (`CLAUDE.md` §1, `TEAM.md` §6–§7): any available contributor may claim any ready ticket, and
+> **a steward's absence does not block one.** The table survives because knowing *who to ask*
+> is still useful — it just no longer decides *who may build*.
+
+| Steward | Domain | Architectural surface they know best |
 |---|---|---|
-| **Abdulrahman** | Authentication & User Management | Supabase Auth integration, session handling, identity contract, profile record, password reset |
-| **Mohammed** | Auctions & Products | Auction record, creation validation, Storage integration, listing and detail pages, page shell |
-| **Rayan** | Bidding & Realtime | Bid record, the bid-acceptance operation, price derivation, Realtime integration, closing and winner determination |
+| **Abdulrahman** | Authentication & identity | Supabase Auth integration, session handling, identity contract, profile record, password reset |
+| **Mohammed** | Presentation & design system | Listing and detail pages, page shell, Storage integration, creation form |
+| **Rayan** | Bidding & realtime | Bid record, the bid-acceptance operation, price derivation, Realtime integration, closing and winner determination |
 
-This architecture assigns no work beyond mapping these existing boundaries onto technical components (§19).
+This architecture assigns no work. The **contracts** in §19 are what a change must not break;
+they hold regardless of who writes the change.
 
 ---
 
@@ -404,7 +411,7 @@ A hostile client holding a valid session can issue any request the platform acce
 
 ## 8. Supabase service evaluation
 
-Each service is assessed against the mandate: **why it is needed, which requirement it satisfies, who owns the integration, and how the other two consume it.** A service that could not answer all four would not be included.
+Each service is assessed against the mandate: **why it is needed, which requirement it satisfies, which invariant it must uphold, and how the rest of the system consumes it.** A service that could not answer all four would not be included.
 
 ### 8.1 Supabase Auth — **INCLUDED**
 
@@ -424,7 +431,7 @@ Each service is assessed against the mandate: **why it is needed, which requirem
 | **Why needed** | The system's core requirement is transactional correctness under concurrent writes (BR-11, BR-12). A relational database with real transactions and row-level locking is the natural and correct fit; nothing else in the stack can provide serialized bid ordering. |
 | **Requirements satisfied** | BR-05 → BR-18, BR-28 → BR-32, NFR-DAT-01 → 08, SEC-I1 → I6, plus every FR that stores or reads auction, bid, or profile data |
 | **Primary owner** | **Shared, by entity** (TEAM.md §11): profiles = Abdulrahman · auctions = Mohammed · bids = Rayan |
-| **How consumed** | Each developer owns their entity's definition and access path. Cross-entity reads go through the owner's agreed contract, not ad-hoc queries — TEAM.md §10.3 |
+| **How consumed** | Each entity has **one** definition and **one** access path. Cross-entity reads go through the agreed contract, never an ad-hoc query — TEAM.md §10.3 |
 | **Architectural note** | PostgreSQL is doing three jobs here: storage, **authorization** (§11), and **server-side transactional logic** (§13, §15). That concentration is deliberate — it puts the trust boundary where the data is |
 
 ### 8.3 Supabase Storage — **INCLUDED**
@@ -478,7 +485,7 @@ This is the one service where the honest answer is no, and the reasoning matters
 
 ## 9. Conceptual data architecture
 
-**This is a conceptual model, not a schema.** No SQL, no types, no migrations — those belong to the implementation phase. What is defined here is *what data exists, who owns it, and which parts are system-authored versus user-supplied*, because those determine the authorization model and the ownership split.
+**This is a conceptual model, not a schema.** No SQL, no types, no migrations — those belong to the implementation phase. What is defined here is *what data exists, which component is authoritative for it, and which parts are system-authored versus user-supplied*, because those determine the authorization model.
 
 ### 9.1 Entities and authoritative sources
 
@@ -529,7 +536,7 @@ This categorization drives the entire authorization model (§11).
 
 ### 9.4 The current-price question — resolved
 
-TEAM.md §6 flags this as the project's most contested piece of state: Rayan owns the value, Mohammed owns its display on two pages. Architecturally:
+TEAM.md §6 flags this as the project's most contested piece of state — derived in one place, displayed on two pages. Architecturally:
 
 - The current price **lives on the auction record** — one read, no aggregation, fast listing and detail pages (NFR-PERF-01/02).
 - It is **written only by the bid operation**, in the same transaction as the bid it derives from (§13). No user, and no other code path, may write it.
@@ -571,7 +578,7 @@ PRD FR-LIST-05 restricts the main listing to Active auctions, while FR-END-12 ke
 
 ## 10. Authentication architecture
 
-**Owner: Abdulrahman.** Satisfies PRD §8.1, §8.2, M1–M4, M24.
+**Steward: Abdulrahman** (review, not permission — `CLAUDE.md` §1). Satisfies PRD §8.1, §8.2, M1–M4, M24.
 
 ### 10.1 Model
 
@@ -729,7 +736,7 @@ The bid operation and finalization must write fields that no user may write. The
 
 ## 12. Auction creation and immutability
 
-**Owner: Mohammed.** Satisfies PRD §8.3, M5, M6.
+**Steward: Mohammed** (review, not permission — `CLAUDE.md` §1). Satisfies PRD §8.3, M5, M6.
 
 ### 12.1 Flow
 
@@ -781,7 +788,7 @@ There is no update path on auction fields for any user (§11.2). This is not a U
 
 ## 13. Bidding architecture and concurrency
 
-**Owner: Rayan.** The hardest and most important part of the system. Satisfies PRD §8.6, BR-01 → BR-04, BR-11, BR-12, BR-28 → BR-32, M9, M10, M11, M12, SC-08 → SC-19.
+**Steward: Rayan** (review, not permission — `CLAUDE.md` §1). The hardest and most important part of the system. Satisfies PRD §8.6, BR-01 → BR-04, BR-11, BR-12, BR-28 → BR-32, M9, M10, M11, M12, SC-08 → SC-19.
 
 ### 13.1 The problem
 
@@ -920,7 +927,7 @@ The last row matters: EC-01 requires a non-alarming, explanatory message. The op
 
 ## 14. Realtime architecture
 
-**Owner: Rayan.** Satisfies PRD §8.7, §13, M13, M14, M15, SC-20 → SC-24.
+**Steward: Rayan** (review, not permission — `CLAUDE.md` §1). Satisfies PRD §8.7, §13, M13, M14, M15, SC-20 → SC-24.
 
 ### 14.1 Model
 
@@ -993,28 +1000,31 @@ Emails remain a **second, narrower** guarantee, and the original sentence still 
 
 **The design property that makes all of this safe:** the page can always reconstruct correct state from a plain read. Realtime is an optimization over refreshing, never a substitute for the authoritative read.
 
-### 14.6 Ownership boundary at the page
+### 14.6 The page split — by file, not by permission
 
-TEAM.md §11 requires the auction detail page to be split by owner. Architecturally:
+TEAM.md §11 requires the auction detail page to be split into separate files. **The reason is
+merge conflicts, not permission** — any contributor may work in any of these
+(`CLAUDE.md` §1). Architecturally:
 
-| Component | Owner | Realtime role |
+| Component | Realtime role | What it must not stop doing |
 |---|---|---|
-| Page shell, product content, image, seller name | Mohammed | None — static per page load |
-| Status label and countdown | Mohammed | Countdown ticks locally; the status change arrives from Rayan's subscription |
-| Current price display region | Mohammed builds it | **Rayan supplies the value and its updates** |
-| Bid control, history, outcome banner | Mohammed presents it — **Rayan supplies the behaviour and its updates** | Subscribed |
+| Page shell, product content, image, seller name | None — static per page load | pass **only the auction id** downward; never expose an email |
+| Status label and countdown | Countdown ticks locally; the status change arrives on the subscription | tick from the **server-supplied** end time, never the browser's clock |
+| Current price display region | Subscribed | **read** the value as a string; never recompute or coerce it to a `Number` |
+| Bid control, history, outcome banner | Subscribed | keep §13.2a's three absent checks absent; order history by `bids.id` |
 
-The split in this table is **presentation vs. behaviour, not file-level** (CLAUDE.md §1). Mohammed
-may change how any row looks provided behaviour and contracts are unchanged; what a row *does* —
-validation, submission, recorded order, outcome semantics — stays Rayan's wherever it lives.
+The right-hand column is the boundary that matters. Restyling any row is free; changing what a
+row *does* — validation, submission, recorded order, outcome semantics — needs a decision
+behind it, not a permission.
 
-Mohammed's page tells Rayan's components which auction is being viewed. **Mohammed must not add a competing update mechanism** (TEAM.md §10.4).
+The page tells the bidding components which auction is being viewed. **Do not add a competing
+update mechanism**: one subscription per auction, established once (TEAM.md §10.4).
 
 ---
 
 ## 15. Auction closing and winner determination
 
-**Owner: Rayan.** Satisfies PRD §8.8, M17, M18, M19, SC-25 → SC-34. **This is where Vercel's execution model has real architectural consequences.**
+**Steward: Rayan** (review, not permission — `CLAUDE.md` §1). Satisfies PRD §8.8, M17, M18, M19, SC-25 → SC-34. **This is where Vercel's execution model has real architectural consequences.**
 
 ### 15.1 The constraint
 
@@ -1138,7 +1148,7 @@ Three outcomes, defined in advance so nobody improvises:
 
 ## 16. Storage architecture
 
-**Owner: Mohammed.** Satisfies PRD FR-CREATE-15 → 21, M6, SC-04.
+**Steward: Mohammed** (review, not permission — `CLAUDE.md` §1). Satisfies PRD FR-CREATE-15 → 21, M6, SC-04.
 
 ### 16.1 Design
 
@@ -1285,51 +1295,63 @@ Stated explicitly because the execution model constrains the design:
 
 ---
 
-## 19. Architectural ownership
+## 19. Architectural stewardship and the invariants
 
-Per this phase's mandate, this section maps **existing** TEAM.md ownership onto technical components. It assigns no new tasks.
+> **Amended 2026-08-15 — this section used to be titled "Architectural ownership".** Under
+> the current governance model (`CLAUDE.md` §1) **no developer, account, or Claude session
+> permanently owns a component.** Any available contributor may claim any ready ticket, and a
+> steward's absence must not block one. What follows is therefore two things: **who to tag for
+> review**, and — the part that is actually binding — **what each component must not stop
+> doing.**
 
-### 19.1 Component ownership
+### 19.1 Components, their stewards, and their invariants
 
-| Component | Architectural owner | TEAM.md basis |
+| Component | Tag for review | The invariant a change must keep |
 |---|---|---|
-| Supabase Auth integration, session handling | **Abdulrahman** | §3 — Authentication & User Management |
-| Identity contract (client-side state + server-verified identity) | **Abdulrahman** | §10.1, §10.2 |
-| Profile record and its access policy | **Abdulrahman** | §3 — user profile |
-| **Password reset** | **Abdulrahman** | §3, §6 (ownership matrix), §13.1 tasks A-20 → A-25. **Conflict C-2 resolved** |
-| Auction record definition and its access policy | **Mohammed** | §4, §11 (entity ownership) |
-| Auction creation validation | **Mohammed** | §4 |
-| Supabase Storage integration | **Mohammed** | §4 — product image upload |
-| Listing page, detail page shell, page-level data loading | **Mohammed** | §4, §11 |
-| Bid record definition and its access policy | **Rayan** | §5, §11 (entity ownership) |
-| **The bid acceptance operation** (the trust boundary) | **Rayan** | §5 — bid submission and validation |
-| Current price value and its derivation | **Rayan** | §6 (added row), §11 |
-| Supabase Realtime integration | **Rayan** | §5 |
-| Finalization operation and its scheduling | **Rayan** | §5 — auction ending, winner determination |
-| Bidding components inside the detail page | **Rayan** | §11 (page split) |
+| Supabase Auth integration, session handling | Abdulrahman | Identity is server-verified; never taken from client input |
+| Identity contract (client state + server-verified identity) | Abdulrahman | The server-side path is the authoritative one; the client copy is a convenience |
+| Profile record and its access policy | Abdulrahman | Email is readable only by its owner; display name is the only public identity |
+| **Password reset** | Abdulrahman | The MVP's only outbound email (PRD M24) |
+| Auction record definition and its access policy | Mohammed (shape), Rayan (bidding fields) | Money columns are the `sar_amount` domain — never bare `numeric`, never a typmod |
+| Auction creation validation | Mohammed | Amounts are strings; >2 decimals is **rejected, never rounded**; no ceiling |
+| Supabase Storage integration | Mohammed | — |
+| Listing page, detail page shell, page-level data loading | Mohammed | Every `sar_amount` read carries `::text`, per column, every time |
+| Bid record definition and its access policy | Rayan | Insert is possible **only** through the acceptance operation (ADR-2) |
+| **The bid acceptance operation** (the trust boundary) | Rayan | Serialized and atomic; eligibility from `clock_timestamp()` vs `end_time`, never `status` |
+| Current price value and its derivation | Rayan | Derived from bid history, server-side. Never set directly, never recomputed in a client |
+| Supabase Realtime integration | Rayan | **One** subscription per auction; **no email in any payload** |
+| Finalization operation and its scheduling | Rayan | `end_time` forward-only; the extension cap is a `CHECK`, not an `if` (`CLAUDE.md` §5) |
+| Bidding components inside the detail page | Rayan (behaviour), Mohammed (presentation) | The three checks that must not exist; history ordered by `bids.id` |
+
+**The right-hand column is the boundary.** A steward can be away; an invariant cannot. If your
+change would break one, you need a **decision** — not a permission.
 
 ### 19.2 Shared architectural surfaces
 
-These belong to no single developer and must be agreed jointly in Sprint 0 (TEAM.md §12).
+These belong to no one in particular, which is now the normal case rather than the exception.
+What makes them *shared* is that two tickets will collide in them — so **the foundation
+ticket merges first** (`CLAUDE.md` §1, step 5).
 
-| Surface | Coordination rule | Why it is shared |
+| Surface | Rule | Why it is shared |
 |---|---|---|
-| **Money representation in SAR** | **One representation, agreed once** — TEAM.md §11 "The money representation rule (SAR)" and Sprint 0 item **S0-12**. Mohammed owns creation input and price display; Rayan owns bid amounts and current-price correctness; **both use the same PRD-defined representation, and no developer may invent another** | Exact decimal, two places, never floating point, no ceiling, one display format (BR-21, BR-33, NFR-DAT-05, NFR-DAT-08). **Gap G-1 resolved** |
-| **Time handling** | All three. One canonical zone stored; server clock authoritative; local display (BR-19, FR-CREATE-14) | Every timestamp in the product |
-| Authorization posture (default deny) | All three; each owns their own entity's policies | A gap in one entity weakens the whole model |
-| Environment variable naming and the example file | All three (TEAM.md §11) | Config drift and secret exposure |
-| Project scaffold, entry point, routing, shared UI | Per TEAM.md §12 (Sprint 0) | Unchanged by this architecture |
+| **Money representation in SAR** | **One representation and one formatter** — `lib/money.ts`, Sprint 0 item **S0-12**, `docs/contracts/S0-12-money.md`. `tests/guards/run.sh` fails the build on a second formatter or a float | Exact decimal, two places, never floating point, **no ceiling**, one display format (BR-21, BR-33, NFR-DAT-05, NFR-DAT-08). **Gap G-1 resolved** |
+| **Time handling** | One canonical zone stored; **server clock authoritative**; local display only (BR-19, FR-CREATE-14) | Every timestamp in the product |
+| Authorization posture (default deny) | Every entity carries its own complete policies — and a `GRANT`, which RLS does not imply | A gap in one entity weakens the whole model |
+| Environment variable naming and the example file | Announce before adding. **Never `NEXT_PUBLIC_*SERVICE_ROLE*`** — a guard asserts this | Config drift and secret exposure |
+| Project scaffold, entry point, routing, shared UI | Sprint 0. `dir="rtl"` is declared here **exactly once** | Unchanged by this architecture |
 
-### 19.3 Architectural dependencies — unchanged from TEAM.md
+### 19.3 Architectural dependencies — between *work*, not between people
 
 | Dependency | Nature under this architecture |
 |---|---|
-| **Abdulrahman → Mohammed** | Verified identity for auction ownership. Mohammed must not read session state directly (TEAM.md §10.1) |
-| **Abdulrahman → Rayan** | Verified identity for bid attribution — the **server-side** path, not the client convenience (TEAM.md §10.2) |
-| **Mohammed → Rayan** | Auction fields the bid operation reads: owner, status, end time, starting price, current price. Frozen once agreed (TEAM.md §10.3, M-01) |
-| **Rayan → Mohammed** | The price value and the outcome, which Mohammed's pages display. Rayan writes; Mohammed reads. Neither recomputes (§9.4) |
+| **Identity → auction creation** | The seller is the verified session user. The create path must not read session state ad hoc; it calls the identity contract |
+| **Identity → bidding** | Bid attribution uses the **server-side** verified path, not the client convenience |
+| **Auction record → bidding** | The bid operation reads: seller, status, end time, starting price, current price. **This is the classic step-5 case** — the schema ticket merges before the tickets that read it |
+| **Bidding → the pages** | The price value and the outcome are **read** by the pages and written only by the server. Neither side recomputes (§9.4) |
 
-Direction of flow is unchanged: **Auth → Auctions → Bidding**, with price and outcome flowing back for display. No cycles.
+Direction of flow is unchanged: **Auth → Auctions → Bidding**, with price and outcome flowing
+back for display. No cycles. Note that this is a dependency graph over **tickets**, and it is
+exactly what workflow step 1 tells you to check before claiming one.
 
 ---
 

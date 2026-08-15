@@ -30,10 +30,23 @@ in the PRD this file says so and stops being the source.
    something reasonable*. A gap that is named cannot be filled silently.
 3. **A decision that touches an existing rule must say which rule and how they coexist.**
    If it cannot say that, it is not ready to implement.
-4. **Status is one of:**
+4. **Status is one of — and it is one of exactly these three:**
    - `DECIDED` — the owner decided it; it is safe to build
    - `OPEN` — raised, not decided; **do not build**
    - `IN PRD` — landed in `PRD.md`; that document is now the source, this one is history
+
+   > **`DECIDED in shape` is not a status.** It was invented by a session to describe a
+   > record that is decided *and* still carries unanswered sub-questions. Three records wore
+   > it, and it read as *"half-decided, proceed carefully"* when the truth was *"decided —
+   > and here are four separate things nobody has decided yet."* Removed 2026-08-15.
+
+5. **Status describes the record. Open items are tracked separately, and each has an id.**
+   Those are two different things and merging them is what produced the status above. A
+   record can be `DECIDED` and still list open items — that is normal, and rule 2 is why.
+   Every open item carries an `O`-id (`O1` … `O24`) so a ticket's *blocked on* column can
+   name it. **A gap with no id cannot be cited as a blocker, and a gap that cannot be cited
+   gets filled silently.** The full register is
+   [`docs/v2/SPEC.md` §4.3](../v2/SPEC.md).
 
 ## Precedence
 
@@ -45,38 +58,51 @@ nothing: where a record here and the PRD disagree, **the PRD wins and the record
 
 ## Index
 
-| | Decision | Status | Touches |
-|---|---|---|---|
-| [D-01](D-01-bid-increment-button.md) | The bid control is a **button carrying a seller-set amount**, not a typed number | `DECIDED` | **BR-32**, BR-29, FR-BID-* |
-| [D-02](D-02-categories.md) | **Thirteen categories**, sourced not invented — and the category changes which fields the form asks for | `DECIDED` | `auctions` schema, create form, browse |
-| [D-03](D-03-sessions.md) | **Sessions** — a room of lots opened one at a time, run live by a host. A kind of auction, **not a kind of account** | `DECIDED in shape` | new entity, **BR-36**, LC-03, BR-31 |
-| [D-04](D-04-ai-product-surface.md) | The **AI is five specific things in five places** — and measurement kills two of them | `DECIDED in shape` | create, browse, detail. **Never** the bidding path |
-| [D-05](D-05-deposit.md) | The **deposit is simulated**, paid once for the hall, and unlocks **bidding not watching** | `DECIDED in shape` | `CLAUDE.md` §1, D-03, bid eligibility |
-| [D-06](D-06-images-and-create-flow.md) | **Images first**, up to ten, first one is the cover — and the four-step create flow | `DECIDED` | AUC-04, ADR-6, BR-31 |
+| | Decision | Status | Open items | Touches |
+|---|---|---|---|---|
+| [D-01](D-01-bid-increment-button.md) | The bid control is a **button carrying a seller-set amount**, not a typed number | `DECIDED` | — | **BR-32**, BR-29, FR-BID-* |
+| [D-02](D-02-categories.md) | **Thirteen categories**, sourced not invented — and the category changes which fields the form asks for. Values are **validated `jsonb` over normalized category and field-definition tables** | `DECIDED` | O1, O2, O3 | `auctions` schema, create form, browse |
+| [D-03](D-03-sessions.md) | **Sessions** — a room of lots opened one at a time, run live by a host. A kind of auction, **not a kind of account**. **Pause is supported** | `DECIDED` | O4–O10, O23 | new entity, **BR-36**, LC-03, BR-31 |
+| [D-04](D-04-ai-product-surface.md) | The **AI is five specific things in five places**, and **all five are in scope** — measurement decided the technology for each | `DECIDED` | O11–O14, O24 | create, browse, detail. **Never** the bidding path |
+| [D-05](D-05-deposit.md) | The **deposit is simulated**, paid once for the hall, unlocks **bidding not watching**, and **access expires with the session — no refund transaction** | `DECIDED` | O15–O19 | `CLAUDE.md` §1, D-03, bid eligibility |
+| [D-06](D-06-images-and-create-flow.md) | **Images first, 1 to 10, required and server-validated**, first one is the cover — and the four-step create flow | `DECIDED` | O20–O23 | AUC-04, ADR-6, BR-31 |
 
 The five previously listed here as *"raised but not decided"* are now the five records
 above. They were decided by the owner approving the prototype in
 `design-system/previews/*.html` on **2026-08-15**, and each record quotes the prototype or
 the owner directly.
 
-**`DECIDED in shape` means: the feature is real and buildable, and the record's own "Still
-open" section still contains questions that must NOT be answered by a session.** D-03 §4.1
-and D-02 §4.1 are the two expensive ones — see `docs/v2/SPEC.md` §4.
+**All six records are `DECIDED`. Twenty-four open items remain**, each with an id, each
+named in its record's "Still open" section, and each citable from a ticket's *blocked on*
+column. Register: [`docs/v2/SPEC.md` §4.3](../v2/SPEC.md).
+
+**O4** — is a lot an `auctions` row or a separate entity — is now the expensive one. The two
+that used to outrank it (how category fields are stored, and what a pause does to the clock)
+were both decided by the owner on 2026-08-15.
 
 Sessions remain sequenced last by the owner: *"داخلة، بس آخر شي"*.
 
-### Two things measurement changed, which no document predicted
+### What measurement changed — the technology, not the scope
 
 [`docs/ai/local-model.md`](../ai/local-model.md) measured all five AI features against the
-free local model before any of them was built. Two did not survive:
+free local model before any of them was built. **All five are approved and all five are
+being built.** What measurement determined is what each one is *made of* — and for two of
+them the answer was not the text model:
 
-- **«يصلّح الصور» is not an LLM task at all.** No text or vision-language model outputs an
-  edited image. It had been sitting inside the word "AI" and nobody had noticed.
-- **«يقترح سعر البداية» is a SQL query, not a model call.** The model produced a corrupt or
-  wrong amount on **ten runs out of ten**, stably, at `temperature: 0` — which is also why
-  D-04 §4 forbids the AI from touching an amount in either direction.
+- **«يصلّح الصور» needs a separate image-processing / image-model pipeline.** No text or
+  vision-language model outputs an edited image. It had been sitting inside the word "AI",
+  and finding that out before building is why it now has its own spike, its own storage
+  ticket and its own cost line instead of being discovered halfway through the uploader.
+- **«يقترح سعر البداية» is SQL and data analysis, not a model call.** The model produced a
+  corrupt or wrong amount on **ten runs out of ten**, stably, at `temperature: 0` — which is
+  also why D-04 §4 forbids the AI from touching an amount in either direction. The feature
+  ships as approved, seller-only, and it cannot be wrong about arithmetic.
+
+Measurement constrains **how**, never **whether**. A feature is not smaller because the
+correct implementation of it contains no language model.
 
 ### What to build from
 
-`docs/v2/SPEC.md` and `docs/v2/TICKETS.md` — 24 tickets across two parallel tracks, and the
-six questions the board is actually waiting on.
+`docs/v2/SPEC.md` and `docs/v2/TICKETS.md` — **39 tickets plus the unblock step**, in three
+lanes that **nobody owns** (`CLAUDE.md` §1 — any available contributor may claim any ready
+ticket), and the twenty-four open items the board is actually waiting on.

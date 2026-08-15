@@ -15,7 +15,31 @@
 
 > **Product decisions are final.** `PRD.md` v3.0 closes all fifteen product questions. Nothing in this document defers work pending a product answer, because there are none outstanding. See §26 for the finalized decisions that most affect day-to-day work.
 
-> **Read this first.** This document tells you who owns what, which branch you work on, who you must talk to before touching something, and how work gets into `main`. If you are about to change a file and you are not sure whether it is yours, the answer is in §6 (Ownership Matrix) and §11 (Shared Files).
+> ## ⚠ Superseded on 2026-08-15 — ownership is no longer authorization
+>
+> The project owner replaced the ownership model this document is built on:
+>
+> - **No developer, account, or Claude session permanently owns a file or a feature.**
+> - **Any available contributor may claim any *ready* ticket.**
+> - Ownership is now **temporary responsibility for a ticket**, not a permission boundary.
+> - A **domain steward** may review sensitive changes, but **their absence must not block a
+>   contributor from implementing a ready, well-specified ticket.**
+>
+> **`CLAUDE.md` §1 governs, and it contains the seven-step claim workflow.** Wherever this
+> document says a developer *owns* an area, *must ask permission*, or *must not touch*
+> something, read it as **"that person is the steward — request their review, and keep
+> going."** The domain descriptions below are still accurate and still useful: they tell you
+> **who knows this code** and **which contracts a change must not break**. That is what they
+> are for now.
+>
+> §6 and §7 have been rewritten. §3–§5, §9–§14 keep their per-domain detail; only the
+> permission framing is void.
+
+> **Read this first.** This document tells you which contracts exist, who knows each area
+> well, how work is claimed, and how it gets into `main`. If you are about to change a file
+> and you are not sure whether you may, **you may** — the question is whether the change is
+> *decided* (`CLAUDE.md` §1, §8). See §11 (Shared Files) for the conflict-avoidance rules,
+> which are about merges, not permission.
 
 ---
 
@@ -26,8 +50,8 @@
 3. [Developer 1 — Abdulrahman](#3-developer-1--abdulrahman)
 4. [Developer 2 — Mohammed](#4-developer-2--mohammed)
 5. [Developer 3 — Rayan](#5-developer-3--rayan)
-6. [Ownership Matrix](#6-ownership-matrix)
-7. [The Ownership Principle](#7-the-ownership-principle)
+6. [The Domain Map](#6-the-domain-map--and-the-contracts-that-do-not-move)
+7. [How Work Is Claimed](#7-how-work-is-claimed)
 8. [Branch Structure](#8-branch-structure)
 9. [Dependencies Between Workstreams](#9-dependencies-between-workstreams)
 10. [Integration Points](#10-integration-points)
@@ -78,19 +102,27 @@
 
 ## 2. The Team at a Glance
 
-| Developer | Role | Branch | Owns | Talk to them before touching |
-|---|---|---|---|---|
-| **Abdulrahman** | Authentication & User Management Owner | `feature/abdulrahman-auth` | Registration, login, logout, session, user identity, profile, auth-based access control | Anything that reads or establishes "who is the current user" |
-| **Mohammed** | Auction Management Owner | `feature/mohammed-auctions` | Auction creation, validation, product images, listing page, detail page shell, auction status display, seller views | Anything that reads or writes auction records, or changes the auction pages |
-| **Rayan** | Bidding & Realtime Owner | `feature/rayan-bidding` | Bid submission, bid validation, current price, bid history, realtime updates, auction closing, winner determination and display | Anything that touches bids, the current price, realtime delivery, or the auction outcome |
+| Contributor | Steward of | Ask them when |
+|---|---|---|
+| **Abdulrahman** | Authentication, session, authorization, identity data | You change how "who is the current user" is established or trusted |
+| **Mohammed** | The design system and presentation consistency | You add a visual pattern the system does not already have |
+| **Rayan** | Bidding, concurrency, closing, extension, current-price correctness | You change what the server accepts, when a lot ends, or how the price is derived |
+
+**Branches are per ticket, not per person** — `feature/<ticket-id>-<short-name>` (§16). The
+three long-lived personal branches this table used to list are retired.
 
 **Quick answers to the questions you will actually have:**
 
-- *Who is Abdulrahman?* Authentication and users. Branch `feature/abdulrahman-auth`. He is the only person who builds sign-in; everyone else consumes it.
-- *Who is Mohammed?* Auctions and products. Branch `feature/mohammed-auctions`. He owns the auction record and the pages that display it.
-- *Who is Rayan?* Bidding and realtime. Branch `feature/rayan-bidding`. He owns everything about a bid, the live price, and the winner.
-- *What can I push to `main`?* Nothing directly. Everything goes through a Pull Request with one review. See §15.
-- *What if I hit a conflict?* Find the owner of the conflicting code, talk to them, resolve together, and have the owner verify. Never blind-pick "ours" or "theirs". See §18.
+- *May I edit a file someone else wrote?* **Yes.** Nobody owns a file. Claim the ticket,
+  branch from it, and tag the relevant steward as reviewer.
+- *The steward is unavailable and my ticket is ready.* **Build it.** A steward's absence is
+  not a blocker (`CLAUDE.md` §1). Note in the PR that their review is still wanted.
+- *What actually blocks me, then?* An **undecided** product question, or an unmerged
+  dependency. Those are real; "it's not my area" is not.
+- *What can I push to `main`?* Nothing directly. Everything goes through a Pull Request with
+  one review. See §15.
+- *What if I hit a conflict?* Resolve it **on your own branch**, and pull in whoever wrote
+  the other side if the semantics are unclear. Never blind-pick "ours" or "theirs". See §18.
 
 ---
 
@@ -98,15 +130,13 @@
 
 ### Role
 
-**Authentication & User Management Owner**
+**Authentication & identity — steward: Abdulrahman**
 
-### Branch
+### Branches
 
-```text
-feature/abdulrahman-auth
-```
+One per ticket — `feature/<ticket-id>-<short-name>` (§8, §16).
 
-### What Abdulrahman owns
+### What this domain covers
 
 - User registration
 - User login
@@ -119,16 +149,19 @@ feature/abdulrahman-auth
 - Authentication **behaviour** behind the register, login, logout, signed-in-indicator and **password reset** screens — what they do, not how they look. Mohammed owns their presentation
 - Profile **data and identity behaviour**. Mohammed owns the profile screen's presentation
 
-### What Abdulrahman does *not* own
+### What it does not cover
 
 - Auction-level authorization such as "is this user the owner of this auction?" — that ownership check belongs to Mohammed's auction workstream, using the identity Abdulrahman provides.
 - Bid-level rules such as "the seller cannot bid on their own auction" — that is Rayan's validation, using identity from Abdulrahman and ownership from Mohammed.
 
 > **Why the split matters:** Abdulrahman answers *who you are*. Mohammed and Rayan answer *what you are allowed to do with this specific auction or bid*. Keeping that line clean is what stops authorization logic from being scattered across three branches.
 
-### Ownership rule
+### The rule that survives
 
-Abdulrahman is the primary owner of authentication. **Other developers consume authentication; they do not reimplement it.** If Mohammed or Rayan needs identity, session state, or a way to require sign-in, they ask Abdulrahman for it rather than writing their own.
+**One implementation of authentication, not three.** Anyone may work on it; nobody may
+build a *second* one. If you need identity, session state, or a way to require sign-in,
+**consume the existing mechanism** — extend it in a ticket if it is missing something.
+Abdulrahman is the steward: tag him for review, do not wait for him to start.
 
 ### PRD coverage
 
@@ -150,15 +183,13 @@ Abdulrahman's workstream delivers PRD sections §8.1 (Authentication, **includin
 
 ### Role
 
-**Auction Management Owner**
+**Auctions & presentation — steward: Mohammed**
 
-### Branch
+### Branches
 
-```text
-feature/mohammed-auctions
-```
+One per ticket — `feature/<ticket-id>-<short-name>` (§8, §16).
 
-### What Mohammed owns
+### What this domain covers
 
 - The auction record and its structure
 - Create-auction flow and form
@@ -171,7 +202,7 @@ feature/mohammed-auctions
 - Auction lifecycle presentation (Active vs Ended states in the UI)
 - Seller / auction-owner views, including the seller's view of a completed auction
 
-### What Mohammed does *not* own
+### What it does not cover
 
 - The **current price value** — that is derived from bid history and owned by Rayan (PRD BR-13). Mohammed owns the *place on the page where the price appears*; Rayan owns *what the number is and when it changes*.
 - The **behaviour inside the bidding panel** — submission, validation, accept/reject semantics and their realtime updates are Rayan's. Mohammed owns how that panel looks.
@@ -180,9 +211,13 @@ feature/mohammed-auctions
 
 > **This is the most important boundary in the project.** The auction detail page is where all three workstreams meet. See §11 for the rule that keeps it from becoming a permanent merge conflict.
 
-### Ownership rule
+### The rule that survives
 
-Mohammed is the primary owner of auction functionality. **Other developers must not duplicate auction-management logic.** If Rayan needs auction information — ID, owner, status, end time, starting price — he consumes what Mohammed provides rather than reading or reconstructing it himself.
+**Do not duplicate auction-management logic, and do not fork the design system.** Auction
+information — id, seller, status, end time, starting price — is read from one place, not
+reconstructed. New visual patterns go through the design system rather than around it.
+Mohammed is the steward of presentation consistency: tag him for review, do not wait for him
+to start.
 
 ### PRD coverage
 
@@ -194,15 +229,13 @@ Mohammed's workstream delivers PRD sections §8.3 (Auction Creation), §8.4 (Auc
 
 ### Role
 
-**Bidding & Realtime Owner**
+**Bidding & realtime — steward: Rayan**
 
-### Branch
+### Branches
 
-```text
-feature/rayan-bidding
-```
+One per ticket — `feature/<ticket-id>-<short-name>` (§8, §16).
 
-### What Rayan owns
+### What this domain covers
 
 - Bid submission
 - Server-side bid validation (all rules in PRD §9)
@@ -217,15 +250,19 @@ feature/rayan-bidding
 - The **winner and final-price values**, and when they become visible. Mohammed presents them
 - **All bidding-related behaviour** — what the bid input accepts, what submission does, which rejection reason is returned and why, what the history contains and in what order, and what the outcome states are. **Mohammed owns the presentation of every one of those surfaces** (bid input, submit control, accept/reject feedback, bid history list, outcome banner); Rayan owns what they do
 
-### What Rayan does *not* own
+### What it does not cover
 
 - The auction record itself — he reads it, Mohammed owns it.
 - User identity and sessions — he consumes them, Abdulrahman owns them.
 - The auction detail page shell and product content — Mohammed owns the page **and all presentation on it**; Rayan owns the bidding **behaviour** inside it.
 
-### Ownership rule
+### The rule that survives
 
-Rayan is the primary owner of bidding and realtime functionality. **Bidding and realtime stay in one workstream** because they are inseparable: a bid is only "real" once the server accepts it, and the realtime update is how everyone else learns that it happened. Splitting them across two developers would put the accept-then-broadcast sequence on either side of a merge boundary, which is exactly where correctness bugs hide.
+**Accept-then-broadcast is one ticket, never two.** A bid is only real once the server has
+accepted it, and the realtime update is how everyone else learns that it happened. Splitting
+that sequence across two tickets puts it on either side of a merge boundary, which is exactly
+where correctness bugs hide — so a ticket that touches one half must carry the other. Rayan
+is the steward of bidding correctness: tag him for review, do not wait for him to start.
 
 ### PRD coverage
 
@@ -235,133 +272,86 @@ Rayan's workstream delivers PRD sections §8.6 (Bidding), §8.7 + §13 (Realtime
 
 ---
 
-## 6. Ownership Matrix
+## 6. The domain map — and the contracts that do not move
 
-| Feature | Owner | Supporting Member | Note |
-|---|---|---|---|
-| Registration | Abdulrahman | Mohammed | Abdulrahman owns the behaviour, including display-name uniqueness (BR-39); Mohammed owns the screen |
-| Login | Abdulrahman | — | |
-| Logout | Abdulrahman | — | |
-| **Password Reset** | **Abdulrahman** | — | *Added in v2.0* — PRD M24, FR-AUTH-25 → 31. The MVP's only outbound email |
-| User Profile | Abdulrahman | Mohammed | Abdulrahman owns the data and identity behaviour — unique display name, email never public; Mohammed owns the screen |
-| Authentication State | Abdulrahman | Rayan | Rayan consumes it for every bid |
-| Auction Creation | Mohammed | Abdulrahman | Needs authenticated identity as the owner |
-| Product Images | Mohammed | — | |
-| Auction Listing | Mohammed | Rayan | *Adjusted* — listing shows current price, which Rayan owns |
-| Auction Details | Mohammed | Rayan | Shared page: Mohammed owns the shell **and all presentation on it, bidding panel included**; Rayan owns the bidding behaviour inside it |
-| Auction Lifecycle | Mohammed | Rayan | Mohammed displays state; Rayan drives the Active → Ended transition |
-| Bidding | Rayan | Abdulrahman | Needs identity to attribute the bid |
-| Bid Validation | Rayan | Mohammed | *Adjusted* — validation reads auction status, end time, and owner from Mohammed |
-| Bid History | Rayan | Mohammed | Rayan owns what is recorded and its order (`bids.id`, never `created_at`); Mohammed owns how the list is presented |
-| Realtime Updates | Rayan | Mohammed | Broadcast is scoped to an auction; Mohammed's pages host the live regions |
-| Auction Ending | Rayan | Mohammed | Rayan closes it; Mohammed's UI reflects the ended state |
-| Winner Determination | Rayan | Mohammed | Rayan computes it from bid history |
-| Winner Display | Mohammed | Rayan | **Reversed** — Mohammed owns the outcome and winner presentation; Rayan owns the values it shows and when they become visible |
-| **Current Price (value)** | **Rayan** | **Mohammed** | *Added* — see the note below; this was the biggest ambiguity in the baseline matrix |
-| **Session / identity contract** | **Abdulrahman** | **Mohammed, Rayan** | *Added* — the shape both consumers depend on |
+**This table no longer grants or withholds permission.** It answers two questions: *who
+should review this*, and *what must my change not break*. Any contributor may implement any
+row.
 
-### Two adjustments explained
+| Feature | Steward to tag | The contract a change must keep |
+|---|---|---|
+| Registration | Abdulrahman | display name is unique (BR-39); email never becomes public |
+| Login · Logout | Abdulrahman | identity comes from the verified server session, never a client-supplied id |
+| **Password Reset** | Abdulrahman | PRD M24, FR-AUTH-25 → 31. The MVP's only outbound email |
+| User Profile | Abdulrahman | display name is the only public identity |
+| Authentication State | Abdulrahman | one session mechanism, consumed — never reimplemented |
+| Auction Creation | Mohammed (presentation) | needs an authenticated seller; amounts are strings end to end |
+| Product Images | Mohammed (presentation) | — |
+| Auction Listing | Rayan (price), Mohammed (presentation) | current price is read, never recomputed in the client |
+| Auction Details | Rayan (bidding), Mohammed (presentation) | the page passes **only the auction id** downward (S0-13) |
+| Auction Lifecycle | Rayan | `status` has exactly two values; eligibility is the clock, not the flag (LC-03) |
+| Bidding | Rayan | the three checks that must not exist (`CLAUDE.md` §5) |
+| Bid Validation | Rayan | first bid may equal the starting price; every later bid strictly greater |
+| Bid History | Rayan | ordered by `bids.id`, **never** `created_at` |
+| Realtime Updates | Rayan | **one** subscription per auction; no email in any payload |
+| Auction Ending · Extension | Rayan | `end_time` forward-only; the cap is a `CHECK`, not an `if` (§5) |
+| Winner Determination | Rayan | computed on the server from bid history, never in the client |
+| Winner Display | Mohammed (presentation) | shows server-supplied values; does not derive the outcome itself |
+| **Current Price (value)** | Rayan | BR-13 — highest accepted bid, else starting price. **A string, never a `Number`** |
+| **Session / identity contract** | Abdulrahman | the shape both consumers depend on (§12) |
 
-Primary ownership is unchanged from the baseline. Two supporting-member changes and two added rows:
-
-1. **Auction Listing gains Rayan as supporting.** The listing shows each auction's current price (PRD FR-LIST-02, FR-LIST-03). That value is derived from bid history, which is Rayan's. Mohammed builds the listing; Rayan supplies how the price is obtained.
-2. **Bid Validation gains Mohammed as supporting.** Three of the eight core bidding rules (PRD BR-02, BR-03, BR-04) depend on auction data — owner, current price, end time. Rayan writes the validation; Mohammed must guarantee the auction data it reads is correct and available.
-3. **Current Price (value) added, owned by Rayan.** The baseline matrix never assigned this, and it is the single most contested piece of state in the product. It appears on Mohammed's listing and detail pages, but PRD BR-13 defines it as "the highest accepted bid, or the starting price if none" — a value derived entirely from bidding. **Rayan owns the value and every change to it. Mohammed owns where and how it is displayed.**
-4. **Session / identity contract added, owned by Abdulrahman.** Both other workstreams depend on a stable way to answer "who is the current user?" This is the first thing that must be agreed (see §12).
+**The right-hand column is the part that is absolute.** A steward can be unavailable; a
+contract cannot. If your change would break one, it needs a *decision*, not a permission —
+see `CLAUDE.md` §8.
 
 ---
 
-## 7. The Ownership Principle
+## 7. How work is claimed
 
-> Ownership does **not** mean a developer is forbidden from touching another area.
-> It means **one developer is responsible for the functionality, and other developers coordinate with that owner before changing it.**
+> **Nobody owns a file.** A contributor claims a **ready** ticket, is responsible for it
+> until it merges, and then it is over. Ownership is temporary responsibility, not an
+> authorization boundary.
 
-### The axis is presentation vs. behaviour, not file
+`CLAUDE.md` §1 is the governing statement and carries the seven-step workflow. In short:
 
-A single component routinely contains both, and each half has a different owner. **Never
-read ownership as ownership of a whole file.**
+1. Check dependencies and confirm the issue is **`ready`**.
+2. **Claim it** before writing code.
+3. Branch **per ticket**: `feature/<ticket-id>-<short-name>`.
+4. The ticket declares an **expected change surface**, not exclusive file ownership.
+5. If two tickets need the same file, **merge the shared contract or foundation first**.
+6. The PR states **changed files, verification evidence, remaining risks, handoff notes**.
+7. After merge, **any available contributor** claims the next ready ticket.
 
-| Responsibility | Owner |
-|---|---|
-| **All presentation** — every screen, layout, component, visual state, the design system | **Mohammed** |
-| **Bidding behaviour** — validation, submission, the atomic operation, concurrency, current-price correctness, realtime bidding behaviour, closing, winner determination, bid recording and order | **Rayan** |
-| **Authentication and identity behaviour and data** — auth logic, session, authorization, identity and profile data | **Abdulrahman** |
-
-Mohammed's presentation ownership is total: auction screens, the bid panel, bid history,
-the outcome and winner views, and the login / registration / password-reset / profile
-screens — layout, typography, spacing, colour, motion, responsive behaviour, and the
-loading, empty, error and 404 states.
-
-**What each may do in a file the other half of which is not theirs:**
-
-| | May change | Must preserve exactly | Must not do |
-|---|---|---|---|
-| **Mohammed** | presentation in any component | the behaviour and its contracts | redesign, rewrite or refactor another owner's business logic unless that owner asks |
-| **Rayan** | bidding behaviour in any component | Mohammed's presentation | restyle or redesign the UI unless Mohammed asks |
-| **Abdulrahman** | auth/identity behaviour in any component | Mohammed's presentation | redesign the UI unless Mohammed asks |
-
-This does **not** weaken the boundary. Changing another owner's behaviour or data still
-means stop and ask them — the boundary simply runs through files rather than between them.
-
-**In practice this means:**
+### The two things that still stop you
 
 | Situation | What to do |
 |---|---|
-| You need something from another area | Ask the owner. Do not build your own version. |
-| You need a small change in another owner's file | Message them, agree on the change, then make it — and tag them as the PR reviewer. |
-| You found a bug in another owner's area | Open an Issue assigned to that owner. Do not fix it silently in your branch. |
-| The owner is unavailable and you are blocked | Make the smallest change that unblocks you, note it clearly in the PR description under **Dependencies**, and require the owner's review before merge. |
-| You disagree with how an owner built something | Raise it as a discussion, not as a rewrite in your branch. |
+| The area's steward is unavailable | **Build it.** Tag them for review, merge on any approval. Their absence is not a blocker. |
+| You need something another ticket is building | Check whether that ticket is merged. If not, the dependency is real — say so on the issue. |
+| You found a bug outside your ticket | Open an issue. Fix it in *its own* ticket, so the diff stays readable. |
+| **The product question is not decided** | **Stop and ask.** This is the only real blocker. `CLAUDE.md` §8. |
+| **Your change would break a §6 contract** | **Stop and ask.** A contract moves by decision, in its own PR, with a test. |
 
-**This prevents:** duplicated logic, conflicting implementations, unnecessary merge conflicts, and unclear responsibility when something breaks.
+**What this prevents is unchanged** — duplicated logic, conflicting implementations, and
+unclear responsibility when something breaks. What it no longer does is make a contributor
+wait for a person.
 
-**The single rule to remember:** *touching another person's area is fine; touching it without telling them is not.*
+**The single rule to remember:** the question before you write code is **"is this
+decided?"** — never **"is this mine?"**
 
-### 7.1 Taking over an Issue its owner has not started
+### 7.1 Taking over an Issue — void as of 2026-08-15
 
-The row above — *"the owner is unavailable and you are blocked"* — covers **the smallest
-change that unblocks you**. It does not cover the case this project actually hit: an
-owner not starting a `priority:critical` Issue that a whole workstream is queued behind.
+This section used to define a **72-hour takeover procedure**: four conditions, a comment
+before coding, and an explicit note that "ownership does not move".
 
-That case was handled twice by verbal permission recorded on the Issue (`AUC-01` #43,
-`AUC-09` #51). That works once. It does not scale to twenty-four Issues, and it makes
-each takeover a judgement about a person instead of an application of a rule.
+**It is gone, because there is nothing left to take over.** Any available contributor may
+claim any ready ticket at any time; no waiting period applies and no permission is needed.
+Two issues (`AUC-01` #43, `AUC-09` #51) were taken over on 2026-08-14 under recorded owner
+permission — under the current model they would simply have been claimed.
 
-**A takeover is permitted when all four hold:**
-
-1. The Issue is `priority:critical`, **or** another `priority:critical` Issue is blocked by it.
-2. Its owner has not started it — no branch, no PR, no comment claiming it.
-3. **72 hours** have passed since it became blocking, and the owner was told in that window.
-4. You comment on the Issue **before** you write code, saying what you are taking and why.
-
-**What a takeover does and does not transfer:**
-
-| | |
-|---|---|
-| You may implement | the Issue, to its acceptance criteria |
-| **Ownership does not move** | the area's owner stays its owner in §6 and §7 |
-| **Presentation stays revisable** | anything you build in another's area, they may restyle later **without asking you** — §7's normal rule, not a concession |
-| You must | tag the owner as reviewer, and keep their contracts exactly |
-| You must not | change a *different* owner's behaviour or data along the way — that still means stop and ask |
-
-**The rule is symmetric, and that is the point.** It applies to `area:bidding` and
-`area:auth` exactly as it applies to `area:auction`. If Rayan has not started a critical
-bidding Issue after 72 hours, Mohammed or Abdulrahman takes it under this section, with
-no discussion needed and nothing personal implied. A rule that only ever runs in one
-direction is not a rule; it is a complaint with a section number.
-
-**Why 72 hours and not "when it's urgent":** an owner who is busy for a day should not
-lose an Issue, and a workstream should not idle for a week. The number is the part most
-worth arguing about — argue about it here, once, rather than per Issue.
-
-**This does not apply to:** anything not on the critical path, anything the owner has
-started, or a disagreement about *how* something was built (§7's last row still governs
-that — raise it, do not rewrite it).
-
-> **Precedent.** `AUC-01` (#43) and `AUC-09` (#51) were taken over on 2026-08-14 under
-> owner permission recorded on both Issues, before this section existed. They are what
-> this section generalises, and they are the reason it is written as a rule rather than
-> left to be re-negotiated each time.
+The one thing the old section got right is kept in §7 above: **say on the issue that you are
+taking it, before you write code.** That is step 2, and it is about avoiding two people
+building the same thing — not about asking.
 
 ---
 
@@ -369,9 +359,9 @@ that — raise it, do not rewrite it).
 
 ```text
 main
-├── feature/abdulrahman-auth
-├── feature/mohammed-auctions
-└── feature/rayan-bidding
+├── feature/<ticket-id>-<short-name>     one branch per ticket, short-lived
+├── feature/<ticket-id>-<short-name>
+└── …
 ```
 
 ### `main`
@@ -387,9 +377,17 @@ main
 
 **If `main` is broken, fixing it is the whole team's top priority**, ahead of any feature work. Whoever merged the breaking change leads the fix.
 
-### The three feature branches
+### One branch per ticket
 
-Each developer works primarily on their own branch. These are long-lived and map exactly to the three workstreams. They are the team's main lines of work and should not be deleted between merges — keep merging `main` into them and continue.
+The three long-lived personal branches (`feature/abdulrahman-auth`,
+`feature/mohammed-auctions`, `feature/rayan-bidding`) are **retired**. A branch is now named
+for the **ticket** it implements — `feature/<ticket-id>-<short-name>` — and is deleted after
+merge.
+
+**Why the change:** a personal branch is a standing claim on an area, and areas are no longer
+claimed. A ticket branch also keeps the diff to one reviewable unit and makes step 5 of the
+workflow (*merge the shared contract first*) mean something, because there is a merge point
+between every pair of tickets.
 
 ---
 
@@ -406,11 +404,11 @@ Three dependencies exist. All flow in one direction — **Auth → Auctions → 
 | Aspect | Detail |
 |---|---|
 | **Why it exists** | Every auction has exactly one owner (PRD BR-10, FR-CREATE-02), and that owner is the authenticated user creating it — taken from the session, never from client input |
-| **Source owner** | Abdulrahman |
+| **Built by** | Abdulrahman |
 | **Consumer** | Mohammed |
 | **What is shared** | (a) The current user's internal identifier, (b) the current user's display name, (c) a way to require an authenticated session before the create action proceeds, (d) a way to know on the client whether someone is signed in |
 | **Avoiding duplication** | Mohammed must never read session state directly or construct his own identity check. He calls what Abdulrahman provides. If it does not exist yet, he asks for it rather than writing a temporary version that becomes permanent. |
-| **Minimizing file conflicts** | Abdulrahman's identity helpers live in files Abdulrahman owns. Mohammed imports them; he does not edit them. |
+| **Minimizing file conflicts** | The identity helpers live in one place. Import them; extend them in their own ticket if they are missing something. |
 
 **Unblocking rule:** Mohammed can build the entire create-auction form, validation, and image upload *before* auth exists, using an agreed placeholder for "current user". The placeholder must be a single, clearly marked point of substitution — not scattered assumptions — so swapping in real auth is a one-file change.
 
@@ -423,11 +421,11 @@ Three dependencies exist. All flow in one direction — **Auth → Auctions → 
 | Aspect | Detail |
 |---|---|
 | **Why it exists** | Only authenticated users can bid (PRD BR-01), every bid must be attributed to a real account (FR-BID-01), and bid history displays the bidder's display name (FR-BID-23) |
-| **Source owner** | Abdulrahman |
+| **Built by** | Abdulrahman |
 | **Consumer** | Rayan |
 | **What is shared** | (a) The bidder's internal identifier, verified server-side on every bid, (b) the bidder's display name for history, (c) rejection of unauthenticated bid attempts, (d) client-side knowledge of sign-in state so the bid control can show a sign-in prompt instead (FR-DETAIL-15) |
-| **Avoiding duplication** | Rayan performs the bidding rules; Abdulrahman performs the identity check. Rayan does not write his own session validation. |
-| **Minimizing file conflicts** | Same rule — Rayan imports Abdulrahman's identity helpers and does not edit them. |
+| **Avoiding duplication** | The bidding path runs the bidding rules and **calls** the identity check. It never grows a second session validation. |
+| **Minimizing file conflicts** | Same rule — import the identity helpers rather than reimplementing them nearby. |
 
 **Critical requirement:** identity for bidding must be verified **server-side on every bid** (PRD FR-BID-01, SEC-A1). A client-side check is not sufficient and is not what Rayan is consuming. Abdulrahman must make clear which of his helpers is the server-side authoritative one.
 
@@ -440,11 +438,11 @@ Three dependencies exist. All flow in one direction — **Auth → Auctions → 
 | Aspect | Detail |
 |---|---|
 | **Why it exists** | Bid validation cannot run without auction data. Three of the eight core business rules read it: BR-02 (owner cannot bid) needs the auction owner; BR-03 (bid must be higher) needs the current price and starting price; BR-04 (no bids after end) needs the end time. Closing needs the end time too. |
-| **Source owner** | Mohammed |
+| **Built by** | Mohammed |
 | **Consumer** | Rayan |
 | **What is shared** | Auction ID · auction owner identifier · auction status · auction end time · starting price · existence of the auction |
-| **Avoiding duplication** | Mohammed owns reading and writing auction records. Rayan reads auction data through what Mohammed provides — he does not write his own auction queries and never writes to the auction record except for the fields explicitly assigned to him at close (status, final price, winner, close time). |
-| **Minimizing file conflicts** | The auction record definition is a shared file. Mohammed owns it. Rayan's close-related fields must be agreed with Mohammed **in Sprint 0**, added once, and not renegotiated mid-sprint. |
+| **Avoiding duplication** | Auction records are read and written through **one** access path, not several. The bidding path writes to the auction record **only** in the two situations below (status, final price, winner, close time) — a third write is a defect. |
+| **Minimizing file conflicts** | The auction record definition is a **shared file**, so it is the classic case for step 5: the schema/contract ticket **merges first**, and the tickets that depend on it branch from that. Adding a field twice from two branches is the failure this avoids. |
 
 **The feedback path.** Rayan writes back to the auction in exactly two situations, both agreed with Mohammed up front:
 
@@ -520,23 +518,30 @@ Five integration points. Each one is a conversation that must happen in Sprint 0
 
 ## 11. Shared Files & Conflict Zones
 
-These are the files where two or more developers will collide. Each has a designated owner and a coordination rule. **The goal is that no two people edit the same file in the same week.**
+These are the files where two tickets will collide. **This section is about merge conflicts,
+not permission** — anyone may edit any of them. The goal is that no two people edit the same
+file in the same week, and the mechanism is workflow step 5: **if two tickets need the same
+file, the shared contract or foundation merges first.**
 
-| Category | Examples | Owner | Coordination rule |
-|---|---|---|---|
-| **Shared data model / types** | Auction structure, bid structure, user structure | Split by entity: user = Abdulrahman, auction = Mohammed, bid = Rayan | Each entity's definition lives in **its own file**, owned by one person. Never one combined file. Adding a field to someone else's entity requires their approval. |
-| **Routing / navigation** | Route table, page registration, navigation links | **Mohammed** (most pages are his) | Each developer adds their own routes in one focused commit, early, in one agreed place. Do not restructure routing without telling everyone. Small additive edits only. |
-| **Shared services / utilities** | Formatting, date/time display, currency display, validation helpers | **Whoever creates it first**, recorded in the PR | Prefer adding a new small file over editing an existing shared one. If you must edit a shared utility, tag its creator as reviewer. |
-| **Shared UI components** | Buttons, form inputs, layout shell, cards, loading and error states | **Mohammed** (owns the most UI surface) | Build these in Sprint 0 so nobody invents their own. If you need a variant, extend rather than rewrite. Discuss in the group before changing a shared component's behavior. |
-| **Global configuration** | Build config, linting, dependency manifest | **Whole team — highest conflict risk** | Announce **before** adding a dependency or changing config. One person changes it at a time. Keep these changes in their own small PR, never bundled with feature work. |
-| **Application entry point** | Root component, app bootstrap, providers | **Whole team, Mohammed coordinates** | Should be touched rarely and only by agreement. All three of you will need something registered here — do it once, together, in Sprint 0. |
-| **Environment configuration** | Environment variable names, the example env file | **Whole team** | Add your variable to the example file; announce it in the group. **Never commit real secrets or a populated `.env` file** (Rule 9/10 in §23). |
-| **Money representation (SAR)** | How a price is stored, compared, and formatted | **Shared — one agreed representation, no exceptions** | See the dedicated rule below. |
-| **The auction detail page** | The single highest-traffic shared file | **Mohammed owns the page and all presentation on it; Rayan owns the bidding behaviour inside it** | See the dedicated rule below. |
+| Category | Examples | Conflict-avoidance rule |
+|---|---|---|
+| **Shared data model / types** | Auction structure, bid structure, user structure | Each entity's definition lives in **its own file**. Never one combined file. Adding a field is a **schema ticket that merges before** the tickets that read the field. |
+| **Routing / navigation** | Route table, page registration, navigation links | Add routes in one focused, additive commit, early. Do not restructure routing as a side effect of a feature ticket. |
+| **Shared services / utilities** | Formatting, date/time display, currency display, validation helpers | Prefer a new small file over editing an existing shared one. If you must edit one, tag whoever wrote it as reviewer — **and merge without waiting if they are away.** |
+| **Shared UI components** | Buttons, form inputs, layout shell, cards, loading and error states | Extend, never fork. A second button component is the defect this row exists to prevent. Tag Mohammed (design-system steward). |
+| **Global configuration** | Build config, linting, dependency manifest | Announce **before** adding a dependency. Keep it in its own small PR, never bundled with feature work — highest conflict risk in the repo. |
+| **Application entry point** | Root layout, app bootstrap, providers | Touched rarely. `dir="rtl"` is declared here **exactly once** and a guard asserts it (`CLAUDE.md` §3, §9). |
+| **Environment configuration** | Environment variable names, the example env file | Add your variable to the example file and announce it. **Never commit real secrets or a populated `.env`** (§23 rules 9/10). |
+| **Money representation (SAR)** | How a price is stored, compared, and formatted | One representation, no exceptions. See the dedicated rule below and `CLAUDE.md` §4. |
+| **The auction detail page** | The single highest-traffic shared file | Pre-split into per-concern files (S0-13). See the dedicated rule below. |
 
 ### The money representation rule (SAR)
 
-Prices touch two workstreams: Mohammed sets and displays the starting price, Rayan owns bid amounts, the current price, and the final winning bid. **If they pick different representations, the same amount will be stored, compared, or formatted two different ways** — and a rounding mismatch between the price a bidder sees and the price the server validates against is a correctness bug, not a cosmetic one.
+Prices touch two areas — the starting price is set and displayed by the create/listing work,
+and bid amounts, the current price and the final winning bid come from the bidding work.
+**If those two pick different representations, the same amount will be stored, compared, or
+formatted two different ways** — and a rounding mismatch between the price a bidder sees and
+the price the server validates against is a correctness bug, not a cosmetic one.
 
 **The rule: one representation, agreed once in Sprint 0 (S0-12), used by everyone.**
 
@@ -549,33 +554,38 @@ Prices touch two workstreams: Mohammed sets and displays the starting price, Ray
 | **One display format** everywhere — listing, detail, bid input, history, results. The same amount never appears formatted two ways | PRD NFR-DAT-08 |
 | The term **"Demo Points" is prohibited.** Prices are SAR | PRD §19.0 |
 
-**Ownership:**
+**One formatter, and a guard that enforces it.** `lib/money.ts` is the only place an amount
+becomes a string; `tests/guards/run.sh` fails the build on a second formatter, on `Number(`
+or `parseFloat` near an amount, and on a money column read without `::text` (`CLAUDE.md` §4,
+§9). Steward for questions: Rayan.
 
-| Who | Owns |
-|---|---|
-| **Mohammed** | Auction creation input, starting-price validation, and price **display** on the listing and detail pages |
-| **Rayan** | Bid amounts, current-price **correctness**, bid history amounts, and the final winning bid |
-| **Both** | Use the **same** PRD-defined SAR representation. Whoever creates the shared formatting/parsing helper owns it; the other consumes it |
-
-> **No developer may invent a different currency, a different unit, a different precision, or a second price representation.** If the agreed representation turns out to be wrong, that is a team decision and a change to this section — not a local workaround.
+> **Nobody may invent a different currency, unit, precision, or second price
+> representation.** If the agreed representation turns out to be wrong, that is a **decision**
+> — changed in this section, in its own PR, with the guard updated in the same PR — never a
+> local workaround.
 
 ### The auction detail page rule
 
-The auction detail page is where all three workstreams meet. Left as one file, it will conflict on nearly every merge.
+The auction detail page is where three workstreams meet. Left as one file, it will conflict on
+nearly every merge.
 
-**The rule: split it into separately owned components from day one.**
+**The rule: split it into separate files from day one — so that two tickets touching this page
+touch two different files.**
 
-| Part of the page | Owner |
-|---|---|
-| Page shell, layout, data loading for the auction | Mohammed |
-| Product name, description, image, seller display name | Mohammed |
-| Auction status label and countdown display | Mohammed |
-| **Current price display region** | Mohammed builds the region — **Rayan supplies the value and its updates** |
-| **Bid input, submit control, accept/reject feedback** | Mohammed presents — **Rayan owns what it accepts, what submission does, and which rejection reason is returned** |
-| **Bid history list** | Mohammed presents — **Rayan owns what is recorded and its order** |
-| **Outcome / winner banner** | Mohammed presents — **Rayan owns the outcome values and when they become visible** |
+| Part of the page | File | Contract it must not break |
+|---|---|---|
+| Page shell, layout, auction read | `app/auctions/[id]/page.tsx` | passes **only the auction id** downward |
+| Product name, description, image, seller display name | `…/detail/product-content.tsx` | seller identity is the display name, never the email |
+| Status label and countdown | `…/detail/status-countdown.tsx` | the clock is the server's; the browser's is display only |
+| **Current price region** | `…/detail/price-region.tsx` | the price arrives as a **string** and is read, never recomputed |
+| **Bid input, submit control, accept/reject feedback** | `components/bidding/bid-panel.tsx` | the three checks that must not exist (`CLAUDE.md` §5) |
+| **Bid history list** | `components/bidding/bid-history.tsx` | ordered by `bids.id`, never `created_at` |
+| **Outcome / winner banner** | `components/bidding/outcome-banner.tsx` | outcome comes from the server, not a client comparison |
 
-Mohammed's page mounts Rayan's components and passes them the auction ID. The split is **by responsibility, not by file** (CLAUDE.md §1): Mohammed may change presentation in any of these components provided behaviour and contracts are unchanged, and Rayan may implement bidding behaviour inside a component Mohammed presents — but neither rewrites the other's half without asking. **Agree this split in Sprint 0 and create the empty component files immediately** — so both developers have a file of their own to work in from their very first commit.
+The page mounts the rest and passes them the auction id. **Any contributor may work in any of
+these files.** The right-hand column is what a PR may not change without a decision behind it
+— that, not authorship, is the boundary. **Create the empty files first** so two tickets never
+open the same one.
 
 ---
 
@@ -891,42 +901,34 @@ Only merge after:
 ## 16. Branch Naming Convention
 
 ```text
-feature/<developer>-<feature>
+feature/<ticket-id>-<short-name>
 ```
 
-### Primary branches — the three team workstreams
+The branch is named for the **ticket**, not the person — because the ticket is what is
+claimed. Examples:
 
 ```text
-feature/abdulrahman-auth
-feature/mohammed-auctions
-feature/rayan-bidding
+feature/V2-A3-bid-increment
+feature/AUTH-11-logout
+feature/BID-07-history-order
 ```
 
-These are long-lived and map to the three ownership areas. Keep them; do not delete them between merges.
+**Rules:**
 
-### Temporary sub-branches
-
-When a piece of work is large enough to deserve its own PR, branch from your primary branch:
-
-```text
-feature/abdulrahman-auth-login
-feature/mohammed-auctions-create
-feature/rayan-bidding-realtime
-```
-
-**Rules for sub-branches:**
-
-- Branch from your primary feature branch, not from `main`
-- Merge back into your primary branch, or open a PR straight to `main` if the work is self-contained
-- Delete them once merged — only the three primary branches persist
-- Keep them short-lived; a sub-branch older than a few days is a merge conflict waiting to happen
+- Branch **from `main`**, not from another feature branch, unless you genuinely depend on an
+  unmerged ticket — in which case say so on the issue (workflow step 5).
+- One ticket, one branch, one PR. If you find yourself doing two tickets on one branch, the
+  second one wants its own.
+- **Delete it after merge.** No branch outlives its ticket. The three long-lived personal
+  branches are retired (§8).
+- Keep it short-lived; a branch older than a few days is a merge conflict waiting to happen.
 
 ### Other prefixes
 
 | Prefix | Use for | Example |
 |---|---|---|
-| `fix/` | Bug fixes | `fix/rayan-bidding-expired-bid` |
-| `docs/` | Documentation only | `docs/update-team-ownership` |
+| `fix/` | Bug fixes | `fix/EC-04-expired-bid` |
+| `docs/` | Documentation only | `docs/claim-workflow` |
 | `chore/` | Config, dependencies, cleanup | `chore/add-shared-formatting` |
 
 ---
@@ -970,7 +972,7 @@ Then:
 3. Commit the merge
 4. Push your branch
 
-**Do not blindly overwrite changes.** If a merge produces something you do not understand, stop and ask the owner of that code before committing.
+**Do not blindly overwrite changes.** If a merge produces something you do not understand, find out what it was for before committing — `git log -S` on the line names the ticket.
 
 **A note on rebasing:** the team default is **merge, not rebase**, on shared branches. Rebasing a branch someone else has pulled rewrites history they already have. If you want to rebase a purely personal sub-branch nobody else has touched, that is fine — but never rebase `main` or another developer's branch (Team Rule 11).
 
@@ -980,12 +982,19 @@ Then:
 
 If a conflict occurs:
 
-1. **Identify which developer owns the conflicting functionality.** Use §6 (Ownership Matrix) and §11 (Shared Files).
-2. **Communicate with that developer.** Tell them what you are trying to do and what conflicts.
-3. **Understand both changes before resolving.** Read both sides fully. If you do not understand why the other change exists, ask before touching it.
-4. **Resolve the conflict carefully.** The correct resolution is usually a combination of both intentions, not one side winning.
-5. **Test the affected functionality** — both your change and theirs.
-6. **The owner of the affected feature verifies the final behavior.** If you resolved a conflict in someone else's area, they must confirm it still works.
+**Resolve it on your own branch.** Whoever resolves a conflict is making a decision, and you
+have the context for your own ticket (`CLAUDE.md` §7).
+
+1. **Read §6's right-hand column for both sides.** The question is not who wrote it — it is
+   **which contract each side is holding up**.
+2. **Understand both changes before resolving.** If you do not understand why the other change
+   exists, find out before touching it. `git log -S` on the conflicting line usually names the
+   ticket.
+3. **Resolve carefully.** The correct resolution is usually a combination of both intentions,
+   not one side winning.
+4. **Test the affected functionality** — both your change and theirs. Run the guards.
+5. **Tag the steward of the area you resolved into.** Their review is wanted; their absence
+   does not hold the merge.
 
 > **Never resolve conflicts by blindly choosing "ours" or "theirs".** That silently deletes someone's work and the loss is often not discovered until much later.
 
@@ -993,11 +1002,11 @@ If a conflict occurs:
 
 | Situation | What to do |
 |---|---|
-| Conflict is in your own area only | Resolve it yourself |
-| Conflict is in someone else's area | Message the owner before resolving; tag them on the PR |
-| Conflict is in a shared file (§11) | Message the whole team; resolve with the file's owner present |
-| Conflict is large or you are unsure | **Stop. Do not force it.** Bring both developers together and resolve as a pair. |
-| Conflict recurs in the same file every merge | That is a structural problem, not a git problem. Split the file by owner (as §11 does for the detail page). |
+| The conflict is mechanical (imports, formatting, adjacent lines) | Resolve it yourself and move on |
+| The conflict is semantic — two intentions disagree | Resolve it, **and say in the PR which intention you kept and why**. Tag the steward. |
+| Conflict is in a shared file (§11) | Say so in the group. The real fix is usually step 5: land the shared file's ticket first. |
+| Conflict is large or you are unsure | **Stop. Do not force it.** Pair on it. An unsure resolution is a silent deletion. |
+| Conflict recurs in the same file every merge | That is a structural problem, not a git problem. Split the file (as §11 does for the detail page). |
 
 ---
 
@@ -1039,7 +1048,7 @@ Description:
 Reject any bid that is not strictly greater than the current valid price.
 The rejection message must state the current price so the bidder can correct it.
 
-Owner: Rayan
+Claimed by: Rayan (branch `feature/R-03-bid-validation`)
 
 Feature: Bidding / Bid Validation
 
@@ -1085,7 +1094,7 @@ Use **`type:verification`** for an Issue that depends on a **technical** platfor
 
 ### Working with Issues
 
-- Assign every Issue to exactly one owner
+- Assign every Issue to whoever claimed it — and to nobody until it is claimed
 - Link the Issue in your PR description
 - Close Issues through the PR, not manually
 - If you discover work that is not in an Issue, create the Issue first
@@ -1135,7 +1144,7 @@ Save this as `.github/pull_request_template.md` so it appears automatically on e
 
 **As the author:** keep PRs small and focused. Explain anything non-obvious in the description rather than making the reviewer work it out. Respond to every comment, even if only to say you disagree and why.
 
-**As the reviewer:** review within one working day — a blocked teammate is worse than a slightly less thorough review. Check that the change stays within the author's ownership area, that it does not duplicate something that already exists elsewhere, and that acceptance criteria are actually met. Approve when it is good enough, not when it is perfect.
+**As the reviewer:** review within one working day — a blocked teammate is worse than a slightly less thorough review. Check that the change **keeps the §6 contracts it touches**, that it does not duplicate something that already exists elsewhere, and that acceptance criteria are actually met. **Do not review for whether the author "should" have touched the file** — that is no longer a question (§7). Approve when it is good enough, not when it is perfect.
 
 ---
 
@@ -1217,7 +1226,7 @@ Given what Dalal is, three more apply to specific kinds of work:
 |---|---|
 | **Anything enforcing a business rule** | The rule is enforced **server-side** and still holds when the UI is bypassed (PRD BR-08, SC-43) |
 | **Anything touching bids or price** | Correctness is verified under **concurrent** bidding, not just sequentially (PRD BR-11, SC-16) |
-| **Anything crossing an ownership boundary** | The **owner of the consumed functionality has reviewed it** (§7) |
+| **Anything that changes a §6 contract** | The change is **decided**, not assumed, and the decision is linked. Steward tagged; merge does not wait for them (§7) |
 
 **"Done" is not "it works on my branch."** It is merged into `main`, with `main` still in a usable state.
 
@@ -1242,7 +1251,7 @@ Given what Dalal is, three more apply to specific kinds of work:
 ### Four more, specific to how this team is set up
 
 14. **Announce before changing a shared file or a shared contract.** Identity (A-02), auction fields (M-01), routing, global config, and the app entry point affect everyone. A message before the change costs seconds; discovering it in a conflict costs an afternoon.
-15. **If you are blocked, say so the same day.** Do not spend a day working around a missing piece — the person who owns it may be 20 minutes from finishing it, or may not know you need it.
+15. **If you are blocked, say so the same day.** Do not spend a day working around a missing piece — whoever is building it may be 20 minutes from finishing, or may not know you need it — and if nobody is, **the ticket is yours to claim.**
 16. **`PRD.md` contains the finalized MVP product decisions. Developers must follow `PRD.md` as the product source of truth. If a genuinely new ambiguity is discovered during implementation, it must be raised with the team rather than silently invented.**
 17. **A broken `main` is everyone's problem.** If `main` does not build, fixing it comes before your feature work. Whoever merged the break leads the fix.
 
@@ -1261,7 +1270,7 @@ docs/
 |---|---|---|
 | **`README.md`** | Project introduction and setup. What Dalal is, how to get the project running locally, and where to go next — which is `PRD.md` for what to build and `TEAM.md` for how the team works. Keep it short; setup instructions must actually work from a clean clone. | Whole team — whoever changes setup updates it |
 | **`PRD.md`** | The approved product requirements. The single source of truth for **what** the product must do. Every Issue should trace to a PRD requirement. Do not restate requirements in other files — link to the ID instead. | Product owner; developers propose changes via PR |
-| **`TEAM.md`** | This document. Team members, ownership, branches, GitHub workflow, and collaboration rules. The single source of truth for **who** does what and **how** work gets merged. | Whole team — update it whenever ownership changes |
+| **`TEAM.md`** | This document. The domain map, branches, GitHub workflow, and collaboration rules. **`CLAUDE.md` §1 is the source of truth for how work is claimed**; this file describes the domains and the contracts. | Whole team — update it whenever the domain map or the rules change |
 | **`ARCHITECTURE.md`** | The technical architecture derived from `PRD.md` and this document. The single source of truth for **how** the system is built — platform split, trust boundary, data ownership, deployment. Read it before implementing anything that touches bidding, authorization, or closing. | Software architecture; developers propose changes via PR |
 | **`docs/`** | Additional technical and project documentation, added **later, only when needed**. Likely candidates: records of the technical verification spikes (ARCHITECTURE.md §22) once resolved. | Author of each document |
 
@@ -1270,7 +1279,7 @@ docs/
 - **Do not create unnecessary documentation files.** Four locations is enough for a three-person team. A document nobody reads is worse than no document, because it goes stale and then misleads.
 - **`docs/` starts empty.** Add a file only when there is a real question it answers.
 - **Update `TEAM.md` when reality changes.** If ownership shifts, a branch is renamed, or a rule stops being followed, fix this file. An inaccurate `TEAM.md` is worse than none.
-- **One place per fact.** Requirements live in `PRD.md`. Ownership lives in `TEAM.md`. Setup lives in `README.md`. Do not copy between them — link.
+- **One place per fact.** Requirements live in `PRD.md`. The governance model lives in `CLAUDE.md` §1. The domain map lives in `TEAM.md`. Setup lives in `README.md`. Do not copy between them — link.
 
 ---
 
@@ -1280,9 +1289,9 @@ Recorded honestly so the team can watch for them. The structure is sound; these 
 
 | # | Risk | Why it matters | Mitigation |
 |---|---|---|---|
-| **1** | **Rayan's workstream is significantly larger than the other two** | It contains bidding, all validation, realtime, concurrency correctness, automatic closing, and winner determination — including every correctness-critical requirement in the PRD (BR-11, BR-12, FR-END-10). Abdulrahman's workstream is the smallest and the least blocked. | Watch this from week one. **When Abdulrahman finishes authentication, he should move to support whichever half is behind** — presentation work is routed through Mohammed, who owns all of it (CLAUDE.md §1); bidding behaviour is routed through Rayan — realistically rejection-reason wiring, bid recording and order, or closing and winner determination. Helping does not change primary ownership of either half. |
+| **1** | **Rayan's workstream is significantly larger than the other two** | It contains bidding, all validation, realtime, concurrency correctness, automatic closing, and winner determination — including every correctness-critical requirement in the PRD (BR-11, BR-12, FR-END-10). Abdulrahman's workstream is the smallest and the least blocked. | Watch this from week one. **Whoever finishes first claims from wherever the queue is deepest** — that is the whole point of the claim model (`CLAUDE.md` §1). No negotiation, no handover ceremony: pick a ready bidding ticket and build it, tagging Rayan for review. |
 | **2** | **The auction detail page is a three-way shared surface** | All three workstreams render on it. Left as one file, it conflicts on nearly every merge. | The component split in §11, created as empty files in Sprint 0 (S0-8). Do this before anyone writes page code, not after the first painful conflict. |
-| **3** | **Current price sits across an ownership boundary** | Rayan owns the value; Mohammed owns where it appears — on two different pages. Ambiguity here produces two competing sources of truth and a price that disagrees between listing and detail. | The added matrix row in §6 and PRD BR-13: the price is **always** derived from bid history. Mohammed never computes it, only displays it. |
+| **3** | **Current price is derived in one place and displayed in two** | It appears on the listing and on the detail page. If either page recomputes it, there are two sources of truth and a price that disagrees between them. | §6 and PRD BR-13: the price is **always** derived from bid history, server-side, and read as a **string**. No page computes it. |
 | **4** | **~~PRD Open Questions block Must Have work~~ — RESOLVED.** All fifteen product decisions are final (PRD §21.1); no workstream waits on a product answer. **The residual risk is different: a developer encountering something the PRD genuinely does not cover, and inventing an answer in code.** | Team Rule 16. Raise it with the team; it gets recorded in the PRD, then built. Note that **technical** platform verifications (ARCHITECTURE.md §22) are a separate category and must not be treated as product questions |
 | **5** | **Everyone is blocked on A-02 (the identity contract)** | Both Mohammed and Rayan need identity. If it arrives in week three, they either wait or build two different placeholders that both need unpicking. | A-02 is the single highest-priority task on the team. It is a contract, not an implementation — it can be agreed and documented on day one, before the auth code is finished. |
 | **6** | **Long-lived branches drift** | Three parallel branches over several weeks, each touching shared files, will diverge badly if they only meet at the end. | §17 sync discipline, the three integration checkpoints in §14, and small frequent PRs rather than one large merge per workstream. |
@@ -1366,15 +1375,16 @@ Supabase
 
 | Question | Answer |
 |---|---|
-| Which branch am I on? | `feature/abdulrahman-auth` · `feature/mohammed-auctions` · `feature/rayan-bidding` |
+| Which branch am I on? | One per ticket — `feature/<ticket-id>-<short-name>`. The personal branches are retired (§8). |
 | Can I push to `main`? | No. Pull Request with one review, always. |
-| Who owns identity / "current user"? | Abdulrahman |
-| Who owns the auction record? | Mohammed |
-| Who owns the price, bids, realtime, and the winner? | Rayan |
-| Who owns the auction detail page? | Mohammed owns the shell and all presentation on it, bidding panel included; Rayan owns the bidding behaviour inside it |
-| I need something from another area | Ask the owner. Do not build your own. |
-| I need to edit another owner's file | Message them first, then tag them as reviewer |
-| I hit a conflict | Find the owner → talk → resolve together → owner verifies. Never blind "ours"/"theirs". |
+| **May I edit a file someone else wrote?** | **Yes. Nobody owns a file.** Claim the ticket first (§7). |
+| Who do I tag for identity / "current user"? | Abdulrahman — as **reviewer**, not as gatekeeper |
+| Who do I tag for design-system consistency? | Mohammed |
+| Who do I tag for price, bids, realtime, closing? | Rayan |
+| **The steward is away and my ticket is ready** | **Build it.** Absence is not a blocker (`CLAUDE.md` §1). |
+| I need something another ticket is building | Check if it is merged. If not, that dependency is real — say so on the issue. |
+| **What actually blocks me?** | An **undecided** product question, or a §6 contract my change would break. Nothing else. |
+| I hit a conflict | Resolve it **on your branch**, say which intention you kept, tag the steward. Never blind "ours"/"theirs". |
 | How often do I sync with `main`? | Start of every session, and always before opening or merging a PR |
 | I need to know what the product should do | Read `PRD.md` — it is final, with zero open questions. |
 | The PRD genuinely does not cover my situation | Raise it with the team. It gets recorded in the PRD, then built. Never invent it in code (Rule 16). |
@@ -1385,4 +1395,4 @@ Supabase
 
 ---
 
-*Update this document whenever ownership, branches, or team rules change. An out-of-date `TEAM.md` is worse than none.*
+*Update this document whenever the domain map, branches, or team rules change. An out-of-date `TEAM.md` is worse than none. **Ownership as authorization is gone** — `CLAUDE.md` §1 governs.*

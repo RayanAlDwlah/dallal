@@ -15,9 +15,7 @@
 
 **LM Studio already speaks the OpenAI API.** There is no adapter to write and no SDK to
 pick. `POST http://127.0.0.1:1234/v1/chat/completions` with an OpenAI request body returns
-an OpenAI response body. Three environment variables — `AI_BASE_URL`, `AI_API_KEY`,
-`AI_MODEL` — are the entire integration, and the day we swap the free local model for a
-hosted one, **only those three values change.**
+an OpenAI response body. Three environment variables carry the whole configuration:
 
 ```
 AI_BASE_URL=http://127.0.0.1:1234/v1     # local:  LM Studio
@@ -28,8 +26,31 @@ AI_MODEL=google/gemma-4-e4b
 None of these is ever `NEXT_PUBLIC_`. See §6 — that is not a style preference, it is the
 same rule as `SUPABASE_SERVICE_ROLE_KEY` (`CLAUDE.md` §6) and it has the same consequence.
 
-The hard part is not the connection. The hard part is **what we are allowed to ask it**,
-and §2 is the answer measurement gave, which is not the answer the prototype assumed.
+### Configuration is not compatibility — a claim withdrawn
+
+An earlier version of this section said that swapping the local model for a hosted one
+means **"only those three values change."** **That is withdrawn**, because it is not true
+and it is the kind of untrue that surfaces in production behind a green build.
+
+Three variables **point the client at an endpoint**. They say nothing about whether what is
+at that endpoint:
+
+- accepts an **image** in the message content (feature 1 dies without it)
+- honours `response_format: {type: "json_schema", strict: true}` rather than a looser
+  "JSON mode" (§1.1 measured what free-form costs: 80 s and nothing usable)
+- returns an object that actually **validates against the schema it was sent**
+- preserves **Arabic enum values** (§1.2 Finding A — English slugs measured *wrong*)
+
+A provider can fail any one of those while every environment variable is set correctly and
+`npm run build` is green. So the rule is:
+
+> **Configuration selects a provider. A capability contract test qualifies it.** Ticket
+> **V2-A18** — vision input, strict structured output, schema validity, Arabic enum
+> preservation, and a *recorded* (not asserted — see §1.5) latency. A provider that has not
+> passed it is not a supported provider.
+
+The hard part was never the connection. It is **what we are allowed to ask it** (§2) and
+**what the thing on the other end can actually do** (§4).
 
 ---
 
@@ -101,21 +122,29 @@ memory pressure, and the first call after an eviction pays to reload from disk.
 
 ---
 
-## 2. What the AI is therefore allowed to do — and the two prototype points that die here
+## 2. What each of the five features is actually made of
 
-`design-system/previews/ai.html` lists five things the AI does. Measurement kills two of
-them and changes a third. Better to know now than to build them.
+`design-system/previews/ai.html` lists five things the AI does. **All five are approved and
+all five are being built** ([D-04](../decisions/D-04-ai-product-surface.md), owner,
+2026-08-15). What the measurements above determine is **which technology delivers each
+one** — and for two of them, it is not the text model.
 
-| # | the prototype's point | verdict |
+That distinction is the whole value of having measured before building. A feature is not
+smaller because the correct implementation of it contains no language model; feature 5 is
+*more* reliable for being SQL, and finding that out here cost an afternoon instead of a
+sprint.
+
+| # | the prototype's point | what builds it |
 |---|---|---|
-| 1 | **يكتب الإعلان** — reads the images, proposes title / description / category | ✅ **build it.** Vision + `json_schema`, Arabic enum for the category, ~11 s, on a step where the user is already waiting for an upload |
-| 2 | **يصلّح الصور** — background, lighting, crop, reflection | ❌ **not an LLM task at all.** No text or vision-language model can output an edited image. This needs image processing (`rembg`, `sharp`) or a hosted image model. It is a *different* piece of work that has been sitting inside the word "AI" and nobody noticed |
-| 3 | **يفهم البحث** — Arabic sentence → editable filter chips | ⚠️ **build it, minus the price.** Category / city / keywords: measured correct. The price band comes from a **deterministic Arabic-numeral parser in TypeScript**, never from the model (§1.2 Finding B) |
-| 4 | **يجاوب عن القطعة** — answers from the seller's description only | ✅ **build it.** Pure text, short answer, and «ما أعرف» is an easy answer — which is exactly the shape a small model is good at |
-| 5 | **يقترح سعر البداية** — from similar ended auctions in the last 90 days | ❌ **not the LLM's job — it is a SQL query.** `percentile_cont` over ended auctions in the same category. Exact, free, instant, auditable, and it cannot hallucinate an amount. The model would be strictly worse at the one thing §1.2 proves it cannot do |
+| 1 | **يكتب الإعلان** — reads the images, proposes title / description / category | **the VLM.** Vision + `json_schema`, Arabic enum for the category, ~11 s, on a step where the user is already waiting for an upload |
+| 2 | **يصلّح الصور** — background, lighting, crop, reflection | **a separate image-processing / image-model pipeline** — `rembg`, `sharp`, or a hosted image model. No text or vision-language model outputs an *edited image*, so this gets its own provider, its own cost and its own tickets: **V2-A14** (spike) → **V2-A15** (original + derived storage) → **V2-A16** (pipeline) → **V2-B12** (surface) |
+| 3 | **يفهم البحث** — Arabic sentence → editable filter chips | **the model plus deterministic parsers.** Category / city / keywords from the model — measured correct. **Brand, minimum year, price band and «تنتهي خلال ٢٤ ساعة» from parsers** in `lib/search/`, never from the model (§1.2 Finding B) |
+| 4 | **يجاوب عن القطعة** — answers from the seller's description and specifications | **the model, grounded.** Short text over one document, and «ما أعرف» is an easy answer — exactly the shape a small model is good at |
+| 5 | **يقترح سعر البداية** — from comparable ended auctions | **SQL and data analysis.** `percentile_cont` over comparable ended auctions, returning a **range** with the **comparable count** beside it. Exact, free, instant, auditable, and it cannot hallucinate an amount. Still the approved **seller-only** feature |
 
-Point 5 is the clearest example of the trap: it *sounds* like AI, the prototype puts it
-under the AI heading, and the correct implementation contains no model at all.
+Point 5 is the clearest illustration in the product: it *sounds* like AI, the prototype puts
+it under the AI heading, and the correct implementation contains no model at all — which
+makes it the most trustworthy of the five, not the least.
 
 ---
 
@@ -155,17 +184,30 @@ stops nothing on its own — `CLAUDE.md` §9.
 infrastructure; `localhost` there is the function's own container. This is not a
 configuration issue and there is no header that fixes it.
 
-Three options. **This is a decision for the owner, not for a session:**
+Three options were on the table. **The owner decided, 2026-08-15:**
 
-| | what it is | cost | what breaks |
-|---|---|---|---|
-| **A. dev-only** | the AI features work on `npm run dev` and are hidden in production behind `AI_ENABLED` | free | the deployed demo has no AI. If the AI is part of what is being demonstrated, this is not an option |
-| **B. tunnel** | `cloudflared` / `ngrok` exposes the Mac's :1234 to a public URL; `AI_BASE_URL` points at it | free tier exists | **the laptop must be awake, online, and running LM Studio, or the feature is down.** Also puts an unauthenticated inference endpoint on the public internet unless a shared secret is checked — and `AI_API_KEY` must then actually be verified, which LM Studio does not do |
-| **C. hosted OpenAI-compatible** | Groq, Together, OpenRouter, DeepInfra — all speak the same three variables | free tiers, then pennies | nothing structural. Latency *improves* by ~10×. This is what the adapter in §0 exists for |
+> **LM Studio is for local development. Production uses a hosted OpenAI-compatible
+> provider, selected through a capability check.**
 
-The adapter makes A → B → C a change of three environment variables and no code. **Build
-against A, keep C one env-var away, and decide later** — the point of §0 is that this
-decision does not have to be made now to start building.
+That is **option C**, and it closes A and B:
+
+| | what it is | status |
+|---|---|---|
+| **A. dev-only** | AI features work on `npm run dev`, hidden in production behind `AI_ENABLED` | **not the production answer.** Still what runs locally — that is the decision's first half |
+| **B. tunnel** | `cloudflared` / `ngrok` exposes the Mac's :1234; `AI_BASE_URL` points at it | **rejected.** The laptop would have to be awake, online and running LM Studio or the feature is down — and it puts an unauthenticated inference endpoint on the public internet, since LM Studio does not verify `AI_API_KEY` |
+| **C. hosted OpenAI-compatible** | Groq, Together, OpenRouter, DeepInfra, … | **chosen for production.** Latency improves by roughly 10× |
+
+**Which** hosted provider is still open — `O11` in
+[`docs/v2/SPEC.md` §4.3](../v2/SPEC.md). And the step that is *not* optional once one is
+picked:
+
+> A candidate provider is qualified by the **capability contract test (V2-A18)** — vision,
+> `json_schema` + `strict`, schema validity, Arabic enum preservation, recorded latency —
+> **run against that provider's endpoint.** Being listed in the table above is not
+> qualification. Being configured is not qualification. Passing is.
+
+So: **build against A locally, run V2-A18 against each C candidate, and let the test decide
+which ones are usable.** What does *not* follow is that the switch is free — see §0.
 
 ---
 
@@ -174,14 +216,27 @@ decision does not have to be made now to start building.
 ```
 lib/ai/
   client.ts      the only place fetch() is called. Reads AI_BASE_URL/AI_API_KEY/AI_MODEL.
-                 Server-only — a "use server" module, never imported by a client component.
+                 Starts with  import "server-only"  — see the note below.
   schemas.ts     one json_schema per task. Arabic enum labels (§1.2 Finding A).
   labels.ts      Arabic label → category slug. A plain table, not a model call.
+  capability.ts  the V2-A18 probe: vision, strict json_schema, Arabic enum, latency.
   tasks/
     describe.ts  images  → {title, description, category}      (point 1)
     search.ts    Arabic  → {category, city, keywords}          (point 3, no price)
-    answer.ts    q + description → short answer or «ما أعرف»   (point 4)
+    answer.ts    q + description + specs → short answer or «ما أعرف»   (point 4)
 ```
+
+> **`import "server-only"`, not `"use server"`.** An earlier version of this document said
+> *"a `"use server"` module"*. **That was wrong, and the two are not interchangeable:**
+>
+> - **`import "server-only"`** is a build-time poison pill. If any client component pulls
+>   the module into its graph, the build fails. That is exactly what is wanted here.
+> - **`"use server"`** marks a module's exports as **Server Actions** — callable from the
+>   client over an RPC endpoint the framework generates. Putting it on `client.ts` would
+>   *publish* every AI function as an endpoint, which is the opposite of the intent.
+>
+> **`"use server"` is reserved for Server Actions.** The guard in §6 asserts the correct
+> one is present, so this cannot regress quietly.
 
 Everything reaches it through a **Route Handler** under `app/api/ai/*`, so the browser
 never learns the base URL, never holds the key, and the server can refuse a request that
@@ -196,18 +251,24 @@ way.
 
 ---
 
-## 6. The three rules that must not be relaxed
+## 6. The four rules that must not be relaxed
 
 1. **`AI_BASE_URL`, `AI_API_KEY`, `AI_MODEL` are server-only.** No `NEXT_PUBLIC_` prefix,
    ever. A `NEXT_PUBLIC_AI_API_KEY` is in the JavaScript bundle, and the bundle is public.
    The guard for this already exists in shape — `tests/guards/run.sh` bans
-   `NEXT_PUBLIC_*SERVICE_ROLE*`; the AI variables get the same treatment.
+   `NEXT_PUBLIC_*SERVICE_ROLE*`; the AI variables get the same treatment, **and every module
+   under `lib/ai/` must carry `import "server-only"`** (§5).
 2. **No prompt ever contains an email address or an internal user id** (`CLAUDE.md` §6).
-   Display name is the only public identity, and a prompt is not a private place — under
-   option B or C it leaves the machine entirely.
+   Display name is the only public identity, and a prompt is not a private place — the
+   production provider is a third party, so every prompt leaves the machine.
 3. **No amount is ever produced by, passed to, or validated by the model.** §1.2 Finding B
    measured this failing ten times out of ten, and `CLAUDE.md` §4 rule 1 does not have an
    exception for "the model said so".
+4. **A provider is used only after it passes the capability contract test** (§0, §4,
+   ticket V2-A18). Setting three environment variables is configuration; passing the test
+   is qualification. The failure this prevents is silent: correct config, green build,
+   feature broken in production because the endpoint quietly ignored `strict` or refused an
+   image.
 
 ---
 
