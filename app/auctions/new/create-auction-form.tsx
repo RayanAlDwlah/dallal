@@ -7,7 +7,8 @@ import { AmountInput } from "@/components/ui/amount-input";
 import { Button } from "@/components/ui/button";
 import { Field } from "@/components/ui/field";
 import { Input, Textarea } from "@/components/ui/input";
-import { formatSarWithSuffix, trySar } from "@/lib/money";
+import { Money } from "@/components/ui/money";
+import { trySar, type Sar } from "@/lib/money";
 import {
   ACCEPTED_IMAGE_TYPES,
   DESCRIPTION_MAX_LENGTH,
@@ -301,7 +302,10 @@ export function CreateAuctionForm() {
         {pricePreview && !errorFor("startingPrice") ? (
           <p className="text-ink-2 -mt-3 text-sm">
             سيُعرض السعر هكذا:{" "}
-            <bdi className="num font-semibold">{formatSarWithSuffix(pricePreview)}</bdi>
+            {/* INT-06 wave 2 — the seller types this value and BR-21 puts no
+                ceiling on it, so this is the likeliest wide amount in the whole
+                product. It was a bare <bdi> with no containment. */}
+            <Money amount={pricePreview} size="sm" />
           </p>
         ) : null}
 
@@ -367,7 +371,8 @@ export function CreateAuctionForm() {
         <ReviewPanel
           name={name}
           description={description}
-          price={pricePreview ? formatSarWithSuffix(pricePreview) : startingPrice}
+          price={pricePreview}
+          rawPrice={startingPrice}
           endTime={formatEndTime(toInstant(endsAt))}
           imageName={imageName}
         />
@@ -426,12 +431,16 @@ function ReviewPanel({
   name,
   description,
   price,
+  rawPrice,
   endTime,
   imageName,
 }: {
   name: string;
   description: string;
-  price: string;
+  /** The parsed amount when the typed string is a valid Sar, else null. */
+  price: Sar | null;
+  /** What the seller actually typed — shown verbatim when it is not yet valid. */
+  rawPrice: string;
   endTime: string;
   imageName: string | null;
 }) {
@@ -468,11 +477,17 @@ function ReviewPanel({
         </ReviewRow>
 
         <ReviewRow label="سعر البداية">
-          {/* The currency indicator stays OUTSIDE the isolate (CLAUDE.md §3) —
-              formatSarWithSuffix already returns the canonical "1,250.00 SAR",
-              so the isolate wraps the whole rendered string exactly as Money
-              does elsewhere. */}
-          <bdi className="num font-semibold">{price}</bdi>
+          {/* INT-06 wave 2 — <Money> rather than a hand-rolled <bdi>. It is the
+              only element carrying `max-w-full min-w-0 overflow-x-auto`, and
+              the seller can type an arbitrarily wide price (BR-21). When the
+              typed string is not yet a valid amount there is nothing to format,
+              so it is shown verbatim — isolated, because a partial number is
+              still a digit run inside RTL text. */}
+          {price ? (
+            <Money amount={price} size="sm" />
+          ) : (
+            <bdi className="num font-semibold break-all">{rawPrice}</bdi>
+          )}
         </ReviewRow>
 
         <ReviewRow label="ينتهي في">
@@ -484,9 +499,14 @@ function ReviewPanel({
         </ReviewRow>
       </dl>
 
-      <p className="text-ink-2 text-xs">
-        أول مزايدة بمبلغ <bdi className="num">{price}</bdi> بالضبط مقبولة.
-      </p>
+      {/* Only stated once the amount is well formed — "a first bid of exactly
+          <nothing> is accepted" is not a sentence, and BR-29 is the rule this
+          screen exists to make unmistakable (FR-CREATE-26a). */}
+      {price ? (
+        <p className="text-ink-2 text-xs">
+          أول مزايدة بمبلغ <Money amount={price} size="sm" /> بالضبط مقبولة.
+        </p>
+      ) : null}
     </section>
   );
 }

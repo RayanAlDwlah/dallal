@@ -79,8 +79,17 @@ echo "==> INT-06 — the statically decidable half (NFR-USA-06, SC-49)"
 # money.tsx is omitted from the scan because it IS the implementation of the
 # rule — it is the one place formatSar may be called to produce a rendered
 # node, and flagging it would make the check unsatisfiable.
+# `formatSar[A-Za-z]*(` — the FAMILY, not one name. The first version matched
+# `formatSar(` alone, and `formatSarWithSuffix(` does not contain that string,
+# so three hand-rolled islands sat in front of it unseen: the create form's
+# price preview, its review paragraph, and StartingPrice's sentence. Two of
+# them had no containment at all, and the preview is the likeliest wide amount
+# in the product — it is the field the seller types the price into.
+#
+# A one-character blind spot in the check that exists to catch this class is
+# the fourth wave of the same defect. The pattern is now the family.
 chk "every rendered amount goes through <Money>" \
-    "$(code components/ui/money.tsx | grep -vE 'placeholder=|sr-only|aria-' | grep -c 'formatSar(' || true)" 0
+    "$(code components/ui/money.tsx | grep -vE 'placeholder=|sr-only|aria-' | grep -cE 'formatSar[A-Za-z]*\(' || true)" 0
 
 # --- 2. No physical direction properties ------------------------------------
 # CLAUDE.md §3. These break the RTL mirror, and a layout that mirrors wrongly is
