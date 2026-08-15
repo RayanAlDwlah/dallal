@@ -15,11 +15,11 @@ restating the dependency graph, delete that part and link instead.
 | | |
 |---|---|
 | **Run id** | `e33684e-20260815T0250` |
-| **Last updated** | 2026-08-15, after reading `PRD.md` §19 and §22 **inward** against the board — three more crossings, none decided (`bb4161a`..`02feda4`) — this file is the commit that follows it |
+| **Last updated** | 2026-08-15, after reading `PRD.md` §20 **inward** against the board — four more crossings, one of them item 6's defect a second time, none decided (`db8f777`) — this file is the commit that follows it |
 | **Branch** | `feature/rayan-v2-spec` |
-| **HEAD** | `02feda4` + this commit |
-| **Base** | **35 commits ahead of `origin/main`**, and it contains `.github/workflows/ci.yml`, which `main` does not. Everything through `02feda4` **is pushed**; this commit may not be. Push, never force-push — #168 is open and others may be reading it |
-| **CI status** | **`static` GREEN on `ubuntu-latest` at `7e4fd90`** ([run 31869670980](https://github.com/RayanAlDwlah/dallal/actions/runs/31869670980)), reporting `163 passed, 0 failed` and `108 caught, 0 no-op, 108 of 108 reached` — **identical to the macOS figures**, which is the claim worth making given the `grep`-dialect divergence recorded below. `02feda4` has landed since and takes those to **164 / 111**; that pair is **macOS-only until the next run reports**. **`database` still RED** on the pre-existing #147 (`auth` and `bidding` both pass; `auction` does not), which **PR #155 fixes and only a human can merge**. See the correction under the measurement tables before trusting any green row |
+| **HEAD** | `db8f777` + this commit |
+| **Base** | **37 commits ahead of `origin/main`** at `db8f777`, and it contains `.github/workflows/ci.yml`, which `main` does not. Everything through `db8f777` **is pushed**; this commit may not be. Push, never force-push — #168 is open and others may be reading it |
+| **CI status** | **`static` GREEN on `ubuntu-latest` at `db8f777`** ([run 31870785163](https://github.com/RayanAlDwlah/dallal/actions/runs/31870785163)), reporting `164 passed, 0 failed` and `113 caught, 0 no-op, 113 of 113 reached` — **identical to the macOS figures**, which is the claim worth making given the `grep`-dialect divergence recorded below. **No figure on this page is macOS-only.** **`database` still RED** on the pre-existing #147 (`auth` and `bidding` both pass; `auction` does not), which **PR #155 fixes and only a human can merge**. See the correction under the measurement tables before trusting any green row |
 | **Operator** | unattended Claude session, owner asleep, reviewing later |
 
 ---
@@ -332,7 +332,15 @@ declaring it out of scope.
    questions now, not three.** Nothing reclassified. Posted on #168 as
    [`#issuecomment-5301005402`](https://github.com/RayanAlDwlah/dallal/pull/168#issuecomment-5301005402).
    See the inward-sweep section below.
-7. Only then create the V2 issues.
+7. ~~**§20's assumption rows, read the same way**~~ — **done**, `db8f777`. Four more crossings
+   (`:1949` A-A5, `:1945` A-A1, `:1978` A-I4, `:1952` A-A8) and **one negative result recorded
+   on purpose** (`:1936` A-U7 — checked, does not break). **The blockquote has seven questions
+   now, not six**, and item 7 is item 6's defect a second time: `R5` and `R6` were both
+   classified *silent → gap-filling → safe* by searching `PRD.md` for a **word**, when the PRD
+   excludes the *function*. Nothing reclassified. Posted on #168 as
+   [`#issuecomment-5301053151`](https://github.com/RayanAlDwlah/dallal/pull/168#issuecomment-5301053151).
+   See the §20 section below.
+8. Only then create the V2 issues.
 
 **Blocked, with the reason:**
 
@@ -358,11 +366,16 @@ the research passes behind `O14` and `O24` that produce *options* rather than de
 > is about the latter. That judgement is the one most worth a second reader's eye, since it is
 > the only place the sweep decided a row did *not* apply rather than surfacing it.
 >
-> The remaining unread surface is **§20's other assumption rows and §21**. A-U1 turned out to
-> matter (item 5), so the rest of §20 is the obvious next place — assumptions are weaker than
-> exclusions and a sweep there will likely be quieter, but A-U1 is the proof that "weaker" is
-> not "empty". It is a sweep, not a decision, so it is safe to run unattended; anything it
-> finds is a blockquote question, never a reclassification.
+> **§20 has since come off this list too** — that is item 7 above, and the guess that a sweep
+> of assumptions "will likely be quieter" was **wrong**: it produced four crossings to §19/§22's
+> three, and the largest single finding of either sweep (item 7, the keyword-classification
+> defect). Recorded because the guess is the kind that talks a later session out of running
+> something. What §20 leaves behind: its remaining assumption rows were read and cross nothing
+> this board builds, and `:1936` A-U7 was checked and **does not** break — a company hosting a
+> room is the case that would, so it is named rather than dropped.
+>
+> The remaining unread surface is **§21**. It is a sweep, not a decision, so it is safe to run
+> unattended; anything it finds is a blockquote question, never a reclassification.
 
 ---
 
@@ -591,6 +604,75 @@ because a mutation was aimed at a moving target (an indentation level, one of tw
 sites). These were written after that, and the two aimed at the 12-entry list deliberately hit
 **different tuples** — a shared loop body means one probe on one tuple is not evidence for the
 other eleven.
+
+### §20 read the same way, at `db8f777` — and item 6's defect found a second time
+
+§19 and §22 are exclusions. **§20 is assumptions**, and no `D-0x` record cites a single one of
+them — so the outward read could not reach §20 either. Same method, next surface.
+
+| # | the assumption nobody cited | what builds it |
+|---|---|---|
+| 2 | `:1949` **A-A5** — *"Auctions become live immediately on creation; nobody needs to schedule a future start"* | D-03 §1 gives a session a start date and time |
+| 2 | `:1945` **A-A1** — *"An auction sells exactly one item, in one quantity"* | D-03 §Step 2, *the lots, in order*. The weaker of the two: a session holds many lots, each still one item |
+| 4 | `:1978` **A-I4** — *"no in-product editing is needed"* | D-04 feature 2 crops and relights. This is the belief `:1917` rests on |
+| 4 | `:1975` **A-I1** — *"One image per auction is sufficient"* | D-06, which already reverses it |
+| **7** | `:1952` **A-A8** — *"Sellers will write their own descriptions and provide their own images"* | D-04 feature 1 — `V2-A7`, `V2-B8` |
+
+**An assumption is not an exclusion and ratifying it is a different act.** An exclusion says *we
+chose not to build this*; an assumption says *we believe nobody wants it*. `A-U9` and `A-B6` are
+the precedent — retired in place when their decisions moved. The BR-36 precedent already
+required un-marking §19.2 **and** §22.1 together; §20 adds a third thing to retire, and the
+board now says so.
+
+**One negative result is written down deliberately.** `:1936` — **A-U7**, *"no separate account
+types are needed"* — was checked and does **not** appear to break: a host is a role held over a
+session, not a kind of user. It is recorded because a company hosting a room is the case that
+*would* break it. A negative result that is not written down gets re-derived by every session
+that follows, or worse, silently assumed to have been checked.
+
+**Item 7 is not a new defect — it is item 6's, one row over.** `R5` says *"silent. Zero
+occurrences of 'AI'"*; `R6` says *"silent. Zero occurrences of 'deposit'"*. Both true of the
+word. Both reached by **searching `PRD.md` for a keyword, and the keyword is the wrong unit of
+meaning** — the PRD excludes the *function*, not the technology. Neither makes the feature
+wrong; the owner decided all five, twice. Both make **rule 4 the wrong justification**. If both
+bind, the split goes from four conflicting records to **six**.
+
+```
+V2 — graph.check.mjs   164 passed, 0 failed                                    (unchanged)
+V2 — graph-negative    113 caught, 0 not caught (0 no-op), 113 of 113 reached  (111)
+```
+
+`graph.check.mjs` stayed at 164 because six tuples were added to a list, not six `chk` calls —
+worth stating, since an unchanged assertion count next to a claim of new coverage is exactly the
+shape that should draw suspicion. The coverage moved in the **pinned-row list**, `12 → 18`, and
+in the probe count.
+
+**Two probes were re-aimed, and that is a recurring cost now named in the header.** Both name the
+current count (`Six`→`Seven` became `Seven`→`Eight`; the numbering probe retargeted item 6 → 7).
+They go stale every time the blockquote grows. The tax is paid on purpose: a probe that mutated
+*whatever number it found* would pass for the wrong reason on the day the count is already wrong.
+
+**Two probes added, not six — probe-per-KIND, not probe-per-row.** The rule from last commit
+("one tuple is not evidence for eleven others") does not extend to one probe per tuple against a
+one-line shared loop; eighteen would be theatre. The line drawn instead: the existing two aim at
+§19/§22 **exclusion table rows**, the new one at a §20 **assumption row** — a different table and
+a different sentence shape. The second new probe closes a gap in the *pattern* rather than the
+document: it mutates the bare `` `:1949` `` citation form, a **different alternative of the
+citation regex** than the long `` `PRD.md:1806` `` form the existing probe uses. That is the
+same one-of-two-doors mistake the `:1848` probe made once already, relocated.
+
+**Linux caught up, and then confirmed this commit too.** `static` was green on `ubuntu-latest`
+at `02feda4` reporting `164 passed` / `111 caught`, and green again at `db8f777`
+([run 31870785163](https://github.com/RayanAlDwlah/dallal/actions/runs/31870785163)) reporting
+`164 passed, 0 failed` and `113 caught, 0 not caught (0 no-op), 113 of 113 probes reached` —
+both pairs identical to macOS. **No figure on this page is macOS-only any more.** That is worth
+one sentence rather than a shrug: this file already records a `grep`-dialect divergence that made
+a suite pass locally and go red in CI, and a probe count is exactly the quantity such a
+divergence moves.
+
+**What §20 did *not* produce, so nobody re-runs it:** the remaining assumption rows in §20 were
+read and cross nothing this board builds. §21 is the next unread surface, and it has not been
+started.
 
 ---
 
