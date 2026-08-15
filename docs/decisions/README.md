@@ -33,7 +33,9 @@ in the PRD this file says so and stops being the source.
 4. **Status is one of — and it is one of exactly these three:**
    - `DECIDED` — the owner decided it; it is safe to build
    - `OPEN` — raised, not decided; **do not build**
-   - `IN PRD` — landed in `PRD.md`; that document is now the source, this one is history
+   - `IN PRD` — landed in `PRD.md`; that document is now the source, this one is history.
+     **Only the owner moves a record here** — see "The ratification gate" below. No record
+     is `IN PRD` today
 
    > **`DECIDED in shape` is not a status.** It was invented by a session to describe a
    > record that is decided *and* still carries unanswered sub-questions. Three records wore
@@ -56,6 +58,90 @@ nothing: where a record here and the PRD disagree, **the PRD wins and the record
 
 ---
 
+## The ratification gate — only the owner moves a decision into `PRD.md`
+
+### The three rules
+
+1. **No session and no contributor PR edits `PRD.md`.** Ratification is the product owner's
+   act, performed by the owner. A session that believes a record is ready says so in the
+   queue below and **stops there**.
+2. **`DECIDED` authorises building. It does not authorise ratifying.** Those are two
+   different acts, and this directory exists because of the gap between them (see "Why this
+   directory exists"). A record can be safe to build from and still be absent from the PRD.
+3. **A session that finds a record contradicting the PRD surfaces it and does not pick a
+   side** — `CLAUDE.md` §2 and §8. That is what the `R` register below is.
+
+### Silence and contradiction are not the same thing
+
+The two sections above this one look like they conflict, and they do not — they cover
+different cases, and telling them apart is the whole job of this gate:
+
+| the PRD… | what the record is doing | what that means |
+|---|---|---|
+| **is silent** | filling a gap | exactly what this directory is for. `DECIDED` → **safe to build**, rule 4 |
+| **says the opposite** | superseding a ratified requirement | Precedence applies: *"a record is not a licence to contradict a ratified requirement."* **The owner ratifies, or nothing is safe** |
+
+Nobody had checked which case each record was in. The sweep below did — mechanically,
+against `PRD.md` at `823d9db`, with line numbers — and it found both kinds.
+
+### The `R` register — what ratification each record is waiting on
+
+**These are not `O` items and must not be merged into that register.** An `O` item is a
+question **nobody has answered**, and the ticket must not answer it. An `R` item is a
+question the owner **has** answered, where the ratified document does not say so yet.
+Opposite shapes, opposite remedies — and `docs/v2/SPEC.md` §4.1 records what it cost the
+last time two different ideas shared one label.
+
+| id | record | the PRD today | conflict? | what ratifying it requires |
+|---|---|---|---|---|
+| **R1** | [D-02](D-02-categories.md) — 13 categories, category-driven fields | `PRD.md:411` lists **"categories, search, and recommendations"** under *out of scope*; `PRD.md:508` **FR-CREATE-03**: *"The MVP must not offer optional auction fields. Every field is required… category and condition are Future"*; also `:1874`, `:2133` | **YES — direct** | FR-CREATE-03 must admit optional fields, or the category fields must be required. §19 and Future Enhancements must un-mark categories, the way `BR-36` un-marked anti-sniping |
+| **R2** | [D-06](D-06-images-and-create-flow.md) — 1 to 10 images, required | `PRD.md:527` **FR-CREATE-15**: *"Exactly one image per auction in the MVP. Multiple images are Future."*; `PRD.md:411` out of scope *"multi-image galleries and video"*; also `:1915` | **YES — direct** | FR-CREATE-15 rewritten to 1–10; the cover-image concept is new and has no FR. **BR-31** (`PRD.md:799`) freezes *"image"* after publish — D-06's `O22` (reorder after publish) sits directly on it |
+| **R3** | [D-03](D-03-sessions.md) — pause moves `end_time` forward | `PRD.md:784` **BR-16**: *"Nobody may change an auction's end time — not the seller, not an admin, not any edit path… **The single exception** is the automatic anti-sniping extension in BR-36"* | **YES — and it is live on `main` today** | BR-16 must go from *the single exception* to two named doors. See below |
+| **R4** | [D-01](D-01-bid-increment-button.md) — the bid button | `PRD.md:651` **FR-BID-09** forbids the **server** requiring a step, which the button does not do (D-01 §2). But a seller-set increment is a **new create field**, and `PRD.md:508` **FR-CREATE-03** says *"must not offer optional auction fields"* | **depends on an open item** | Nothing, **if** the increment is required. D-01 §5 item 1 asks exactly that, and nobody has answered it |
+| **R5** | [D-04](D-04-ai-product-surface.md) — five AI features | **silent.** Zero occurrences of "AI", "assistant" or "machine learning" in `PRD.md` | no | a new FR section. Gap-filling, not supersession — safe to build under rule 4 |
+| **R6** | [D-05](D-05-deposit.md) — the simulated deposit | **silent.** Zero occurrences of "deposit" | no | a new rejection reason alongside `BR-23`. Gap-filling |
+
+### R3 is not hypothetical — the drift already happened
+
+`CLAUDE.md` §5 carries the pause amendment today, in the file that governs `end_time`:
+
+> *"the sentence 'only inside `place_bid`' is now 'inside `place_bid`, **or** inside the
+> pause/resume operation'. Those are the only two doors."*
+
+`PRD.md:784` still reads *"The single exception is the automatic anti-sniping extension in
+BR-36."* Both are on `main`. The engineering constitution and the product requirement now
+disagree about how many doors `end_time` has, and **the PRD is the one that wins** by
+`CLAUDE.md` §2 — which makes the amendment `CLAUDE.md` §5 mandates a violation of the PRD.
+Nobody intended that. It is what an unratified decision looks like a week later.
+
+### What ratification actually looks like — `BR-36` is the worked example
+
+The anti-sniping reversal is the one V1 decision that went all the way through, and it is
+the shape to copy. It did not just rewrite `BR-36`. `PRD.md:2195` is an **amendment
+ledger**, naming every place that had to move with it:
+
+> BR-36 rewritten; §19.2 and §22.1 un-marked; SC-74 rewritten and SC-74a/74b/74c added;
+> A-B6 re-decided; BR-P5, §5.3, §7.3 and the §23 checklist updated
+
+Nine locations for one rule. That count is the honest cost of ratification, and it is why
+`R1` and `R2` above each list more than one line. It is also why the ledger matters more
+than the rule itself: without one, the next sweep finds §19 still saying categories are
+Future.
+
+### The mechanism
+
+Prose is not a gate (`CLAUDE.md` §9). Two checks in `tests/guards/run.sh` hold this one:
+
+- **every record declares a status from the three in rule 4** — the check that would have
+  caught `DECIDED in shape`, which three records actually wore
+- **every record that is not `IN PRD` appears in the `R` register above** — so a seventh
+  decision record cannot be added without saying what the PRD does or does not already say
+
+Neither check ratifies anything, and neither can. They only make the queue impossible to
+forget.
+
+---
+
 ## Index
 
 | | Decision | Status | Open items | Touches |
@@ -75,6 +161,11 @@ the owner directly.
 **All six records are `DECIDED`. Twenty-four open items remain**, each with an id, each
 named in its record's "Still open" section, and each citable from a ticket's *blocked on*
 column. Register: [`docs/v2/SPEC.md` §4.3](../v2/SPEC.md).
+
+**None of the six is `IN PRD`, and three of them contradict it** — `R1`, `R2`, `R3` in the
+ratification gate above. That is an owner action, not a contributor judgement, and it is
+tracked apart from the `O` register on purpose: an `O` item is unanswered, an `R` item is
+answered and unratified.
 
 **O4** — is a lot an `auctions` row or a separate entity — is now the expensive one. The two
 that used to outrank it (how category fields are stored, and what a pause does to the clock)

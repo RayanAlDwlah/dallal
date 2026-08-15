@@ -5,7 +5,7 @@
 #   ./tests/guards/run.sh
 #
 # Needs nothing: no Docker, no node, no network, no credentials. It reads the
-# tree and asserts seventeen facts about it. It finishes in under a second,
+# tree and asserts nineteen facts about it. It finishes in under a second,
 # which is deliberate: a guard nobody minds running is a guard that runs.
 #
 # ---------------------------------------------------------------------------
@@ -89,7 +89,7 @@ set -uo pipefail
 ROOT="$(cd "$(dirname "$0")/../.." && pwd)"
 cd "$ROOT" || exit 1
 
-EXPECTED=17
+EXPECTED=19
 pass=0
 fail=0
 
@@ -389,6 +389,64 @@ chk "the deleted refusal rule has not come back" \
 # boundary whatever it is called, and it is the thing that stopped work.
 chk "no document forbids a named person from touching something" \
     "$(count_md '(mohammed|rayan|abdulrahman|dem4t|m7ya505|RayanAlDwlah)[^.]{0,40}(must not|may not|is not allowed to|shall not|cannot) (touch|change|edit|modify|add|write|alter|rename)')" 0
+
+# ===========================================================================
+# RATIFICATION — docs/decisions/README.md, "The ratification gate"
+# ===========================================================================
+echo
+echo "--- ratification"
+
+# CLAUDE.md §2: product decisions live in PRD.md and NOWHERE ELSE. This
+# directory is the holding area between a decision being made and the PRD
+# saying so, and the gap it spans is the one place a product decision can sit
+# unratified for a week while code gets written against it. R3 is that, today:
+# CLAUDE.md §5 says end_time has two doors, PRD.md:784 says "the single
+# exception". Both on main. Neither noticed by anything.
+#
+# These two do not ratify and cannot. They hold the QUEUE — the list the owner
+# reads. A queue nobody is required to update is a queue that is wrong.
+
+# The status cell only — `| Status | **VALUE** — ...` on one line of the header
+# table. Deliberately not the whole file: D-03 and D-05 both discuss the retired
+# `DECIDED in shape` in their own prose, and a file-wide match would call the
+# two records that documented the fix its only violators. Same lesson as the
+# comment stripping above, arrived at the same way.
+dec_files() { git ls-files -z 'docs/decisions/D-*.md' 2>/dev/null; }
+dec_status() { # -> one line per record: "D-0N-slug.md<TAB>STATUS"
+  dec_files | while IFS= read -r -d '' f; do
+    s="$(perl -ne 'if (/^\|\s*Status\s*\|\s*\*\*([A-Z][A-Z ]*[A-Z])\*\*/) { print "$1\n"; exit }' "$f")"
+    printf '%s\t%s\n' "${f##*/}" "${s:-NONE}"
+  done
+}
+
+# R-A. README rule 4: 'Status is one of — and it is one of exactly these three.'
+# This is the check that would have caught `DECIDED in shape`, which is not a
+# hypothetical: THREE records wore it, it read as "half-decided, proceed
+# carefully" when the truth was "decided, and here are four things nobody has
+# decided", and it was removed by hand on 2026-08-15. By hand is not a mechanism.
+chk "every decision record declares one of the three defined statuses" \
+    "$(dec_status | grep -cvE '\t(DECIDED|OPEN|IN PRD)$')" 0
+
+# R-B. Every record that has not landed in the PRD must appear in the gate's R
+# register, so the owner's queue cannot silently lose an entry. A seventh
+# decision record is the realistic way that happens: written, indexed, and never
+# checked against what PRD.md already says — which is exactly how R1 (categories
+# are "out of scope", PRD.md:411) and R2 (FR-CREATE-15, "exactly one image")
+# went unnoticed until they were swept for.
+#
+# `IN PRD` records are exempt BY DEFINITION: ratified is what leaving this queue
+# means. That exemption is also the way this check could be defeated — mark
+# everything `IN PRD` and it goes quiet — which is why R-A above pins the
+# vocabulary and why only the owner may write that value (README rule 1).
+unqueued=0
+while IFS="$(printf '\t')" read -r base status; do
+  [ "$status" = "IN PRD" ] && continue
+  id="${base:0:4}"   # D-01-bid-increment-button.md -> D-01
+  grep -qE "^\| \*\*R[0-9]+\*\* \| \[$id\]" docs/decisions/README.md || unqueued=$((unqueued + 1))
+done <<EOF
+$(dec_status)
+EOF
+chk "every unratified decision record is in the R register" "$unqueued" 0
 
 # ---------------------------------------------------------------------------
 ran=$((pass + fail))

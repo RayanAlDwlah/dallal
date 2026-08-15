@@ -9,8 +9,8 @@
 # ---------------------------------------------------------------------------
 # WHY THIS EXISTS
 #
-# `./tests/guards/run.sh` printing seventeen PASS lines proves one thing: that
-# seventeen commands ran and returned the numbers expected. It does NOT prove
+# `./tests/guards/run.sh` printing nineteen PASS lines proves one thing: that
+# nineteen commands ran and returned the numbers expected. It does NOT prove
 # that any of them would have returned a different number had the rule been
 # broken. A check with a typo'd pattern, a swallowed exit code, or a path that
 # matches nothing passes exactly as loudly as a check that works — and it
@@ -59,7 +59,9 @@ app/layout.tsx
 .env.example
 lib/supabase/config.ts
 components/bidding/bid-panel.tsx
-TEAM.md"
+TEAM.md
+docs/decisions/D-01-bid-increment-button.md
+docs/decisions/README.md"
 
 STAGED_ENV=".env.guardnegative"
 
@@ -102,11 +104,20 @@ restore() {
   git rm --cached --quiet "$STAGED_ENV" 2>/dev/null
   rm -f "$STAGED_ENV"
 }
-trap restore EXIT
-
 # --- refuse to run on a dirty tree -----------------------------------------
 # A restore is `git checkout --`, which is destructive to uncommitted work. It
 # is only safe because these files are known clean when we start.
+#
+# THE TRAP IS ARMED BELOW THIS BLOCK, NOT ABOVE IT, and that ordering is the
+# whole safety property. It used to be armed first — which meant the refusal
+# path printed "REFUSING TO RUN … commit or stash first", exited 1, and then
+# `git checkout --` ran on the way out and DISCARDED THE EXACT UNCOMMITTED WORK
+# the refusal had just declined to touch. Measured on 2026-08-15: a rewritten
+# docs/decisions/README.md, gone, with the reassuring message still on screen.
+#
+# A safety check that performs the damage it is refusing to risk is worse than
+# no safety check, because it is trusted. Nothing may be added between here and
+# the `trap` line that can exit.
 dirty="$(dirty_scope)"
 if [ -n "$dirty" ]; then
   echo "REFUSING TO RUN — these files have uncommitted changes and this script"
@@ -115,9 +126,11 @@ if [ -n "$dirty" ]; then
   exit 1
 fi
 
+trap restore EXIT
+
 pass=0
 fail=0
-EXPECTED=17
+EXPECTED=19
 
 # probe LABEL_SUBSTRING  MUTATION_COMMAND
 #
@@ -224,6 +237,24 @@ probe "the deleted refusal rule has not come back" \
 
 probe "forbids a named person from touching something" \
   "perl -pi -e 's{^}{Mohammed must not touch the money formatter.\n} if \$. == 1' TEAM.md"
+
+# --- ratification ----------------------------------------------------------
+# The first mutation is not invented. `DECIDED in shape` is the exact string
+# three records carried until 2026-08-15, when it was removed BY HAND. This
+# probe is the difference between "we fixed it" and "it cannot come back".
+probe "declares one of the three defined statuses" \
+  "perl -pi -e 's{\\*\\*DECIDED\\*\\*}{**DECIDED in shape**} if \$. == 5' docs/decisions/D-01-bid-increment-button.md"
+
+# Drops D-02's row out of the R register while the record stays DECIDED — the
+# realistic shape, which is not vandalism but a table edit that loses a line.
+#
+# This probe is also the only thing that can tell the R-B check apart from a
+# check that never loops at all: its `unqueued` counter starts at 0 and the
+# assertion wants 0, so a loop body that never executes passes exactly as
+# loudly as one that examined every record. That is the vacuous pass #121 was
+# filed for, one file over.
+probe "every unratified decision record is in the R register" \
+  "perl -ni -e 'print unless /^\\| \\*\\*R1\\*\\* \\|/' docs/decisions/README.md"
 
 # ---------------------------------------------------------------------------
 ran=$((pass + fail))

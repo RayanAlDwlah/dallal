@@ -144,6 +144,26 @@ Sequenced **last**, by the owner: *«داخلة، بس آخر شي»*.
 
 ## 4. What is decided, and what is still open
 
+### 4.0 Decided is not ratified — and three of these contradict the PRD
+
+Every decision below is `DECIDED` in `docs/decisions/`, and **none of them is in `PRD.md`**.
+For three, that is not merely a lag — the PRD says the opposite:
+
+| | the PRD today | what V2 assumes |
+|---|---|---|
+| **categories** | `PRD.md:411` out of scope; `PRD.md:508` *"category and condition are Future"* | 13 categories with category-driven fields |
+| **images** | `PRD.md:527` **FR-CREATE-15** *"Exactly one image per auction in the MVP"* | 1 to 10, required |
+| **pause** | `PRD.md:784` **BR-16** *"The single exception is the automatic anti-sniping extension"* | a second door on `end_time` |
+
+`CLAUDE.md` §2 puts `PRD.md` first, so **the PRD currently wins all three** and the records
+lose. Nobody intended that; it is what a decision looks like a week after it was made and
+before anyone wrote it down where it counts. The full evidence, with what each ratification
+would require, is the **`R` register** in
+[`docs/decisions/README.md`](../decisions/README.md) — *"The ratification gate"*.
+
+**Only the owner ratifies.** No ticket below may edit `PRD.md`, and no ticket resolves this
+by choosing a side. Two checks in `tests/guards/run.sh` hold the queue; neither can ratify.
+
 ### 4.1 The vocabulary — corrected
 
 `docs/decisions/README.md` defines three statuses and **`DECIDED in shape` is not one of
