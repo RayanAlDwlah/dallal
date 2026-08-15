@@ -140,11 +140,19 @@ sprint.
 | 2 | **يصلّح الصور** — background, lighting, crop, reflection | **a separate image-processing / image-model pipeline** — `rembg`, `sharp`, or a hosted image model. No text or vision-language model outputs an *edited image*, so this gets its own provider, its own cost and its own tickets: **V2-A14** (spike) → **V2-A15** (original + derived storage) → **V2-A16** (pipeline) → **V2-B12** (surface) |
 | 3 | **يفهم البحث** — Arabic sentence → editable filter chips | **the model plus deterministic parsers.** Category / city / keywords from the model — measured correct. **Brand, minimum year, price band and «تنتهي خلال ٢٤ ساعة» from parsers** in `lib/search/`, never from the model (§1.2 Finding B) |
 | 4 | **يجاوب عن القطعة** — answers from the seller's description and specifications | **the model, grounded.** Short text over one document, and «ما أعرف» is an easy answer — exactly the shape a small model is good at |
-| 5 | **يقترح سعر البداية** — from comparable ended auctions | **SQL and data analysis.** `percentile_cont` over comparable ended auctions, returning a **range** with the **comparable count** beside it. Exact, free, instant, auditable, and it cannot hallucinate an amount. Still the approved **seller-only** feature |
+| 5 | **يقترح سعر البداية** — from comparable ended auctions | **SQL and data analysis.** `percentile_cont` over comparable ended auctions, returning a **range** with the **comparable count** beside it. Exact, free, instant, auditable, and it cannot hallucinate an amount. Still the approved **seller-only** feature. **Which two percentiles bound that range is `O34` and is not answered** — see below |
 
 Point 5 is the clearest illustration in the product: it *sounds* like AI, the prototype puts
 it under the AI heading, and the correct implementation contains no model at all — which
 makes it the most trustworthy of the five, not the least.
+
+> **Trustworthy about arithmetic is not the same as decided.** `percentile_cont` takes its
+> two bounds as arguments, and no measurement on this page supplies them: `p25`/`p75` and
+> `p10`/`p90` are different suggestions over identical data. This row stated the range as a
+> settled property of the feature until 2026-08-15, when it was raised as **`O34`**
+> ([D-04 §5](../decisions/D-04-ai-product-surface.md), [`SPEC.md` §4.3](../v2/SPEC.md)). It
+> blocks **V2-A4**. The measurement removed the model from this feature; it did not remove
+> the product decision inside it.
 
 ---
 

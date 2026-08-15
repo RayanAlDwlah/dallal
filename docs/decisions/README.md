@@ -45,7 +45,7 @@ in the PRD this file says so and stops being the source.
 5. **Status describes the record. Open items are tracked separately, and each has an id.**
    Those are two different things and merging them is what produced the status above. A
    record can be `DECIDED` and still list open items — that is normal, and rule 2 is why.
-   Every open item carries an `O`-id (`O1` … `O30`) so a ticket's *blocked on* column can
+   Every open item carries an `O`-id (`O1` … `O34`) so a ticket's *blocked on* column can
    name it. **A gap with no id cannot be cited as a blocker, and a gap that cannot be cited
    gets filled silently.** The full register is
    [`docs/v2/SPEC.md` §4.3](../v2/SPEC.md).
@@ -149,7 +149,7 @@ forget.
 | [D-01](D-01-bid-increment-button.md) | The bid control is a **button carrying a seller-set amount**, not a typed number | `DECIDED` | **O25–O30** | **BR-32**, BR-29, FR-BID-* |
 | [D-02](D-02-categories.md) | **Thirteen categories**, sourced not invented — and the category changes which fields the form asks for. Values are **validated `jsonb` over normalized category and field-definition tables** | `DECIDED` | O1, O2, O3 | `auctions` schema, create form, browse |
 | [D-03](D-03-sessions.md) | **Sessions** — a room of lots opened one at a time, run live by a host. A kind of auction, **not a kind of account**. **Pause is supported** | `DECIDED` | O4–O10, O23, **O31–O33** | new entity, **BR-36**, LC-03, BR-31 |
-| [D-04](D-04-ai-product-surface.md) | The **AI is five specific things in five places**, and **all five are in scope** — measurement decided the technology for each | `DECIDED` | O11–O14, O24 | create, browse, detail. **Never** the bidding path |
+| [D-04](D-04-ai-product-surface.md) | The **AI is five specific things in five places**, and **all five are in scope** — measurement decided the technology for each | `DECIDED` | O11–O14, O24, **O34** | create, browse, detail. **Never** the bidding path |
 | [D-05](D-05-deposit.md) | The **deposit is simulated**, paid once for the hall, unlocks **bidding not watching**, and **access expires with the session — no refund transaction** | `DECIDED` | O15–O19 | `CLAUDE.md` §1, D-03, bid eligibility |
 | [D-06](D-06-images-and-create-flow.md) | **Images first, 1 to 10, required and server-validated**, first one is the cover — and the four-step create flow | `DECIDED` | O20–O23 | AUC-04, ADR-6, BR-31 |
 
@@ -158,7 +158,7 @@ above. They were decided by the owner approving the prototype in
 `design-system/previews/*.html` on **2026-08-15**, and each record quotes the prototype or
 the owner directly.
 
-**All six records are `DECIDED`. Thirty-three open items remain**, each with an id, each
+**All six records are `DECIDED`. Thirty-four open items remain**, each with an id, each
 named in its record's "Still open" section, and each citable from a ticket's *blocked on*
 column. Register: [`docs/v2/SPEC.md` §4.3](../v2/SPEC.md).
 
@@ -214,6 +214,6 @@ correct implementation of it contains no language model.
 
 ### What to build from
 
-`docs/v2/SPEC.md` and `docs/v2/TICKETS.md` — **39 tickets plus the unblock step**, in three
+`docs/v2/SPEC.md` and `docs/v2/TICKETS.md` — **40 tickets plus the unblock step**, in three
 lanes that **nobody owns** (`CLAUDE.md` §1 — any available contributor may claim any ready
 ticket), and the thirty open items the board is actually waiting on.

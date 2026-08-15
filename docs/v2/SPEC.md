@@ -10,7 +10,7 @@ document says *what is being built and in what order*; the decisions it builds o
 | Date | 2026-08-15 |
 | Source | `design-system/previews/*.html` — **the prototype is the spec** |
 | Feasibility | measured, not assumed — [`docs/ai/local-model.md`](../ai/local-model.md) |
-| Tickets | [`TICKETS.md`](TICKETS.md) — **39 tickets plus the unblock step** |
+| Tickets | [`TICKETS.md`](TICKETS.md) — **40 tickets plus the unblock step** |
 | Governance | `CLAUDE.md` §1 — nobody owns a file; work is **claimed**, per ticket |
 
 ---
@@ -180,7 +180,7 @@ The fix separates the two ideas, because they were never the same idea:
 | | applies to | values |
 |---|---|---|
 | **Status** | the **record** — was the decision made? | `DECIDED` · `OPEN` · `IN PRD` |
-| **Open item** | a **named gap** inside a decided record | `O1` … `O30`, each with an id, an owner-question, and the tickets it blocks |
+| **Open item** | a **named gap** inside a decided record | `O1` … `O34`, each with an id, an owner-question, and the tickets it blocks |
 
 A record can be `DECIDED` and still carry open items. That is normal and it is the whole
 purpose of the "Still open" section (`README.md` rule 2). What is **not** allowed is a gap
@@ -198,7 +198,7 @@ the register below exists so that every one of them can.
 | Q5 | What happens to a deposit when the session ends? | **DECIDED — access expires with the session; there is no refund transaction** |
 | Q6 | Is at least one image required? | **DECIDED — 1 to 10 images, required, validated server-side** |
 
-### 4.3 The open register — thirty-three real blockers
+### 4.3 The open register — thirty-four real blockers
 
 Every unresolved item from every decision record, given an id so a ticket can cite it.
 **None of these may be answered by whoever picks up the ticket** (`CLAUDE.md` §8). A ticket
@@ -239,6 +239,7 @@ whose *blocked on* column names an id is not startable in the part that touches 
 | **O31** | **Is total paused time bounded, and what if the host never resumes?** Pause is the second door onto `end_time` and has no cap. `CLAUDE.md` §5 says why the extension cap is a `CHECK`: without it the auction never ends, never finalizes, never has a winner. A pause reaches the same state through the other door | D-03 | V2-A19 |
 | **O32** | **Does pausing lot 3 move lots 4…N — and was a waiting lot's displayed time a promise?** Lots chain, so it moves them mechanically; whether that is right, and what a bidder who came for lot 9 is shown, is not decided. There is no messaging to tell them (§6, `CLAUDE.md` §1) | D-03 | V2-A19, V2-B10, V2-B11 |
 | **O33** | **Does pause take a LOT or the SESSION?** Two owner sentences from 2026-08-15 disagree — D-03 §3.0 says *"pauses and resumes a lot"*, §3.2 quotes «إيقاف الجلسة مؤقتًا». Different id, different function, different behaviour between lots. Surfaced under `CLAUDE.md` §2, not resolved | D-03 | V2-A19, V2-B11 |
+| **O34** | **Which two percentiles bound the suggested range?** D-04 §3.2 and V2-A4 both say `percentile_cont` *"at two bounds"* and neither says which. p25–p75 and p10–p90 are different suggestions over identical data, and the two failure modes point opposite ways: a wide band is useless, a narrow one reads as the valuation the range exists to avoid being | D-04 | V2-A4 |
 
 **`O25`–`O30` are not new questions — they are old questions that finally have ids.** All
 six have been written down in [D-01 §5](../decisions/D-01-bid-increment-button.md) since the
@@ -271,7 +272,7 @@ three values" claim was retracted to prevent.
 result, and ship a check that fails on an incomplete record. It picks no provider and sets
 no threshold; it is blocked on `O11` like any other ticket waiting on the owner.
 
-**33 of the 33 items block a ticket.** There is no longer one that does not — and the one
+**34 of the 34 items block a ticket.** There is no longer one that does not — and the one
 that did not was not special, it was the one whose work had gone missing.
 
 **`O31`–`O33` came from the same audit and have the same shape as `O25`–`O30`: they are not

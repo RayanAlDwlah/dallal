@@ -91,13 +91,21 @@ can actually deliver it.
 
 Approved as the seller-only starting-price suggestion, and it ships with four things:
 
-1. **a range**, not a single number — a point value reads as a valuation
+1. **a range**, not a single number — a point value reads as a valuation. **Which two
+   percentiles bound it is `O34`**, and it is not answered here
 2. **the comparable count, on screen** — «مبني على 27 مزادًا مشابهًا»
 3. **a stated definition of "similar"**, in the contract and in the query
 4. **a minimum sample threshold**, below which **nothing is shown** — not a wider range,
    not a caveat
 
-Items 3 and 4 need §5's `O14` answered before they can be built.
+Items 3 and 4 need §5's `O14` answered before they can be built, and item 1 needs `O34`.
+
+> **Item 2 is the only one of the four that is buildable today, and this section said
+> otherwise until 2026-08-15.** `V2-A4` described items 1 and 2 as *"shapes"* that are safe
+> to start. A count on a screen is a shape. `percentile_cont` is not — it takes the two
+> bounds as arguments, and picking them is picking what the seller is told their item is
+> worth. The unnumbered gap here was smaller than D-01's six and had the same structure:
+> a decision with nowhere to be cited from reads as an absence of one.
 
 ## 4. The boundary
 
@@ -154,6 +162,7 @@ tickets it blocks.
 | **O13** | **Does an AI-proposed title get marked as AI-proposed once the seller accepts it?** §2.1 labels edited *images*. Text is not mentioned and the same argument applies | V2-B8 |
 | **O24** | **Which image-processing provider or library** implements point 2, at what cost and latency? **V2-A14 is a timeboxed spike that produces the options — the owner picks from them** | V2-A16, V2-B12, V2-C7 |
 | **O14** | **Point 5's SQL — what is "similar", and what is the minimum sample?** Same category is obvious. Same sub-category? Same city? What window? Below what count is nothing shown? Each changes the number on the screen | V2-A4 |
+| **O34** | **Point 5's range — which two percentiles are the bounds?** §3.2 item 1 and V2-A4 both say `percentile_cont` *"at two bounds"* and neither names them. `p25`/`p75` and `p10`/`p90` are different suggestions over identical data, and the two ways of getting it wrong point opposite ways: a wide band is honest and useless, a narrow one **is** the valuation a range was chosen to avoid printing. Same test as `O14` — *it changes the number on the screen* | V2-A4 |
 
 **Not open, and already answered by the design:** what happens on the ~10 % of calls that
 take 30–50 s (`local-model.md` §1.5). A spinner is not an answer — **every screen must work

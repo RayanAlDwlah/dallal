@@ -4,7 +4,7 @@ Read [`SPEC.md`](SPEC.md) first. Every ticket below is sized for **one Claude se
 has a single deliverable, a named proof, and it does not require answering a product
 question. **A ticket that turns out to need a product decision stops and asks** — that is
 the whole point of the "blocked on" column, and every id in that column resolves to a real
-entry in [`SPEC.md` §4.3](SPEC.md#43-the-open-register--thirty-three-real-blockers).
+entry in [`SPEC.md` §4.3](SPEC.md#43-the-open-register--thirty-four-real-blockers).
 
 **Nothing here is a GitHub issue yet.** The repository is public and forty issues are hard
 to undo. Opening them is a separate, explicit decision, and it happens **only after the
@@ -43,15 +43,15 @@ still open.
 
 ## The board
 
-**40 tickets, plus `V2-00`.** 69 dependency edges between tickets; 53 blocking edges onto
-**33** of the 33 open owner questions.
+**40 tickets, plus `V2-00`.** 69 dependency edges between tickets; 54 blocking edges onto
+**34** of the 34 open owner questions.
 
 Every number in this document — including that one — is recomputed from these two tables by
 [`tests/v2/graph.check.mjs`](../../tests/v2/graph.check.mjs). Run it before you believe a
 count here, and run it again after you edit a cell. A board that states its own totals in
 prose is a board that will state them wrongly.
 
-**Every one of the thirty-three now blocks a ticket. Until 2026-08-15 `O11` did not, and
+**Every one of the thirty-four now blocks a ticket. Until 2026-08-15 `O11` did not, and
 that was not a property of `O11` — it was a hole in this board.** The paragraph that used to
 sit here
 argued that *which* hosted provider gates only the **production deployment**, and that a
@@ -89,7 +89,7 @@ and not an `if`, and it is reachable through pause today.
 | **V2-A1** | A | Categories: normalized tables, field definitions, validated `jsonb`, label→slug | V2-00, V2-C1 | **O1, O2** |
 | **V2-A2** | A | Auction images: bucket, ordered 1–10, cover at position 0, server-side count | V2-00, V2-C2 | **O20, O21** |
 | **V2-A3** | A | `bid_increment` + INT-08 narrowing + the BR-32 survival test | V2-00, V2-C3 | **O25, O26, O27, O30** |
-| **V2-A4** | A | Starting-price suggestion — SQL, a **range**, a comparable count | V2-A1 | **O14** |
+| **V2-A4** | A | Starting-price suggestion — SQL, a **range**, a comparable count | V2-A1 | **O14, O34** |
 | **V2-A5** | A | Create-auction server action — incl. **BR-38's 5 min–7 days** | V2-A1, V2-A2, V2-A3, V2-C4 | — |
 | **V2-A6** | A | `lib/ai/` — adapter, schemas, `AI_ENABLED`, `server-only`, the guard | V2-00, V2-C5 | **O12** |
 | **V2-A7** | A | **VLM** task: images → title / description / category | V2-A6, V2-A1 | — |
@@ -357,8 +357,9 @@ auditable, and it cannot hallucinate an amount.
 
 **Four deliverables, not one** — this is the part the earlier draft was missing:
 
-1. **A range, not a point.** `percentile_cont` at two bounds. A single number reads as a
-   valuation; a range reads as what it is.
+1. **A range, not a point.** `percentile_cont` at two bounds — **which two is `O34`, and
+   until it is answered this deliverable is a shape without a query.** A single number reads
+   as a valuation; a range reads as what it is.
 2. **The comparable count, shown.** «مبني على 27 مزادًا مشابهًا» — a suggestion whose sample
    size is invisible is a suggestion the seller cannot weigh.
 3. **A stated similarity definition**, in the contract and in the query, not implied by
@@ -368,8 +369,22 @@ auditable, and it cannot hallucinate an amount.
 
 **Blocked on O14** — *what counts as "similar"* (same category? sub-category? city? window?)
 and *what the minimum sample is*. Both change the number on the screen, so neither is a
-session's to pick. Deliverables 1 and 2 are shapes and are safe to build; 3 and 4 need the
-answer.
+session's to pick.
+
+**Blocked on O34, and this cell said `O14` alone until 2026-08-15.** The sentence that used
+to close this section read *"deliverables 1 and 2 are shapes and are safe to build; 3 and 4
+need the answer."* Deliverable 2 is a shape. **Deliverable 1 is not**, and calling it one is
+how the last unanswered number on this ticket got permission to be guessed: you cannot write
+`percentile_cont` without naming the two bounds, and `p25`/`p75` versus `p10`/`p90` are
+different suggestions over identical data. That is the same test `O14` passes — *it changes
+the number on the screen* — so it gets the same treatment and the same kind of id.
+
+Neither bound is picked here. Both failure modes are real and they point in opposite
+directions: a wide band («بين 500 و 90,000») is technically honest and useless, and a narrow
+one reads as precisely the valuation D-04 §3.2 chose a range to avoid publishing. Choosing
+between those is a product decision (`CLAUDE.md` §8, `TEAM.md` rule 16).
+
+**Deliverable 2 is the only one of the four that is safe to build today.**
 
 Returns `::text` like every other money read (`CLAUDE.md` §4.7).
 
@@ -719,15 +734,22 @@ the person who came for lot 9 is reading it and cannot be told it changed.
 
 ## The register this board is waiting on
 
-Thirty-three open items, listed in full with their sources in
-[`SPEC.md` §4.3](SPEC.md#43-the-open-register--thirty-three-real-blockers). The two that
+Thirty-four open items, listed in full with their sources in
+[`SPEC.md` §4.3](SPEC.md#43-the-open-register--thirty-four-real-blockers). The two that
 unblock the most work are not the ones that look important.
 
 The **reach** column is the count of tickets that cannot start until the item is answered —
 computed over the *transitive* closure of the *depends on* column above, not counted by eye
 from the *blocked on* cells. A ticket is reached if the item blocks it **or** blocks
 anything it waits on. Every figure below is printed by
-[`tests/v2/graph.check.mjs`](../../tests/v2/graph.check.mjs):
+[`tests/v2/graph.check.mjs`](../../tests/v2/graph.check.mjs).
+
+**This table names eighteen of the thirty-four, and the omissions are a claim, not an
+oversight: every item it leaves out reaches six tickets or fewer.** Both halves of that
+sentence are asserted, because a table that is allowed to be a selection is a table a row
+can quietly fall out of — delete one and the numbers that remain are all still correct.
+That is the vacuous pass in a different costume, and `#121` is the reason this file counts
+its own rows.
 
 | | | reach |
 |---|---|---|
@@ -743,6 +765,7 @@ anything it waits on. Every figure below is printed by
 | **O33** | A lot, or the session? | **2 of 40** — V2-A19 and the host control room; it decides a function signature, not a screen |
 | **O31** | Is total paused time bounded? | **1 of 40** — V2-A19. The lowest reach on this board and the one that can remove an invariant |
 | **O11** | Which hosted provider? | **1 of 40** — V2-A20. It reached **nothing** until 2026-08-15, and the reason was not that it blocks nothing: the ticket it blocks did not exist |
+| **O34** | Which two percentiles bound the range? | **1 of 40** — V2-A4, whose deliverable 1 was described as a safe-to-build *shape* while the query it needs had no bounds |
 
 **The D-01 row is new, and its position in this table is the point.** Those six questions
 rank **third**, above `O21` and `O4` — and until 2026-08-15 they appeared in no *blocked on*
@@ -755,8 +778,8 @@ and test if it is answered late — `O21` is a storage-cleanup rule. Sort by rea
 *what unblocks the most work today*; sort by blast radius to decide *what costs the most to
 get wrong*. They are different questions and this board answers only the first.
 
-Across the whole register, **twenty-one items reach six tickets or fewer** and
-**eleven reach exactly one ticket**. The three that reach exactly six are `O3`, `O8` and
+Across the whole register, **twenty-two items reach six tickets or fewer** and
+**twelve reach exactly one ticket**. The three that reach exactly six are `O3`, `O8` and
 `O12`; `O10` reaches five. Every number here is reproducible from the *depends on* /
 *blocked on* columns — that is the point of writing the graph down instead of asserting it.
 

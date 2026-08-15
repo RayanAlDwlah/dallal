@@ -37,7 +37,7 @@
 // "every O-id is contiguous" and "every cited id exists" assertions below are
 // for, and it is why they are not enough on their own.
 // ============================================================================
-import { readFileSync } from "node:fs";
+import { readFileSync, readdirSync } from "node:fs";
 import { fileURLToPath } from "node:url";
 import { dirname, join } from "node:path";
 
@@ -285,6 +285,74 @@ for (const rec of [...indexRows.keys()].sort()) {
   );
 }
 
+// ---------------------------------------------------------------------------
+// 2c. The records themselves are a FOURTH copy — and the ONLY one a human
+//     writes into first. An item is raised in a record's §5; the register and
+//     the index are where it is then copied to. So this is the copy most likely
+//     to be right and the copy least likely to be read, and until 2026-08-15
+//     nothing compared it to anything.
+//
+//     Two shapes exist and both parse: D-04 writes §5 as a table, the other
+//     five write it as a numbered list. The assertion is exact equality in both
+//     directions, per record — an item in the record and not the register is
+//     the D-01 failure (a real blocker the board cannot see); an item in the
+//     register and not the record is a question with no text behind it.
+//
+//     The reciprocal covers `docs/ai/local-model.md`, which owns no items and
+//     is where a stale id hides: it describes all five AI features in detail,
+//     and it described point 5's range as a settled property of the feature
+//     until `O34` was raised.
+// ---------------------------------------------------------------------------
+const RECORDS = new Map(); // D-0n -> its file text
+for (const f of readdirSync(join(ROOT, "docs/decisions")).sort()) {
+  const m = f.match(/^(D-\d+)-.+\.md$/);
+  if (m) RECORDS.set(m[1], read(`docs/decisions/${f}`));
+}
+chk(
+  "every D-record the index names has a file on disk",
+  [...indexRows.keys()].filter((r) => !RECORDS.has(r)).sort(),
+  [],
+);
+
+const byNum = (a, b) => Number(a.slice(1)) - Number(b.slice(1));
+const declaredIn = (text) => {
+  const out = new Set();
+  // the five numbered-list records: "3. **`O27` — is there an upper bound…"
+  for (const m of text.matchAll(/^\d+\.\s+\*\*`?(O\d+)`?\s*[—-]/gm)) out.add(m[1]);
+  // D-04's table: "| **O34** | **Point 5's range…"
+  for (const m of text.matchAll(/^\|\s*\*\*(O\d+)\*\*\s*\|/gm)) out.add(m[1]);
+  return [...out].sort(byNum);
+};
+
+const declaredAll = new Set();
+for (const rec of [...RECORDS.keys()].sort()) {
+  const declared = declaredIn(RECORDS.get(rec));
+  for (const o of declared) declaredAll.add(o);
+  chk(
+    `${rec}: its §5 open items are exactly the ones the register sources to it`,
+    declared,
+    (bySource.get(rec) ?? []).sort(byNum),
+  );
+}
+chk(
+  "every open item raised in a record reached the register, and vice versa",
+  [...declaredAll].sort(byNum),
+  [...register.keys()].sort(byNum),
+);
+
+// The measurement report is not a decision record and raises nothing; it only
+// cites. A citation of an id that does not exist is a renumber nobody finished.
+const AI_REPORT = read("docs/ai/local-model.md");
+const citedInProse = new Set();
+for (const src of [...RECORDS.values(), AI_REPORT]) {
+  for (const m of src.matchAll(/\bO(\d+)\b/g)) citedInProse.add(`O${m[1]}`);
+}
+chk(
+  "every O-id cited in a decision record or the measurement report exists in the register",
+  [...citedInProse].filter((o) => !register.has(o)).sort(byNum),
+  [],
+);
+
 console.log();
 console.log("--- the totals both documents state about themselves");
 
@@ -335,6 +403,41 @@ const ticketsReg = grab(
 if (ticketsReg) {
   chk("TICKETS.md reach section: register size", word2num(ticketsReg[1]), register.size);
 }
+
+// ---------------------------------------------------------------------------
+// The numbers stated OUTSIDE the two tables, in headers and glossaries.
+//
+// Four of these were stale when this block was written, and all four had been
+// stale for at least one commit: SPEC.md's header card and README.md's
+// closing paragraph both still said "39 tickets" after V2-A20 landed, and both
+// glossaries still said the ids run "`O1` … `O30`" after O31–O33 did. Nothing
+// read a header card or a glossary line, so nothing went red.
+//
+// A number in a header is the FIRST number a reader sees and the last one
+// anybody thinks to update. Assert them where they are written.
+// ---------------------------------------------------------------------------
+for (const [label, src] of [["SPEC.md", SPEC], ["decisions/README.md", DEC_README]]) {
+  const m = grab(
+    src,
+    /\*\*(\d+) tickets plus the unblock step\*\*/,
+    `${label} states the ticket count outside the board`,
+  );
+  if (m) chk(`${label}: ticket count`, Number(m[1]), tickets);
+
+  const r = grab(
+    src,
+    /`O1` … `O(\d+)`/,
+    `${label} states the O-id range in its glossary`,
+  );
+  if (r) chk(`${label}: highest O-id`, Number(r[1]), register.size);
+}
+
+const issues = grab(
+  TICKETS,
+  /The repository is public and ([a-z-]+) issues are hard/,
+  "TICKETS.md states how many issues opening the board would create",
+);
+if (issues) chk("TICKETS.md: issues the board would open", word2num(issues[1]), tickets);
 
 const spec43 = grab(
   SPEC,
@@ -465,6 +568,30 @@ for (const line of reachTable) {
   chk(`reach denominator on the ${from}${to ? `–${to}` : ""} row`, Number(denom), tickets);
 }
 chk("every row of the reach table was parsed", reachRows, reachTable.length);
+
+// Counting the rows stops a row being SKIPPED. It does not stop one being
+// DELETED — remove a row and both sides of that assertion drop together, and
+// every figure left behind is still correct. A probe deleting O34's row proved
+// it: silent, green, and the item's reach no longer stated anywhere.
+//
+// So the table's selection rule is written down and checked instead of being
+// implicit. It lists the high-reach items; what it omits is a CLAIM about the
+// omitted ones, and that claim is what makes a missing row detectable.
+const sel = grab(
+  TICKETS,
+  /\*\*This table names ([a-z-]+) of the ([a-z-]+), and the omissions are a claim[^*]*reaches ([a-z-]+) tickets or fewer\.\*\*/,
+  "TICKETS.md states which part of the register the reach table covers",
+);
+if (sel) {
+  chk("TICKETS.md: items the reach table names", word2num(sel[1]), assertedHere.size);
+  chk("TICKETS.md: register size, in the reach table's own claim", word2num(sel[2]), register.size);
+  const bound = word2num(sel[3]);
+  chk(
+    `TICKETS.md: omitted items all reach ${bound} or fewer`,
+    [...register.keys()].filter((o) => !assertedHere.has(o) && reachOf([o]).size > bound).sort(),
+    [],
+  );
+}
 
 // The prose AROUND the table, which is where the last wrong number was hiding.
 //
