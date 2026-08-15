@@ -2,7 +2,7 @@ import Link from "next/link";
 
 import { ActiveListing } from "@/components/auction/active-listing";
 import { CategoryRail } from "@/components/category/category-rail";
-import { Page } from "@/components/layout/container";
+import { Container } from "@/components/layout/container";
 import { Alert } from "@/components/ui/alert";
 import { EmptyState } from "@/components/ui/empty-state";
 import { listActiveAuctions } from "@/lib/auctions/listing";
@@ -10,92 +10,114 @@ import { listMainCategories } from "@/lib/categories/catalog";
 import { getVerifiedUserId } from "@/lib/auth/identity";
 
 /**
- * Auction listing — the marketplace home. AUC-09.
+ * The marketplace home — AUC-09, restyled to the approved V2 layout language
+ * (the hero, the icon rail, the glowing grid). FR-LIST-01: public, no auth
+ * guard, and there must not be one.
  *
- * Mohammed's issue (#51); see the header of app/auctions/new/actions.ts for why
- * it is in this branch.
- *
- * FR-LIST-01 — public. There is no auth guard on this page and there must not
- * be one: a visitor is a supported user (S0-10 §6), and BR-40 makes auctions
- * anonymously readable at the database as well, so this is not a UI-only
- * courtesy.
- *
- * FR-LIST-05b — an auction leaving the listing as its countdown reaches zero —
- * is AUC-10 (#52) and now happens in place, in
- * components/auction/active-listing.tsx. This file still supplies the rows and
- * the empty state; what it no longer does is assume the set is static for the
- * life of the page.
- *
- * Not built here, and left to their own issues: live per-item price push is
- * Should Have (FR-LIST-10, FR-RT-16), and so are search, filter, sort and
- * pagination (FR-LIST-12, S6).
+ * V2 adds ?q= — the topbar search lands here and the SERVER filters
+ * (lib/auctions/listing.ts). The hero steps aside for search results: a
+ * person mid-search asked a question, and the answer goes first.
  */
-export default async function ListingPage() {
+export default async function ListingPage({
+  searchParams,
+}: {
+  searchParams: Promise<{ q?: string }>;
+}) {
+  const { q } = await searchParams;
+  const searching = Boolean(q?.trim());
+
   const [{ entries, serverNow, failed }, viewerId, categories] = await Promise.all([
-    listActiveAuctions(),
+    listActiveAuctions(undefined, q),
     getVerifiedUserId(),
     listMainCategories(),
   ]);
 
-  /*
-   * No page-level "create" action: SiteHeader's MEMBER_NAV already carries
-   * "أنشئ مزادًا" on every page for a signed-in user, and two controls with the
-   * same label is a worse affordance than one. FR-LIST-08's create prompt is a
-   * property of the EMPTY state specifically, and appears below.
-   */
   return (
-    <Page
-      title="المزادات النشطة"
-      description="تصفّح المزادات المفتوحة، الأقرب انتهاءً أولاً."
-    >
-      {/* V2 — the browse rail. Above the grid on every state including empty:
-          an empty CATEGORY must still offer the way to the others. */}
-      <CategoryRail categories={categories} activeSlug={null} />
+    <Container as="main" className="flex flex-col gap-6 py-6 sm:py-8">
+      {!searching ? (
+        /* The hero (previews/colors.html) — the ONE gradient in the product. */
+        <section className="bg-surface relative overflow-hidden rounded-2xl shadow-[inset_0_0_0_1px_var(--c-rule)]">
+          <div className="hero-glow" aria-hidden="true" />
+          <div className="relative px-6 py-10 sm:px-9 sm:py-12">
+            <h1 className="m-0 text-[32px] leading-tight font-bold sm:text-[40px]">
+              مزاد مباشر الآن
+            </h1>
+            <p className="text-ink-2 mt-2 mb-6 max-w-[52ch] text-[15px]">
+              زايد لحظيًا على سيارات وعقارات وساعات ولوحات مميزة — أعلى مزايد
+              يفوز، والسعر يتحدّث قدامك ثانية بثانية.
+            </p>
+            <div className="flex flex-wrap gap-3">
+              <Link
+                href={viewerId ? "/auctions/new" : "/register"}
+                className="btn-gold h-12 px-7 text-[15px]"
+              >
+                أنشئ مزادك
+              </Link>
+              <a href="#auctions" className="btn-ghost h-12 px-6 text-[15px]">
+                تصفّح المزادات
+              </a>
+            </div>
+          </div>
+        </section>
+      ) : null}
 
-      {failed ? (
-        /*
-         * A failed read is NOT an empty marketplace. Showing FR-LIST-08's
-         * "be the first" invitation here would tell a seller their auctions had
-         * disappeared — and, because nothing can be cancelled or edited
-         * (BR-30, BR-31), that is a frightening thing to be told wrongly.
-         */
-        <Alert tone="error">
-          تعذّر تحميل المزادات. حدِّث الصفحة، وإن تكرّر الأمر فالمشكلة عندنا لا عندك.
-        </Alert>
-      ) : (
-        /*
-         * AUC-10 (#52) — the grid, and the removal of a card whose countdown
-         * reaches zero, happen in ActiveListing. The empty state is built HERE
-         * and handed down, for two reasons: its create prompt depends on the
-         * server-verified session, which a client component must not be given;
-         * and a marketplace that empties while you watch must look exactly like
-         * one that was empty when you arrived (FR-LIST-08, FR-LIST-05b).
-         *
-         * 375px is the base layer, not a breakpoint (DESIGN_SYSTEM.md §10).
-         */
-        <ActiveListing
-          entries={entries}
-          serverNow={serverNow}
-          empty={
-            <EmptyState
-              title="لا توجد مزادات نشطة الآن"
-              description={
-                viewerId
-                  ? "كن أول من ينشر مزادًا — يظهر هنا فور نشره."
-                  : "سجّل الدخول أو أنشئ حسابًا لتنشر أول مزاد."
-              }
-              action={
-                <Link
-                  href={viewerId ? "/auctions/new" : "/register"}
-                  className="bg-brand text-on-brand border-brand min-h-tap inline-flex w-full items-center justify-center rounded-md border px-5 font-semibold sm:w-auto"
-                >
-                  {viewerId ? "أنشئ مزادًا" : "أنشئ حسابًا"}
-                </Link>
-              }
-            />
-          }
-        />
-      )}
-    </Page>
+      <section id="auctions" className="flex scroll-mt-24 flex-col gap-4">
+        <CategoryRail categories={categories} activeSlug={null} />
+
+        {searching ? (
+          <p className="text-ink-2 m-0 text-sm">
+            نتائج البحث عن «<bdi>{q}</bdi>» — <span className="num">{entries.length}</span>{" "}
+            مزاد.{" "}
+            <Link href="/" className="text-brand-text underline">
+              امسح البحث
+            </Link>
+          </p>
+        ) : null}
+
+        {failed ? (
+          <Alert tone="error">
+            تعذّر تحميل المزادات. حدِّث الصفحة، وإن تكرّر الأمر فالمشكلة عندنا لا عندك.
+          </Alert>
+        ) : (
+          <ActiveListing
+            entries={entries}
+            serverNow={serverNow}
+            empty={
+              searching ? (
+                <EmptyState
+                  title="لا نتائج لهذا البحث"
+                  description="جرّب كلمة أعم، أو تصفّح الأقسام أعلاه."
+                  action={
+                    <Link
+                      href="/"
+                      className="bg-brand text-on-brand border-brand min-h-tap inline-flex w-full items-center justify-center rounded-md border px-5 font-semibold sm:w-auto"
+                    >
+                      كل المزادات
+                    </Link>
+                  }
+                />
+              ) : (
+                <EmptyState
+                  title="لا توجد مزادات نشطة الآن"
+                  description={
+                    viewerId
+                      ? "كن أول من ينشر مزادًا — يظهر هنا فور نشره."
+                      : "سجّل الدخول أو أنشئ حسابًا لتنشر أول مزاد."
+                  }
+                  action={
+                    <Link
+                      href={viewerId ? "/auctions/new" : "/register"}
+                      className="bg-brand text-on-brand border-brand min-h-tap inline-flex w-full items-center justify-center rounded-md border px-5 font-semibold sm:w-auto"
+                    >
+                      {viewerId ? "أنشئ مزادًا" : "أنشئ حسابًا"}
+                    </Link>
+                  }
+                />
+              )
+            }
+          />
+        )}
+      </section>
+    </Container>
   );
 }

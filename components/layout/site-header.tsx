@@ -6,6 +6,7 @@ import { useId, useState } from "react";
 
 import { logoutAction } from "@/app/(auth)/actions";
 import { Container } from "@/components/layout/container";
+import { SearchBox } from "@/components/layout/search-box";
 import type { Viewer } from "@/lib/auth/identity";
 import { cn } from "@/lib/cn";
 
@@ -92,6 +93,12 @@ export function SiteHeader({ viewer }: { viewer: Viewer | null }) {
                 .
               </span>
             </Link>
+
+        {/* V2 (topbar.html) — the search field, wired to the home listing's
+            ?q= filter. Desktop only here; phones get it in the open menu. */}
+        <div className="hidden min-w-0 max-w-[360px] flex-1 md:block">
+          <SearchBox />
+        </div>
 
         {/* Desktop navigation. Hidden on phones, where the menu below serves. */}
         <nav aria-label="التنقل الرئيسي" className="hidden md:block">
@@ -184,6 +191,9 @@ export function SiteHeader({ viewer }: { viewer: Viewer | null }) {
           {open ? (
             <nav id={menuId} aria-label="التنقل الرئيسي" className="border-rule border-t px-2 md:hidden">
               <ul className="flex flex-col py-2">
+              <li className="px-2 pb-2">
+                <SearchBox />
+              </li>
               {nav.map((item) => {
                 const current = isCurrent(pathname, item.href);
                 return (

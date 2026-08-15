@@ -70,6 +70,13 @@ export async function listActiveAuctions(
    * V1 call site unchanged.
    */
   categoryIds?: number[],
+  /**
+   * V2 — a free-text search over the product name. Characters PostgREST's
+   * filter grammar treats specially are stripped rather than escaped: a
+   * search term is words, and a term that was ONLY specials degrades to the
+   * unfiltered listing instead of a 400.
+   */
+  q?: string,
 ): Promise<AuctionListing> {
   const supabase = await createClient();
 
@@ -128,6 +135,11 @@ export async function listActiveAuctions(
 
   if (categoryIds && categoryIds.length > 0) {
     query = query.in("category_id", categoryIds);
+  }
+
+  const safeQ = q?.replace(/[%_,()."\\]/g, " ").trim();
+  if (safeQ) {
+    query = query.ilike("name", `%${safeQ}%`);
   }
 
   const { data, error } = await query
