@@ -9,9 +9,9 @@
 # ---------------------------------------------------------------------------
 # WHY THIS EXISTS
 #
-# `graph.check.mjs` prints 157 PASS lines. That proves 157 comparisons ran and
-# agreed. It does NOT prove that any of them would have
-# disagreed had the board been wrong — and this particular file is unusually
+# `graph.check.mjs` prints 163 PASS lines. That proves 163 comparisons ran and
+# agreed. It does NOT prove that any of them would have disagreed had the board
+# been wrong — and this particular file is unusually
 # exposed to that, because most of its assertions are anchored by a REGEX
 # AGAINST PROSE. Reword the sentence and the anchor stops matching. Some of
 # those cases are caught by `grab()` announcing "the sentence this reads is
@@ -33,7 +33,7 @@
 # ---------------------------------------------------------------------------
 # WHAT IS PROBED, AND WHAT IS NOT — SAID PLAINLY
 #
-# 101 probes against 157 assertions. The gap is not laziness and it is not
+# 108 probes against 163 assertions. The gap is not laziness and it is not
 # coverage theatre; it is five loops that generate one assertion per row of a
 # table, or per stated reading:
 #
@@ -71,11 +71,19 @@
 # (probes 50 and 52) because the thing being probed is the suite's own
 # blind-spot guard, and nothing subtle triggers it.
 #
-# Two probes (G6, G7) mutate `tests/v2/graph.check.mjs` rather than a document.
-# They have to: what they target is an assertion ABOUT the checker — that a
-# hypothetical measured on a throwaway board was discarded, and that no label
-# can be found only by matching a different one — and the only way to probe an
-# assertion about the checker is to break the checker.
+# Three probes (G6, G7, G8) mutate `tests/v2/graph.check.mjs` rather than a
+# document. Two of them have to: what they target is an assertion ABOUT the
+# checker — that a hypothetical measured on a throwaway board was discarded,
+# and that no label can be found only by matching a different one — and the
+# only way to probe an assertion about the checker is to break the checker.
+#
+# The third is a different reason and a firmer one. `PRD.md` is not in
+# `neg_files` and must not be: the owner ratifies it by hand, no session edits
+# it, and that holds even for a mutation this suite would restore a second
+# later — an interrupted run must not be able to leave it broken. So the probe
+# for `the three §19.2 exclusion rows still sit on the lines the board cites`
+# breaks the checker's expectation instead of the file. Same catch, and the
+# file the owner owns stays untouched.
 #
 # ---------------------------------------------------------------------------
 # A LABEL IS AN ARGUMENT TO grep -F, SO QUOTE IT LIKE ONE
@@ -94,9 +102,11 @@ set -uo pipefail
 cd "$(dirname "$0")/../.." || exit 1
 . tests/lib/negative.sh
 
-# `graph.check.mjs` is declared as a mutation surface for one probe only (G6),
-# which breaks the checker's own restore-the-board line to prove the assertion
-# guarding it is not decorative. Everything else here mutates documents.
+# `graph.check.mjs` is declared as a mutation surface for three probes (G6, G7,
+# G8): two break the checker's own self-honesty assertions, and one stands in
+# for a `PRD.md` edit this suite is not allowed to make. Everything else here
+# mutates documents. `PRD.md` is absent from this list on purpose — see the
+# header — and adding it is not a shortcut, it is the thing being refused.
 neg_files "docs/v2/TICKETS.md
 docs/v2/SPEC.md
 docs/decisions/README.md
@@ -317,7 +327,7 @@ neg_probe "every O-id discussed in the reach section is pinned by a row or a che
 
 # ---------------------------------------------------------------------------
 # F. The suite's own blind-spot guards. These fire before any assertion runs,
-#    and they are the difference between a red build and 157 vacuous
+#    and they are the difference between a red build and 163 vacuous
 #    passes. Nothing subtle triggers them, so these three mutations are blunt.
 # ---------------------------------------------------------------------------
 neg_probe "the reach section could not be located" \
@@ -536,6 +546,62 @@ neg_probe "wider reading #1 — the hypothetical was discarded" \
   'perl -pi -e '"'"'s/^(\s*)for \(const \[t, arr\] of saved\) board\.get\(t\)\.ratif = arr;.*$/$1\/\/ restore removed by probe/'"'"' tests/v2/graph.check.mjs'
 
 # ---------------------------------------------------------------------------
+# G8. PRD LINE-NUMBER CITATIONS.
+#
+# PRD.md is NOT a mutation surface here and is deliberately absent from
+# `neg_files`: the owner ratifies it by hand and nothing in this suite may edit
+# it, not even for a second and not even with a restore. So the two probes that
+# need a wrong PRD line get it the other way round — by moving the citation, or
+# by breaking the checker's own expectation. Same assertion, same catch, and
+# the file the owner owns is never touched.
+# ---------------------------------------------------------------------------
+neg_probe "every PRD.md line cited by the V2 docs exists and is not blank" \
+  'perl -pi -e '"'"'s/`PRD\.md:411`/`PRD.md:99411`/'"'"' docs/v2/SPEC.md'
+
+# Blunt on purpose, like probes 50 and 52: what it targets is the vacuity guard
+# itself, and nothing subtle makes a "did we find any at all" check go quiet.
+neg_probe "PRD citations were found at all" \
+  'perl -pi -e '"'"'s/`PRD\.md:\d+`/PRD/g; s/`:\d+`/LINE/g'"'"' docs/v2/TICKETS.md docs/v2/SPEC.md docs/decisions/README.md'
+
+# The exclusion rows the §19.2 argument rests on. Probed through the CHECKER
+# rather than through PRD.md, for the reason in the section header — this is a
+# G6-shaped probe: break the expectation and prove the comparison fires.
+neg_probe "the three §19.2 exclusion rows still sit on the lines the board cites" \
+  'perl -pi -e '"'"'s/\[1847, "Multiple quantity \/ lots"\]/[1847, "Multiple quantity or lots"]/'"'"' tests/v2/graph.check.mjs'
+
+# Dropping a citation is how a finding gets un-found: the rows stay in the PRD,
+# the argument quietly stops pointing at them, and nothing else goes red.
+#
+# BOTH forms of the citation have to go. The first draft of this probe removed
+# only `PRD.md:1848` and came back MISSED — "the rule was broken and the check
+# stayed green" — because the same row is cited a second time six lines later
+# as a bare `:1848`. The check was right; the probe was aimed at one of two
+# doors. It now closes both, because "not one citation survives" is exactly
+# what the assertion means.
+neg_probe "TICKETS.md still cites all three §19.2 exclusion rows" \
+  'perl -pi -e '"'"'s/`PRD\.md:1848`/the increment row/; s/`:1848`/that row/'"'"' docs/v2/TICKETS.md'
+
+# ---------------------------------------------------------------------------
+# G9. The blockquote of open questions counts itself, and the reader who
+#     miscounts it is the owner, deciding.
+# ---------------------------------------------------------------------------
+# The replacement carries no apostrophe on purpose. The pattern needs one and
+# writes it as `.`, but putting a literal ' in the substitution would need four
+# levels of quoting to survive the shell, and a probe nobody can read is a probe
+# nobody will maintain.
+neg_probe "TICKETS.md states how many questions the ratification blockquote raises" \
+  'perl -pi -e '"'"'s/things here are the owner.s to answer/matters here belong to the owner/'"'"' docs/v2/TICKETS.md'
+
+neg_probe "TICKETS.md: how many questions the blockquote raises" \
+  'perl -pi -e '"'"'s/\*\*Three things here are the owner/**Four things here are the owner/'"'"' docs/v2/TICKETS.md'
+
+# A gap rather than a miscount — the count stays right and the numbering goes
+# wrong, which is what a hand-numbered list does when an item is removed from
+# the middle.
+neg_probe "TICKETS.md: the blockquote's questions are numbered 1..N with no gap" \
+  'perl -pi -e '"'"'s/^> \*\*3\. Does §19\.2/> **4. Does §19.2/'"'"' docs/v2/TICKETS.md'
+
+# ---------------------------------------------------------------------------
 # H. The decisions index restates the direct/conditional split in prose, one
 #    document over from the table it summarises. That sentence said "three"
 #    while its own table listed four non-`no` rows — nothing false, just a
@@ -633,4 +699,4 @@ neg_probe "SPEC.md: §4.0 names the board's ratification column and links to it"
 neg_probe "the decisions index and SPEC §4.0 restate no reach figure" \
   'perl -pi -e '"'"'s/a number copied into a second document/R1 reaches 28 of 40, and a number copied into a second document/'"'"' docs/decisions/README.md'
 
-neg_report "V2-GRAPH-NEGATIVE" 101
+neg_report "V2-GRAPH-NEGATIVE" 108
