@@ -114,7 +114,11 @@ chk("the indicator stays outside the isolate (§3)", a.suffixOutsideIsolate, tru
 // that edited nothing would make its partner pass for no reason at all.
 // --------------------------------------------------------------------------
 console.log("\n-- control A: the space removed — the #156 defect restored --");
-const noSpace = source.replace(/\{" "\}\n/, "");
+// \r?\n, not \n: a CRLF checkout (Windows, core.autocrlf=true) otherwise
+// leaves this mutation a no-op and both its checks red on a healthy tree —
+// green in CI, red on a developer's machine, the inverted-guard shape #172's
+// review documented on this exact suite family.
+const noSpace = source.replace(/\{" "\}\r?\n/, "");
 chk("the mutation actually changed the source", noSpace !== source, true);
 chk("dropping the space FAILS the audit", !audit(noSpace).spaceBeforeSuffix, true);
 
