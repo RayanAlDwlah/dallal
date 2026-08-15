@@ -34,7 +34,9 @@ import { createAuctionAction, type CreateAuctionState } from "./actions";
  *    an *uncontrolled* form once a form action resolves. A 2000-character
  *    description must not evaporate because the image was the wrong type
  *    (EC-08). The file input is the sole exception: no browser lets a page
- *    repopulate one.
+ *    repopulate one — so the chosen File is held in state and re-attached to
+ *    the FormData on submit instead. See `imageFile` and `submit` below; the
+ *    input stays empty after a rejection, the payload does not.
  *  - **The end time is submitted as an absolute instant.** The picker gives a
  *    naked wall-clock string with no zone, and the server would resolve it
  *    against ITS timezone — reading a Riyadh seller's 10:30 as 10:30 UTC. The
@@ -132,6 +134,27 @@ export function CreateAuctionForm() {
   const [endsAt, setEndsAt] = useState("");
   const [imageName, setImageName] = useState<string | null>(null);
 
+  /*
+   * The File itself, not just its name — because React destroys the input.
+   *
+   * React resets the <form> once the action completes (react-dom's `r`
+   * dispatcher calls requestFormReset, and the commit phase calls
+   * form.reset()). Every controlled field is re-applied from state on the next
+   * render and survives; a file input CANNOT be controlled, so the seller's
+   * chosen file is gone and no browser lets a page put it back.
+   *
+   * Measured on 2026-08-15 against a live server: after a rejected submission
+   * `input[name=image].files.length` was 0 while the page still read
+   * "الملف المختار: watch.png" — `imageName` is state and survived. `incomplete`
+   * consults `imageName`, so review stayed enabled, the seller confirmed again,
+   * and the server answered "اختر صورة للمنتج." — an inescapable loop, with the
+   * screen asserting the opposite of the truth at every turn.
+   *
+   * Keeping the File and re-attaching it in `submit` below is deterministic:
+   * it does not depend on when the reset lands relative to an effect, and it
+   * does not try to write back into a file input, which is not permitted.
+   */
+  const [imageFile, setImageFile] = useState<File | null>(null);
 
   /*
    * The review view is a REQUEST, not a fact — a server rejection revokes it.
@@ -226,8 +249,27 @@ export function CreateAuctionForm() {
   const [imageError, setImageError] = useState<string | undefined>(undefined);
 
   function changeImage(file: File | null) {
+    setImageFile(file);
     setImageName(file?.name ?? null);
     setImageError(file ? validateImage(file) : undefined);
+  }
+
+  /*
+   * Re-attach the retained File when the input has been emptied by the reset
+   * described above. `formData.get("image")` on an empty file input is still a
+   * File — an empty one — so the test is the size, not the presence.
+   *
+   * This never overrides a real choice: on the first submission, and after the
+   * seller picks a different file, the input holds it and the branch is skipped.
+   * The server re-validates either way (SEC-V6); this only stops the client
+   * from silently sending nothing.
+   */
+  function submit(formData: FormData) {
+    const inForm = formData.get("image");
+    if (imageFile && (!(inForm instanceof File) || inForm.size === 0)) {
+      formData.set("image", imageFile);
+    }
+    return formAction(formData);
   }
 
   const incomplete =
@@ -259,7 +301,7 @@ export function CreateAuctionForm() {
   }
 
   return (
-    <form action={formAction} className="flex flex-col gap-5">
+    <form action={submit} className="flex flex-col gap-5">
       {state.error ? <Alert tone="error">{state.error}</Alert> : null}
 
       {/* FR-CREATE-24 / FR-CREATE-25 stated BEFORE the fields, not after the
