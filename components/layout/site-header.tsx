@@ -21,7 +21,10 @@ import { cn } from "@/lib/cn";
  *
  * Presentation is unchanged from S0-08 — same classes, same structure.
  */
-const PUBLIC_NAV = [{ href: "/", label: "المزادات" }] as const;
+const PUBLIC_NAV = [
+  { href: "/", label: "المزادات" },
+  { href: "/sessions", label: "الجلسات" },
+] as const;
 
 /** Shown only to a signed-in user (S0-10 §3.3). */
 const MEMBER_NAV = [
