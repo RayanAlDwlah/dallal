@@ -871,12 +871,12 @@ Four finalized product decisions each **remove** a check that a conventional auc
 
 | Not checked | Why | Rule |
 |---|---|---|
-| **Bid increment** | No increment exists. A 0.01 SAR raise is exactly as valid as a 1,000 SAR raise | BR-32 |
+| **Bid increment** | **On a V1 auction** no increment exists: a 0.01 SAR raise is exactly as valid as a 1,000 SAR raise. **A V2 auction is a different kind of auction**, marked by an immutable `contract_version` — required, immutable, seller-set increment and no amount field at all (`PRD.md` §24.5, scoped by §24.1). **BR-32 is unamended and stays absolute for every auction it ever covered**; the reversal is never applied retroactively to a live row | BR-32 · **§24.5** |
 | **Maximum amount** | No ceiling exists. Large values are handled correctly, never rejected for size | BR-21, SEC-R3 |
 | **Whether the bidder is already leading** | Leading is never grounds for rejection — only the amount matters. A leading bidder raising their own bid is a valid bid | BR-24, FR-BID-04 |
 | **Reserve price** | No reserve exists. The highest valid bid wins whatever its amount | BR-35 |
 
-**The whole amount rule is BR-28**, and it has exactly two branches: `>= starting price` when there are no bids, `> current price` when there are. Anything else is not a rule of this product.
+**The whole amount rule for a V1 auction is BR-28**, and it has exactly two branches: `>= starting price` when there are no bids, `> current price` when there are. Anything else is not a rule of this product. **On a V2 auction the client sends no amount at all**: the accepted value is `starting_price` for the first bid and `current_price + bid_increment` after it, computed in SQL inside the row lock (`PRD.md` §24.5). Both are still decided by the server, and neither is ever trusted from the client.
 
 ### 13.3 Why the lock is per-auction
 
@@ -1513,7 +1513,7 @@ Five platform assumptions in this document must be **confirmed against the actua
 | **7** | **Password reset introduces the only external delivery dependency**, and it is in the critical path for account recovery | Medium | Confirm delivery works in every environment where it is exercised (V-3) |
 | **8** | **Shared preview database causes cross-branch interference** (§18.4 option A) | Medium | Coordinate schema changes as TEAM.md §11 already requires; evaluate option B if it becomes painful |
 | **9** | ~~TEAM.md is stale relative to the PRD~~ — **RESOLVED.** TEAM.md v2.0 and PRD v3.0 are synchronized; all six conflicts and gap G-1 are closed (§2) | — | Keep the three documents in step. A change to one may require a change to the others |
-| **10** | **A developer re-adds a check the product deliberately removed** — a bid increment, a price ceiling, a leading-bidder block, a reserve, an email-verification step. **Or the mirror image, now that BR-36 is amended: a developer *removes* the anti-sniping extension** because a document they read still says the end time is fixed | Medium — would silently contradict a finalized product decision | §13.2a lists exactly what the bid operation must **not** check. PRD SD-05 and TEAM.md §26 list what nobody may build. **`CLAUDE.md` §5 carries the BR-36 amendment and governs any document that still disagrees.** Worth an explicit check at code review |
+| **10** | **A developer re-adds a check the product deliberately removed** — a price ceiling, a leading-bidder block, a reserve, an email-verification step — or a bid increment **on a V1 auction**, which stays a bug even though V2 auctions require one (`PRD.md` §24.5, scoped by §24.1). **Or the mirror image, now that BR-36 is amended: a developer *removes* the anti-sniping extension** because a document they read still says the end time is fixed | Medium — would silently contradict a finalized product decision | §13.2a lists exactly what the bid operation must **not** check. PRD SD-05 and TEAM.md §26 list what nobody may build. **`CLAUDE.md` §5 carries the BR-36 amendment and governs any document that still disagrees.** Worth an explicit check at code review |
 
 ---
 
