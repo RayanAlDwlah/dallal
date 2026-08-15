@@ -144,6 +144,11 @@ export function Bell({
     return () => window.removeEventListener("mousedown", onDown);
   }, [open]);
 
+  async function remove(id: number) {
+    setItems((prev) => prev.filter((n) => n.id !== id));
+    await supabase.from("notifications").delete().eq("id", id);
+  }
+
   async function openAndMarkRead() {
     const next = !open;
     setOpen(next);
@@ -179,7 +184,14 @@ export function Bell({
               {items.map((n) => {
                 const line = notificationLine(n);
                 return (
-                  <li key={n.id}>
+                  <li key={n.id} className="group relative">
+                    <button
+                      onClick={() => void remove(n.id)}
+                      aria-label="حذف الإشعار"
+                      className="absolute start-1.5 top-1.5 z-[2] grid size-5 cursor-pointer place-items-center rounded-full text-[13px] leading-none text-ink3 opacity-0 transition hover:bg-[rgba(255,77,94,.15)] hover:text-red group-hover:opacity-100"
+                    >
+                      ×
+                    </button>
                     <Link
                       href={notificationHref(n)}
                       onClick={() => setOpen(false)}

@@ -1,18 +1,45 @@
 "use client";
 
 import { useRouter, useSearchParams } from "next/navigation";
-import { Suspense, useState } from "react";
+import { Suspense, useState, useSyncExternalStore } from "react";
 
 /**
- * Two explicit modes, user's choice (Rayan 2026-08-16 — no guessing):
- *   • Enter / plain submit → ordinary keyword search, always.
- *   • the purple «الشريطي 😎» button → the query goes to the AI parser and
- *     comes back as visible, removable filter chips («يفهم البحث», ai.html).
- * On any AI failure the query falls through to the ordinary search — search
- * never breaks because a model did.
+ * «الشريطي 😎» is a MODE, not a one-shot button (Rayan 2026-08-16): pressing
+ * it lights AI search on and it stays on — every Enter after that goes
+ * through the parser and comes back as removable filter chips. Pressing it
+ * again goes back to plain keyword search. The choice is remembered per
+ * browser. On any AI failure the query falls through to plain search —
+ * search never breaks because a model did.
  */
 
-let aiSearchOff = false; // remembered per tab after the first 503
+const MODE_KEY = "dallal-shraiti";
+const MODE_EVENT = "dallal-shraiti-change";
+
+/*
+ * The mode lives in localStorage — an EXTERNAL store, read through
+ * useSyncExternalStore rather than mirrored into state by an effect (the
+ * setState-in-effect lint rule, and the hydration flash it papers over).
+ * The server snapshot is `false`; the client corrects on hydration. The
+ * custom event is what makes a same-tab toggle re-render — `storage` fires
+ * only in OTHER tabs, which conveniently keeps two open tabs in sync too.
+ */
+function subscribeMode(cb: () => void) {
+  window.addEventListener("storage", cb);
+  window.addEventListener(MODE_EVENT, cb);
+  return () => {
+    window.removeEventListener("storage", cb);
+    window.removeEventListener(MODE_EVENT, cb);
+  };
+}
+
+function readMode(): boolean {
+  return localStorage.getItem(MODE_KEY) === "1";
+}
+
+function writeMode(on: boolean) {
+  localStorage.setItem(MODE_KEY, on ? "1" : "0");
+  window.dispatchEvent(new Event(MODE_EVENT));
+}
 
 interface ParsedFilters {
   category: { slug: string; label: string } | null;
@@ -25,7 +52,12 @@ function SearchBoxInner() {
   const router = useRouter();
   const params = useSearchParams();
   const [value, setValue] = useState(params.get("q") ?? "");
+  const aiMode = useSyncExternalStore(subscribeMode, readMode, () => false);
   const [parsing, setParsing] = useState(false);
+
+  function toggleMode() {
+    writeMode(!aiMode);
+  }
 
   function plain() {
     const q = value.trim();
@@ -35,10 +67,10 @@ function SearchBoxInner() {
     router.push(`/${usp.size ? `?${usp}` : ""}`);
   }
 
-  async function askShraiti() {
+  async function submit(e: React.FormEvent) {
+    e.preventDefault();
     const q = value.trim();
-    if (!q || parsing) return;
-    if (aiSearchOff) {
+    if (!q || !aiMode || parsing) {
       plain();
       return;
     }
@@ -51,7 +83,7 @@ function SearchBoxInner() {
         signal: AbortSignal.timeout(15_000),
       });
       if (res.status === 503) {
-        aiSearchOff = true;
+        writeMode(false);
         plain();
         return;
       }
@@ -78,28 +110,35 @@ function SearchBoxInner() {
   }
 
   return (
-    <form
-      onSubmit={(e) => {
-        e.preventDefault();
-        plain();
-      }}
-      className="relative w-full"
-      role="search"
-    >
+    <form onSubmit={submit} className="relative w-full" role="search">
       <span className="pointer-events-none absolute start-3.5 top-[9px] text-[15px] text-ink3">⌕</span>
       <input
         value={value}
         onChange={(e) => setValue(e.target.value)}
-        placeholder="ابحث… أو خل الشريطي يفهمك: كامري 2020 تحت 60 ألف"
-        className="h-10 w-full rounded-full border-0 bg-raised ps-9 pe-[104px] text-sm text-ink outline-none [box-shadow:inset_0_0_0_1px_var(--color-hair)] placeholder:text-ink3 focus:[box-shadow:inset_0_0_0_1px_var(--color-teal),0_0_0_3px_rgba(45,212,191,.15)]"
+        placeholder={
+          aiMode ? "اكتب اللي في بالك… الشريطي فاهمك 😎" : "ابحث… أو شغّل الشريطي يفهمك"
+        }
+        className={`h-10 w-full rounded-full border-0 bg-raised ps-9 pe-[104px] text-sm text-ink outline-none placeholder:text-ink3 ${
+          aiMode
+            ? "[box-shadow:inset_0_0_0_1px_rgba(124,58,237,.45),0_0_16px_rgba(124,58,237,.12)] focus:[box-shadow:inset_0_0_0_1px_rgba(124,58,237,.7),0_0_0_3px_rgba(124,58,237,.15)]"
+            : "[box-shadow:inset_0_0_0_1px_var(--color-hair)] focus:[box-shadow:inset_0_0_0_1px_var(--color-teal),0_0_0_3px_rgba(45,212,191,.15)]"
+        }`}
         aria-label="بحث"
       />
       <button
         type="button"
-        onClick={askShraiti}
-        disabled={parsing || !value.trim()}
-        title="الشريطي يحوّل كلامك لفلاتر — تشوفها وتعدّلها"
-        className="absolute end-1 top-1 h-8 cursor-pointer rounded-full border-0 bg-[rgba(124,58,237,.85)] px-3 text-[12.5px] font-semibold text-white disabled:opacity-40"
+        onClick={toggleMode}
+        aria-pressed={aiMode}
+        title={
+          aiMode
+            ? "وضع الشريطي شغّال — اكتب طلبك عادي واضغط Enter. اضغط للإطفاء"
+            : "شغّل وضع الشريطي: يفهم طلبك ويحوّله فلاتر"
+        }
+        className={`absolute end-1 top-1 h-8 cursor-pointer rounded-full border-0 px-3 text-[12.5px] font-semibold transition ${
+          aiMode
+            ? "bg-[rgba(124,58,237,.9)] text-white [box-shadow:0_0_14px_rgba(124,58,237,.45)]"
+            : "bg-white/5 text-ink2 [box-shadow:inset_0_0_0_1px_var(--color-hair)] hover:text-ink"
+        }`}
       >
         {parsing ? "يفهمك…" : "الشريطي 😎"}
       </button>

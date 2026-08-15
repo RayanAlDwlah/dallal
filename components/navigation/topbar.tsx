@@ -46,13 +46,16 @@ export async function Topbar() {
   return (
     <header className="sticky top-0 z-50 px-3 pt-3 sm:px-5">
       <div className="mx-auto max-w-[1200px]">
-        <div className="hairline flex h-16 items-center gap-3 rounded-[18px] bg-[rgba(15,18,25,.8)] px-4 backdrop-blur-xl sm:gap-5 sm:px-5">
+        {/* ONE blurred surface holds both rows — a bare second row floating
+           over scrolled content is what looked broken at high zoom. */}
+        <div className="hairline rounded-[18px] bg-[rgba(15,18,25,.88)] backdrop-blur-xl">
+        <div className="flex h-16 items-center gap-3 px-4 sm:gap-5 sm:px-5">
           <Link
             href="/"
             className="font-display text-[21px] font-bold text-ink"
             style={{ letterSpacing: "-0.01em" }}
           >
-            دلال<span className="text-gold">.</span>
+            دلّال<span className="text-gold">.</span>
           </Link>
 
           <div className="hidden max-w-[360px] flex-1 sm:block">
@@ -96,11 +99,10 @@ export async function Topbar() {
           ) : null}
         </div>
 
-        {/* mobile second row: search + the two nav links */}
-        <div className="mt-2 flex items-center gap-2 sm:hidden">
-          <div className="flex-1">
-            <SearchBox />
-          </div>
+        {/* narrow viewports: search gets its own row INSIDE the surface */}
+        <div className="px-4 pb-3 sm:hidden">
+          <SearchBox />
+        </div>
         </div>
       </div>
     </header>

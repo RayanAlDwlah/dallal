@@ -10,7 +10,13 @@ import { ImageEditor } from "@/components/ui/image-editor";
 import { IncrementAmount, Money } from "@/components/ui/money";
 import type { CategoryTree } from "@/lib/auctions/queries";
 import { arError } from "@/lib/errors";
-import { ALLOWED_IMAGE_TYPES, MAX_AUCTION_IMAGES, MAX_IMAGE_BYTES, auctionImageUrl } from "@/lib/images";
+import {
+  ALLOWED_IMAGE_TYPES,
+  MAX_AUCTION_IMAGES,
+  MAX_IMAGE_BYTES,
+  auctionImageUrl,
+  normalizeForUpload,
+} from "@/lib/images";
 import { formatMoney, parseMoneyInput } from "@/lib/money";
 import { createClient } from "@/lib/supabase/client";
 import { formatDateTimeAr, isoFromNow, toDatetimeLocalValue } from "@/lib/time";
@@ -211,12 +217,11 @@ export function CreateAuctionWizard({
         paths.push(img.path);
         continue;
       }
-      const ext =
-        img.file.type === "image/png" ? "png" : img.file.type === "image/webp" ? "webp" : "jpg";
-      const path = `${userId}/${batch}/${i + 1}-${crypto.randomUUID().slice(0, 8)}.${ext}`;
+      const upload = await normalizeForUpload(img.file);
+      const path = `${userId}/${batch}/${i + 1}-${crypto.randomUUID().slice(0, 8)}.jpg`;
       const { error: upErr } = await supabase.storage
         .from("auction-images")
-        .upload(path, img.file, { contentType: img.file.type, upsert: false });
+        .upload(path, upload, { contentType: upload.type, upsert: false });
       if (upErr) throw new Error("upload_failed");
       paths.push(path);
     }

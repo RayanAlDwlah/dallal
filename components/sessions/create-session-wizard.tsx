@@ -8,7 +8,12 @@ import { LotEditor, type DraftLot } from "@/components/sessions/lot-editor";
 import type { CategoryTree } from "@/lib/auctions/queries";
 import { guessMapping, parseCsv, type CsvMapping } from "@/lib/csv";
 import { arError } from "@/lib/errors";
-import { ALLOWED_IMAGE_TYPES, MAX_IMAGE_BYTES, auctionImageUrl } from "@/lib/images";
+import {
+  ALLOWED_IMAGE_TYPES,
+  MAX_IMAGE_BYTES,
+  auctionImageUrl,
+  normalizeForUpload,
+} from "@/lib/images";
 import { addMoney, parseIncrementInput, parseMoneyInput } from "@/lib/money";
 import { createClient } from "@/lib/supabase/client";
 import { formatDateTimeAr, isoFromNow, toDatetimeLocalValue } from "@/lib/time";
@@ -61,6 +66,9 @@ export function CreateSessionWizard({
         : new Date(Date.now() + 60 * 60_000),
     );
   });
+  const [startPreset, setStartPreset] = useState<"1" | "3" | "24" | "custom">(
+    draft ? "custom" : "1",
+  );
   const [minStart] = useState(() => toDatetimeLocalValue(isoFromNow(5)));
   const [coverFile, setCoverFile] = useState<File | null>(null);
   const [coverPath] = useState<string | null>(draft?.session.cover_image ?? null);
@@ -165,11 +173,11 @@ export function CreateSessionWizard({
   }
 
   async function uploadOne(file: File, folder: string): Promise<string> {
-    const ext = file.type === "image/png" ? "png" : file.type === "image/webp" ? "webp" : "jpg";
-    const path = `${userId}/${folder}/${crypto.randomUUID().slice(0, 8)}.${ext}`;
+    const upload = await normalizeForUpload(file);
+    const path = `${userId}/${folder}/${crypto.randomUUID().slice(0, 8)}.jpg`;
     const { error: upErr } = await supabase.storage
       .from("auction-images")
-      .upload(path, file, { contentType: file.type, upsert: false });
+      .upload(path, upload, { contentType: upload.type, upsert: false });
     if (upErr) throw new Error("upload_failed");
     return path;
   }
@@ -413,28 +421,70 @@ export function CreateSessionWizard({
                 }}
               />
             </div>
-            <div className="grid gap-3 sm:grid-cols-2">
-              <div>
-                <label className="mb-1.5 block text-[13.5px] font-semibold">تاريخ البداية ووقتها</label>
+            <div className="mb-5">
+              <label className="mb-1.5 block text-[13.5px] font-semibold">متى تبدأ؟</label>
+              <div className="flex flex-wrap gap-2">
+                {(
+                  [
+                    ["1", "بعد ساعة"],
+                    ["3", "بعد 3 ساعات"],
+                    ["24", "بكرة نفس الوقت"],
+                  ] as const
+                ).map(([hours, label]) => (
+                  <button
+                    key={hours}
+                    type="button"
+                    onClick={() => {
+                      setStartPreset(hours);
+                      setStartTime(
+                        toDatetimeLocalValue(new Date(Date.now() + Number(hours) * 3600_000)),
+                      );
+                    }}
+                    className={`grid h-11 place-items-center rounded-[12px] px-4 text-sm ${
+                      startPreset === hours
+                        ? "bg-gold font-semibold text-gold-ink"
+                        : "hairline bg-raised text-ink2 hover:text-ink"
+                    }`}
+                  >
+                    {label}
+                  </button>
+                ))}
+                <button
+                  type="button"
+                  onClick={() => setStartPreset("custom")}
+                  className={`grid h-11 place-items-center rounded-[12px] px-4 text-sm ${
+                    startPreset === "custom"
+                      ? "bg-gold font-semibold text-gold-ink"
+                      : "hairline bg-raised text-ink2 hover:text-ink"
+                  }`}
+                >
+                  وقت محدد
+                </button>
+              </div>
+              {startPreset === "custom" ? (
                 <input
                   type="datetime-local"
                   value={startTime}
                   min={minStart}
                   onChange={(e) => setStartTime(e.target.value)}
-                  className="field num"
+                  className="field num mt-2.5"
                   dir="ltr"
                 />
-              </div>
-              <div>
-                <label className="mb-1.5 block text-[13.5px] font-semibold">المدينة</label>
-                <input
-                  value={city}
-                  onChange={(e) => setCity(e.target.value)}
-                  maxLength={60}
-                  className="field"
-                  placeholder="الرياض"
-                />
-              </div>
+              ) : (
+                <p className="num m-0 mt-2 text-[13px] text-ink2">
+                  تبدأ {formatDateTimeAr(new Date(startTime))}
+                </p>
+              )}
+            </div>
+            <div>
+              <label className="mb-1.5 block text-[13.5px] font-semibold">المدينة</label>
+              <input
+                value={city}
+                onChange={(e) => setCity(e.target.value)}
+                maxLength={60}
+                className="field"
+                placeholder="الرياض"
+              />
             </div>
             <p className="m-0 mt-2 text-[12.5px] text-ink3">
               الجلسة تبدأ في وقتها. مدة كل قطعة تنحدّد في الخطوة الجاية، مو وقت انتهاء مطلق لكل
@@ -545,6 +595,15 @@ export function CreateSessionWizard({
                 {importNote}
               </p>
             ) : null}
+
+            <p className="m-0 mt-2.5 text-[12.5px] text-ink3">
+              عندك ملف من المعرض؟ أعمدته:{" "}
+              <b className="text-ink2">اسم القطعة، سعر البداية، الزيادة، المدة (دقائق)، التصنيف</b>{" "}
+              — وأسماء أعمدة مختلفة؟ الشريطي يفكّها.{" "}
+              <a href="/sample-lots.csv" download className="font-semibold text-[#C4A6FF]">
+                حمّل نموذجًا جاهزًا
+              </a>
+            </p>
 
             {lots.length > 0 ? (
               <div className="mt-4 flex flex-wrap items-baseline justify-between gap-2 border-t border-[var(--color-hair)] pt-3.5 text-sm text-ink2">
