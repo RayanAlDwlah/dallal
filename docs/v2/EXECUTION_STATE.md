@@ -140,32 +140,48 @@ Two consequences the operator must not work around:
 | [#168](https://github.com/RayanAlDwlah/dallal/pull/168) | `feature/rayan-v2-spec` | open, awaiting owner | the V2 spec, board and governance. `static` green, `database` red **only** on #147 |
 | [#167](https://github.com/RayanAlDwlah/dallal/pull/167) | `feature/rayan-guards` | open | CI + the guard suite. `#168` is stacked on it |
 | [#165](https://github.com/RayanAlDwlah/dallal/pull/165) | `fix/rayan-plan-sc74-stale` | open | docs-only; only check is the rate-limited Vercel one |
-| [#155](https://github.com/RayanAlDwlah/dallal/pull/155) | `fix/mohammed-check-import-alias` | open, **`CHANGES_REQUESTED` by `@RayanAlDwlah` — now satisfied, see below** | this is `V2-00`, and it is what makes `main` green |
+| [#155](https://github.com/RayanAlDwlah/dallal/pull/155) | `fix/mohammed-check-import-alias` | open, **approved by `@RayanAlDwlah` 2026-08-15**; `reviewDecision` is still `CHANGES_REQUESTED` because **`@Dem4t`'s** block from 2026-08-14 is undismissed | this is `V2-00`, and it is what makes `main` green |
 
-### #155 — the block is resolved, measured on 2026-08-15
+### #155 — both blocks are answered by measurement; one needs a human to lift
 
-The requested change was that check 3 of `tests/integration/check-imports.check.sh` was
-**vacuous on macOS**: it used `grep -P`, which BSD does not have, so it reported `PASS (0)` on
-a tree where the bug was present. `@m7ya505` replaced it with three `-E` passes.
+There were **two** requested changes on this PR, and they are different faults. Only one of
+them was mine.
 
-Re-measured at `356704f`, in a clean worktree, on macOS:
+**Mine (`@RayanAlDwlah`, already dismissed).** Check 3 of
+`tests/integration/check-imports.check.sh` was **vacuous on macOS**: it used `grep -P`, which
+BSD does not have, so it reported `PASS (0)` on a tree where the bug was present. `@m7ya505`
+replaced it with three `-E` passes.
+
+**`@Dem4t`'s (still open, and it is the one holding `reviewDecision`).** The fix removed the
+`@/lib/money` alias but left the path extensionless, and node's ESM resolver does not infer
+extensions — so `lib/auctions/validation.ts:40` still did not resolve. He also made the
+sharper point that the guard measured the **spelling** of the fix, not its **effect**, and
+would pass a tree where the module still fails to load.
+
+Re-measured at `356704f`, in a detached worktree, macOS, node v22.18.0 — on 2026-08-15, not
+read off the diff:
 
 ```
-tests/auction/run.sh                        SUITE PASSED          (was: 1 failing)
+lib/auctions/validation.ts:40   import { isSar } from "../money.ts";   ← his two characters
+tests/auction/image-type.check.mjs          27 passed, 0 failed, 27 of 27 reached, exit 0
 tests/integration/check-imports.check.sh    3 passed, 0 failed
-npx tsc --noEmit                            exit 0
+tests/auction/run.sh          (postgres:17)  SUITE PASSED               (was: 1 failing)
 ```
 
-and, with #136's exact broken import reinstated as a falsification probe:
+and both broken shapes reinstated as falsification probes:
 
-```
-FAIL  every discovered check loads                    got=8 want=9
-      !! tests/auction/image-type.check.mjs did not load
-         Error [ERR_MODULE_NOT_FOUND]: Cannot find package '@/lib' …
-FAIL  hint — no VALUE @/ import in a reachable module got=1 want=0
-```
+| probe | `every discovered check loads` | `no VALUE @/ import` |
+|---|---|---|
+| `@/lib/money` — #136's alias bug | **FAIL** got=8 want=9 | **FAIL** got=1 want=0 |
+| `../money` — extensionless, the shape `@Dem4t` said would slip through | **FAIL** got=8 want=9 | PASS (0) |
 
-**Both checks fire on macOS now.** The guard is no longer vacuous. The block is answered.
+Read the second row: the spelling check **passes** and the effect check **fails**. That is
+exactly the case he named, and it no longer survives — because the guard now imports every
+discovered `*.check.mjs` rather than grepping for a pattern.
+
+**Both blocks are answered on the evidence. This run approved the PR and re-requested
+`@Dem4t`, and deliberately did *not* dismiss his review** — lifting another reviewer's block
+is a human's call, not an unattended session's, and the merge needs a human anyway.
 
 ---
 
@@ -187,9 +203,10 @@ declaring it out of scope.
 
 **Ready next, in order:**
 
-1. **Push `feature/rayan-v2-spec`** — 11 commits are local only. Until this happens, #168 shows
-   none of the above. Push, never force-push: #168 is open and others may be reading it.
-2. Dismiss the stale `CHANGES_REQUESTED` on #155 with the measurement above and approve it.
+1. ~~**Push `feature/rayan-v2-spec`**~~ — **done**, `08bd3ba`. Push, never force-push: #168 is
+   open and others may be reading it.
+2. ~~Measure #155 against both blocks and approve it~~ — **done**, see above. What is left on
+   it is one human action: dismiss `@Dem4t`'s review, or have him re-review, then merge.
 3. **A committed negative suite for `graph.check.mjs` and `workflow.check.mjs`.** Deliberately
    deferred, and it is the largest remaining integrity gap: 107 assertions across the two, with
    no committed counterpart to `tests/guards/negative.sh`. Every probe run so far lived in
