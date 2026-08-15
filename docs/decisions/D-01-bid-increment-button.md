@@ -190,8 +190,9 @@ the only sense the board could compute — **nothing they cited was open, becaus
 not cite anything.** A gap with no id does not read as a blocker; it reads as an absence of
 blockers, which is the same shape as being ready.
 
-The corrected set is **four**: `V2-A14`, `V2-B1`, `V2-B2`, `V2-B3`. Recomputed by
-[`tests/v2/graph.mjs`](../../tests/v2/graph.mjs), not by hand.
+The corrected **unblocked** set is **four**: `V2-A14`, `V2-B1`, `V2-B2`, `V2-B3` — of which
+**two** can actually be started, the other two sitting behind `V2-B1`. Recomputed by
+[`tests/v2/graph.check.mjs`](../../tests/v2/graph.check.mjs), not by hand.
 
 ## 6. What must be true before any of this is implemented
 

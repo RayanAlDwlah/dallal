@@ -262,11 +262,19 @@ committed, and four disagreements were found and fixed rather than argued about:
 blocks `V2-C2`, `O23` also blocks `V2-C6`, `O24` also blocks `V2-C7` and `V2-B12`, and `O11`
 blocks nothing. If you edit one column, re-derive the other; do not patch it by eye.
 
-**"Mechanically" is now a file, not a claim.** [`tests/v2/graph.mjs`](../../tests/v2/graph.mjs)
-parses both tables, diffs the two copies of the graph, and recomputes every count either
-document states about itself — ticket count, dependency edges, blocking edges, register size,
-how many items block nothing, and the startable closure. The sentence above was true when it
-was written and there was no way for a reader to confirm it; run the file instead.
+**"Mechanically" is now a file, not a claim.**
+[`tests/v2/graph.check.mjs`](../../tests/v2/graph.check.mjs) parses both tables, diffs the
+two copies of the graph, and recomputes every count either document states about itself —
+ticket count, dependency edges, blocking edges, register size, how many items block nothing,
+each item's reach, the unblocked closure, and the wave schedule. The sentence above was true
+when it was written and there was no way for a reader to confirm it; run the file instead.
+It is in CI's `static` job.
+
+**Note the vocabulary, because it was one word until 2026-08-15 and that cost 2.3× of
+imagined parallelism.** *Unblocked* means no open item anywhere in the dependency chain — a
+property of this register. *Startable* means unblocked **and** every dependency already
+merged — a property of a date. `TICKETS.md` states both, separately, and the wave table
+under it is the one to read when deciding what anybody can pick up.
 
 **O4 is now the expensive one.** Q1 and Q2 were, and both are decided. O4 is what remains
 that is painful to reverse: it decides whether phase 4 is a migration on an existing table

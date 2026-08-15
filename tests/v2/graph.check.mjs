@@ -125,6 +125,38 @@ const startableWith = (answered = new Set()) => {
   return [...board.keys()].filter((id) => id !== "V2-00" && walk(id, new Set()));
 };
 
+// UNBLOCKED IS NOT STARTABLE, and conflating them is what made this board
+// report 2.3x the parallelism it had.
+//
+// TICKETS.md defines `ready` itself: "every id in *depends on* is merged, AND
+// no id in *blocked on* is still open." The closure above only answers the
+// second half. V2-B2 and V2-B3 have no open question anywhere in their chain —
+// and both depend on V2-B1, which is not merged, so neither can be claimed the
+// day V2-00 lands. Listing them as "startable today" reads as a headcount of
+// people who can work in parallel, which is the only reason anyone reads that
+// section.
+//
+// Waves answer the schedule question the closure cannot: wave 1 is what starts
+// when V2-00 merges, wave N is what starts when wave N-1 has.
+const waves = () => {
+  const unblocked = new Set(startableWith());
+  const out = [];
+  const merged = new Set(["V2-00"]); // the unblock step is wave 0 by definition
+  let remaining = new Set(unblocked);
+  while (remaining.size) {
+    const w = [...remaining].filter((id) =>
+      board.get(id).deps.every((d) => merged.has(d))
+    ).sort();
+    if (w.length === 0) break; // everything left waits on something blocked
+    out.push(w);
+    for (const id of w) {
+      merged.add(id);
+      remaining.delete(id);
+    }
+  }
+  return out;
+};
+
 // A ticket is "reached" by an item if the item blocks it, or blocks anything
 // it transitively waits on. Reach is not startability — SPEC.md §4.3 and
 // TICKETS.md both say so, in the paragraph this function backs.
@@ -252,32 +284,56 @@ if (specBlk) {
   chk("SPEC.md §4.3: register size", Number(specBlk[2]), register.size);
 }
 
-// The startable set is the number most worth being wrong about: it is the one
+// The unblocked set is the number most worth being wrong about: it is the one
 // a reader acts on. It is stated twice — as a word and as a list — and both
 // are checked, because a correct count next to a stale list is still a lie.
 const start = grab(
   TICKETS,
-  /\*\*([A-Za-z-]+) tickets\*\*, once `V2-00` lands: ([^.]+)\./,
-  "TICKETS.md states what is startable today",
+  /\*\*([A-Za-z-]+) tickets are unblocked: ([^*]+)\.\*\*/,
+  "TICKETS.md states what is unblocked",
 );
 if (start) {
-  chk("TICKETS.md: startable count", word2num(start[1]), startable.length);
+  chk("TICKETS.md: unblocked count", word2num(start[1]), startable.length);
   chk(
-    "TICKETS.md: the startable list matches the closure",
+    "TICKETS.md: the unblocked list matches the closure",
     idsIn(start[2]).sort(),
     [...startable].sort(),
   );
 }
 
+// And the wave table, which is the half the old wording dropped.
+console.log();
+console.log("--- unblocked vs startable: the waves");
+const computedWaves = waves();
+const statedWaves = [...TICKETS.matchAll(/^\| \*\*(\d+)\*\* \| ((?:V2-[A-C]?\d+(?:, )?)+) \| /gm)];
+chk("TICKETS.md: the wave table has a row per wave", statedWaves.length, computedWaves.length);
+for (const [i, w] of computedWaves.entries()) {
+  const row = statedWaves.find((m) => Number(m[1]) === i + 1);
+  chk(`TICKETS.md: wave ${i + 1} membership`, row ? idsIn(row[2]).sort() : null, w);
+}
+
+const canStart = grab(
+  TICKETS,
+  /\*\*([A-Za-z-]+) of them can be started: ([^*]+)\.\*\*/,
+  "TICKETS.md states how many tickets can actually be started",
+);
+if (canStart) {
+  chk("TICKETS.md: wave-1 count — how many people can work at once", word2num(canStart[1]), computedWaves[0]?.length);
+  chk("TICKETS.md: wave-1 list", idsIn(canStart[2]).sort(), computedWaves[0]);
+}
+
+console.log();
+console.log("--- what answering an item opens up");
+
 const opens = grab(
   TICKETS,
-  /moves the startable set from \*\*(\d+) to (\d+)\*\* — ([^—]+) —/,
+  /moves the unblocked set from \*\*(\d+) to (\d+)\*\* — ([^—]+) —/,
   "TICKETS.md states what answering O1 and O2 opens up",
 );
 if (opens) {
   const after = startableWith(new Set(["O1", "O2"]));
-  chk("TICKETS.md: startable before O1/O2", Number(opens[1]), startable.length);
-  chk("TICKETS.md: startable after O1/O2", Number(opens[2]), after.length);
+  chk("TICKETS.md: unblocked before O1/O2", Number(opens[1]), startable.length);
+  chk("TICKETS.md: unblocked after O1/O2", Number(opens[2]), after.length);
   chk(
     "TICKETS.md: which tickets O1/O2 release",
     idsIn(opens[3]).sort(),
@@ -291,8 +347,8 @@ const plus20 = grab(
   "TICKETS.md states what O20 adds on top",
 );
 if (plus20) {
-  chk("TICKETS.md: startable after O1/O2", Number(plus20[1]), startableWith(new Set(["O1", "O2"])).length);
-  chk("TICKETS.md: startable after O1/O2/O20", Number(plus20[2]), startableWith(new Set(["O1", "O2", "O20"])).length);
+  chk("TICKETS.md: unblocked after O1/O2", Number(plus20[1]), startableWith(new Set(["O1", "O2"])).length);
+  chk("TICKETS.md: unblocked after O1/O2/O20", Number(plus20[2]), startableWith(new Set(["O1", "O2", "O20"])).length);
 }
 
 const reachRow = grab(

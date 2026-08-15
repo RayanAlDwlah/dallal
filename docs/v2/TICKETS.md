@@ -100,10 +100,38 @@ more blocked than it is. Its register entry (§4.3, `SPEC.md`) says so in the sa
 | **V2-B11** | B | Host control room | V2-B10 | **O9, O19** |
 | **V2-B12** | B | **Enhancement surface**: «حسّن الصور» · «رجّع الأصلية» · «صور معدّلة» | V2-B7, V2-C7 | **O24** |
 
-### What is actually startable today
+### Unblocked, startable, and how many people can actually work
 
-**Four tickets**, once `V2-00` lands: **V2-A14, V2-B1, V2-B2, V2-B3.** Those are the only
-ones with no open question anywhere in their dependency chain.
+Three words were doing one word's job. `ready` is defined at the top of this file — *every
+id in **depends on** is merged, **and** no id in **blocked on** is still open* — and the
+list that used to sit here checked only the second half of that sentence while being
+labelled with the first.
+
+| term | means | property of |
+|---|---|---|
+| **unblocked** | no open owner question anywhere in its dependency chain | the question graph |
+| **startable** (= `ready`) | unblocked **and** every dependency already merged | a moment in time |
+| **wave** | how many merges deep it sits behind `V2-00` | the schedule |
+
+**Four tickets are unblocked: V2-A14, V2-B1, V2-B2, V2-B3.** That is the honest answer to
+*"what has no open question in it."*
+
+**Two of them can be started: V2-A14, V2-B1.** `V2-B2` and `V2-B3` both depend on `V2-B1`,
+which is not merged, so they are unblocked and **not yet startable**.
+
+| wave | tickets | starts when |
+|---|---|---|
+| **1** | V2-A14, V2-B1 | `V2-00` merges |
+| **2** | V2-B2, V2-B3 | `V2-B1` merges |
+
+**The distinction is how many people can claim work at once, which is the only reason anyone
+reads this section.** *"Seven tickets startable today"* was read as seven parallel claims.
+Under that same board the wave-1 count was **three** — `V2-C3`, `V2-A14`, `V2-B1` — because
+`V2-A3` and `V2-B5` sat behind `V2-C3` and `V2-B2`/`V2-B3` behind `V2-B1`. The figure
+overstated available parallelism by **2.3×**, and it did so while every number on the board
+was arithmetically correct. It was the wrong quantity, not a wrong sum.
+
+Both tables above are asserted by [`tests/v2/graph.check.mjs`](../../tests/v2/graph.check.mjs).
 
 > **It said seven until 2026-08-15, and the three it lost are the interesting part.**
 > `V2-C3`, `V2-A3` and `V2-B5` — the bid-button contract, the `bid_increment` column and
@@ -139,7 +167,7 @@ tickets**.
 
 > **But do not read that as "27 tickets become startable."** They do not, and the difference
 > is worth stating because it is the mistake this board is designed to prevent. Answering
-> `O1` and `O2` moves the startable set from **4 to 9** — `V2-C1`, `V2-C5`, `V2-C8`,
+> `O1` and `O2` moves the unblocked set from **4 to 9** — `V2-C1`, `V2-C5`, `V2-C8`,
 > `V2-A1`, `V2-A17` — measured by re-running the same closure with those two removed, not
 > estimated. The other eighteen carry a *second* blocker further up their chain: `V2-A2`
 > still waits on `O20`, everything in phase 4 still waits on `O4`, and the whole bid-button

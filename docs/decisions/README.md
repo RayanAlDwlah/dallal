@@ -168,7 +168,7 @@ column. Register: [`docs/v2/SPEC.md` §4.3](../v2/SPEC.md).
 > tickets carried `blocked on: —` and the board counted them **startable**. Rule 5 above is
 > not a filing convention. It is the mechanism, and this is what its absence looks like: not
 > a wrong answer anywhere, just a hole in the numbering that renders as good news. The six
-> are now `O25`–`O30`; the startable set went **7 → 4**; D-01 §5a has the measurement.
+> are now `O25`–`O30`; the unblocked set went **7 → 4**; D-01 §5a has the measurement.
 
 **None of the six is `IN PRD`, and three of them contradict it** — `R1`, `R2`, `R3` in the
 ratification gate above. That is an owner action, not a contributor judgement, and it is
