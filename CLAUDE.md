@@ -379,7 +379,7 @@ Three things in `tests/guards/` are new and each answers a different question:
   The twentieth check is this section: **the count above must equal `EXPECTED` in
   `run.sh`.** It went stale twice in two commits before that existed, which is the whole
   argument — a number maintained by hand in a file nobody re-reads is a number that lies.
-- **`negative.sh`** — breaks all 20 rules on purpose and asserts each one is caught. A
+- **`negative.sh`** — breaks all 21 rules on purpose and asserts each one is caught. A
   check that stays green while its rule is violated is reported as a **failure of the
   check**. This is not ceremony: it found two real defects in `run.sh` the first time it
   ran. **A guard that cannot fail is worse than no guard.**
@@ -452,17 +452,24 @@ checks carry **214 assertions** and, until 2026-08-15, not one committed probe b
 the probes that found the four defects above lived in `/tmp` and were gone by the next
 session. So each now has a counterpart that runs in CI beside it:
 
-> **That figure said `107` until G0A, and it was wrong by half.** It was true when written and
-> the graph check grew past it; nothing was watching, because this is the one count in §9 that
-> **no check reaches** — `EXPECTED` is pinned in `run.sh`, the guard count is pinned against
-> this file, and this number sits between them unpinned. It is therefore the exact defect the
-> section it lives in was written about, surviving inside the argument against itself. Pinning
-> it means executing both node checks to count them, which `run.sh` must not do — it is the
-> seconds-no-Docker job and would run them twice per CI pass. **The fix is a real ticket, not a
-> line in this paragraph**, and until it lands this figure is hand-maintained and should be
-> distrusted on sight: run the two checks and read their totals.
+> **G0A found three stale figures in this section, and this was the worst of them.** It said
+> `107` against an actual 213; the bullets below said `20 rules` against 21 and `52 probes`
+> against 157. All three were true when written, all three were wrong on `main` before G0A
+> touched anything, and **the guard suite was green through every one.**
+>
+> The reason is the same for all three and it is worth stating plainly: **`EXPECTED` in
+> `run.sh` is pinned against this file, and nothing pins the numbers in the prose around it.**
+> So §9 — the section whose entire argument is that a hand-maintained number in a file nobody
+> re-reads is a number that lies — was carrying three of them, inside the argument against
+> them. That is not irony, it is the mechanism working exactly as described on the one target
+> it was never pointed at.
+>
+> Pinning them means executing both node checks to count, which `run.sh` must not do: it is the
+> seconds-no-Docker job and would run them twice per CI pass. **That makes it a real ticket,
+> not a line in this paragraph.** Until it lands, every count in this section is hand-maintained
+> and should be distrusted on sight — run the suite and read its total.
 
-- **`tests/v2/graph-negative.check.sh`** — 52 probes against `graph.check.mjs`.
+- **`tests/v2/graph-negative.check.sh`** — 157 probes against `graph.check.mjs`.
 - **`tests/governance/workflow-negative.check.sh`** — 18 probes against `workflow.check.mjs`,
   including one per step of the seven-step loop, because a seven-long loop is short enough to
   cover exhaustively and each step's copy is caught by a *different* fingerprint.
