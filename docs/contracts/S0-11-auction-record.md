@@ -31,7 +31,7 @@
 >
 > **None of this is a security defect.** The writes happen under `place_bid`, which is
 > `SECURITY DEFINER`, and `authenticated` is revoked from `UPDATE` on `auctions`
-> (`20260812120000:512`). The defect is one of **disclosure**: §4 is an inventory you read
+> (`20260812120000:536`). The defect is one of **disclosure**: §4 is an inventory you read
 > to know what moves under your hands, and it had gone stale.
 >
 > **Two new boxes in §8 cover the amendment.** Nothing in it is agreed until you tick them.

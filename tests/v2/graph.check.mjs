@@ -1538,12 +1538,12 @@ if (!section) {
   // policy exists at all.
   chk(
     "the shipped auctions insert policy still demands a future end_time at insert time",
-    (POLICY[499] ?? "").includes("end_time >= now() + interval '5 minutes'"),
+    (POLICY[523] ?? "").includes("end_time >= now() + interval '5 minutes'"),
     true,
   );
   chk(
     "the shipped auctions policy block still records that no update or delete path exists",
-    (POLICY[484] ?? "").includes("There is NO update and NO delete policy on auctions for any user"),
+    (POLICY[508] ?? "").includes("There is NO update and NO delete policy on auctions for any user"),
     true,
   );
 

@@ -87,7 +87,7 @@ open.
   > (`PRD.md:806`), with `FR-CREATE-09`, `FR-CREATE-10`, `FR-CREATE-10a` and `SC-68`: the
   > permitted duration is **5 minutes to 7 days, inclusive, by server time**. It is already
   > a `CHECK` constraint
-  > (`supabase/migrations/20260812120000_bid02_bid_acceptance.sql:500-501`) with a four-case
+  > (`supabase/migrations/20260812120000_bid02_bid_acceptance.sql:524-525`) with a four-case
   > boundary test.
   >
   > What the prototype shows is the **existing** floor, and the screen omits the **existing

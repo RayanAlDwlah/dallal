@@ -968,7 +968,7 @@ and a probe that performs the promotion a helpful editor would perform.
 #### The one that is code
 
 Five of the six are prose. **Crossing 6 is a `WITH CHECK` that is live on `main`**:
-`20260812120000_bid02_bid_acceptance.sql:500` requires `end_time >= now() + interval '5 minutes'`
+`20260812120000_bid02_bid_acceptance.sql:524` requires `end_time >= now() + interval '5 minutes'`
 at **insert** time, and `V2-A11` says a lot's `end_time` is *"computed when the lot opens, not at
 creation"*. If `O4` resolves to "a lot is an `auctions` row with a nullable `session_id`", the
 insert is refused with **42501**. It escalates the finding from *a document says* to *a

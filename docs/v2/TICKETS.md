@@ -545,7 +545,7 @@ model — and **no ticket on this board changes it**, including the one `D-01` s
 | **3** | `ARCHITECTURE.md:1218` — the application holds no elevated credential | `AI_API_KEY` | architecture steward |
 | **4** | `ARCHITECTURE.md:958` — realtime is scoped per auction | the session room | Rayan (realtime) |
 | **5** | `ARCHITECTURE.md:681`, `:685` — the owner has **no** update rights | host powers, pause | Rayan (bidding/closing) |
-| **6** | `20260812120000_bid02_bid_acceptance.sql:500` — `end_time` required at insert | a lot has none until it opens | Rayan (bidding/closing) |
+| **6** | `20260812120000_bid02_bid_acceptance.sql:524` — `end_time` required at insert | a lot has none until it opens | Rayan (bidding/closing) |
 
 > **1. ADR-3's reversal condition has already fired, and nobody re-ran the decision.**
 > `ARCHITECTURE.md:1384` names the trigger in its own words — *"an outbound integration appears
@@ -612,7 +612,7 @@ model — and **no ticket on this board changes it**, including the one `D-01` s
 > that builds one.
 
 > **6. A lot cannot be inserted under the policy that is on `main` today. This one is code, not
-> prose.** `supabase/migrations/20260812120000_bid02_bid_acceptance.sql:500` — inside the
+> prose.** `supabase/migrations/20260812120000_bid02_bid_acceptance.sql:524` — inside the
 > `auctions_owner_insert` `WITH CHECK` — requires `end_time >= now() + interval '5 minutes'` at
 > **insert** time, with `:501` capping it at seven days. `V2-A11` says the opposite in one
 > sentence: *"`end_time` is **computed when the lot opens**, not at creation."* If `O4` is

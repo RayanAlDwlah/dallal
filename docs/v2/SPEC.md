@@ -45,7 +45,7 @@ already enforced:
 
 > **Auction duration is 5 minutes to 7 days, inclusive, by server time** — `BR-38`,
 > `FR-CREATE-09/10/10a`, `SC-68`. It is a `CHECK` constraint today
-> (`supabase/migrations/20260812120000_bid02_bid_acceptance.sql:500-501`). D-06 §2 step 3
+> (`supabase/migrations/20260812120000_bid02_bid_acceptance.sql:524-525`). D-06 §2 step 3
 > described the 5-minute floor as *"a new rule"* — **it is not new**, it is BR-38, and V2
 > enforces the existing range at both ends rather than inventing a floor.
 
