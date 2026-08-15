@@ -15,10 +15,11 @@ restating the dependency graph, delete that part and link instead.
 | | |
 |---|---|
 | **Run id** | `e33684e-20260815T0250` |
-| **Last updated** | 2026-08-15, after queue item 3 — this file is the commit that follows `aa8b70d` |
+| **Last updated** | 2026-08-15, after the `f4ff6f1` guard fix — this file is the commit that follows it |
 | **Branch** | `feature/rayan-v2-spec` |
-| **HEAD** | `aa8b70d` + this commit |
-| **Base** | **19 commits ahead of `origin/main`**, and it contains `.github/workflows/ci.yml`, which `main` does not. Everything through `aa8b70d` **is pushed**; this commit is the only one that may not be. Push, never force-push — #168 is open and others may be reading it |
+| **HEAD** | `f4ff6f1` + this commit |
+| **Base** | **21 commits ahead of `origin/main`**, and it contains `.github/workflows/ci.yml`, which `main` does not. Everything through `cd6ada6` **is pushed**; `f4ff6f1` and this commit may not be. Push, never force-push — #168 is open and others may be reading it |
+| **CI status** | **`static` has been RED on every push since `03217f7`**, on a guard of my own. `f4ff6f1` is the fix. `database` is red on the pre-existing #147, which **PR #155 fixes and only a human can merge**. See the correction under the measurement tables before trusting a green row |
 | **Operator** | unattended Claude session, owner asleep, reviewing later |
 
 ---
@@ -99,7 +100,7 @@ so the Docker rows above were not re-run and are not restated here.**
 
 | suite | at this commit | was at `d819d44` |
 |---|---|---|
-| `tests/guards/run.sh` | **PASS** 20/20 | 20/20 |
+| `tests/guards/run.sh` | **PASS 20/20 on macOS — and RED IN CI at the same time.** See the correction below; do not read this row as green | 20/20, same inversion |
 | `tests/guards/ci-coverage.sh` | **PASS** 21 suites, 0 unwired, 13 workflow steps | 19 suites, 11 steps |
 | `tests/v2/graph.check.mjs` | **PASS** 93/93 | 93/93 |
 | `tests/v2/graph-negative.check.sh` | **PASS** 52 caught / 52, 0 no-op | new |
@@ -117,6 +118,50 @@ suites when their surface includes a file being edited. All three refuse a dirty
 design, and `workflow-negative.check.sh` declares `CLAUDE.md` in its surface, so it cannot run
 in the same breath as an edit to §9. Sequence: edit → run everything that tolerates a dirty
 tree → commit → run the three refusers. Its result at this commit is in the commit message.
+
+### CORRECTION at `f4ff6f1` — the two tables above are local runs, and one of them was wrong
+
+Written after the fact, deliberately as an amendment rather than an edit of the rows, because
+the rows are what a reader would otherwise have believed.
+
+**1. `run.sh` was green here and red in CI the whole time, and this file said only the first
+half.** Both tables report `tests/guards/run.sh` **PASS 20/20**. That is a true statement about
+macOS and a false impression overall: the same suite failed in CI on **every** push from
+`03217f7` onward, on
+
+```
+FAIL every decision record declares one of the three defined statuses  got=6 want=0
+```
+
+The R-A check used a backslash-escaped tab in a `grep -E` pattern. GNU grep's ERE has no such
+escape and reads it as a literal `t`, so nothing matched, `-cv` counted all six records, and
+the check reported six violations against a tree with none. macOS grep — BSD *and* the ugrep
+shim — honours the escape and returns zero. Verified against the CI runs at `08bd3ba` and
+`aa8b70d`: **the failure predates the push of the negative suites and came from my own PZ-1
+commit.** Fixed at `f4ff6f1` with a field comparison in awk, plus a new check #21 for the class.
+
+**2. The two new negative suites have never executed on Linux.** `static` runs the guards
+first and fail-fast is deliberate there, so every run so far aborted at step 1 and **the steps
+added for `graph-negative.check.sh` and `workflow-negative.check.sh` were skipped, not passed.**
+Their `PASS 52/52` and `PASS 16/16` rows are macOS-only. The next CI run is the first that can
+say anything about them, and given that the defect being corrected here is precisely a
+macOS-vs-GNU divergence, those two rows carry less weight than they look like they do.
+
+**3. Check #21 itself could not fire when it was committed.** It was written as
+`awk -v n="$BS"t`, and POSIX awk runs escape processing on a `-v` assignment, so the needle was
+a literal tab. It was hunting real tab characters and reported PASS. That is the same class of
+bug it was written to catch, one tool over — and unlike instance 1 it was green in *both*
+environments, so no CI run would ever have surfaced it. It was found by writing the negative
+probe, which is the case for the doctrine rather than an anecdote about it.
+
+**What this costs the tables above:** every `PASS` in them is a macOS measurement. Instance 1
+shows that is not the same as green, and instance 3 shows a positive run in *both* environments
+still is not proof. Rows for the three refuser suites are the ones to trust least until CI has
+run them, because they are the newest and the least travelled.
+
+At `f4ff6f1`, on macOS: `run.sh` **21/21**, `negative.sh` **21 caught / 21**,
+`graph-negative` **52/52, 0 no-op**, `workflow-negative` **16/16, 0 no-op**. 89 probes.
+**Linux: not yet observed.**
 
 ---
 
