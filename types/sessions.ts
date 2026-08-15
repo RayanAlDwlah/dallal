@@ -42,7 +42,8 @@ export interface SessionLot {
   starting_price: string;
   current_price: string | null;
   bid_increment: string;
-  duration_seconds: number;
+  /** null = open-ended («بدون مدة») — never auto-closes; the host ends it. */
+  duration_seconds: number | null;
   bid_count: number;
   status: LotStatus;
   end_time: string | null;
@@ -77,7 +78,7 @@ export const LOT_COLUMNS =
 
 export const LOT_WITH_CATEGORY = `${LOT_COLUMNS}, category:categories(id, name_ar, slug)`;
 
-/** Expected running time of a session, in whole minutes. */
+/** Expected running time of a session, in whole minutes (open-ended lots excluded). */
 export function expectedMinutes(lots: Pick<SessionLot, "duration_seconds">[]): number {
-  return Math.max(1, Math.round(lots.reduce((sum, l) => sum + l.duration_seconds, 0) / 60));
+  return Math.max(1, Math.round(lots.reduce((sum, l) => sum + (l.duration_seconds ?? 0), 0) / 60));
 }

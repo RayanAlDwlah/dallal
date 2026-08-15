@@ -284,7 +284,7 @@ export function Hall({
             <>
               <div className="flex items-start gap-4">
                 <span
-                  className="hairline size-[104px] flex-none overflow-hidden rounded-[15px]"
+                  className="hairline size-[104px] flex-none overflow-hidden rounded-[15px] sm:size-[148px]"
                   style={{ background: "linear-gradient(140deg,#232B39,#141922)" }}
                 >
                   {current.images[0] ? (
@@ -304,17 +304,22 @@ export function Hall({
                   <div className="font-display text-[30px] font-bold leading-tight text-gold sm:text-[34px]">
                     <Money amount={current.current_price ?? current.starting_price} />
                   </div>
-                  {current.end_time && !paused ? (
+                  {paused ? (
+                    <div className="mt-0.5 font-display text-[20px] font-semibold text-ink3">
+                      الوقت موقوف
+                    </div>
+                  ) : current.end_time ? (
                     <Countdown
                       endTime={current.end_time}
                       onEnd={askAdvance}
                       className="mt-0.5 text-[20px]"
                     />
-                  ) : paused ? (
-                    <div className="mt-0.5 font-display text-[20px] font-semibold text-ink3">
-                      الوقت موقوف
+                  ) : (
+                    <div className="mt-0.5 flex items-center gap-2 text-[14px] font-semibold text-teal">
+                      <span className="dot inline-block size-[7px] rounded-full bg-teal [box-shadow:0_0_8px_var(--color-teal)]" />
+                      مفتوحة — تستمر لين يقفلها المضيف
                     </div>
-                  ) : null}
+                  )}
                   {extendedFlash ? (
                     <p className="num m-0 mt-1 text-[13px] font-semibold text-teal">
                       مُدِّد 30 ثانية — مزايدة في آخر 15 ثانية
@@ -419,25 +424,55 @@ export function Hall({
               )}
             </>
           ) : (
-            <div className="py-8 text-center">
-              <p className="m-0 font-display text-[20px] font-semibold">
-                {session.status === "ended" ? "انتهت الجلسة" : "الجلسة ما بدأت بعد"}
-              </p>
-              <p className="m-0 mt-1.5 text-sm text-ink2">
+            <div className="relative -m-5 overflow-hidden rounded-[22px] sm:-m-6">
+              {session.cover_image ? (
+                // eslint-disable-next-line @next/next/no-img-element
+                <img
+                  src={auctionImageUrl(session.cover_image)}
+                  alt=""
+                  className="absolute inset-0 size-full scale-105 object-cover opacity-30 blur-[2px]"
+                />
+              ) : (
+                <div
+                  className="absolute inset-0"
+                  style={{
+                    background:
+                      "radial-gradient(70% 90% at 30% 10%,rgba(124,58,237,.22),transparent 65%),radial-gradient(60% 80% at 85% 70%,rgba(45,212,191,.15),transparent 65%)",
+                  }}
+                />
+              )}
+              <div className="absolute inset-0 bg-[linear-gradient(180deg,rgba(7,9,13,.25),rgba(7,9,13,.82))]" />
+              <div className="relative px-6 py-12 text-center sm:py-14">
+                <p className="m-0 font-display text-[22px] font-semibold">
+                  {session.status === "ended" ? "انتهت الجلسة" : "الجلسة ما بدأت بعد"}
+                </p>
                 {session.status === "ended" ? (
-                  "شوف نتائج القطع في القائمة."
+                  <p className="m-0 mt-1.5 text-sm text-ink2">شوف نتائج القطع في القائمة.</p>
                 ) : (
                   <>
-                    تبدأ <SessionCountdown startTime={session.start_time} /> — القطع تُفتح
-                    بالترتيب.
+                    <div className="num mt-3 font-display text-[34px] font-bold text-gold">
+                      <SessionCountdown startTime={session.start_time} />
+                    </div>
+                    <p className="m-0 mt-1.5 text-sm text-ink2">
+                      {formatDateTimeAr(session.start_time)} — القطع تُفتح بالترتيب
+                    </p>
                   </>
                 )}
-              </p>
-              {session.status === "scheduled" && viewerId && !isHost && !myEntry ? (
-                <button onClick={() => setJoinOpen(true)} className="btn-gold mt-4 h-11 px-6 text-sm">
-                  احجز مكانك
-                </button>
-              ) : null}
+                {session.status === "scheduled" && viewerId && !isHost && !myEntry ? (
+                  <button
+                    onClick={() => setJoinOpen(true)}
+                    className="btn-gold mt-5 h-12 px-8 text-[15px]"
+                  >
+                    احجز مكانك
+                    {session.deposit ? (
+                      <>
+                        {" · "}
+                        <Money amount={session.deposit} />
+                      </>
+                    ) : null}
+                  </button>
+                ) : null}
+              </div>
             </div>
           )}
 
@@ -518,48 +553,83 @@ export function Hall({
         ) : null}
       </div>
 
-      {/* ---- the queue ---- */}
-      <aside className="hairline rounded-[20px] bg-surface p-4 lg:sticky lg:top-24">
-        <div className="mb-2.5 text-[12.5px] text-ink3">القطع</div>
-        {lots.map((lot) => {
-          const isCurrent = lot.id === session.current_lot_id;
-          const done = lot.status === "ended";
-          return (
-            <div
-              key={lot.id}
-              className={`flex items-center gap-2.5 border-b border-[var(--color-hair)] py-2 text-[13.5px] last:border-0 ${
-                isCurrent ? "font-semibold text-ink" : done ? "text-ink3" : ""
-              }`}
-            >
-              <span
-                className={`num grid size-[22px] flex-none place-items-center rounded-[7px] text-[11.5px] ${
+      {/* ---- the queue — one card per lot ---- */}
+      <aside className="lg:sticky lg:top-24">
+        <div className="mb-2.5 flex items-baseline justify-between px-1">
+          <span className="text-[12.5px] text-ink3">القطع</span>
+          <span className="num text-[12px] text-ink3">
+            {lots.filter((l) => l.status === "ended").length}/{lots.length}
+          </span>
+        </div>
+        <div className="flex flex-col gap-2">
+          {lots.map((lot) => {
+            const isCurrent = lot.id === session.current_lot_id;
+            const done = lot.status === "ended";
+            return (
+              <div
+                key={lot.id}
+                className={`flex items-center gap-3 rounded-[16px] bg-surface p-2.5 ${
                   isCurrent
-                    ? "bg-gold text-gold-ink"
-                    : done
-                      ? "bg-[rgba(52,211,153,.14)] text-green"
-                      : "bg-white/5 text-ink3"
-                }`}
+                    ? "[box-shadow:inset_0_0_0_1px_rgba(245,185,66,.4),0_0_18px_rgba(245,185,66,.08)]"
+                    : "hairline"
+                } ${done ? "opacity-70" : ""}`}
               >
-                {lot.position}
-              </span>
-              <span className="min-w-0 flex-1 truncate">{lot.title}</span>
-              {done ? (
-                lot.current_price ? (
-                  <Money
-                    amount={lot.current_price}
-                    className="num font-display text-[12.5px] text-green"
-                  />
-                ) : (
-                  <span className="text-[12px] text-ink3">بدون مزايدات</span>
-                )
-              ) : isCurrent ? (
-                <span className="text-xs text-gold">الآن</span>
-              ) : (
-                <span className="text-xs text-ink3">بالانتظار</span>
-              )}
-            </div>
-          );
-        })}
+                <span
+                  className="hairline relative size-[52px] flex-none overflow-hidden rounded-[11px]"
+                  style={{ background: "linear-gradient(140deg,#232B39,#141922)" }}
+                >
+                  {lot.images[0] ? (
+                    // eslint-disable-next-line @next/next/no-img-element
+                    <img
+                      src={auctionImageUrl(lot.images[0])}
+                      alt=""
+                      className="size-full object-cover"
+                    />
+                  ) : null}
+                  <span className="num absolute bottom-0.5 start-0.5 rounded-[5px] bg-black/60 px-1 text-[10px] text-ink2">
+                    {lot.position}
+                  </span>
+                </span>
+                <span className="min-w-0 flex-1">
+                  <b
+                    className={`block truncate text-[13.5px] ${
+                      isCurrent ? "font-semibold" : done ? "font-medium text-ink2" : "font-medium"
+                    }`}
+                  >
+                    {lot.title}
+                  </b>
+                  <span className="num block text-[12px] text-ink3">
+                    {done ? (
+                      lot.current_price ? (
+                        <>
+                          بيعت بـ{" "}
+                          <Money amount={lot.current_price} className="font-semibold text-green" />
+                        </>
+                      ) : (
+                        "بدون مزايدات"
+                      )
+                    ) : isCurrent ? (
+                      <span className="font-semibold text-gold">مفتوحة الآن</span>
+                    ) : (
+                      <>
+                        تبدأ من <Money amount={lot.starting_price} />
+                        {lot.duration_seconds == null
+                          ? " · بدون مدة"
+                          : ` · ${Math.round(lot.duration_seconds / 60)} د`}
+                      </>
+                    )}
+                  </span>
+                </span>
+                {isCurrent ? (
+                  <span className="pill pill-live h-6 flex-none text-[11px]">
+                    <span className="dot" />
+                    الآن
+                  </span>
+                ) : null}
+              </div>
+            );
+          })}
+        </div>
       </aside>
 
       {/* ---- enter the hall ---- */}

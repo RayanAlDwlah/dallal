@@ -6,6 +6,7 @@ import { useMemo, useRef, useState } from "react";
 import { PriceSuggestionCard } from "@/components/ai/price-suggestion-card";
 import { WriteListingCard, type ListingSuggestion } from "@/components/ai/write-listing-card";
 import { CategoryPicker, type PickedCategory } from "@/components/categories/category-picker";
+import { ImageEditor } from "@/components/ui/image-editor";
 import { IncrementAmount, Money } from "@/components/ui/money";
 import type { CategoryTree } from "@/lib/auctions/queries";
 import { arError } from "@/lib/errors";
@@ -17,7 +18,7 @@ import { auctionBiddingSchema, auctionDetailsSchema } from "@/lib/validations/au
 import type { Auction } from "@/types/db";
 
 type WizardImage =
-  | { key: string; kind: "file"; file: File; preview: string }
+  | { key: string; kind: "file"; file: File; preview: string; original?: File }
   | { key: string; kind: "path"; path: string };
 
 const STEPS = ["الصور", "التفاصيل", "المزايدة", "المراجعة"] as const;
@@ -76,9 +77,13 @@ export function CreateAuctionWizard({
       ? toDatetimeLocalValue(new Date(draft.end_time))
       : toDatetimeLocalValue(new Date(Date.now() + 24 * 3600_000)),
   );
+  const [endPreset, setEndPreset] = useState<"24" | "72" | "168" | "custom">(
+    draft?.end_time ? "custom" : "24",
+  );
   const [minEndTime] = useState(() => toDatetimeLocalValue(isoFromNow(10)));
   const [error, setError] = useState<string | null>(null);
   const [busy, setBusy] = useState<"publish" | "draft" | null>(null);
+  const [editingImage, setEditingImage] = useState<string | null>(null);
 
   const mainCategory = picked ? categories.find((c) => c.id === picked.mainId) : null;
   const attrFields: string[] = mainCategory?.fields ?? [];
@@ -355,8 +360,15 @@ export function CreateAuctionWizard({
                     className="hairline relative aspect-square cursor-grab overflow-hidden rounded-[13px]"
                     style={{ background: "linear-gradient(140deg,#1D2430,#12161E)" }}
                   >
-                    {/* eslint-disable-next-line @next/next/no-img-element */}
-                    <img src={imageSrc(img)} alt="" className="size-full object-cover" />
+                    <button
+                      type="button"
+                      onClick={() => setEditingImage(img.key)}
+                      title="اضغط لتعديل الصورة"
+                      className="absolute inset-0 z-[1] cursor-pointer border-0 bg-transparent p-0"
+                    >
+                      {/* eslint-disable-next-line @next/next/no-img-element */}
+                      <img src={imageSrc(img)} alt="" className="size-full object-cover" />
+                    </button>
                     {i === 0 ? (
                       <span className="absolute start-1.5 top-1.5 z-[2] rounded-[6px] bg-gold px-1.5 py-px text-[10.5px] font-semibold text-gold-ink">
                         الغلاف
@@ -387,7 +399,8 @@ export function CreateAuctionWizard({
               </div>
             ) : null}
             <p className="m-0 mt-2.5 text-[12.5px] text-ink3">
-              اسحب الصورة لترتيبها. الأولى هي الغلاف — هي اللي تطلع في البطاقة وفي الإشعارات.
+              اسحب الصورة لترتيبها، <b className="text-ink2">واضغط عليها لتعديلها</b> — تدوير
+              وإضاءة وقصّ للمقاس، والأصلية محفوظة. الأولى هي الغلاف.
             </p>
           </div>
         ) : null}
@@ -569,18 +582,60 @@ export function CreateAuctionWizard({
             </div>
 
             <div>
-              <label className="mb-1.5 block text-[13.5px] font-semibold" htmlFor="w-end">
-                وقت الانتهاء
-              </label>
-              <input
-                id="w-end"
-                type="datetime-local"
-                value={endTime}
-                min={minEndTime}
-                onChange={(e) => setEndTime(e.target.value)}
-                className="field num"
-                dir="ltr"
-              />
+              <label className="mb-1.5 block text-[13.5px] font-semibold">وقت الانتهاء</label>
+              <div className="flex flex-wrap gap-2">
+                {(
+                  [
+                    ["24", "24 ساعة"],
+                    ["72", "3 أيام"],
+                    ["168", "أسبوع"],
+                  ] as const
+                ).map(([hours, label]) => (
+                  <button
+                    key={hours}
+                    type="button"
+                    onClick={() => {
+                      setEndPreset(hours);
+                      setEndTime(
+                        toDatetimeLocalValue(new Date(Date.now() + Number(hours) * 3600_000)),
+                      );
+                    }}
+                    className={`grid h-11 place-items-center rounded-[12px] px-4 text-sm ${
+                      endPreset === hours
+                        ? "bg-gold font-semibold text-gold-ink"
+                        : "hairline bg-raised text-ink2 hover:text-ink"
+                    }`}
+                  >
+                    {label}
+                  </button>
+                ))}
+                <button
+                  type="button"
+                  onClick={() => setEndPreset("custom")}
+                  className={`grid h-11 place-items-center rounded-[12px] px-4 text-sm ${
+                    endPreset === "custom"
+                      ? "bg-gold font-semibold text-gold-ink"
+                      : "hairline bg-raised text-ink2 hover:text-ink"
+                  }`}
+                >
+                  وقت محدد
+                </button>
+              </div>
+              {endPreset === "custom" ? (
+                <input
+                  id="w-end"
+                  type="datetime-local"
+                  value={endTime}
+                  min={minEndTime}
+                  onChange={(e) => setEndTime(e.target.value)}
+                  className="field num mt-2.5"
+                  dir="ltr"
+                />
+              ) : (
+                <p className="num m-0 mt-2 text-[13px] text-ink2">
+                  ينتهي {formatDateTimeAr(new Date(endTime))}
+                </p>
+              )}
               <p className="m-0 mt-1.5 text-[12.5px] text-ink3">
                 على الأقل بعد 5 دقائق من الآن. أي مزايدة <b className="text-teal">تُقبل</b> في
                 آخر 15 ثانية تمدّد الوقت 30 ثانية، حتى 20 مرة.
@@ -726,6 +781,54 @@ export function CreateAuctionWizard({
           onClose={() => setPickerOpen(false)}
         />
       ) : null}
+
+      {editingImage
+        ? (() => {
+            const img = images.find((i) => i.key === editingImage);
+            if (!img) return null;
+            const original = img.kind === "file" ? (img.original ?? img.file) : null;
+            return (
+              <ImageEditor
+                source={img.kind === "file" ? img.file : auctionImageUrl(img.path)}
+                onRestoreOriginal={
+                  img.kind === "file" && img.original
+                    ? () => {
+                        setImages((prev) =>
+                          prev.map((i) =>
+                            i.key === editingImage && i.kind === "file" && i.original
+                              ? {
+                                  ...i,
+                                  file: i.original,
+                                  preview: URL.createObjectURL(i.original),
+                                  original: undefined,
+                                }
+                              : i,
+                          ),
+                        );
+                      }
+                    : null
+                }
+                onDone={(edited) => {
+                  setImages((prev) =>
+                    prev.map((i) =>
+                      i.key === editingImage
+                        ? {
+                            key: i.key,
+                            kind: "file" as const,
+                            file: edited,
+                            preview: URL.createObjectURL(edited),
+                            original: original ?? undefined,
+                          }
+                        : i,
+                    ),
+                  );
+                  setEditingImage(null);
+                }}
+                onClose={() => setEditingImage(null)}
+              />
+            );
+          })()
+        : null}
     </div>
   );
 }

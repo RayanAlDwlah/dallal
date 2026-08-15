@@ -6,9 +6,11 @@ import { AuctionCard } from "@/components/auction/auction-card";
 import { DraftRow } from "@/components/profile/draft-row";
 import { ProfileEditor } from "@/components/profile/profile-editor";
 import { Money } from "@/components/ui/money";
+import { auctionImageUrl } from "@/lib/images";
 import { createClient } from "@/lib/supabase/server";
-import { relativeTimeAr } from "@/lib/time";
+import { formatDateTimeAr, relativeTimeAr } from "@/lib/time";
 import { AUCTION_WITH_RELATIONS, type Auction, type AuctionListItem } from "@/types/db";
+import { SESSION_COLUMNS, type AuctionSession } from "@/types/sessions";
 
 export const metadata: Metadata = { title: "ملفي" };
 
@@ -26,25 +28,42 @@ export default async function ProfilePage() {
   } = await supabase.auth.getUser();
   if (!user) redirect("/login?next=/profile");
 
-  const [{ data: profile }, { data: myAuctions }, { data: myBids }] = await Promise.all([
-    supabase.from("profiles").select("display_name, avatar_url").eq("id", user.id).single(),
-    supabase
-      .from("auctions")
-      .select(AUCTION_WITH_RELATIONS)
-      .eq("seller_id", user.id)
-      .order("created_at", { ascending: false })
-      .limit(60),
-    supabase
-      .from("bids")
-      .select(`id, amount::text, created_at, auction:auctions(${AUCTION_WITH_RELATIONS})`)
-      .eq("bidder_id", user.id)
-      .order("id", { ascending: false })
-      .limit(60),
-  ]);
+  const [{ data: profile }, { data: myAuctions }, { data: myBids }, { data: mySessions }] =
+    await Promise.all([
+      supabase.from("profiles").select("display_name, avatar_url").eq("id", user.id).single(),
+      supabase
+        .from("auctions")
+        .select(AUCTION_WITH_RELATIONS)
+        .eq("seller_id", user.id)
+        .order("created_at", { ascending: false })
+        .limit(60),
+      supabase
+        .from("bids")
+        .select(`id, amount::text, created_at, auction:auctions(${AUCTION_WITH_RELATIONS})`)
+        .eq("bidder_id", user.id)
+        .order("id", { ascending: false })
+        .limit(60),
+      supabase
+        .from("sessions")
+        .select(SESSION_COLUMNS)
+        .eq("host_id", user.id)
+        .order("created_at", { ascending: false })
+        .limit(30),
+    ]);
 
   const auctions = (myAuctions as unknown as AuctionListItem[]) ?? [];
   const drafts = auctions.filter((a) => a.status === "draft");
   const published = auctions.filter((a) => a.status !== "draft");
+  const sessions = (mySessions as unknown as AuctionSession[]) ?? [];
+
+  const sessionBadge = (s: AuctionSession) =>
+    s.status === "draft"
+      ? { text: "مسودة", cls: "bg-white/5 text-ink2" }
+      : s.status === "scheduled"
+        ? { text: "مجدولة", cls: "bg-[rgba(245,185,66,.13)] text-gold" }
+        : s.status === "live"
+          ? { text: "مباشرة", cls: "bg-[rgba(45,212,191,.13)] text-teal" }
+          : { text: "منتهية", cls: "bg-white/5 text-ink3" };
 
   /* one row per auction — my latest bid on it */
   const seen = new Set<string>();
@@ -95,6 +114,65 @@ export default async function ProfilePage() {
               <AuctionCard key={a.id} auction={a} />
             ))}
           </div>
+        )}
+      </section>
+
+      <section className="mt-8">
+        <div className="mb-3 flex items-center justify-between">
+          <h2 className="m-0 text-[13px] font-medium text-ink3">جلساتي</h2>
+          <Link href="/create/session" className="text-sm font-semibold text-gold">
+            + جلسة جديدة
+          </Link>
+        </div>
+        {sessions.length === 0 ? (
+          <div className="hairline rounded-[20px] bg-surface px-6 py-8 text-center">
+            <p className="m-0 text-[15px] text-ink2">ما أنشأت أي جلسة بعد.</p>
+          </div>
+        ) : (
+          <ul className="m-0 flex list-none flex-col gap-2 p-0">
+            {sessions.map((s) => {
+              const badge = sessionBadge(s);
+              return (
+                <li key={s.id}>
+                  <Link
+                    href={s.status === "draft" ? `/create/session?draft=${s.id}` : `/sessions/${s.id}`}
+                    className="hairline flex items-center gap-3.5 rounded-[14px] bg-raised px-3.5 py-3 transition hover:bg-white/[.06]"
+                  >
+                    <span
+                      className="hairline size-11 flex-none overflow-hidden rounded-[10px]"
+                      style={{ background: "linear-gradient(140deg,#232B39,#141922)" }}
+                    >
+                      {s.cover_image ? (
+                        // eslint-disable-next-line @next/next/no-img-element
+                        <img
+                          src={auctionImageUrl(s.cover_image)}
+                          alt=""
+                          className="size-full object-cover"
+                        />
+                      ) : null}
+                    </span>
+                    <span className="min-w-0 flex-1">
+                      <b className="block truncate text-sm font-semibold">{s.title}</b>
+                      <span className="num text-[12px] text-ink3">
+                        {formatDateTimeAr(s.start_time)}
+                        {s.city ? ` · ${s.city}` : ""}
+                      </span>
+                    </span>
+                    <span
+                      className={`rounded-[8px] px-2.5 py-1 text-[12px] font-semibold ${badge.cls}`}
+                    >
+                      {badge.text}
+                    </span>
+                    {s.status === "draft" ? (
+                      <span className="btn-gold pointer-events-none h-8 px-3.5 text-[12.5px]">
+                        أكمل
+                      </span>
+                    ) : null}
+                  </Link>
+                </li>
+              );
+            })}
+          </ul>
         )}
       </section>
 

@@ -1,6 +1,7 @@
 import type { SupabaseClient } from "@supabase/supabase-js";
 
 import { isMoneyString } from "@/lib/money";
+import { searchWords } from "@/lib/search";
 import {
   AUCTION_WITH_RELATIONS,
   BID_COLUMNS,
@@ -47,8 +48,10 @@ export async function fetchActiveAuctions(
     query = query.in("category_id", opts.categoryIds);
   }
   if (opts.q) {
-    /* Every word must appear somewhere — AND of per-word (title OR description). */
-    const words = opts.q.replace(/[%_,()]/g, " ").trim().split(/\s+/).filter(Boolean).slice(0, 6);
+    /* Every meaningful word must appear somewhere — AND of per-word
+       (title OR description). Filler words are dropped first, otherwise
+       «أبغا رولكس» demands a title containing «أبغا» and returns nothing. */
+    const words = searchWords(opts.q.replace(/[%_,()]/g, " "));
     for (const w of words) {
       query = query.or(`title.ilike.%${w}%,description.ilike.%${w}%`);
     }

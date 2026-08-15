@@ -4,6 +4,7 @@ import { AuctionCard } from "@/components/auction/auction-card";
 import { CategoryRail } from "@/components/categories/category-rail";
 import { fetchActiveAuctions, fetchCategoryTree } from "@/lib/auctions/queries";
 import { formatMoney, isMoneyString } from "@/lib/money";
+import { searchWords } from "@/lib/search";
 import { createClient } from "@/lib/supabase/server";
 
 export default async function HomePage({
@@ -36,7 +37,7 @@ export default async function HomePage({
   /* Every chip links to the same page minus itself. */
   const hrefWithout = (drop: { q?: string; cat?: boolean; maxp?: boolean; endin?: boolean }) => {
     const usp = new URLSearchParams();
-    const words = (q ?? "").split(/\s+/).filter(Boolean);
+    const words = searchWords(q ?? "");
     const keptWords = drop.q ? words.filter((w) => w !== drop.q) : words;
     if (keptWords.length > 0) usp.set("q", keptWords.join(" "));
     if (cat && !drop.cat) usp.set("cat", cat);
@@ -57,7 +58,7 @@ export default async function HomePage({
       href: hrefWithout({ cat: true }),
     });
   }
-  for (const w of (q ?? "").split(/\s+/).filter(Boolean)) {
+  for (const w of searchWords(q ?? "")) {
     chips.push({ key: `q:${w}`, label: <bdi>{w}</bdi>, href: hrefWithout({ q: w }) });
   }
   if (maxPrice) {

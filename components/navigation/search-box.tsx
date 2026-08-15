@@ -4,22 +4,15 @@ import { useRouter, useSearchParams } from "next/navigation";
 import { Suspense, useState } from "react";
 
 /**
- * The search bar IS the AI entry point — there is deliberately no sixth icon
- * («يفهم البحث», ai.html): a natural Arabic sentence becomes visible filter
- * chips on the home page; a plain keyword stays a plain keyword search.
- *
- * The parse call is best-effort: on any failure (AI off, timeout, nonsense)
- * the query falls through unchanged to the ilike search. Search never breaks
- * because a model did.
+ * Two explicit modes, user's choice (Rayan 2026-08-16 — no guessing):
+ *   • Enter / plain submit → ordinary keyword search, always.
+ *   • the purple «الشريطي 😎» button → the query goes to the AI parser and
+ *     comes back as visible, removable filter chips («يفهم البحث», ai.html).
+ * On any AI failure the query falls through to the ordinary search — search
+ * never breaks because a model did.
  */
 
 let aiSearchOff = false; // remembered per tab after the first 503
-
-const PRICE_TIME_WORDS = /ألف|الف|ريال|تحت|فوق|أقل|اقل|أكثر|اكثر|ينتهي|اليوم|ساعة|ساعه|\d/;
-
-function looksNatural(q: string): boolean {
-  return q.split(/\s+/).length >= 3 && PRICE_TIME_WORDS.test(q);
-}
 
 interface ParsedFilters {
   category: { slug: string; label: string } | null;
@@ -34,22 +27,21 @@ function SearchBoxInner() {
   const [value, setValue] = useState(params.get("q") ?? "");
   const [parsing, setParsing] = useState(false);
 
-  async function submit(e: React.FormEvent) {
-    e.preventDefault();
+  function plain() {
     const q = value.trim();
+    const usp = new URLSearchParams(params.toString());
+    for (const k of ["q", "maxp", "endin"]) usp.delete(k);
+    if (q) usp.set("q", q);
+    router.push(`/${usp.size ? `?${usp}` : ""}`);
+  }
 
-    const plain = () => {
-      const usp = new URLSearchParams(params.toString());
-      for (const k of ["q", "maxp", "endin"]) usp.delete(k);
-      if (q) usp.set("q", q);
-      router.push(`/${usp.size ? `?${usp}` : ""}`);
-    };
-
-    if (!q || aiSearchOff || !looksNatural(q) || parsing) {
+  async function askShraiti() {
+    const q = value.trim();
+    if (!q || parsing) return;
+    if (aiSearchOff) {
       plain();
       return;
     }
-
     setParsing(true);
     try {
       const res = await fetch("/api/ai/search", {
@@ -71,10 +63,6 @@ function SearchBoxInner() {
       const usp = new URLSearchParams();
       if (f.keywords.length > 0) usp.set("q", f.keywords.join(" "));
       if (f.category) usp.set("cat", f.category.slug);
-      else {
-        const cat = params.get("cat");
-        if (cat) usp.set("cat", cat);
-      }
       if (f.maxPrice) usp.set("maxp", f.maxPrice);
       if (f.endingWithinHours) usp.set("endin", String(f.endingWithinHours));
       if (usp.size === 0) {
@@ -90,21 +78,31 @@ function SearchBoxInner() {
   }
 
   return (
-    <form onSubmit={submit} className="relative w-full" role="search">
+    <form
+      onSubmit={(e) => {
+        e.preventDefault();
+        plain();
+      }}
+      className="relative w-full"
+      role="search"
+    >
       <span className="pointer-events-none absolute start-3.5 top-[9px] text-[15px] text-ink3">⌕</span>
       <input
         value={value}
         onChange={(e) => setValue(e.target.value)}
-        placeholder="ابحث عادي، أو اطلب: كامري 2020 تحت 60 ألف…"
-        className="h-10 w-full rounded-full border-0 bg-raised ps-9 pe-4 text-sm text-ink outline-none [box-shadow:inset_0_0_0_1px_var(--color-hair)] placeholder:text-ink3 focus:[box-shadow:inset_0_0_0_1px_var(--color-teal),0_0_0_3px_rgba(45,212,191,.15)]"
+        placeholder="ابحث… أو خل الشريطي يفهمك: كامري 2020 تحت 60 ألف"
+        className="h-10 w-full rounded-full border-0 bg-raised ps-9 pe-[104px] text-sm text-ink outline-none [box-shadow:inset_0_0_0_1px_var(--color-hair)] placeholder:text-ink3 focus:[box-shadow:inset_0_0_0_1px_var(--color-teal),0_0_0_3px_rgba(45,212,191,.15)]"
         aria-label="بحث"
       />
-      {parsing ? (
-        <span
-          className="absolute end-3.5 top-[11px] size-[18px] animate-pulse rounded-[5px] bg-[rgba(124,58,237,.35)]"
-          aria-label="يفهم طلبك…"
-        />
-      ) : null}
+      <button
+        type="button"
+        onClick={askShraiti}
+        disabled={parsing || !value.trim()}
+        title="الشريطي يحوّل كلامك لفلاتر — تشوفها وتعدّلها"
+        className="absolute end-1 top-1 h-8 cursor-pointer rounded-full border-0 bg-[rgba(124,58,237,.85)] px-3 text-[12.5px] font-semibold text-white disabled:opacity-40"
+      >
+        {parsing ? "يفهمك…" : "الشريطي 😎"}
+      </button>
     </form>
   );
 }

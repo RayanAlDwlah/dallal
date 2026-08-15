@@ -6,51 +6,102 @@ import { useRouter } from "next/navigation";
 import { IncrementAmount, Money } from "@/components/ui/money";
 import { LotEditor, type DraftLot } from "@/components/sessions/lot-editor";
 import type { CategoryTree } from "@/lib/auctions/queries";
+import { guessMapping, parseCsv, type CsvMapping } from "@/lib/csv";
 import { arError } from "@/lib/errors";
-import { ALLOWED_IMAGE_TYPES, MAX_IMAGE_BYTES } from "@/lib/images";
-import { addMoney, parseMoneyInput } from "@/lib/money";
+import { ALLOWED_IMAGE_TYPES, MAX_IMAGE_BYTES, auctionImageUrl } from "@/lib/images";
+import { addMoney, parseIncrementInput, parseMoneyInput } from "@/lib/money";
 import { createClient } from "@/lib/supabase/client";
 import { formatDateTimeAr, isoFromNow, toDatetimeLocalValue } from "@/lib/time";
+import type { AuctionSession, LotWithCategory } from "@/types/sessions";
 
 const STEPS = ["المعلومات", "القطع", "الدخول", "المراجعة"] as const;
 const DEPOSITS = ["بدون", "25", "50", "100", "500"] as const;
 
+export interface SessionDraft {
+  session: AuctionSession;
+  lots: LotWithCategory[];
+}
+
 export function CreateSessionWizard({
   userId,
   categories,
+  draft = null,
+  aiEnabled = false,
 }: {
   userId: string;
   categories: CategoryTree[];
+  draft?: SessionDraft | null;
+  aiEnabled?: boolean;
 }) {
   const router = useRouter();
   const supabase = useMemo(() => createClient(), []);
   const coverInput = useRef<HTMLInputElement>(null);
+  const csvInput = useRef<HTMLInputElement>(null);
   const dragIndex = useRef<number | null>(null);
 
+  const findPicked = (categoryId: number | null) => {
+    if (!categoryId) return null;
+    for (const main of categories) {
+      if (main.id === categoryId) return { id: main.id, label: main.name_ar, mainId: main.id };
+      const sub = main.children.find((c) => c.id === categoryId);
+      if (sub) return { id: sub.id, label: `${main.name_ar} › ${sub.name_ar}`, mainId: main.id };
+    }
+    return null;
+  };
+
   const [step, setStep] = useState(0);
-  const [title, setTitle] = useState("");
-  const [description, setDescription] = useState("");
-  const [city, setCity] = useState("");
-  const [startTime, setStartTime] = useState(() =>
-    toDatetimeLocalValue(new Date(Date.now() + 60 * 60_000)),
-  );
+  const [title, setTitle] = useState(draft?.session.title ?? "");
+  const [description, setDescription] = useState(draft?.session.description ?? "");
+  const [city, setCity] = useState(draft?.session.city ?? "");
+  const [startTime, setStartTime] = useState(() => {
+    const saved = draft?.session.start_time ? new Date(draft.session.start_time) : null;
+    return toDatetimeLocalValue(
+      saved && saved.getTime() > Date.now() + 10 * 60_000
+        ? saved
+        : new Date(Date.now() + 60 * 60_000),
+    );
+  });
   const [minStart] = useState(() => toDatetimeLocalValue(isoFromNow(5)));
   const [coverFile, setCoverFile] = useState<File | null>(null);
-  const [coverPreview, setCoverPreview] = useState<string | null>(null);
+  const [coverPath] = useState<string | null>(draft?.session.cover_image ?? null);
+  const [coverPreview, setCoverPreview] = useState<string | null>(
+    draft?.session.cover_image ? auctionImageUrl(draft.session.cover_image) : null,
+  );
 
-  const [lots, setLots] = useState<DraftLot[]>([]);
+  const [lots, setLots] = useState<DraftLot[]>(() =>
+    (draft?.lots ?? []).map((l) => ({
+      key: l.id,
+      id: l.id,
+      title: l.title,
+      category: findPicked(l.category_id),
+      startingPrice: l.starting_price,
+      increment: l.bid_increment.split(".")[0] ?? l.bid_increment,
+      durationMinutes: l.duration_seconds == null ? null : Math.round(l.duration_seconds / 60),
+      file: null,
+      preview: l.images[0] ? auctionImageUrl(l.images[0]) : null,
+      imagePath: l.images[0] ?? null,
+    })),
+  );
   const [editing, setEditing] = useState<DraftLot | null>(null);
   const [editorOpen, setEditorOpen] = useState(false);
+  const [importNote, setImportNote] = useState<string | null>(null);
 
-  const [deposit, setDeposit] = useState<string>("50");
-  const [customDeposit, setCustomDeposit] = useState(false);
-  const [entryMode, setEntryMode] = useState<"deposit" | "invite">("deposit");
+  const [deposit, setDeposit] = useState<string>(
+    draft ? (draft.session.deposit ?? "بدون") : "50",
+  );
+  const [customDeposit, setCustomDeposit] = useState(
+    draft?.session.deposit != null && !DEPOSITS.includes(draft.session.deposit as never),
+  );
+  const [entryMode, setEntryMode] = useState<"deposit" | "invite">(
+    draft?.session.entry_mode ?? "deposit",
+  );
 
   const [error, setError] = useState<string | null>(null);
   const [busy, setBusy] = useState<"publish" | "draft" | null>(null);
 
   const totalStart = lots.reduce((sum, l) => addMoney(sum, l.startingPrice), "0.00");
-  const totalMinutes = lots.reduce((sum, l) => sum + l.durationMinutes, 0);
+  const totalMinutes = lots.reduce((sum, l) => sum + (l.durationMinutes ?? 0), 0);
+  const openEnded = lots.filter((l) => l.durationMinutes == null).length;
 
   function pickCover(f: File) {
     if (!ALLOWED_IMAGE_TYPES.includes(f.type)) return setError("الصيغ المقبولة: JPG أو PNG أو WebP");
@@ -94,6 +145,11 @@ export function CreateSessionWizard({
       setStep(1);
       return false;
     }
+    if (target >= 2 && lots.some((l) => !l.category)) {
+      setError("فيه قطع مستوردة بدون تصنيف — افتح كل قطعة ملوّنة واختر تصنيفها");
+      setStep(1);
+      return false;
+    }
     if (target >= 3 && customDeposit && deposit !== "بدون" && !parseMoneyInput(deposit)) {
       setError("أدخل مبلغ عربون صحيحًا");
       setStep(2);
@@ -124,34 +180,49 @@ export function CreateSessionWizard({
     setError(null);
     try {
       const batch = crypto.randomUUID();
-      const coverPath = coverFile ? await uploadOne(coverFile, `sessions/${batch}`) : null;
+      const newCover = coverFile ? await uploadOne(coverFile, `sessions/${batch}`) : null;
 
       const depositValue =
         deposit === "بدون" ? null : (parseMoneyInput(deposit) ?? null);
 
-      const { data: session, error: insErr } = await supabase
-        .from("sessions")
-        .insert({
-          host_id: userId,
-          title: title.trim(),
-          description: description.trim(),
-          cover_image: coverPath,
-          city: city.trim() || null,
-          start_time: new Date(startTime).toISOString(),
-          deposit: depositValue,
-          entry_mode: entryMode,
-          status,
-        })
-        .select("id")
-        .single();
-      if (insErr) throw insErr;
+      const row = {
+        host_id: userId,
+        title: title.trim(),
+        description: description.trim(),
+        cover_image: newCover ?? coverPath,
+        city: city.trim() || null,
+        start_time: new Date(startTime).toISOString(),
+        deposit: depositValue,
+        entry_mode: entryMode,
+        status,
+      };
+
+      let sessionId = draft?.session.id ?? null;
+      if (sessionId) {
+        /* resuming a draft: update the session, replace its lots */
+        const { error: upErr } = await supabase.from("sessions").update(row).eq("id", sessionId);
+        if (upErr) throw upErr;
+        const { error: delErr } = await supabase
+          .from("session_lots")
+          .delete()
+          .eq("session_id", sessionId);
+        if (delErr) throw delErr;
+      } else {
+        const { data: session, error: insErr } = await supabase
+          .from("sessions")
+          .insert(row)
+          .select("id")
+          .single();
+        if (insErr) throw insErr;
+        sessionId = session.id as string;
+      }
 
       const rows = [];
       for (let i = 0; i < lots.length; i++) {
         const lot = lots[i]!;
         const path = lot.imagePath ?? (lot.file ? await uploadOne(lot.file, `sessions/${batch}`) : null);
         rows.push({
-          session_id: session.id,
+          session_id: sessionId,
           position: i + 1,
           title: lot.title,
           description: "",
@@ -159,18 +230,94 @@ export function CreateSessionWizard({
           images: path ? [path] : [],
           starting_price: lot.startingPrice,
           bid_increment: lot.increment,
-          duration_seconds: lot.durationMinutes * 60,
+          duration_seconds: lot.durationMinutes == null ? null : lot.durationMinutes * 60,
         });
       }
       const { error: lotErr } = await supabase.from("session_lots").insert(rows);
       if (lotErr) throw lotErr;
 
-      router.push(`/sessions/${session.id}`);
+      router.push(`/sessions/${sessionId}`);
       router.refresh();
     } catch (e) {
       const msg = e instanceof Error ? e.message : "";
       setError(msg === "upload_failed" ? arError("upload_failed") : arError("unknown"));
       setBusy(null);
+    }
+  }
+
+  /* ---------- «استيراد CSV» — the dealership already has this file ---------- */
+
+  async function importCsv(file: File) {
+    setImportNote(null);
+    setError(null);
+    try {
+      const rows = parseCsv(await file.text());
+      if (rows.length < 2) throw new Error("csv_empty");
+      const headers = rows[0]!;
+      let mapping: CsvMapping = guessMapping(headers);
+
+      /* headers the heuristics can't read → الشريطي maps the COLUMN NAMES
+         (mapping only — every value still comes from the file). */
+      if (mapping.title == null || mapping.price == null) {
+        try {
+          const res = await fetch("/api/ai/csv-map", {
+            method: "POST",
+            headers: { "content-type": "application/json" },
+            body: JSON.stringify({ headers, samples: rows.slice(1, 4) }),
+          });
+          if (res.ok) mapping = (await res.json()) as CsvMapping;
+        } catch {
+          /* heuristics remain */
+        }
+      }
+      if (mapping.title == null || mapping.price == null) throw new Error("csv_unmapped");
+
+      const imported: DraftLot[] = [];
+      let skipped = 0;
+      for (const r of rows.slice(1)) {
+        const lotTitle = (r[mapping.title] ?? "").trim();
+        const price = parseMoneyInput(r[mapping.price] ?? "");
+        if (lotTitle.length < 3 || !price) {
+          skipped++;
+          continue;
+        }
+        const inc =
+          mapping.increment != null ? parseIncrementInput(r[mapping.increment] ?? "") : null;
+        const durRaw = mapping.duration != null ? r[mapping.duration] ?? "" : "";
+        const dur = /^\d+$/.test(durRaw) ? Math.min(1440, Math.max(1, parseInt(durRaw, 10))) : 5;
+        const catName = mapping.category != null ? (r[mapping.category] ?? "").trim() : "";
+        const cat =
+          categories.find((c) => c.name_ar === catName) ??
+          categories.find((c) => catName && c.name_ar.includes(catName)) ??
+          null;
+        imported.push({
+          key: crypto.randomUUID(),
+          title: lotTitle.slice(0, 120),
+          category: cat ? { id: cat.id, label: cat.name_ar, mainId: cat.id } : null,
+          startingPrice: price,
+          increment: inc ?? "500",
+          durationMinutes: dur,
+          file: null,
+          preview: null,
+          imagePath: null,
+        });
+      }
+      if (imported.length === 0) throw new Error("csv_empty");
+      setLots((prev) => [...prev, ...imported]);
+      const missingCat = imported.filter((l) => !l.category).length;
+      setImportNote(
+        `أضفنا ${imported.length} قطعة من الملف` +
+          (skipped ? ` وتجاوزنا ${skipped} صفًا ناقصًا` : "") +
+          (missingCat ? ` — ${missingCat} منها تحتاج تختار تصنيفها قبل النشر` : "") +
+          ". الصور تنضاف من تعديل كل قطعة.",
+      );
+    } catch (e) {
+      const code = e instanceof Error ? e.message : "";
+      setError(
+        code === "csv_unmapped"
+          ? "ما قدرنا نفهم أعمدة الملف — خله بأعمدة: اسم القطعة، سعر البداية، الزيادة، المدة، التصنيف"
+          : "الملف فاضي أو ما فيه صفوف صالحة",
+      );
     }
   }
 
@@ -336,7 +483,12 @@ export function CreateSessionWizard({
                   >
                     <b className="block truncate text-sm font-semibold">{lot.title}</b>
                     <small className="num text-xs text-ink3">
-                      {lot.category?.label.split("›").pop()?.trim()} · {lot.durationMinutes} دقائق ·
+                      {lot.category ? (
+                        lot.category.label.split("›").pop()?.trim()
+                      ) : (
+                        <span className="text-gold">اختر التصنيف ←</span>
+                      )}{" "}
+                      · {lot.durationMinutes == null ? "بدون مدة" : `${lot.durationMinutes} دقائق`} ·
                       زيادة <IncrementAmount amount={lot.increment} />
                     </small>
                   </button>
@@ -356,21 +508,49 @@ export function CreateSessionWizard({
               ))}
             </ul>
 
-            <button
-              type="button"
-              onClick={() => {
-                setEditing(null);
-                setEditorOpen(true);
-              }}
-              className="mt-1 h-[46px] w-full rounded-[13px] bg-transparent text-sm font-medium text-ink2 [box-shadow:inset_0_0_0_1.5px_rgba(255,255,255,.1)] hover:text-ink hover:[box-shadow:inset_0_0_0_1.5px_rgba(245,185,66,.35)]"
-            >
-              + أضف قطعة
-            </button>
+            <div className="mt-1 flex gap-2.5">
+              <button
+                type="button"
+                onClick={() => {
+                  setEditing(null);
+                  setEditorOpen(true);
+                }}
+                className="h-[46px] flex-1 rounded-[13px] bg-transparent text-sm font-medium text-ink2 [box-shadow:inset_0_0_0_1.5px_rgba(255,255,255,.1)] hover:text-ink hover:[box-shadow:inset_0_0_0_1.5px_rgba(245,185,66,.35)]"
+              >
+                + أضف قطعة
+              </button>
+              <button
+                type="button"
+                onClick={() => csvInput.current?.click()}
+                title="ملف من المعرض بأعمدة: اسم القطعة، سعر البداية، الزيادة، المدة، التصنيف"
+                className="h-[46px] rounded-[13px] bg-transparent px-4 text-sm font-medium text-[#C4A6FF] [box-shadow:inset_0_0_0_1.5px_rgba(124,58,237,.35)] hover:[box-shadow:inset_0_0_0_1.5px_rgba(124,58,237,.6)]"
+              >
+                استيراد CSV 😎
+              </button>
+              <input
+                ref={csvInput}
+                type="file"
+                accept=".csv,text/csv"
+                hidden
+                onChange={(e) => {
+                  const f = e.target.files?.[0];
+                  if (f) void importCsv(f);
+                  e.target.value = "";
+                }}
+              />
+            </div>
+
+            {importNote ? (
+              <p className="m-0 mt-2.5 rounded-[13px] bg-[rgba(124,58,237,.1)] px-4 py-2.5 text-[13px] text-[#CDB6FF] [box-shadow:inset_0_0_0_1px_rgba(124,58,237,.26)]">
+                {importNote}
+              </p>
+            ) : null}
 
             {lots.length > 0 ? (
               <div className="mt-4 flex flex-wrap items-baseline justify-between gap-2 border-t border-[var(--color-hair)] pt-3.5 text-sm text-ink2">
                 <span className="num">
                   {lots.length} قطعة · مدة متوقعة {totalMinutes} دقيقة
+                  {openEnded > 0 ? ` + ${openEnded} بدون مدة` : ""}
                 </span>
                 <span>
                   مجموع أسعار البداية{" "}
@@ -494,6 +674,7 @@ export function CreateSessionWizard({
                     "القطع",
                     <span key="l" className="num">
                       {lots.length} · مدة متوقعة {totalMinutes} دقيقة
+                      {openEnded > 0 ? ` + ${openEnded} بدون مدة` : ""}
                     </span>,
                   ],
                   [
@@ -569,6 +750,7 @@ export function CreateSessionWizard({
       {editorOpen ? (
         <LotEditor
           categories={categories}
+          aiEnabled={aiEnabled}
           initial={editing}
           onSave={(lot) => {
             setLots((prev) => {

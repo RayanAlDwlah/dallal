@@ -62,7 +62,7 @@ export function WriteListingCard({
       <div className="flex flex-wrap items-center gap-3">
         <Sparkle />
         <div className="min-w-0 flex-1">
-          <b className="block text-[14.5px]">دلال يكتب لك</b>
+          <b className="block text-[14.5px]">الشريطي يكتب لك 😎</b>
           <span className="block text-[12.5px] text-ink3">
             يقرأ صورك ويقترح عنوانًا ووصفًا وتصنيفًا. أنت تعدّل أو ترفض.
           </span>
@@ -73,7 +73,7 @@ export function WriteListingCard({
           disabled={busy || images.length === 0}
           className="h-10 cursor-pointer rounded-[11px] border-0 bg-[rgba(124,58,237,.85)] px-5 text-[13.5px] font-semibold text-white disabled:opacity-50"
         >
-          {busy ? "يقرأ الصور…" : "اكتب لي"}
+          {busy ? "الشريطي يقرأ…" : "عطها الشريطي وازهله 😎"}
         </button>
       </div>
       {note ? <p className="m-0 mt-2.5 text-[12.5px] text-ink2">{note}</p> : null}

@@ -2,6 +2,7 @@
 
 import { useRef, useState } from "react";
 
+import { WriteListingCard } from "@/components/ai/write-listing-card";
 import { CategoryPicker, type PickedCategory } from "@/components/categories/category-picker";
 import { IncrementAmount, Money } from "@/components/ui/money";
 import type { CategoryTree } from "@/lib/auctions/queries";
@@ -14,7 +15,8 @@ export interface DraftLot {
   category: PickedCategory | null;
   startingPrice: string;
   increment: string;
-  durationMinutes: number;
+  /** null = open-ended («بدون مدة») — the host closes it manually. */
+  durationMinutes: number | null;
   file: File | null;
   preview: string | null;
   /** set once uploaded / when editing an already-saved lot */
@@ -31,11 +33,13 @@ export function LotEditor({
   initial,
   onSave,
   onClose,
+  aiEnabled = false,
 }: {
   categories: CategoryTree[];
   initial: DraftLot | null;
   onSave: (lot: DraftLot) => void;
   onClose: () => void;
+  aiEnabled?: boolean;
 }) {
   const fileInput = useRef<HTMLInputElement>(null);
   const [title, setTitle] = useState(initial?.title ?? "");
@@ -48,7 +52,12 @@ export function LotEditor({
   const [customIncrement, setCustomIncrement] = useState(
     initial ? !INCREMENTS.includes(initial.increment as never) : false,
   );
-  const [durationMinutes, setDurationMinutes] = useState(initial?.durationMinutes ?? 5);
+  const [durationMinutes, setDurationMinutes] = useState<number | null>(
+    initial ? initial.durationMinutes : 5,
+  );
+  const [customDuration, setCustomDuration] = useState(
+    initial?.durationMinutes != null && !DURATIONS.includes(initial.durationMinutes as never),
+  );
   const [file, setFile] = useState<File | null>(initial?.file ?? null);
   const [preview, setPreview] = useState<string | null>(initial?.preview ?? null);
   const [error, setError] = useState<string | null>(null);
@@ -75,7 +84,7 @@ export function LotEditor({
     if (!/^\d+$/.test(increment) || BigInt(increment) <= 0n || BigInt(increment) % 10n !== 0n) {
       return setError("مقدار الزيادة من مضاعفات العشرة");
     }
-    if (!file && !initial?.imagePath) return setError("أضف صورة للقطعة");
+    /* الصورة اختيارية — قطع الـ CSV تجي بدونها ويكمّلها المضيف لاحقًا */
 
     onSave({
       key: initial?.key ?? crypto.randomUUID(),
@@ -108,6 +117,19 @@ export function LotEditor({
         <h3 className="m-0 mb-5 font-display text-[19px] font-semibold">
           {initial ? "تعديل القطعة" : "أضف قطعة"}
         </h3>
+
+        {aiEnabled && (file || preview) ? (
+          <WriteListingCard
+            images={file ? [file] : preview ? [preview] : []}
+            hint={title}
+            onApply={(s) => {
+              if (s.title) setTitle(s.title);
+              if (s.category && !category) {
+                setCategory({ id: s.category.id, label: s.category.label, mainId: s.category.id });
+              }
+            }}
+          />
+        ) : null}
 
         <div className="mb-5 flex items-start gap-3.5">
           <button
@@ -185,9 +207,12 @@ export function LotEditor({
                 <button
                   key={m}
                   type="button"
-                  onClick={() => setDurationMinutes(m)}
+                  onClick={() => {
+                    setDurationMinutes(m);
+                    setCustomDuration(false);
+                  }}
                   className={`num grid h-[46px] min-w-[52px] place-items-center rounded-[12px] px-3 font-display text-sm font-semibold ${
-                    durationMinutes === m
+                    !customDuration && durationMinutes === m
                       ? "bg-gold text-gold-ink"
                       : "hairline bg-surface text-ink2 hover:text-ink"
                   }`}
@@ -195,7 +220,54 @@ export function LotEditor({
                   {m} د
                 </button>
               ))}
+              <button
+                type="button"
+                onClick={() => {
+                  setCustomDuration(true);
+                  if (durationMinutes == null) setDurationMinutes(15);
+                }}
+                className={`grid h-[46px] place-items-center rounded-[12px] px-3 text-sm ${
+                  customDuration && durationMinutes != null
+                    ? "bg-gold font-semibold text-gold-ink"
+                    : "hairline bg-surface text-ink2 hover:text-ink"
+                }`}
+              >
+                مخصصة
+              </button>
+              <button
+                type="button"
+                onClick={() => {
+                  setDurationMinutes(null);
+                  setCustomDuration(false);
+                }}
+                title="القطعة تظل مفتوحة لين تقفلها بنفسك من غرفة التحكم"
+                className={`grid h-[46px] place-items-center rounded-[12px] px-3 text-sm ${
+                  durationMinutes == null
+                    ? "bg-gold font-semibold text-gold-ink"
+                    : "hairline bg-surface text-ink2 hover:text-ink"
+                }`}
+              >
+                بدون مدة
+              </button>
             </div>
+            {customDuration && durationMinutes != null ? (
+              <input
+                value={String(durationMinutes)}
+                onChange={(e) => {
+                  const n = parseInt(e.target.value.replace(/[^\d]/g, ""), 10);
+                  setDurationMinutes(Number.isFinite(n) ? Math.min(1440, Math.max(1, n)) : 15);
+                }}
+                inputMode="numeric"
+                dir="ltr"
+                className="field num mt-2.5 max-w-[120px] text-start font-display font-semibold"
+                placeholder="15"
+              />
+            ) : null}
+            {durationMinutes == null ? (
+              <p className="m-0 mt-1.5 text-[12px] text-ink3">
+                ما لها وقت انتهاء — تبدأ وتظل مفتوحة، وأنت تقفلها من غرفة التحكّم متى شئت.
+              </p>
+            ) : null}
           </div>
         </div>
 
