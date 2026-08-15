@@ -251,7 +251,7 @@ neg_probe "TICKETS.md: reach of O1+O2" \
 neg_probe "reach denominator on the O1 row" \
   'perl -pi -e '"'"'s/\*\*28 of 40\*\*/**28 of 39**/ if /^\| \*\*O1\*\* \|/'"'"' docs/v2/TICKETS.md'
 
-neg_probe "reach of O20" \
+neg_probe "reach of `O20`" \
   'perl -pi -e '"'"'s/\*\*21 of 40\*\*/**20 of 40**/ if /^\| \*\*O20\*\* \|/'"'"' docs/v2/TICKETS.md'
 
 # A row that stops PARSING rather than one that goes wrong — the "19 of 39
@@ -412,7 +412,7 @@ neg_probe "TICKETS.md: unblocked but not cleared after O1/O2" \
 neg_probe "TICKETS.md: which tickets ratification holds after O1/O2" \
   'perl -pi -e '"'"'s/, `V2-A17` — every one/ — every one/'"'"' docs/v2/TICKETS.md'
 
-neg_probe "reach of R1" \
+neg_probe "reach of `R1`" \
   'perl -pi -e '"'"'s/\*\*28 of 40\*\*/**27 of 40**/ if /^\| \*\*R1\*\*/'"'"' docs/v2/TICKETS.md'
 
 # The exact historical defect, reproduced one table over: a cell that says
@@ -469,4 +469,22 @@ neg_probe "TICKETS.md header: ticket count" \
 neg_probe "the hypothetical was discarded" \
   'perl -pi -e '"'"'s/^  for \(const \[t, arr\] of saved\) board\.get\(t\)\.ratif = arr;.*$/  \/\/ restore removed by probe/'"'"' tests/v2/graph.check.mjs'
 
-neg_report "V2-GRAPH-NEGATIVE" 82
+# G7. The check that guards the PROBE MECHANISM, not the board and not the
+# checker's arithmetic.
+#
+# `neg_probe` finds a check by `grep -F -- "$label" | head -1`. So a label that
+# CONTAINS an earlier label, and prints after it, answers for it: the earlier
+# check's probe reads the later check's PASS and reports MISSED against a check
+# that did its job perfectly.
+#
+# This is the defect that turned two green probes red in the commit that added
+# the ratification column, and it was invisible until the suite was run — three
+# new labels ending `, restated` shadowed three old ones. The collision
+# assertion is the fix; this probe is what stops the fix from rotting.
+#
+# The mutation renames one label to a strict extension of another, which is
+# exactly the shape a well-meaning "make this clearer" edit produces.
+neg_probe "no assertion label is findable only by matching a different one" \
+  'perl -pi -e '"'"'s/"TICKETS.md: unblocked once O1 and O2 are answered"/"TICKETS.md: unblocked before O1\/O2 — after, that is"/'"'"' tests/v2/graph.check.mjs'
+
+neg_report "V2-GRAPH-NEGATIVE" 83

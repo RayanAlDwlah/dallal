@@ -50,7 +50,14 @@ const DEC_README = read("docs/decisions/README.md");
 
 let pass = 0;
 let fail = 0;
+// Every label that has been printed, in order. The negative suite finds a check
+// by substring — `grep -F "<label>" | head -1` — so a label that CONTAINS
+// another one, and prints first, silently answers for it. See the collision
+// assertion at the bottom of this file; it was written because two probes went
+// MISSED the day three `…, restated` labels were added.
+const LABELS = [];
 const chk = (name, got, want) => {
+  LABELS.push(name);
   const g = JSON.stringify(got);
   const w = JSON.stringify(want);
   if (g === w) {
@@ -750,9 +757,9 @@ const assume1 = grab(
   "TICKETS.md names what the O1/O2 figure assumes",
 );
 if (assume1) {
-  chk("TICKETS.md: unblocked before O1/O2, restated", Number(assume1[1]), startable.length);
+  chk("TICKETS.md: the assumption row's opening figure", Number(assume1[1]), startable.length);
   chk(
-    "TICKETS.md: unblocked after O1/O2, restated",
+    "TICKETS.md: the assumption row's released figure",
     Number(assume1[2]),
     startableWith(new Set(["O1", "O2"])).length,
   );
@@ -770,7 +777,7 @@ const assume2 = grab(
 );
 if (assume2) {
   chk(
-    "TICKETS.md: unblocked after O1/O2/O20, restated",
+    "TICKETS.md: the O20 assumption row's released figure",
     Number(assume2[2]),
     startableWith(new Set(["O1", "O2", "O20"])).length,
   );
@@ -818,7 +825,7 @@ for (const line of rReachRows) {
   if (!m) continue;
   rRows++;
   rAssertedHere.add(m[1]);
-  chk(`reach of ${m[1]}`, Number(m[2]), reachOfR([m[1]]).size);
+  chk(`reach of \`${m[1]}\``, Number(m[2]), reachOfR([m[1]]).size);
   chk(`reach denominator on the ${m[1]} row`, Number(m[3]), tickets);
 }
 chk("every row of the R reach table was parsed", rRows, rReachRows.length);
@@ -923,7 +930,7 @@ const opens = grab(
 if (opens) {
   const after = startableWith(new Set(["O1", "O2"]));
   chk("TICKETS.md: unblocked before O1/O2", Number(opens[1]), startable.length);
-  chk("TICKETS.md: unblocked after O1/O2", Number(opens[2]), after.length);
+  chk("TICKETS.md: unblocked once O1 and O2 are answered", Number(opens[2]), after.length);
   chk(
     "TICKETS.md: which tickets O1/O2 release",
     idsIn(opens[3]).sort(),
@@ -937,7 +944,7 @@ const plus20 = grab(
   "TICKETS.md states what O20 adds on top",
 );
 if (plus20) {
-  chk("TICKETS.md: unblocked after O1/O2", Number(plus20[1]), startableWith(new Set(["O1", "O2"])).length);
+  chk("TICKETS.md: the O20 sentence's opening figure", Number(plus20[1]), startableWith(new Set(["O1", "O2"])).length);
   chk("TICKETS.md: unblocked after O1/O2/O20", Number(plus20[2]), startableWith(new Set(["O1", "O2", "O20"])).length);
 }
 
@@ -981,7 +988,10 @@ for (const line of reachTable) {
   // A span row states one figure that must hold for each member individually.
   for (const o of span) {
     assertedHere.add(o);
-    chk(`reach of ${o}`, Number(n), reachOf([o]).size);
+    // The id is delimited because these labels are generated, and `O2` is a
+    // prefix of `O20`..`O29`. Undelimited, the O2 row's probe would be answered
+    // by the O20 row's verdict — see the collision assertion at the bottom.
+    chk(`reach of \`${o}\``, Number(n), reachOf([o]).size);
   }
   chk(`reach denominator on the ${from}${to ? `–${to}` : ""} row`, Number(denom), tickets);
 }
@@ -1121,6 +1131,38 @@ if (!section) {
       .sort((a, b) => Number(a.slice(1)) - Number(b.slice(1))),
     [],
   );
+}
+
+// ---------------------------------------------------------------------------
+// The suite's own labels, checked for a collision the negative harness cannot
+// see. `neg_probe` locates a check with `grep -F -- "$label" | head -1` and
+// demands the line start with FAIL. So if label A is a substring of label B and
+// B prints first, A's probe reads B's verdict — and B passes, because the
+// mutation was aimed at A. The probe reports MISSED against a check that
+// worked perfectly.
+//
+// This is not hypothetical. Adding `TICKETS.md: unblocked before O1/O2,
+// restated` disarmed the probe for `TICKETS.md: unblocked before O1/O2`, and
+// the same edit disarmed one more. Both were CAUGHT before the commit and
+// MISSED after it, with neither check touched. Renaming the new labels fixed
+// it; this assertion is what stops the next one.
+//
+// Exact duplicates count too: two identical labels are the same failure with
+// the substring relation at its most degenerate.
+{
+  const snapshot = [...LABELS];
+  const collisions = [];
+  for (let i = 0; i < snapshot.length; i++) {
+    for (let j = 0; j < snapshot.length; j++) {
+      if (i === j) continue;
+      // Only the EARLIER label can shadow, because `head -1` takes the first
+      // line — so report the ordered pair that actually does harm.
+      if (i < j && snapshot[j].includes(snapshot[i])) {
+        collisions.push(`${snapshot[i]}  <-- shadowed by  ${snapshot[j]}`);
+      }
+    }
+  }
+  chk("no assertion label is findable only by matching a different one", collisions.sort(), []);
 }
 
 console.log();
