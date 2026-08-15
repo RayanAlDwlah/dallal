@@ -1,0 +1,219 @@
+{
+  "$schema_note": [
+    "F0 canonical taxonomy catalog. Data and evidence only — no schema, no routes,",
+    "no picker. T1 consumes this file; it does not re-derive it.",
+    "",
+    "READ THIS BEFORE USING THE NUMBERS:",
+    "  contract.subcategories_required = 110  (the product claim)",
+    "  subcategories present, canonical    =  61",
+    "The shortfall is NOT an oversight in this file and must not be closed by",
+    "adding plausible rows. See PROVENANCE.md §4 and open question O-F0-1.",
+    "tests/v2/taxonomy.check.mjs enforces the contract and therefore FAILS today,",
+    "on purpose, naming the exact shortfall.",
+    "",
+    "evidence classes:",
+    "  A  the label, or a normalised equivalent recorded in `source_labels`,",
+    "     appears on a directly-read marketplace page",
+    "  B  named in the owner-approved prototype, no external corroboration found",
+    "  C  proposed only — never canonical, never counted, never seeded",
+    "",
+    "`label` is the canonical Arabic label. `source_labels` preserves the label as",
+    "the source actually wrote it, per the F0 rule that a source label and a",
+    "canonical label are different things and merging them loses the audit trail."
+  ],
+
+  "contract": {
+    "categories_required": 13,
+    "subcategories_required": 110,
+    "declared_by": "design-system/previews/categories.html headline; docs/decisions/D-02-categories.md §1; dallal-v2-approved-architecture.md §2",
+    "architecture_doc_sha256": "e9cd38c750b4502e02bfb41041d12249a64083df2e94f385460dea32d219e17e",
+    "base_sha": "b885a6598c2d2a5a6064dad17f25b76db6e8af1f",
+    "status": "UNMET — 61 of 110 subcategories are named by evidence. Blocked on O-F0-1."
+  },
+
+  "counts": {
+    "categories": 13,
+    "subcategories_canonical": 61,
+    "subcategories_shortfall_vs_contract": 49,
+    "prototype_grid_named": 60,
+    "prototype_picker_only_named": 1,
+    "prototype_anonymous_placeholders_remaining": 11,
+    "prototype_implied_total": 72,
+    "prototype_headline_claim": 110,
+    "prototype_internal_discrepancy": 38
+  },
+
+  "categories": [
+    { "slug": "vehicles",        "label": "سيارات ومركبات",      "icon_key": "i-car",       "sort_order": 1,  "active": true, "sources": ["d02", "prototype", "haraj", "almazad-alhar", "emiratesauction", "mazadak"], "evidence": "A" },
+    { "slug": "plates-numbers",  "label": "لوحات وأرقام مميزة",  "icon_key": "i-plate",     "sort_order": 2,  "active": true, "sources": ["d02", "prototype", "haraj", "almazad-alhar", "emiratesauction"], "evidence": "A" },
+    { "slug": "real-estate",     "label": "عقارات",              "icon_key": "i-estate",    "sort_order": 3,  "active": true, "sources": ["d02", "prototype", "haraj", "almazad-alhar", "emiratesauction", "infath"], "evidence": "A" },
+    { "slug": "watches-jewelry", "label": "ساعات ومجوهرات",      "icon_key": "i-watch",     "sort_order": 4,  "active": true, "sources": ["d02", "prototype", "emiratesauction", "almazad-alhar", "haraj"], "evidence": "A" },
+    { "slug": "electronics",     "label": "أجهزة وإلكترونيات",   "icon_key": "i-device",    "sort_order": 5,  "active": true, "sources": ["d02", "prototype", "haraj", "almazad-alhar", "soum"], "evidence": "A" },
+    { "slug": "furniture",       "label": "أثاث ومفروشات",       "icon_key": "i-sofa",      "sort_order": 6,  "active": true, "sources": ["d02", "prototype", "haraj", "almazad-alhar", "mazadak"], "evidence": "A" },
+    { "slug": "collectibles",    "label": "نوادر ومقتنيات",      "icon_key": "i-medal",     "sort_order": 7,  "active": true, "sources": ["d02", "prototype"], "evidence": "B" },
+    { "slug": "livestock",       "label": "مواشي وحيوانات",      "icon_key": "i-livestock", "sort_order": 8,  "active": true, "sources": ["d02", "prototype", "haraj", "almazad-alhar", "emiratesauction"], "evidence": "A" },
+    { "slug": "heavy-equipment", "label": "معدات وآلات ثقيلة",   "icon_key": "i-gear",      "sort_order": 9,  "active": true, "sources": ["d02", "prototype", "haraj", "almazad-alhar", "mazadak"], "evidence": "A" },
+    { "slug": "art",             "label": "فنون وتحف",           "icon_key": "i-art",       "sort_order": 10, "active": true, "sources": ["d02", "prototype"], "evidence": "B" },
+    { "slug": "fashion",         "label": "أزياء وحقائب",        "icon_key": "i-bag",       "sort_order": 11, "active": true, "sources": ["d02", "prototype", "haraj", "almazad-alhar"], "evidence": "A" },
+    { "slug": "outdoors",        "label": "رياضة وصيد ورحلات",   "icon_key": "i-tent",      "sort_order": 12, "active": true, "sources": ["d02", "prototype", "haraj", "almazad-alhar"], "evidence": "A" },
+    { "slug": "misc",            "label": "منقولات متنوعة",      "icon_key": "i-box",       "sort_order": 13, "active": true, "sources": ["d02", "prototype", "haraj", "almazad-alhar", "emiratesauction"], "evidence": "A" }
+  ],
+
+  "subcategories": [
+    { "slug": "vehicles-used",             "parent": "vehicles",        "label": "سيارات مستعملة",        "sort_order": 1, "active": true, "evidence": "A", "sources": ["prototype", "haraj", "almazad-alhar", "emiratesauction", "mazadak"], "source_labels": { "haraj": "سيارات", "almazad-alhar": "سيارات للبيع", "emiratesauction": "مزاد المركبات" } },
+    { "slug": "vehicles-classic",          "parent": "vehicles",        "label": "كلاسيكية",              "sort_order": 2, "active": true, "evidence": "A", "sources": ["prototype", "haraj"], "source_labels": { "haraj": "سيارات تراثية" }, "note": "Canonical label follows the prototype chip «كلاسيكية»; حراج writes «سيارات تراثية». Kept distinct rather than merged — see PROVENANCE.md §3." },
+    { "slug": "vehicles-motorcycles",      "parent": "vehicles",        "label": "دراجات نارية",          "sort_order": 3, "active": true, "evidence": "A", "sources": ["prototype", "haraj", "almazad-alhar"], "source_labels": { "haraj": "دبابات", "almazad-alhar": "دراجات نارية" } },
+    { "slug": "vehicles-trucks-trailers",  "parent": "vehicles",        "label": "شاحنات ومقطورات",       "sort_order": 4, "active": true, "evidence": "A", "sources": ["prototype", "haraj", "almazad-alhar"], "source_labels": { "haraj": "شاحنات", "almazad-alhar": "شاحنات ومقطورات" } },
+    { "slug": "vehicles-boats-jetski",     "parent": "vehicles",        "label": "قوارب وجت سكي",         "sort_order": 5, "active": true, "evidence": "A", "sources": ["prototype", "haraj", "almazad-alhar", "emiratesauction"], "source_labels": { "haraj": "دبابات بحرية", "almazad-alhar": "قوارب وجت سكي", "emiratesauction": "السفن والبوارج" } },
+    { "slug": "vehicles-damaged",          "parent": "vehicles",        "label": "متضررة",                "sort_order": 6, "active": true, "evidence": "A", "sources": ["prototype", "haraj"], "source_labels": { "haraj": "سيارات مصدومة" } },
+    { "slug": "vehicles-parts",            "parent": "vehicles",        "label": "قطع غيار",              "sort_order": 7, "active": true, "evidence": "A", "sources": ["prototype", "haraj", "almazad-alhar"], "source_labels": { "haraj": "قطع غيار", "almazad-alhar": "قطع غيار" } },
+
+    { "slug": "plates-vehicle",            "parent": "plates-numbers",  "label": "لوحات سيارات",          "sort_order": 1, "active": true, "evidence": "A", "sources": ["prototype", "haraj", "almazad-alhar", "emiratesauction", "soum"], "source_labels": { "haraj": "لوحات مميزة", "almazad-alhar": "لوحات سيارات", "soum": "لوح سيارات" } },
+    { "slug": "plates-mobile-numbers",     "parent": "plates-numbers",  "label": "أرقام جوال",            "sort_order": 2, "active": true, "evidence": "A", "sources": ["prototype", "haraj", "almazad-alhar"], "source_labels": { "haraj": "أرقام مميزة", "almazad-alhar": "أرقام هواتف مميزة" } },
+    { "slug": "plates-transport",          "parent": "plates-numbers",  "label": "لوحات نقل",             "sort_order": 3, "active": true, "evidence": "B", "sources": ["prototype"], "note": "No marketplace read names a transport-plate class. Emirates Auction splits plates by emirate, which is a UAE jurisdiction facet and deliberately not imported." },
+    { "slug": "plates-motorcycle",         "parent": "plates-numbers",  "label": "لوحات دراجات",          "sort_order": 4, "active": true, "evidence": "B", "sources": ["prototype"] },
+
+    { "slug": "realestate-land",           "parent": "real-estate",     "label": "أراضٍ",                 "sort_order": 1, "active": true, "evidence": "A", "sources": ["prototype", "haraj", "almazad-alhar", "infath"], "source_labels": { "haraj": "اراضي للبيع · اراضي تجارية للبيع", "almazad-alhar": "أراضي" } },
+    { "slug": "realestate-apartments",     "parent": "real-estate",     "label": "شقق",                   "sort_order": 2, "active": true, "evidence": "A", "sources": ["prototype", "haraj", "almazad-alhar"], "source_labels": { "haraj": "شقق للبيع", "almazad-alhar": "سكني" } },
+    { "slug": "realestate-villas",         "parent": "real-estate",     "label": "فلل",                   "sort_order": 3, "active": true, "evidence": "A", "sources": ["prototype", "haraj"], "source_labels": { "haraj": "فلل للبيع" } },
+    { "slug": "realestate-buildings",      "parent": "real-estate",     "label": "عمائر",                 "sort_order": 4, "active": true, "evidence": "A", "sources": ["prototype", "haraj"], "source_labels": { "haraj": "عمارة للبيع" } },
+    { "slug": "realestate-shops-offices",  "parent": "real-estate",     "label": "محلات ومكاتب",          "sort_order": 5, "active": true, "evidence": "A", "sources": ["prototype", "haraj", "almazad-alhar"], "source_labels": { "haraj": "محلات للايجار · محلات للتقبيل", "almazad-alhar": "تجاري" } },
+    { "slug": "realestate-warehouses",     "parent": "real-estate",     "label": "مستودعات",              "sort_order": 6, "active": true, "evidence": "B", "sources": ["prototype"], "note": "حراج's real-estate branches are rent/sale splits of dwelling types and name no warehouse class; المزاد الحر has only سكني/تجاري/أراضي." },
+
+    { "slug": "watches-mens",              "parent": "watches-jewelry", "label": "ساعات رجالية",          "sort_order": 1, "active": true, "evidence": "A", "sources": ["prototype", "haraj", "almazad-alhar"], "source_labels": { "haraj": "ساعات", "almazad-alhar": "ساعات رجالي" } },
+    { "slug": "watches-womens",            "parent": "watches-jewelry", "label": "ساعات نسائية",          "sort_order": 2, "active": true, "evidence": "A", "sources": ["prototype", "almazad-alhar"], "source_labels": { "almazad-alhar": "ساعات (ازياء - موضة نسائية)" } },
+    { "slug": "jewelry-gold",              "parent": "watches-jewelry", "label": "ذهب",                   "sort_order": 3, "active": true, "evidence": "B", "sources": ["prototype"], "note": "Emirates Auction has ساعات ومجوهرات but only at category level; المزاد الحر has اكسسوارات - مجوهرات undifferentiated. No source names a gold class." },
+    { "slug": "jewelry-diamonds-gems",     "parent": "watches-jewelry", "label": "ألماس وأحجار كريمة",    "sort_order": 4, "active": true, "evidence": "B", "sources": ["prototype"], "note": "WORDING VARIANT: the grid chip reads «ألماس وأحجار», the picker row reads «ألماس وأحجار كريمة». The longer picker form is canonical; the grid form is an abbreviation for chip width. See aliases." },
+    { "slug": "luxury-pens-accessories",   "parent": "watches-jewelry", "label": "أقلام وإكسسوارات فاخرة", "sort_order": 5, "active": true, "evidence": "B", "sources": ["prototype"], "note": "WORDING VARIANT: grid «أقلام فاخرة» vs picker «أقلام وإكسسوارات فاخرة». Picker form canonical. See aliases." },
+    { "slug": "jewelry-silver",            "parent": "watches-jewelry", "label": "فضة",                   "sort_order": 6, "active": true, "evidence": "B", "sources": ["prototype"], "note": "PICKER-ONLY. Appears nowhere in the grid; it is the resolution of this category's «+1» placeholder. This single row is the whole proof that a +N placeholder hides a REAL named row somewhere else in the prototype, and the reason the other 11 must be resolved rather than invented." },
+
+    { "slug": "electronics-phones",        "parent": "electronics",     "label": "جوالات",                "sort_order": 1, "active": true, "evidence": "A", "sources": ["prototype", "haraj", "almazad-alhar", "soum"], "source_labels": { "haraj": "جوالات", "almazad-alhar": "موبايل", "soum": "جوالات" } },
+    { "slug": "electronics-computers",     "parent": "electronics",     "label": "لابتوب وكمبيوتر",       "sort_order": 2, "active": true, "evidence": "A", "sources": ["prototype", "haraj", "almazad-alhar", "soum"], "source_labels": { "haraj": "لابتوب · كمبيوتر مكتبي", "almazad-alhar": "لابتوب · كمبيوتر", "soum": "لابتوبات · كمبيوترات مكتبية" } },
+    { "slug": "electronics-cameras",       "parent": "electronics",     "label": "كاميرات",               "sort_order": 3, "active": true, "evidence": "A", "sources": ["prototype", "haraj", "almazad-alhar", "soum"], "source_labels": { "haraj": "كاميرات · عدسات", "almazad-alhar": "كاميرات - تصوير", "soum": "كاميرات" } },
+    { "slug": "electronics-gaming",        "parent": "electronics",     "label": "ألعاب إلكترونية",       "sort_order": 4, "active": true, "evidence": "A", "sources": ["prototype", "haraj", "almazad-alhar", "soum"], "source_labels": { "haraj": "ألعاب إلكترونية", "almazad-alhar": "ألعاب الفيديو", "soum": "ألعاب فيديو" } },
+    { "slug": "electronics-audio",         "parent": "electronics",     "label": "صوتيات",                "sort_order": 5, "active": true, "evidence": "A", "sources": ["prototype", "haraj", "almazad-alhar", "soum"], "source_labels": { "haraj": "صوتيات", "almazad-alhar": "صوتيات وفيديو", "soum": "مكبرات صوت · سماعات" } },
+
+    { "slug": "furniture-majlis",          "parent": "furniture",       "label": "مجالس",                 "sort_order": 1, "active": true, "evidence": "A", "sources": ["prototype", "haraj", "almazad-alhar"], "source_labels": { "haraj": "مجالس ومفروشات", "almazad-alhar": "أثاث غرف جلوس" } },
+    { "slug": "furniture-bedrooms",        "parent": "furniture",       "label": "غرف نوم",               "sort_order": 2, "active": true, "evidence": "A", "sources": ["prototype", "haraj", "almazad-alhar"], "source_labels": { "haraj": "أسرة ومراتب", "almazad-alhar": "أثاث غرف نوم" } },
+    { "slug": "furniture-office",          "parent": "furniture",       "label": "مكاتب",                 "sort_order": 3, "active": true, "evidence": "A", "sources": ["prototype", "haraj", "almazad-alhar"], "source_labels": { "haraj": "أثاث مكتبي", "almazad-alhar": "أثاث مكتبي" } },
+    { "slug": "furniture-rugs-curtains",   "parent": "furniture",       "label": "سجاد وستائر",           "sort_order": 4, "active": true, "evidence": "A", "sources": ["prototype", "almazad-alhar"], "source_labels": { "almazad-alhar": "سجاد - موكيت · ستائر - برادي" } },
+    { "slug": "furniture-appliances",      "parent": "furniture",       "label": "أجهزة منزلية",          "sort_order": 5, "active": true, "evidence": "A", "sources": ["prototype", "haraj", "almazad-alhar", "soum"], "source_labels": { "haraj": "ثلاجة · غسالة", "almazad-alhar": "اجهزة منزلية", "soum": "أجهزة منزلية" }, "note": "PARENT AMBIGUITY: three sources file home appliances under an ELECTRONICS parent, the prototype files them under أثاث ومفروشات. The prototype wins because it is the approved product artifact, but browse will surprise a seller who looks for a fridge under إلكترونيات. Flagged as O-F0-3." },
+
+    { "slug": "collectibles-coins",        "parent": "collectibles",    "label": "عملات ومسكوكات",        "sort_order": 1, "active": true, "evidence": "B", "sources": ["prototype"] },
+    { "slug": "collectibles-stamps",       "parent": "collectibles",    "label": "طوابع",                 "sort_order": 2, "active": true, "evidence": "B", "sources": ["prototype"] },
+    { "slug": "collectibles-heritage",     "parent": "collectibles",    "label": "تراثيات",               "sort_order": 3, "active": true, "evidence": "B", "sources": ["prototype"], "note": "NEAR MISS, recorded so nobody re-derives it as corroboration: حراج has «تحف وديكور», but under حراج الأثاث, meaning decorative homeware, not heritage collectibles. Different meaning; not counted as a source." },
+    { "slug": "collectibles-sports",       "parent": "collectibles",    "label": "مقتنيات رياضية",        "sort_order": 4, "active": true, "evidence": "B", "sources": ["prototype"] },
+
+    { "slug": "livestock-camels",          "parent": "livestock",       "label": "إبل",                   "sort_order": 1, "active": true, "evidence": "A", "sources": ["prototype", "haraj", "almazad-alhar"], "source_labels": { "haraj": "أبل", "almazad-alhar": "جِمال" }, "note": "حراج spells it «أبل» without the hamza-under-alif; canonical is «إبل». An orthographic normalisation, not a merge of two meanings." },
+    { "slug": "livestock-sheep-goats",     "parent": "livestock",       "label": "أغنام وماعز",           "sort_order": 2, "active": true, "evidence": "A", "sources": ["prototype", "haraj", "almazad-alhar"], "source_labels": { "haraj": "غنم · ماعز", "almazad-alhar": "غنم · ماعز" }, "note": "MERGE: both sources keep غنم and ماعز as two separate branches; the prototype merges them into one chip. Following the prototype costs one row. Un-merging would gain one — listed as a candidate for O-F0-1, not applied." },
+    { "slug": "livestock-horses",          "parent": "livestock",       "label": "خيل",                   "sort_order": 3, "active": true, "evidence": "A", "sources": ["prototype", "haraj", "almazad-alhar", "emiratesauction"], "source_labels": { "haraj": "خيل", "almazad-alhar": "خيل", "emiratesauction": "خيول و أنعام" } },
+    { "slug": "livestock-falcons-birds",   "parent": "livestock",       "label": "صقور وطيور",            "sort_order": 4, "active": true, "evidence": "A", "sources": ["prototype", "haraj", "almazad-alhar"], "source_labels": { "haraj": "ببغاء · حمام · دجاج · بط", "almazad-alhar": "طيور · ببغاء · حمام · دجاج" }, "note": "The BIRD class is corroborated; FALCONS specifically are named by no source read. The prototype's «صقور» is the product's own addition and is plausible for a Saudi auction, but it is prototype authority, not marketplace evidence." },
+    { "slug": "livestock-pets",            "parent": "livestock",       "label": "أليفة",                 "sort_order": 5, "active": true, "evidence": "A", "sources": ["prototype", "haraj", "almazad-alhar"], "source_labels": { "haraj": "قطط · كلاب · ارانب · هامستر · سناجب", "almazad-alhar": "قطط · كلاب · أرانب · هامستر" } },
+
+    { "slug": "heavy-construction",        "parent": "heavy-equipment", "label": "معدات إنشاء",           "sort_order": 1, "active": true, "evidence": "A", "sources": ["prototype", "haraj", "almazad-alhar", "mazadak"], "source_labels": { "haraj": "معدات ثقيلة", "almazad-alhar": "آليات ثقيلة", "mazadak": "Heavy Machinery (English only)" } },
+    { "slug": "heavy-agricultural",        "parent": "heavy-equipment", "label": "زراعية",                "sort_order": 2, "active": true, "evidence": "B", "sources": ["prototype"], "note": "حراج has a زراعة وحدائق main section but it is leaf-only and exposes no equipment branch." },
+    { "slug": "heavy-generators-pumps",    "parent": "heavy-equipment", "label": "مولدات ومضخات",         "sort_order": 3, "active": true, "evidence": "B", "sources": ["prototype"] },
+    { "slug": "heavy-workshop",            "parent": "heavy-equipment", "label": "معدات ورش",             "sort_order": 4, "active": true, "evidence": "B", "sources": ["prototype"], "note": "المزاد الحر has معدات يدوية and معدات المصانع under a شركات parent. Adjacent, not the same class; recorded as near-miss rather than corroboration." },
+    { "slug": "heavy-scrap",               "parent": "heavy-equipment", "label": "سكراب",                 "sort_order": 5, "active": true, "evidence": "A", "sources": ["prototype", "almazad-alhar", "mazadak"], "source_labels": { "almazad-alhar": "سكراب", "mazadak": "Scrap (English only)" } },
+
+    { "slug": "art-paintings",             "parent": "art",             "label": "لوحات",                 "sort_order": 1, "active": true, "evidence": "B", "sources": ["prototype"], "note": "COLLISION HAZARD: the Arabic word «لوحات» means both a painting and a licence plate, and both meanings are live in this taxonomy (compare plates-vehicle «لوحات سيارات»). Search and any AI category classifier must disambiguate by parent, never by label alone. This is exactly the 'do not silently merge Arabic labels that might have distinct auction meanings' case." },
+    { "slug": "art-calligraphy",           "parent": "art",             "label": "خط عربي",               "sort_order": 2, "active": true, "evidence": "B", "sources": ["prototype"] },
+    { "slug": "art-sculpture",             "parent": "art",             "label": "منحوتات",               "sort_order": 3, "active": true, "evidence": "B", "sources": ["prototype"] },
+    { "slug": "art-handmade-rugs",         "parent": "art",             "label": "سجاد يدوي",             "sort_order": 4, "active": true, "evidence": "B", "sources": ["prototype"], "note": "NOT corroborated by المزاد الحر's «سجاد - موكيت», which is machine floor covering under المنزل والحديقة. A handmade rug as an art object is a different good. Also near-collides with furniture-rugs-curtains «سجاد وستائر» — same word, two parents, two meanings." },
+
+    { "slug": "fashion-luxury-bags",       "parent": "fashion",         "label": "حقائب فاخرة",           "sort_order": 1, "active": true, "evidence": "A", "sources": ["prototype", "almazad-alhar"], "source_labels": { "almazad-alhar": "حقائب - شنط" } },
+    { "slug": "fashion-abayas",            "parent": "fashion",         "label": "عبايات",                "sort_order": 2, "active": true, "evidence": "B", "sources": ["prototype"], "note": "No source read names an abaya class; both حراج and المزاد الحر stop at ملابس نسائية. A Saudi-market row the prototype adds on its own authority." },
+    { "slug": "fashion-mens",              "parent": "fashion",         "label": "أزياء رجالية",          "sort_order": 3, "active": true, "evidence": "A", "sources": ["prototype", "haraj", "almazad-alhar"], "source_labels": { "haraj": "ملابس رجالية", "almazad-alhar": "ملابس رجالي" } },
+    { "slug": "fashion-shoes",             "parent": "fashion",         "label": "أحذية",                 "sort_order": 4, "active": true, "evidence": "A", "sources": ["prototype", "almazad-alhar"], "source_labels": { "almazad-alhar": "احذية رجالي · احذية نسائية" } },
+    { "slug": "fashion-perfumes",          "parent": "fashion",         "label": "عطور",                  "sort_order": 5, "active": true, "evidence": "A", "sources": ["prototype", "haraj", "almazad-alhar"], "source_labels": { "haraj": "عطورات", "almazad-alhar": "عطور - بخور · العطور" } },
+
+    { "slug": "outdoors-hunting",          "parent": "outdoors",        "label": "معدات صيد",             "sort_order": 1, "active": true, "evidence": "A", "sources": ["prototype", "almazad-alhar"], "source_labels": { "almazad-alhar": "معدات صيد" }, "note": "حراج has a صيد ورحلات main section, leaf-only, so it corroborates the CATEGORY but supplies no branch." },
+    { "slug": "outdoors-camping",          "parent": "outdoors",        "label": "تخييم",                 "sort_order": 2, "active": true, "evidence": "A", "sources": ["prototype", "almazad-alhar"], "source_labels": { "almazad-alhar": "تخييم" } },
+    { "slug": "outdoors-atv",              "parent": "outdoors",        "label": "دباب ومركبات ترفيهية",  "sort_order": 3, "active": true, "evidence": "B", "sources": ["prototype"], "note": "حراج's «دبابات» is motorcycles, mapped to vehicles-motorcycles. It is NOT an ATV and must not be cited here — the same word, two vehicle meanings." },
+    { "slug": "outdoors-sports-equipment", "parent": "outdoors",        "label": "معدات رياضية",          "sort_order": 4, "active": true, "evidence": "A", "sources": ["prototype", "haraj", "almazad-alhar"], "source_labels": { "haraj": "مستلزمات رياضية", "almazad-alhar": "أجهزة رياضية · الاكسسوارات الرياضية" } },
+
+    { "slug": "misc-general",              "parent": "misc",            "label": "كل ما لا يندرج تحت قسم", "sort_order": 1, "active": true, "evidence": "A", "sources": ["prototype", "haraj", "almazad-alhar", "emiratesauction"], "source_labels": { "haraj": "قسم غير مصنف", "almazad-alhar": "أخرى", "emiratesauction": "بضائع متنوعة" }, "note": "ARCHITECTURE §5.1 requires misc to keep exactly one general subcategory. That is satisfied and must stay satisfied — misc is not a place to absorb the 49-row shortfall." }
+  ],
+
+  "aliases": [
+    { "canonical": "plates-numbers",         "variant": "لوحات وأرقام",        "seen_in": "categories.html filter rail and picker column", "canonical_label": "لوحات وأرقام مميزة", "decision": "One category, two renderings. The rail and picker drop «مميزة» for width. Not a second category." },
+    { "canonical": "jewelry-diamonds-gems",  "variant": "ألماس وأحجار",        "seen_in": "categories.html grid chip",  "canonical_label": "ألماس وأحجار كريمة", "decision": "Picker form is canonical; the grid abbreviates. Not a second subcategory." },
+    { "canonical": "luxury-pens-accessories","variant": "أقلام فاخرة",         "seen_in": "categories.html grid chip",  "canonical_label": "أقلام وإكسسوارات فاخرة", "decision": "Picker form is canonical; the grid abbreviates. Not a second subcategory." },
+    { "canonical": "vehicles-classic",       "variant": "سيارات تراثية",       "seen_in": "haraj",  "canonical_label": "كلاسيكية", "decision": "Same class, different register. Source label preserved; prototype label canonical." },
+    { "canonical": "vehicles-motorcycles",   "variant": "دبابات",              "seen_in": "haraj",  "canonical_label": "دراجات نارية", "decision": "حراج colloquialism for motorcycles. NOT the same as outdoors-atv «دباب» — the near-identical word is why this alias is written down." },
+    { "canonical": "livestock-camels",       "variant": "أبل",                 "seen_in": "haraj",  "canonical_label": "إبل", "decision": "Orthographic normalisation of the initial hamza only." }
+  ],
+
+  "not_imported": [
+    { "what": "~50 car makes under حراج السيارات (تويوتا، هونداي، لكزس، فورد …)", "why": "A make is a facet of the vehicles `الماركة` field per D-02 §2, not a taxonomy level. Importing them would have produced ~50 rows and reached 110 by accident — the exact failure the F0 evidence rules forbid." },
+    { "what": "7 Emirates Auction plate emirates (أبوظبي، دبي، الشارقة، عجمان، الفجيرة، رأس الخيمة، أم القيوين)", "why": "A UAE jurisdiction split with no Saudi equivalent. A Saudi plate taxonomy would split by plate type, which is what plates-transport / plates-motorcycle already attempt." },
+    { "what": "حراج real-estate rent branches (شقق للايجار، فلل للايجار، ادوار للايجار، استراحات للايجار، بيوت للايجار، محلات للايجار، عماره للايجار)", "why": "A rental listing has nothing to knock down to a highest bidder. Same exclusion logic D-02 §1.1 applies to classified-ad sections." },
+    { "what": "المزاد الحر categories: التعليم والتدريب، الصحة والجمال، إعلانات الوظائف، السفر والرحلات، طعام وغذاء، شركات، لوازم الأطفال", "why": "Classified-ad and service classes. D-02 §1.1 excludes وظائف، خدمات، تعليم وتدريب، أطعمة ومشروبات، سفر وسياحة by name; these are the same classes on a different platform and the exclusion carries." },
+    { "what": "حراج third-level game-account tags (ببجي، فورت نايت، فيفا، كلاش أوف كلانس، كلاش رويال، حسابات أخرى)", "why": "Third level. This taxonomy is two levels by ARCHITECTURE §5.1, and a game account is a digital good the product does not handle." },
+    { "what": "Emirates Auction platform-specific lots (عضويات سكاي واردز، إكسبو 2020 دبي، دبي للرطب، الباقات المميزة، مساحات للإيجار)", "why": "Single-operator promotional lots, not a transferable taxonomy." },
+    { "what": "Mazadak 'Liquids'", "why": "English-only source, and no Arabic label could be obtained. A label invented from an English word is a manufactured label." }
+  ],
+
+  "category_fields": {
+    "$note": [
+      "EVIDENCE and PROPOSAL are separated on purpose and the separation is the point.",
+      "`labels` is what categories.html actually prints — observed, quotable, not negotiable here.",
+      "`proposed` is REVERSIBLE validation metadata this file suggests and NOBODY has approved.",
+      "T1 must treat `proposed` as a starting draft requiring owner sign-off, not as a decision.",
+      "",
+      "Two hard constraints carried from D-02 §2.1 and CLAUDE.md §4:",
+      "  - none of these fields is money. المساحة, الممشى, عدد الخانات, الوزن are quantities.",
+      "    No sar_amount, no money formatter, no second money-shaped column.",
+      "  - every field is OPTIONAL and never blocks publishing (D-06 §2, prototype note).",
+      "",
+      "DIVERGENCE: D-02 §2's table omits `outdoors` and `misc` and writes fashion as",
+      "'(per the prototype's table)'. categories.html supplies all three. The prototype",
+      "is used and the divergence is recorded rather than quietly reconciled."
+    ],
+    "vehicles":        { "labels": ["الماركة", "الموديل", "سنة الصنع", "الممشى", "ناقل الحركة", "حالة الفحص"], "proposed": { "الماركة": "enum-from-make-list", "الموديل": "text", "سنة الصنع": "integer-year", "الممشى": "integer, unit كم", "ناقل الحركة": "enum", "حالة الفحص": "enum" } },
+    "plates-numbers":  { "labels": ["نص اللوحة أو الرقم", "عدد الخانات", "نوع اللوحة", "المشغّل"], "proposed": { "نص اللوحة أو الرقم": "text", "عدد الخانات": "integer", "نوع اللوحة": "enum", "المشغّل": "enum" } },
+    "real-estate":     { "labels": ["المدينة والحي", "المساحة (م²)", "الواجهة", "عرض الشارع", "رقم الصك"], "proposed": { "المدينة والحي": "text", "المساحة (م²)": "decimal, unit م², NOT money", "الواجهة": "enum", "عرض الشارع": "decimal, unit م", "رقم الصك": "text" } },
+    "watches-jewelry": { "labels": ["الماركة", "الموديل/المرجع", "سنة الصنع", "العلبة والأوراق", "الحالة"], "proposed": { "الماركة": "text", "الموديل/المرجع": "text", "سنة الصنع": "integer-year", "العلبة والأوراق": "enum", "الحالة": "enum" } },
+    "electronics":     { "labels": ["الماركة", "الموديل", "السعة", "الحالة", "الضمان"], "proposed": { "الماركة": "text", "الموديل": "text", "السعة": "text, unit GB/TB", "الحالة": "enum", "الضمان": "enum" } },
+    "furniture":       { "labels": ["عدد القطع", "الخامة", "المقاس", "الحالة"], "proposed": { "عدد القطع": "integer", "الخامة": "text", "المقاس": "text", "الحالة": "enum" } },
+    "collectibles":    { "labels": ["السنة", "بلد المنشأ", "شهادة توثيق", "الحالة"], "proposed": { "السنة": "integer-year", "بلد المنشأ": "text", "شهادة توثيق": "boolean", "الحالة": "enum" } },
+    "livestock":       { "labels": ["النوع/السلالة", "العدد", "العمر", "الوزن التقريبي", "الموقع"], "proposed": { "النوع/السلالة": "text", "العدد": "integer", "العمر": "text", "الوزن التقريبي": "decimal, unit كجم, NOT money", "الموقع": "text" } },
+    "heavy-equipment": { "labels": ["الماركة", "الموديل", "سنة الصنع", "ساعات التشغيل", "حالة التشغيل"], "proposed": { "الماركة": "text", "الموديل": "text", "سنة الصنع": "integer-year", "ساعات التشغيل": "integer", "حالة التشغيل": "enum" } },
+    "art":             { "labels": ["الفنان", "السنة", "المقاس", "الخامة", "شهادة أصالة"], "proposed": { "الفنان": "text", "السنة": "integer-year", "المقاس": "text", "الخامة": "text", "شهادة أصالة": "boolean" } },
+    "fashion":         { "labels": ["الماركة", "المقاس", "الحالة", "الأصلية والملحقات"], "proposed": { "الماركة": "text", "المقاس": "text", "الحالة": "enum", "الأصلية والملحقات": "enum" }, "note": "D-02 §2 leaves this row unspecified; categories.html supplies it." },
+    "outdoors":        { "labels": ["النوع", "الماركة", "الحالة"], "proposed": { "النوع": "text", "الماركة": "text", "الحالة": "enum" }, "note": "Absent from D-02 §2 entirely; supplied by categories.html." },
+    "misc":            { "labels": [], "proposed": {}, "note": "categories.html: «ما فيه حقول إضافية — الوصف يكفي». Absent from D-02 §2; an empty field set is the decision, not a gap." }
+  },
+
+  "display_examples_not_facts": {
+    "$note": "categories.html prints a per-category auction count (1,284 مزاد …). These are PROTOTYPE DISPLAY EXAMPLES. They are recorded here so no future reader mistakes them for measured data and seeds them, and they must never reach a production table.",
+    "vehicles": 1284, "plates-numbers": 417, "real-estate": 903, "watches-jewelry": 652,
+    "electronics": 1096, "furniture": 738, "collectibles": 289, "livestock": 561,
+    "heavy-equipment": 334, "art": 176, "fashion": 482, "outdoors": 213, "misc": 128
+  },
+
+  "unresolved": {
+    "$note": "The precise unresolved rows, as F0 requires. NOT filled in. Each anonymous placeholder is a real named row that exists somewhere the prototype does not show — proven by فضة, which was hidden behind «+1» in the grid and only visible in the picker.",
+    "anonymous_placeholders_remaining": [
+      { "parent": "vehicles",        "count": 2, "grid_chip": "+2", "candidates_seen_in_sources": ["حراج: سطحة", "حراج: مسجلة", "حراج: جنوط", "حراج: اكسسوارات", "المزاد الحر: ونش وسطحات", "المزاد الحر: اطارات وجنوط", "المزاد الحر: إكسسوارات سيارات"] },
+      { "parent": "real-estate",     "count": 2, "grid_chip": "+2", "candidates_seen_in_sources": ["حراج: استراحات للبيع", "حراج: بيوت للبيع", "حراج: مزارع للبيع", "حراج: محلات للتقبيل"] },
+      { "parent": "electronics",     "count": 3, "grid_chip": "+3", "candidates_seen_in_sources": ["حراج: أجهزة تابلت", "حراج: تلفزيونات", "حراج: طابعات وماسحات", "حراج: أجهزة شبكات", "حراج: درون", "حراج: نظارات VR", "المزاد الحر: أجهزة تخزين", "سوم: ساعات ذكية", "سوم: أجهزة القراءة الإلكترونية"] },
+      { "parent": "furniture",       "count": 2, "grid_chip": "+2", "candidates_seen_in_sources": ["حراج: طاولات وكراسي", "حراج: خزائن ودواليب", "حراج: أثاث خارجي", "حراج: أدوات منزلية", "المزاد الحر: مطابخ", "المزاد الحر: الإضاءة"] },
+      { "parent": "collectibles",    "count": 2, "grid_chip": "+2", "candidates_seen_in_sources": [] }
+    ],
+    "total_anonymous_remaining": 11,
+    "beyond_the_placeholders": {
+      "count": 38,
+      "explanation": "61 named + 11 anonymous = 72, the total the prototype's own grid accounts for. The headline claims 110. Those 38 rows are named by NO artifact in this repository and by NO source read. They are not hidden behind a placeholder; there is no placeholder for them. This is O-F0-1 and it is a product decision, not a research gap."
+    },
+    "categories_with_zero_external_corroboration_at_subcategory_level": ["collectibles", "art"],
+    "note_on_those_two": "حراج's مكتبة وفنون is leaf-only; المزاد الحر has no art or antiques category at all; Emirates Auction stops at بضائع متنوعة. All 8 rows under art and collectibles rest on prototype authority alone. If the owner wants marketplace-sourced art rows, the source set must widen beyond the seven platforms D-02 names — that is a new evidence gate, O-F0-2."
+  },
+
+  "open_questions": [
+    { "id": "O-F0-1", "blocks": ["T1", "V2-C1", "V2-A1", "#180", "#181"], "question": "The count. The prototype's grid accounts for 72 subcategories (60 named + 12 placeholders, one of which the picker resolves to فضة). Its headline, D-02 §1 and the architecture contract all say 110. Which is the contract: 72, 110, or is the fixed count dropped? If 110, who authors the 38 rows that no artifact names, and against what source?" },
+    { "id": "O-F0-2", "blocks": ["T1"], "question": "art and collectibles have no subcategory-level corroboration on any of the seven platforms D-02 names. Accept them on prototype authority alone, or widen the source set to art/antique auction houses?" },
+    { "id": "O-F0-3", "blocks": ["T1", "D1"], "question": "أجهزة منزلية sits under furniture in the prototype and under electronics on حراج، المزاد الحر and سوم. Keep the prototype's parent, or move it? Affects browse and the AI category classifier, not just the picker." },
+    { "id": "O-F0-4", "blocks": [], "question": "D-02 §1.2 states إنفاذ carries a منقولات متنوعة equivalent. The 2026-08-15 read of infath.gov.sa exposed only عقارات. Is the D-02 claim from a surface not publicly listed, or is it stale? Does not block T1; misc stands on حراج، المزاد الحر and Emirates Auction." }
+  ]
+}

@@ -1,0 +1,99 @@
+{
+  "$comment": [
+    "F0 source registry. Every row in catalog.json cites source ids from here.",
+    "'access' is the ACCESS METHOD AND OUTCOME, recorded at read time. It is not",
+    "decoration: CLAUDE.md §8 and the F0 evidence rules both distinguish a page",
+    "that was READ from a page that was only SUMMARISED by a search engine, and a",
+    "row backed by the second is not backed at all.",
+    "",
+    "Two entries below CORRECT docs/decisions/D-02-categories.md §1.1, which",
+    "recorded almazad-alhar and opensooq together as '403 / SSL, search results",
+    "only'. Re-tested 2026-08-15: opensooq still refuses, almazad-alhar refuses a",
+    "plain fetch but serves a real browser in full. Its complete two-level tree was",
+    "read directly and is now a first-class source. D-02 understated what is",
+    "available; see PROVENANCE.md §5."
+  ],
+  "read_on": "2026-08-15",
+  "sources": {
+    "haraj": {
+      "label": "حراج",
+      "url": "https://haraj.com.sa/all-sections/",
+      "role": "primary",
+      "access": "READ-DIRECT (browser). All 19 main sections enumerated; each section's branch list opened individually and expanded through its «أظهر المزيد» control.",
+      "yield": "19 main sections. Branches exist in only 6 of them (السيارات، العقار، الأجهزة، مواشي وحيوانات وطيور، الأثاث، مستلزمات شخصية). The other 13 — including مكتبة وفنون and صيد ورحلات — are leaf-only and expose no branch at all.",
+      "caveat": "The حراج السيارات branch list interleaves ~50 CAR MAKES (تويوتا، هونداي، لكزس …) with structural branches. Makes are a facet, not a taxonomy level; they are excluded from the catalog and belong to the vehicles `الماركة` field (D-02 §2). Importing them would have manufactured ~50 fake subcategories and hit 110 by accident."
+    },
+    "almazad-alhar": {
+      "label": "المزاد الحر",
+      "url": "https://almazad-alhar.com/product_list",
+      "role": "comparison",
+      "access": "READ-DIRECT (browser). Plain HTTP fetch returns 403; a real browser session returns the full page. Complete category→subcategory tree extracted from its own navigation links.",
+      "yield": "19 main categories, ~160 subcategories, two levels, fully named.",
+      "caveat": "D-02 §1.1 lists this platform as inaccessible and therefore used only via search snippets. That is no longer true and was the single largest recoverable gap in the prior evidence base."
+    },
+    "emiratesauction": {
+      "label": "Emirates Auction",
+      "url": "https://www.emiratesauction.com/ar",
+      "role": "comparison",
+      "access": "READ-DIRECT (fetch).",
+      "yield": "12 top-level auction categories including ساعات ومجوهرات، خيول و أنعام، السفن والبوارج، بضائع متنوعة، عقارات.",
+      "caveat": "Its only deep level is licence plates, split by EMIRATE (أبوظبي، دبي، الشارقة، عجمان، الفجيرة، رأس الخيمة، أم القيوين). That is a UAE jurisdiction split and does not transfer to a Saudi product; it is NOT imported as seven plate subcategories."
+    },
+    "soum": {
+      "label": "Soum",
+      "url": "https://soum.sa/",
+      "role": "comparison",
+      "access": "READ-DIRECT (fetch).",
+      "yield": "~18 subcategories, almost entirely electronics, plus لوح سيارات and سيارات.",
+      "caveat": "Corroborates the electronics branch densely and contributes nothing to any other category."
+    },
+    "infath": {
+      "label": "إنفاذ (Infath)",
+      "url": "https://infath.gov.sa/",
+      "role": "comparison",
+      "access": "READ-DIRECT (fetch). Note the domain is infath.gov.sa; infath.sa does not resolve.",
+      "yield": "One asset type visible on the public listing surface: عقارات.",
+      "caveat": "D-02 cites إنفاذ as one of the two platforms carrying a منقولات متنوعة escape hatch. The public surface read on 2026-08-15 exposed only real estate, so that specific claim is NOT corroborated by this read. Recorded as an open provenance question, not silently dropped — see PROVENANCE.md §6, O-F0-4."
+    },
+    "mazadak": {
+      "label": "Mazadak",
+      "url": "https://mazadak.com/",
+      "role": "comparison",
+      "access": "READ-DIRECT (fetch), ENGLISH ONLY. The /ar path returns 404.",
+      "yield": "Vehicles, Heavy Machinery, Scrap, Furniture, Liquids.",
+      "caveat": "Because only English labels were obtained, this source can corroborate that a CONCEPT is auctioned; it can never supply an Arabic label. No catalog label is derived from it."
+    },
+    "mazad-om": {
+      "label": "مزاد عُمان",
+      "url": "https://mazad.om/",
+      "role": "comparison",
+      "access": "FAILED — TLS error, 'unable to verify the first certificate'. Not read.",
+      "yield": "none",
+      "caveat": "Reproduces the SSL failure D-02 §1.1 recorded. No row cites this source."
+    },
+    "opensooq": {
+      "label": "السوق المفتوح",
+      "url": "https://www.opensooq.com/ar",
+      "role": "comparison",
+      "access": "FAILED — HTTP 403. Not read.",
+      "yield": "none",
+      "caveat": "Reproduces the 403 D-02 §1.1 recorded. No row cites this source."
+    },
+    "prototype": {
+      "label": "categories.html (owner-approved prototype)",
+      "url": "design-system/previews/categories.html",
+      "role": "in-repo product authority",
+      "access": "READ-DIRECT (repository file at b885a6598c2d2a5a6064dad17f25b76db6e8af1f).",
+      "yield": "13 main categories with slugs; 60 named subcategory chips in the grid; 12 anonymous +N placeholders; 1 further named subcategory (فضة) visible only in the picker; a 13-row category-field table.",
+      "caveat": "Its headline claims 110 subcategories. Its own grid accounts for 72. See PROVENANCE.md §4 — this is the F0 blocker."
+    },
+    "d02": {
+      "label": "docs/decisions/D-02-categories.md",
+      "url": "docs/decisions/D-02-categories.md",
+      "role": "in-repo decision record",
+      "access": "READ-DIRECT (repository file).",
+      "yield": "The 13 main categories and their slugs, marked DECIDED by the product owner on 2026-08-15. Also an 11-row category-field table.",
+      "caveat": "Its field table omits `outdoors` and `misc` entirely and leaves `fashion` as '(per the prototype's table)'. categories.html supplies all three. The catalog takes the prototype as the field source and records the divergence."
+    }
+  }
+}

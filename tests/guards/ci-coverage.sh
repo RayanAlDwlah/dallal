@@ -54,13 +54,27 @@ WORKFLOW=".github/workflows/ci.yml"
 # decision or an oversight. Adding a line here is allowed. Adding one WITHOUT
 # a reason is not, and the parse below enforces that.
 #
-# All three below fail for one root cause: they need credentials to a real
+# The first three fail for one root cause: they need credentials to a real
 # Supabase project, and this repository is public (CLAUDE.md §6).
+#
+# The fourth is a different animal and the difference matters. It needs nothing
+# and runs in a second — it is off CI because it is RED ON PURPOSE. F0 shipped a
+# taxonomy dataset with 61 of the contracted 110 subcategories, and the missing
+# rows cannot be written by anyone here: the prototype's own grid accounts for 72
+# and its headline claims 110, so the gap is a product decision (O-F0-1), which
+# CLAUDE.md §8 and TEAM.md rule 16 both forbid a session from inventing.
+#
+# This is the one allowlist entry with an expiry condition, and it is written
+# down so nobody has to guess: IT COMES OUT THE DAY O-F0-1 IS ANSWERED. At that
+# point the check either passes or it is the thing standing in front of a wrong
+# answer, and either way it belongs in the workflow. Its negative suite already
+# runs in CI, so the wiring is known to work before it is needed.
 # ---------------------------------------------------------------------------
 ALLOWLIST="
 tests/auth/identity-e2e.check.mjs — writes real rows to a real project, and nothing in this product can delete an auction (BR-30, BR-31); CI would accumulate junk forever
 tests/auth/session.check.mjs — needs a running server (npm run dev) plus credentials
 tests/realtime/reconnect.check.mjs — needs project credentials and 35 s against a live realtime socket
+tests/v2/taxonomy.check.mjs — red on purpose: 61 of 110 subcategories are evidence-backed and the remaining 49 are blocked on product decision O-F0-1, not on research. Remove this line when O-F0-1 is answered
 "
 
 pass=0

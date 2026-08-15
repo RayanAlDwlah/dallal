@@ -139,6 +139,18 @@ jobs:
       - name: governance — prove the workflow check can fail
         run: ./tests/governance/workflow-negative.check.sh
 
+      # F0's taxonomy catalog check is NOT run here, and that is written down in
+      # tests/guards/ci-coverage.sh with its reason: it fails today on purpose,
+      # because the dataset carries 61 of the contracted 110 subcategories and
+      # the missing rows are a product decision (O-F0-1), not a research gap.
+      # Its NEGATIVE suite does run — it is green, and it is the only evidence
+      # that those 35 assertions can fire at all. Running the probes while the
+      # subject is allowlisted is deliberate: it means the day O-F0-1 is
+      # answered and the allowlist entry comes out, the check being wired in is
+      # already known to work.
+      - name: F0 — prove the taxonomy catalog check can fail
+        run: ./tests/v2/taxonomy-negative.check.sh
+
       - name: INT-08 — the excluded-features audit
         run: ./tests/integration/excluded-features.check.sh
 
