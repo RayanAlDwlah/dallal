@@ -174,12 +174,49 @@ rejected on sight.
 `ARCHITECTURE §13.2a`. Adding any of these is **a bug**, not an improvement. They were
 deliberately removed and their **absence is the requirement**:
 
-- ❌ **no bid increment / minimum raise** — `+0.01` is as valid as `+1000` (`BR-32`)
+- ❌ **no bid increment / minimum raise on a V1 auction** — `+0.01` is as valid as `+1000`
+  (`BR-32`). **This bullet carried no qualifier until 2026-08-15; see the amendment below,
+  and do not generalise the reversal to a V1 auction**
 - ❌ **no maximum / reserve price** (`BR-21`, `BR-35`)
 - ❌ **no leading-bidder rejection** — being the current leader is never grounds to reject (`BR-24`)
 
-Also absent by design: no auction cancel, no auction edit, no draft state. `status` has
-exactly two values — `active` and `ended`.
+Also absent by design **on a standalone auction**: no cancel, no edit, no draft state, and
+`auctions.status` has exactly two values — `active` and `ended`. **A session is where a host
+gains bounded controls** — early close and pause — and neither is a cancel: a lot closed
+early *closes*, determining a winner from the bids it received (`BR-30`, `PRD.md` §24.6). A
+session also has a composition phase before publish; that is a **session** being assembled,
+never an auction in a draft state.
+
+### The increment reversal is scoped — this list used to say it was unconditional
+
+**`BR-32` was amended for V2 on 2026-08-15** by the project owner, ratified into `PRD.md`
+§24.5 and scoped by §24.1:
+
+> A **V2** auction has a **required, immutable, seller-set** increment and **no amount field
+> at all**. The first bid is accepted at exactly `starting_price`; every later bid at exactly
+> `current_price + bid_increment`.
+
+**`BR-32` is not deleted, not weakened, and not made conditional on a feature flag.** It
+remains absolutely true of every auction it was ever true of. A V2 auction is a *different
+kind of auction*, marked by an immutable `contract_version` on the row — not a V1 auction
+with a new rule applied to it. **A live auction never changes its rules underneath the people
+bidding on it**, which is `BR-31`'s own logic and the reason this is scoped and not
+retroactive.
+
+So the question this section now asks is **not** *"is there an increment?"* but **"which kind
+of auction is this row?"**
+
+- On a **V1** auction an increment check is still **a bug**, exactly as before.
+- On a **V2** auction the increment *is* the amount rule, and refusing a non-conforming
+  amount is **correct** — the client never sends an amount there in the first place.
+
+**The other two bullets are untouched and unconditional.** No maximum, no reserve, no
+leading-bidder rejection — on either kind of auction. One reversal was decided; it is not a
+licence to revisit the list, and §8 still governs anything not decided.
+
+**`INT-08` will go red the day a `bid_increment` column lands, and that is by design.** §9
+records the one acceptable response: narrow the audit **in the same pull request**, together
+with a test asserting a V1 auction still accepts an amount that is a multiple of nothing.
 
 ### Anti-sniping DOES exist — this list used to say it did not
 
