@@ -9,7 +9,7 @@
 # ---------------------------------------------------------------------------
 # WHY THIS EXISTS
 #
-# `graph.check.mjs` prints 137 PASS lines. That proves 137
+# `graph.check.mjs` prints 138 PASS lines. That proves 138
 # comparisons ran and agreed. It does NOT prove that any of them would have
 # disagreed had the board been wrong — and this particular file is unusually
 # exposed to that, because most of its assertions are anchored by a REGEX
@@ -33,7 +33,7 @@
 # ---------------------------------------------------------------------------
 # WHAT IS PROBED, AND WHAT IS NOT — SAID PLAINLY
 #
-# 82 probes against 137 assertions. The gap is not laziness and
+# 83 probes against 138 assertions. The gap is not laziness and
 # it is not coverage theatre; it is four loops that generate one assertion per
 # row of a table:
 #
@@ -63,10 +63,24 @@
 # (probes 50 and 52) because the thing being probed is the suite's own
 # blind-spot guard, and nothing subtle triggers it.
 #
-# One probe (G6) mutates `tests/v2/graph.check.mjs` rather than a document. It
-# has to: the assertion it targets guards a hypothetical the checker measures on
-# a throwaway copy of the board, and the only way to prove that guard is real is
-# to remove the line that puts the real board back.
+# Two probes (G6, G7) mutate `tests/v2/graph.check.mjs` rather than a document.
+# They have to: what they target is an assertion ABOUT the checker — that a
+# hypothetical measured on a throwaway board was discarded, and that no label
+# can be found only by matching a different one — and the only way to probe an
+# assertion about the checker is to break the checker.
+#
+# ---------------------------------------------------------------------------
+# A LABEL IS AN ARGUMENT TO grep -F, SO QUOTE IT LIKE ONE
+#
+# `neg_probe`'s first argument is matched literally against the checker's
+# output. Two labels here contain backticks, and they are in SINGLE quotes for
+# that reason. In double quotes the shell runs command substitution first, the
+# label arrives as "reach of " and matches nine other checks instead.
+#
+# Not theoretical: it happened on the way to writing this line, and the symptom
+# was a MISSED verdict against a check that was working perfectly — the same
+# symptom, and the same root cause, as the label collision G7 exists for. One
+# arrived through the shell and one through the checker.
 # ============================================================================
 set -uo pipefail
 cd "$(dirname "$0")/../.." || exit 1
@@ -251,7 +265,7 @@ neg_probe "TICKETS.md: reach of O1+O2" \
 neg_probe "reach denominator on the O1 row" \
   'perl -pi -e '"'"'s/\*\*28 of 40\*\*/**28 of 39**/ if /^\| \*\*O1\*\* \|/'"'"' docs/v2/TICKETS.md'
 
-neg_probe "reach of `O20`" \
+neg_probe 'reach of `O20`' \
   'perl -pi -e '"'"'s/\*\*21 of 40\*\*/**20 of 40**/ if /^\| \*\*O20\*\* \|/'"'"' docs/v2/TICKETS.md'
 
 # A row that stops PARSING rather than one that goes wrong — the "19 of 39
@@ -295,7 +309,7 @@ neg_probe "every O-id discussed in the reach section is pinned by a row or a che
 
 # ---------------------------------------------------------------------------
 # F. The suite's own blind-spot guards. These fire before any assertion runs,
-#    and they are the difference between a red build and 137 vacuous
+#    and they are the difference between a red build and 138 vacuous
 #    passes. Nothing subtle triggers them, so these three mutations are blunt.
 # ---------------------------------------------------------------------------
 neg_probe "the reach section could not be located" \
@@ -412,7 +426,7 @@ neg_probe "TICKETS.md: unblocked but not cleared after O1/O2" \
 neg_probe "TICKETS.md: which tickets ratification holds after O1/O2" \
   'perl -pi -e '"'"'s/, `V2-A17` — every one/ — every one/'"'"' docs/v2/TICKETS.md'
 
-neg_probe "reach of `R1`" \
+neg_probe 'reach of `R1`' \
   'perl -pi -e '"'"'s/\*\*28 of 40\*\*/**27 of 40**/ if /^\| \*\*R1\*\*/'"'"' docs/v2/TICKETS.md'
 
 # The exact historical defect, reproduced one table over: a cell that says
