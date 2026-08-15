@@ -109,7 +109,11 @@ export function StartingPrice({
           "لا توجد مزايدات"
         ) : (
           <>
-            لا توجد مزايدات · أول مزايدة بمبلغ {formatSarWithSuffix(startingPrice)} بالضبط{" "}
+            {/* INT-06 wave 2 — was `{formatSarWithSuffix(startingPrice)}` bare
+                inside this <p>. A price is width-unbounded (BR-21) and a digit
+                run has no break opportunity, so it could not wrap and had no
+                island to scroll in. <Money> is the containment. */}
+            لا توجد مزايدات · أول مزايدة بمبلغ <Money amount={startingPrice} size="sm" /> بالضبط{" "}
             <strong className="text-ink">مقبولة</strong>
           </>
         )}
