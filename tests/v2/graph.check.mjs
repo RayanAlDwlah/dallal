@@ -393,6 +393,77 @@ for (const line of reachTable) {
 }
 chk("every row of the reach table was parsed", reachRows, reachTable.length);
 
+// The prose AROUND the table, which is where the last wrong number was hiding.
+//
+// Every figure inside the table was asserted. The sentence under it — "O11
+// reaches none" — was not, because O11 had no row, and it was the false one:
+// O11 reached nothing only because the ticket it blocks (V2-A20, qualify the
+// production provider) existed in no plan. Same for "the other eighteen carry a
+// second blocker", which was reach minus the whole post-answer unblocked set
+// instead of reach minus what that answer RELEASED — four of those nine were
+// never in the reach set. Both were prose next to checked numbers, which is the
+// most convincing place for a wrong number to sit.
+console.log();
+console.log("--- the prose around the table");
+
+const reachEvery = new Map([...register.keys()].map((o) => [o, reachOf([o]).size]));
+
+const second = grab(
+  TICKETS,
+  /The other \*\*(\d+)\*\* carry a \*second\* blocker/,
+  "TICKETS.md states how many reached tickets keep a second blocker",
+);
+if (second) {
+  const released = new Set(
+    startableWith(new Set(["O1", "O2"])).filter((t) => !startable.includes(t)),
+  );
+  chk(
+    "TICKETS.md: reached by O1/O2 but not released by them",
+    Number(second[1]),
+    [...reachOf(["O1", "O2"])].filter((t) => !released.has(t)).length,
+  );
+}
+
+const few = grab(
+  TICKETS,
+  /\*\*([a-z]+) items reach six tickets or fewer\*\*/,
+  "TICKETS.md states how many items reach six or fewer",
+);
+if (few) {
+  chk(
+    "TICKETS.md: items reaching six tickets or fewer",
+    word2num(few[1]),
+    [...reachEvery.values()].filter((n) => n <= 6).length,
+  );
+}
+
+const lonely = grab(
+  TICKETS,
+  /\*\*([a-z]+) reach exactly one ticket\*\*/,
+  "TICKETS.md states how many items reach exactly one ticket",
+);
+if (lonely) {
+  chk(
+    "TICKETS.md: items reaching exactly one ticket",
+    word2num(lonely[1]),
+    [...reachEvery.values()].filter((n) => n === 1).length,
+  );
+}
+
+const named = grab(
+  TICKETS,
+  /The three that reach exactly six are ([^;]+);\s*`(O\d+)` reaches ([a-z]+)\./,
+  "TICKETS.md names the items reaching exactly six",
+);
+if (named) {
+  chk(
+    "TICKETS.md: the items reaching exactly six are the ones named",
+    idsIn(named[1]).sort(),
+    [...reachEvery].filter(([, n]) => n === 6).map(([o]) => o).sort(),
+  );
+  chk(`TICKETS.md: reach of ${named[2]}`, word2num(named[3]), reachEvery.get(named[2]));
+}
+
 // ---------------------------------------------------------------------------
 console.log();
 console.log(`${pass} passed, ${fail} failed`);

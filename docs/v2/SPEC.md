@@ -120,7 +120,10 @@ endpoint before it is used: vision input accepted, structured output returned an
 schema-valid, Arabic enum values preserved, and a measured latency. Configuration selects a
 provider; **the test qualifies it**.
 
-*Still to pick:* **which** hosted provider — `O11` in §4.
+*Still to pick:* **which** hosted provider — `O11` in §4. *Still to **do**, once it is
+picked:* **V2-A20** — run V2-A18 against that endpoint and commit the result. "Run against
+the endpoint before it is used" is a requirement in the paragraph above; until 2026-08-15 it
+was a requirement with no ticket behind it.
 
 ### 3.4 Sessions — [D-03](../decisions/D-03-sessions.md), and the deposit — [D-05](../decisions/D-05-deposit.md)
 A room of lots opened one at a time, built before the date and run live from a host control
@@ -213,7 +216,7 @@ whose *blocked on* column names an id is not startable in the part that touches 
 | **O8** | «بدعوة فقط» — **invited how**, given there is no messaging and email is never exposed (§6)? | D-03 | V2-A10, V2-B9 |
 | **O9** | Does the attendance count expose anything? A count is safe; a list is not | D-03 | V2-B11 |
 | **O10** | **Can a session be cancelled?** `status` having exactly two values is a stated invariant | D-03 | V2-A10 |
-| **O11** | **Which** hosted provider, concretely? The capability test (V2-A18) says whether a candidate qualifies; it does not choose one | D-04 | **no ticket** — see below |
+| **O11** | **Which** hosted provider, concretely? The capability test (V2-A18) says whether a candidate qualifies; it does not choose one | D-04 | V2-A20 |
 | **O12** | Is `AI_ENABLED` **on or off by default**? | D-04 | V2-A6 |
 | **O13** | Is an AI-proposed **title** labelled the way an edited **image** is? The same argument applies and only images are covered | D-04 | V2-B8 |
 | **O14** | For the price suggestion: **what counts as "similar"**, and what is the **minimum sample** below which nothing is shown? | D-04 | V2-A4 |
@@ -246,21 +249,40 @@ and on a board those are the same shape.
 
 D-01 was the last record whose gaps were unnumbered. There are now none.
 
-**`O11` blocks no ticket, and that is not an oversight.** `V2-A6` (the adapter) and `V2-A18`
-(the capability test) are both written and run against LM Studio on a laptop; neither needs
-a hosted provider chosen to be built or to pass. What `O11` gates is the **production
-deployment** — and a deployment is not a row on this board. It is listed here because it is
-genuinely unanswered and someone will otherwise answer it by typing a base URL into Vercel;
-it is kept out of the *blocked on* cells because counting it there would have made the board
-report more blocked work than exists. **29 of the 30 items block a ticket. This is the one
-that does not.**
+**`O11` blocked no ticket until 2026-08-15, and that WAS an oversight.** This paragraph used
+to defend the empty cell, and the defence was half right. The half that is right: `V2-A6`
+(the adapter) and `V2-A18` (the capability test) are both written and run against LM Studio
+on a laptop, so neither needs a hosted provider chosen in order to be built or to pass, and
+a **deployment** is genuinely not a row on a ticket board.
+
+The half that was wrong: what `O11` gates is not only a deployment. §3.3.1 above and
+[`local-model.md` §4](../ai/local-model.md) both state, as a **requirement**, that a
+candidate is qualified by *running V2-A18 against its endpoint* — and no ticket carried that
+run, its evidence, or anything that would notice its absence. That is not a deployment. It
+is an artifact, and an artifact is what a ticket is for. Stated in two documents and planned
+in none, it was on track to be satisfied by somebody typing a base URL into Vercel and
+believing the green build — which is the exact outcome the withdrawn "changes only those
+three values" claim was retracted to prevent.
+
+**V2-A20** is that artifact: run the test against the chosen endpoint, commit the recorded
+result, and ship a check that fails on an incomplete record. It picks no provider and sets
+no threshold; it is blocked on `O11` like any other ticket waiting on the owner.
+
+**30 of the 30 items block a ticket.** There is no longer one that does not — and the one
+that did not was not special, it was the one whose work had gone missing.
 
 **The *blocks* column above and the *blocked on* column in `TICKETS.md` are the same graph,
 written twice.** Two copies of a graph drift — silently, and in the direction that makes the
 plan look better. They were checked against each other mechanically before this document was
 committed, and four disagreements were found and fixed rather than argued about: `O20` also
 blocks `V2-C2`, `O23` also blocks `V2-C6`, `O24` also blocks `V2-C7` and `V2-B12`, and `O11`
-blocks nothing. If you edit one column, re-derive the other; do not patch it by eye.
+blocked nothing. If you edit one column, re-derive the other; do not patch it by eye.
+
+> **The fourth of those four was the two copies agreeing on the wrong answer.** Both columns
+> said `O11` blocked nothing, they agreed, the diff was clean — and the agreement was the
+> defect, because the ticket that should have been in both was in neither. **Two copies of a
+> graph agreeing proves they are the same graph. It does not prove it is the right one**, and
+> the check below can only ever establish the first.
 
 **"Mechanically" is now a file, not a claim.**
 [`tests/v2/graph.check.mjs`](../../tests/v2/graph.check.mjs) parses both tables, diffs the

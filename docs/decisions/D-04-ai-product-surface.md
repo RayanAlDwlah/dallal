@@ -137,7 +137,8 @@ is how an endpoint is *configured*.
 
 So a candidate is qualified by a **capability contract test** — ticket **V2-A18** — which
 asserts vision input, strict structured output, schema validity, Arabic enum preservation,
-and records (does not assert) latency. **Which** provider is `O11`.
+and records (does not assert) latency. **Which** provider is `O11`; **running the test
+against it and committing what came back** is `V2-A20`.
 
 ## 5. Still open — do NOT pick an answer
 
@@ -148,7 +149,7 @@ tickets it blocks.
 |---|---|---|
 | ~~1~~ | ~~**Is point 2 in scope now that it is known not to be an LLM?**~~ **ANSWERED — owner, 2026-08-15: yes, in scope**, as a separate image-processing pipeline. Struck, not deleted, so the numbering does not shift | — |
 | ~~2~~ | ~~**Where does the model run in production?**~~ **ANSWERED — LM Studio for local dev; hosted compatible provider in production, selected through a capability check** (§4.1) | — |
-| **O11** | **Which** hosted provider, concretely? V2-A18 says whether a candidate qualifies; it does not choose one | **no ticket.** V2-A6 and V2-A18 are both written and passing against LM Studio on a laptop. What this gates is the **production deployment**, which is not a row on the board — [`SPEC.md` §4.3](../v2/SPEC.md) says why it is deliberately absent from every *blocked on* cell |
+| **O11** | **Which** hosted provider, concretely? V2-A18 says whether a candidate qualifies; it does not choose one | **V2-A20** — run V2-A18 against the chosen endpoint, commit the recorded result, and check that the record is complete. This cell read *"no ticket"* until 2026-08-15, on the argument that a deployment is not a row on the board; §4.1's *"a candidate is qualified by a capability contract test"* is a requirement, not a deployment, and it had nowhere to land — [`SPEC.md` §4.3](../v2/SPEC.md) |
 | **O12** | **Is the AI on or off by default?** `AI_ENABLED` exists in the design; its default does not | V2-A6 |
 | **O13** | **Does an AI-proposed title get marked as AI-proposed once the seller accepts it?** §2.1 labels edited *images*. Text is not mentioned and the same argument applies | V2-B8 |
 | **O24** | **Which image-processing provider or library** implements point 2, at what cost and latency? **V2-A14 is a timeboxed spike that produces the options — the owner picks from them** | V2-A16, V2-B12, V2-C7 |

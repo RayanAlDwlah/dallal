@@ -407,6 +407,15 @@ A fourth now runs beside them, on the planning documents rather than the tree:
   question that was never written down as data**, which is why `README.md` rule 5 — every gap
   carries an id — is a mechanism and not a filing convention.
 
+  It then ran clean a second time over a board where `O11` — *which hosted provider* — was
+  recorded as blocking **nothing**, in both copies, in agreement. The agreement was the
+  defect: the ticket that belonged in both was in neither, because the work had been reasoned
+  off the board with *"a deployment is not a row here."* **Two copies agreeing proves they are
+  the same graph, never that it is the right one.** Every figure the check *could* see was
+  right and the one sentence beside them that it could not see — *"`O11` reaches none"* — was
+  the false one, so the third rule this file now carries is: **if a number is worth writing in
+  prose, give it a row the check can reach.**
+
 ### The rule when a guard goes red and you believe the code is right
 
 **It will happen, and the answer is never an ignore list.** Some of these rules are absolute

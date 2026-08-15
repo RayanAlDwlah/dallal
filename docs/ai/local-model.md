@@ -209,6 +209,16 @@ picked:
 So: **build against A locally, run V2-A18 against each C candidate, and let the test decide
 which ones are usable.** What does *not* follow is that the switch is free — see §0.
 
+> **That sentence is a requirement, and until 2026-08-15 it was a requirement with no
+> ticket.** V2-A18 *builds* a test that is runnable against any endpoint. Nothing made
+> anyone **run** it against the endpoint production would use, or leave the answer where a
+> reader could find it — and `SPEC.md` §4.3 had reasoned `O11` out of every *blocked on*
+> cell on the grounds that a deployment is not a ticket, which disposed of the qualification
+> along with the deployment. **V2-A20** is the qualification, as a deliverable: the recorded
+> run — date, endpoint host, model id, the five capabilities, the measured latencies — and a
+> check that goes red on an incomplete record. It is blocked on `O11`, so it lands after the
+> owner picks. It does not pick.
+
 ---
 
 ## 5. The shape of the code

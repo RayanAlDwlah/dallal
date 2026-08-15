@@ -43,19 +43,25 @@ still open.
 
 ## The board
 
-**39 tickets, plus `V2-00`.** 68 dependency edges between tickets; 46 blocking edges onto
-**29** of the 30 open owner questions.
+**40 tickets, plus `V2-00`.** 69 dependency edges between tickets; 47 blocking edges onto
+**30** of the 30 open owner questions.
 
 Every number in this document — including that one — is recomputed from these two tables by
-[`tests/v2/graph.mjs`](../../tests/v2/graph.mjs). Run it before you believe a count here,
-and run it again after you edit a cell. A board that states its own totals in prose is a
-board that will state them wrongly.
+[`tests/v2/graph.check.mjs`](../../tests/v2/graph.check.mjs). Run it before you believe a
+count here, and run it again after you edit a cell. A board that states its own totals in
+prose is a board that will state them wrongly.
 
-The thirtieth is `O11` — *which* hosted provider — and it deliberately appears in no
-*blocked on* cell, because it blocks no ticket. `V2-A6` and `V2-A18` are both written and
-run against LM Studio locally; what `O11` gates is the **production deployment**, and a
-deployment is not a ticket on this board. Counting it as one would have made the board look
-more blocked than it is. Its register entry (§4.3, `SPEC.md`) says so in the same words.
+**Every one of the thirty now blocks a ticket. Until 2026-08-15 `O11` did not, and that was
+not a property of `O11` — it was a hole in this board.** The paragraph that used to sit here
+argued that *which* hosted provider gates only the **production deployment**, and that a
+deployment is not a row on a ticket board. The first half is right. The second half quietly
+disposed of the work: [`docs/ai/local-model.md` §4](../ai/local-model.md) states as a
+requirement that a candidate is qualified by **running V2-A18 against its endpoint**, and no
+ticket anywhere carried that run or its evidence. A requirement that appears in prose in two
+documents and in no plan is the shape `D-01 §3` already named — *a follow-up is a promise,
+and promises are not mechanisms*. **V2-A20** is that requirement as a deliverable. It still
+does not deploy anything and it still does not pick a provider; it makes deploying without
+qualification visible.
 
 | id | lane | ticket | depends on | blocked on |
 |---|---|---|---|---|
@@ -87,6 +93,7 @@ more blocked than it is. Its register entry (§4.3, `SPEC.md`) says so in the sa
 | **V2-A17** | A | **Deterministic filters**: brand, minimum year, price band, ending ≤ 24 h | V2-A1, V2-C8 | — |
 | **V2-A18** | A | **Provider capability contract test** — vision + structured output | V2-A6 | — |
 | **V2-A19** | A | **Pause / resume** — atomic, host-only, `end_time` forward by the paused duration | V2-A10, V2-A11 | — |
+| **V2-A20** | A | **Qualify the production provider** — run V2-A18 against it, record the evidence, and check the record | V2-A18 | **O11** |
 | **V2-B1** | B | Design tokens: colours, type scale, money rendering | V2-00 | — |
 | **V2-B2** | B | The auction card — one component, everywhere | V2-B1 | — |
 | **V2-B3** | B | The top bar | V2-B1 | — |
@@ -162,16 +169,23 @@ and that number is below.
 **And that is the finding worth reading twice.** `O1` (*is a category required?*) and `O2`
 (*is a sub-category stored?*) look like schema trivia. They gate `V2-C1`, which gates
 `V2-A1` and `V2-C4` and `V2-C5` and `V2-C8` — which is **the entire create flow, the entire
-assistant, and all of phase 4**. Two sentences from the owner sit upstream of **27 of the 39
+assistant, and all of phase 4**. Two sentences from the owner sit upstream of **28 of the 40
 tickets**.
 
-> **But do not read that as "27 tickets become startable."** They do not, and the difference
+> **But do not read that as "28 tickets become startable."** They do not, and the difference
 > is worth stating because it is the mistake this board is designed to prevent. Answering
 > `O1` and `O2` moves the unblocked set from **4 to 9** — `V2-C1`, `V2-C5`, `V2-C8`,
 > `V2-A1`, `V2-A17` — measured by re-running the same closure with those two removed, not
-> estimated. The other eighteen carry a *second* blocker further up their chain: `V2-A2`
+> estimated. The other **23** carry a *second* blocker further up their chain: `V2-A2`
 > still waits on `O20`, everything in phase 4 still waits on `O4`, and the whole bid-button
 > chain now waits on `O25`–`O30`.
+>
+> **That "23" was "eighteen" until 2026-08-15, and eighteen was 27 − 9 — a subtraction of
+> the wrong two numbers.** The unblocked set going to 9 does not mean 9 of the reached
+> tickets were released; **5** were, and the other 4 (`V2-A14`, `V2-B1`, `V2-B2`, `V2-B3`)
+> were never in the reach set to begin with — none of them waits on a category. Reach minus
+> *released* is the quantity this sentence is about, and it is now asserted rather than
+> subtracted by hand.
 >
 > **Reach counts what an item sits upstream of. Startability needs every blocker on the
 > chain cleared, not the biggest one.** Add `O20` and the set goes 9 → 10 — `V2-C2` alone.
@@ -450,7 +464,38 @@ A test — runnable against any candidate endpoint, in CI against the dev one �
 | **Latency recorded, not asserted** | 6 s and 54 s were the same call on the same afternoon. A threshold here would be flaky; a recorded number is evidence |
 
 **A provider is qualified by this test passing, not by being configured.** `O11` picks the
-candidate; this ticket decides whether the candidate is usable.
+candidate; this ticket decides whether the candidate is usable. **V2-A20** is the one that
+runs it against the candidate and leaves the answer somewhere a reader can find.
+
+### V2-A20 — qualify the production provider, and make "it was qualified" a file
+**Blocked on O11.** Nothing here picks a provider, sets a latency threshold, or decides
+`AI_ENABLED`'s value. It is the step *after* the owner answers `O11`.
+
+V2-A18 builds a test that is *runnable* against any endpoint and runs in CI against the dev
+one. Building a test is not running it. `local-model.md` §4 already states the missing half
+as a requirement — «run V2-A18 against each C candidate, and let the test decide which ones
+are usable» — and the day this board was written that sentence had no owner, no PR and no
+artifact. This ticket gives it all three:
+
+| deliverable | why it is not a comment in a PR body |
+|---|---|
+| **`docs/ai/provider-qualification.md`** — the recorded run: date, endpoint host, model id, each of V2-A18's five capabilities pass/fail, and the measured latencies | "we checked" is the claim; the numbers are the evidence. `local-model.md` §1.5 already shows the same call taking 6 s and 54 s on one afternoon — a single figure is not a result |
+| **The production variable names**, documented: `AI_BASE_URL`, `AI_API_KEY`, `AI_MODEL`, `AI_ENABLED` | names only. **Values never enter the repository** — `CLAUDE.md` §6, and this repository is public. `AI_API_KEY` is a secret; a base URL with a key in the query string is a secret too |
+| **`tests/ai/provider-qualification.check.sh`**, wired into `ci-coverage.sh` | without it the record is a promise again. It asserts the record **exists and is complete** — every capability answered, a model id present, no `TODO` — and it goes red on a stub |
+
+**Say what the check does not do.** It cannot read Vercel's environment, so it cannot prove
+production points at the endpoint the record describes. It proves that *a* qualification
+record is complete. That is a smaller claim than "production is qualified" and the ticket
+must not be written up as the larger one — `CLAUDE.md`'s standing rule is that a passing
+static check is not an end-to-end verification.
+
+**The check ships in the same PR as the record, not before it** — same reasoning as D-01 §3.
+A check added first is a red build on `main` waiting for an answer nobody has yet; a check
+added after is a follow-up, and this ticket exists because of a follow-up that never came.
+
+**A candidate that fails is a result, not a blocked ticket.** If the provider the owner picks
+fails a capability, the record says which one, and `O11` goes back to the owner with evidence
+attached. Do not work around a failure by relaxing V2-A18.
 
 ### V2-A7 — images → listing text (the VLM)
 Vision, `json_schema`, ~11 s measured. Category comes back as an Arabic label and is mapped
@@ -649,18 +694,19 @@ The **reach** column is the count of tickets that cannot start until the item is
 computed over the *transitive* closure of the *depends on* column above, not counted by eye
 from the *blocked on* cells. A ticket is reached if the item blocks it **or** blocks
 anything it waits on. Every figure below is printed by
-[`tests/v2/graph.mjs`](../../tests/v2/graph.mjs):
+[`tests/v2/graph.check.mjs`](../../tests/v2/graph.check.mjs):
 
 | | | reach |
 |---|---|---|
-| **O1** | Is a category required on every auction? | **27 of 39** — V2-C1 → A1, C4, C5, C8 → the create flow, the assistant, and phase 4 |
-| **O2** | Is a sub-category stored, or presentation only? | **27 of 39** — the same chain |
-| **O20** | Where do images live? | **21 of 39** — V2-C2 → A2, A15, B7, B12, and the create wizard behind them |
-| **O25**–**O30** | The six bid-button questions in D-01 §5 | **19 of 39 each** — V2-C3 → A3, B5, C4 → A5, A10, and everything downstream of the create payload |
-| **O21** | What happens to abandoned uploads? | **10 of 39** |
-| **O4** | Is a lot an `auctions` row, or a separate entity? | **9 of 39** — and it is by far the expensive one to *reverse*, which reach does not measure |
-| **O23** | Does a lot use the same `BR-38` bound? | **9 of 39** |
-| **O24** | Which image-processing provider? | **4 of 39** — and V2-A14 exists to produce the options |
+| **O1** | Is a category required on every auction? | **28 of 40** — V2-C1 → A1, C4, C5, C8 → the create flow, the assistant, and phase 4 |
+| **O2** | Is a sub-category stored, or presentation only? | **28 of 40** — the same chain |
+| **O20** | Where do images live? | **21 of 40** — V2-C2 → A2, A15, B7, B12, and the create wizard behind them |
+| **O25**–**O30** | The six bid-button questions in D-01 §5 | **19 of 40 each** — V2-C3 → A3, B5, C4 → A5, A10, and everything downstream of the create payload |
+| **O21** | What happens to abandoned uploads? | **10 of 40** |
+| **O4** | Is a lot an `auctions` row, or a separate entity? | **9 of 40** — and it is by far the expensive one to *reverse*, which reach does not measure |
+| **O23** | Does a lot use the same `BR-38` bound? | **9 of 40** |
+| **O24** | Which image-processing provider? | **4 of 40** — and V2-A14 exists to produce the options |
+| **O11** | Which hosted provider? | **1 of 40** — V2-A20. It reached **nothing** until 2026-08-15, and the reason was not that it blocks nothing: the ticket it blocks did not exist |
 
 **The D-01 row is new, and its position in this table is the point.** Those six questions
 rank **third**, above `O21` and `O4` — and until 2026-08-15 they appeared in no *blocked on*
@@ -673,8 +719,13 @@ and test if it is answered late — `O21` is a storage-cleanup rule. Sort by rea
 *what unblocks the most work today*; sort by blast radius to decide *what costs the most to
 get wrong*. They are different questions and this board answers only the first.
 
-The remaining seventeen items reach six tickets or fewer: `O3` and `O8` reach six, `O10`
-and `O12` reach five, and **nine of them reach exactly one ticket**. `O11` reaches none,
-for the reason given at the top of the board. Every number here is reproducible from the
-*depends on* / *blocked on* columns — that is the point of writing the graph down instead
-of asserting it.
+Across the whole register, **eighteen items reach six tickets or fewer** and
+**ten reach exactly one ticket**. The three that reach exactly six are `O3`, `O8` and `O12`;
+`O10` reaches five. Every number here is reproducible from the *depends on* / *blocked on*
+columns — that is the point of writing the graph down instead of asserting it.
+
+**The `O11` row is what an unchecked sentence looks like when it goes wrong.** This
+paragraph used to end *"`O11` reaches none, for the reason given at the top of the board."*
+Every figure in the table above it was asserted by `graph.check.mjs`; that sentence was not,
+because `O11` had no row to assert. It was the only claim in this section a check could not
+see, and it was the false one.
