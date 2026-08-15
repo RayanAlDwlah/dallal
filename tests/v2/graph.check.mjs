@@ -959,27 +959,64 @@ if (downstream) {
   chk("TICKETS.md: which tickets are untouched by ratification", idsIn(downstream[4]).sort(), untouched);
 }
 
-// The wide reading of R3 is stated as a measurement, so it is measured — on a
-// throwaway copy of the board, because the narrow reading is what is committed.
+// The wider readings of R3 are stated as measurements, so they are measured — on
+// a throwaway copy of the board, because the narrow reading is what is committed.
 // A hypothetical in prose is still a number, and an unchecked one rots exactly
 // like the rest. This is the assertion that stops the owner being handed a
 // made-up figure to decide against.
-const r3wide = grab(
-  TICKETS,
-  /\*\*`R3`'s reach goes (\d+) → (\d+)\*\* \(([^)]+)\)/,
-  "TICKETS.md states what R3's reach becomes on the wide reading",
-);
-if (r3wide) {
-  chk("TICKETS.md: R3's reach on the narrow reading", Number(r3wide[1]), reachOfR(["R3"]).size);
-  const widened = idsIn(r3wide[3]).filter((t) => board.has(t));
-  const saved = new Map(widened.map((t) => [t, [...board.get(t).ratif]]));
-  for (const t of widened) if (!board.get(t).ratif.includes("R3")) board.get(t).ratif.push("R3");
-  const wide = reachOfR(["R3"]).size;
-  for (const [t, arr] of saved) board.get(t).ratif = arr; // put the real board back
-  chk("TICKETS.md: R3's reach on the wide reading", Number(r3wide[2]), wide);
-  // The restore is asserted, not assumed. A hypothetical that leaks would make
-  // every figure after this point quietly wrong, and all of them would agree.
-  chk("the hypothetical was discarded — R3's real reach is unchanged", reachOfR(["R3"]).size, Number(r3wide[1]));
+//
+// Every stated reading is read, not just the first: the board argues its way to
+// one number, then supersedes it with another, and a superseded number left on
+// the page is exactly the kind that stops being re-derived.
+//
+// The labels below carry an ORDINAL and not the arrow, deliberately. A label
+// built from the figures it is checking cannot be probed: the realistic mutation
+// is to change a figure, which renames the assertion, and `neg_probe` then finds
+// no line to match and reports a no-op instead of the catch it actually made.
+{
+  const readings = [
+    ...TICKETS.matchAll(/\*\*`R3`'s reach goes (\d+) → (\d+)\*\* \(([^)]+)\)/g),
+  ];
+  chk(
+    "TICKETS.md states what R3's reach becomes on a wider reading",
+    readings.length > 0,
+    true,
+  );
+
+  // How many readings the prose claims to have measured. Without this, deleting
+  // a superseded reading is invisible — the loop simply runs one fewer time and
+  // every remaining assertion still passes.
+  const stated = grab(
+    TICKETS,
+    /\*\*(\w+) wider readings are measured above\*\*/,
+    "TICKETS.md says how many wider readings it measured",
+  );
+  if (stated) {
+    chk("TICKETS.md: how many wider R3 readings are stated", word2num(stated[1]), readings.length);
+  }
+
+  // Measured once, from the committed board, and never from the prose — this is
+  // what the restore is checked against below.
+  const realReach = reachOfR(["R3"]).size;
+
+  readings.forEach((r, i) => {
+    const tag = `TICKETS.md: wider reading #${i + 1}`;
+    chk(`${tag} — the figure it starts from is R3's real reach`, Number(r[1]), realReach);
+
+    const named = idsIn(r[3]);
+    const widened = named.filter((t) => board.has(t));
+    chk(`${tag} — every carrier it names is on the board`, widened, named);
+
+    const saved = new Map(widened.map((t) => [t, [...board.get(t).ratif]]));
+    for (const t of widened) if (!board.get(t).ratif.includes("R3")) board.get(t).ratif.push("R3");
+    const wide = reachOfR(["R3"]).size;
+    for (const [t, arr] of saved) board.get(t).ratif = arr; // put the real board back
+    chk(`${tag} — the figure it arrives at is what those carriers reach`, Number(r[2]), wide);
+
+    // The restore is asserted, not assumed. A hypothetical that leaks would make
+    // every figure after this point quietly wrong, and all of them would agree.
+    chk(`${tag} — the hypothetical was discarded`, reachOfR(["R3"]).size, realReach);
+  });
 }
 
 // The same pin rule as the O reach section: an R named in this section costs a

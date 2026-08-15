@@ -9,8 +9,8 @@
 # ---------------------------------------------------------------------------
 # WHY THIS EXISTS
 #
-# `graph.check.mjs` prints 150 PASS lines. That proves 150
-# comparisons ran and agreed. It does NOT prove that any of them would have
+# `graph.check.mjs` prints 157 PASS lines. That proves 157 comparisons ran and
+# agreed. It does NOT prove that any of them would have
 # disagreed had the board been wrong — and this particular file is unusually
 # exposed to that, because most of its assertions are anchored by a REGEX
 # AGAINST PROSE. Reword the sentence and the anchor stops matching. Some of
@@ -33,14 +33,15 @@
 # ---------------------------------------------------------------------------
 # WHAT IS PROBED, AND WHAT IS NOT — SAID PLAINLY
 #
-# 95 probes against 150 assertions. The gap is not laziness and
-# it is not coverage theatre; it is four loops that generate one assertion per
-# row of a table:
+# 101 probes against 157 assertions. The gap is not laziness and it is not
+# coverage theatre; it is five loops that generate one assertion per row of a
+# table, or per stated reading:
 #
 #   * `decisions index: D-0n's open items …`   — six, one per record
 #   * `D-0n: its §5 open items …`              — six, one per record
 #   * `reach of On` / `reach denominator …`    — one pair per reach row
 #   * `reach of Rn` / `R reach denominator …`  — one pair per R reach row
+#   * `wider reading #n — …`                   — four per stated R3 reading
 #
 # A probe kills one member of each family, which proves the loop body can fail.
 # It does not prove the loop VISITS every row — that is a different question,
@@ -53,6 +54,13 @@
 # The R reach table gets a second, stronger counter — `the R reach table names
 # exactly the records that conflict with the PRD` — because counting rows alone
 # is what let a deleted row and its denominator drop together, twice.
+#
+# The wider-reading family has the same counter in prose form: TICKETS.md states
+# how many readings it measured, `how many wider R3 readings are stated` compares
+# that word to the number of sentences actually matched, and section G probes
+# both halves. It is not decoration — the single-`grab` version of that check
+# measured the first reading and never saw the second, which is the reading the
+# owner is being asked to decide against.
 #
 # ---------------------------------------------------------------------------
 # THE MUTATIONS ARE REALISTIC ON PURPOSE
@@ -309,7 +317,7 @@ neg_probe "every O-id discussed in the reach section is pinned by a row or a che
 
 # ---------------------------------------------------------------------------
 # F. The suite's own blind-spot guards. These fire before any assertion runs,
-#    and they are the difference between a red build and 143 vacuous
+#    and they are the difference between a red build and 157 vacuous
 #    passes. Nothing subtle triggers them, so these three mutations are blunt.
 # ---------------------------------------------------------------------------
 neg_probe "the reach section could not be located" \
@@ -449,8 +457,46 @@ neg_probe "TICKETS.md: tickets downstream of an unratified decision" \
 neg_probe "TICKETS.md: which tickets are untouched by ratification" \
   'perl -pi -e '"'"'s/`V2-B2`, `V2-B3` — \*\*the same four/`V2-B2`, `V2-A18` — **the same four/'"'"' docs/v2/TICKETS.md'
 
-neg_probe "TICKETS.md: R3's reach on the wide reading" \
+# The two wider readings of `R3`. Each is a hypothetical the owner has to decide
+# against, each is measured on a throwaway copy of the board, and each figure in
+# the prose is therefore a number that can rot. The assertions are labelled by
+# ORDINAL and not by their arrow, deliberately: a label built out of the figure
+# it is checking renames itself under the realistic mutation, and `neg_probe`
+# then finds no line to match and reports a no-op instead of the catch it made.
+neg_probe "TICKETS.md states what R3's reach becomes on a wider reading" \
+  'perl -pi -e '"'"'s/reach goes (\d+) → (\d+)\*\*/reach becomes $1 → $2**/g'"'"' docs/v2/TICKETS.md'
+
+# The sentence that says how many readings are above. Without it, deleting a
+# superseded reading is invisible: the loop runs one fewer time and everything
+# left standing still agrees.
+neg_probe "TICKETS.md says how many wider readings it measured" \
+  'perl -pi -e '"'"'s/\*\*Two wider readings are measured above\*\*/**Two wider readings appear above**/'"'"' docs/v2/TICKETS.md'
+
+neg_probe "TICKETS.md: how many wider R3 readings are stated" \
+  'perl -pi -e '"'"'s/\*\*Two wider readings are measured/**Three wider readings are measured/'"'"' docs/v2/TICKETS.md'
+
+# The figure a reading starts FROM is R3's committed reach, not a number typed
+# next to it. Moving it leaves the arrival figure correct, which is exactly what
+# makes it the one left behind.
+neg_probe "TICKETS.md: wider reading #1 — the figure it starts from is R3's real reach" \
+  'perl -pi -e '"'"'s/reach goes 1 → 3\*\*/reach goes 2 → 3**/'"'"' docs/v2/TICKETS.md'
+
+# A carrier that is not on the board — the realistic version of a renumber
+# nobody finished, and the reason the named carriers are compared against the
+# board instead of being quietly filtered down to whatever happens to exist.
+neg_probe "TICKETS.md: wider reading #1 — every carrier it names is on the board" \
+  'perl -pi -e '"'"'s/\(`V2-A11`, `V2-A12`\)/(`V2-A11`, `V2-A99`)/'"'"' docs/v2/TICKETS.md'
+
+neg_probe "TICKETS.md: wider reading #1 — the figure it arrives at is what those carriers reach" \
   'perl -pi -e '"'"'s/reach goes 1 → 3\*\*/reach goes 1 → 4**/'"'"' docs/v2/TICKETS.md'
+
+# Reading #2 gets its own probe for one reason: it is the SECOND match. The
+# single-`grab` version of this check read the first sentence and stopped, so
+# the 1 → 9 figure — the one the owner is actually being asked to decide
+# against — was never measured at all. This probe is what proves the loop
+# reaches it.
+neg_probe "TICKETS.md: wider reading #2 — the figure it arrives at is what those carriers reach" \
+  'perl -pi -e '"'"'s/reach goes 1 → 9\*\*/reach goes 1 → 8**/'"'"' docs/v2/TICKETS.md'
 
 neg_probe "TICKETS.md: the records that gate no ticket are the ones that conflict with nothing" \
   'perl -pi -e '"'"'s/\*\*`R5` and `R6` carry no ticket/**`R5` and `R4` carry no ticket/'"'"' docs/v2/TICKETS.md'
@@ -475,12 +521,12 @@ neg_probe "TICKETS.md header: ticket count" \
 
 # G6. The check that guards THIS FILE's own honesty, not the board's.
 #
-# `R3's reach on the wide reading` mutates the parsed board in memory to answer
-# a hypothetical the owner has to decide. If that mutation leaked, every figure
+# The wider-reading loop mutates the parsed board in memory to answer a
+# hypothetical the owner has to decide. If that mutation leaked, every figure
 # printed after it would be wrong and all of them would agree with each other —
 # the failure mode with no symptom. So the restore is asserted, and the only way
 # to probe an assertion about the checker is to break the checker.
-neg_probe "the hypothetical was discarded" \
+neg_probe "wider reading #1 — the hypothetical was discarded" \
   'perl -pi -e '"'"'s/^  for \(const \[t, arr\] of saved\) board\.get\(t\)\.ratif = arr;.*$/  \/\/ restore removed by probe/'"'"' tests/v2/graph.check.mjs'
 
 # ---------------------------------------------------------------------------
@@ -581,4 +627,4 @@ neg_probe "SPEC.md: §4.0 names the board's ratification column and links to it"
 neg_probe "the decisions index and SPEC §4.0 restate no reach figure" \
   'perl -pi -e '"'"'s/a number copied into a second document/R1 reaches 28 of 40, and a number copied into a second document/'"'"' docs/decisions/README.md'
 
-neg_report "V2-GRAPH-NEGATIVE" 95
+neg_report "V2-GRAPH-NEGATIVE" 101

@@ -243,7 +243,7 @@ Every figure in this section is recomputed from the board by
 appears in a *blocked on* cell, that no `O` appears in a *ratification* cell, and that every
 conflicting record is carried by at least one ticket.
 
-> **Two things here are the owner's to answer, and this board must not answer either.**
+> **Three things here are the owner's to answer, and this board must not answer any of them.**
 >
 > **1. `PRD.md:411` puts *search* out of scope and no `R` item covers it.** `R1` quotes that
 > line for categories — but the sentence reads *"categories, search, **and recommendations**"*,
@@ -258,12 +258,57 @@ conflicting record is carried by at least one ticket.
 > indistinguishable from a renumber nobody finished. The same thing happened one file over,
 > where a `run.sh` comment demonstrating a backslash-tab flagged its own file.)*
 >
-> **2. Does `R3` reach past `V2-A19`?** `V2-A11` (open/close a lot) and `V2-A12` (host powers)
-> are host operations on a live lot that the PRD also does not describe — but *silence* is
-> `R5`/`R6`-shaped (gap-filling, safe to build under rule 4), not `R3`-shaped (direct
-> contradiction of `BR-16`). This board took the narrow reading and put `R3` on `V2-A19` alone.
-> On the wide reading **`R3`'s reach goes 1 → 3** (`V2-A11`, `V2-A12`, `V2-A19`) — measured, by
-> adding the two cells and re-running the closure, then discarding the edit.
+> **2. Does `R3` reach past `V2-A19`? The reason this board said no has turned out to be
+> false.** The original argument was that `V2-A11` (open/close a lot) and `V2-A12` (host
+> powers) are host operations *the PRD does not describe*, and that **silence** is `R5`/`R6`-
+> shaped — gap-filling, safe to build under rule 4 — rather than `R3`-shaped. On that reading
+> `R3` sits on `V2-A19` alone, and putting it on the two host-operation cells instead would
+> move **`R3`'s reach goes 1 → 3** (`V2-A11`, `V2-A12`).
+>
+> **The PRD is not silent.** `PRD.md` §19.2 — *Advanced auction mechanics*, the same excluded
+> table whose anti-sniping row `BR-36` had to un-mark — carries two rows nothing on this board
+> had read:
+>
+> | | `PRD.md` | says |
+> |---|---|---|
+> | scheduled starts | `:1846` | **Scheduled future start times** — *"Adds a third lifecycle state with no MVP demand"* |
+> | lots | `:1847` | **Multiple quantity / lots** — *"A fundamentally different auction model"* |
+>
+> D-03 §1 gives a session a **start date and time** and D-03 §Step 2 is titled *the lots, in
+> order*. Those are not gaps being filled; they are two named exclusions being crossed, which
+> is `R3`'s own shape. Carried the way the pause contradiction is — on the tickets whose own
+> deliverable is the session and the lot — **`R3`'s reach goes 1 → 9** (`V2-C6`, `V2-A10`,
+> `V2-A11`, `V2-A12`, `V2-B9`, `V2-B10`). Those six carriers plus `V2-A19`, which carries it
+> already, are seven; `V2-A13` and `V2-B11` make nine by depending on `V2-A10` and `V2-B10`.
+> Measured on an in-memory copy of this board, which was then discarded; nothing was written.
+>
+> That would make `R3` the **third-largest** gate here rather than the smallest. **This board
+> has not made that change**, because *which* tickets carry it is a scope judgement and
+> ratifying D-03 may well be intended to cover the whole session surface at once.
+> **Two wider readings are measured above** — each against a throwaway copy of this board,
+> each re-measured on every run — so the choice can be made against evidence, not impression.
+>
+> **3. Does §19.2's increment row bind D-01's button?** `R4`'s cell cites `FR-BID-09` and
+> `FR-CREATE-03`, and D-01 §2 answers `FR-BID-09` with a clean distinction: *"BR-32 governs
+> what the SERVER ACCEPTS. D-01 governs what the SCREEN OFFERS."* That reading is consistent
+> with `BR-32` itself (`PRD.md:800`), which forbids a step being **imposed**.
+>
+> It is much harder to square with `PRD.md:1848`, which no record cites: **Bid increments of
+> any kind, per-auction or platform-wide** — *"Decided against **entirely** (BR-32)"* — or with
+> `PRD.md:403`, which withdrew `S4` saying *"**No increment exists in Dalal, now or as a Should
+> Have.**"* A seller-set increment is per-auction by construction.
+>
+> The consequence is not rhetorical: `R4` is classified **conditional**, contingent on `O25`
+> deciding whether the field is required or optional. `:1848` excludes per-auction increments
+> **either way**, so if it binds, `R4` is a **direct** conflict and the split one document over
+> becomes four direct and none conditional. Only the owner can say which reading governs.
+>
+> *(Why all three surfaced this late: the `R` register was built by reading the six decision
+> records and following their citations outward. §19.2 is a table in the PRD's exclusions
+> chapter that **no record cites**, so nothing led to it. The one guard that overlaps —
+> INT-08's `no bid increment / minimum raise` — covers item 3 and will go red the day a
+> `bid_increment` column lands, as `CLAUDE.md` §9 already predicts. Nothing at all watches
+> items 1 and 2.)*
 
 A previous draft of this board claimed phase 1 had *"no cross-track dependency at all"* and
 that nine tickets could run in parallel. **Both were wrong**: `V2-B4` needs the category
