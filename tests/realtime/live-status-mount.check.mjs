@@ -60,22 +60,26 @@
 //     and `reconnect.check.mjs` cover the channel.
 //   * It reads text, so a mount behind a condition that is never true would
 //     pass. Same hole, same price, as the file it mirrors.
-//   * Checks 13-14 assert `endsAt` still comes from the SERVER. That is not a
-//     claim the countdown is right — it is #140, open and assigned to
-//     @m7ya505, and this file pins the carve-out so nobody closes that issue
-//     by accident from here.
+//   * The `endsAt` checks FLIPPED — AUC-13 / #140, @m7ya505. They used to
+//     assert the countdown still ran on the frozen server value, pinning a
+//     carve-out so nobody settled #140 by accident from here. #140 is done, so
+//     they now assert the opposite: the live value, with the server value as
+//     the RT-R7 floor. Control C runs the audit over the re-frozen version and
+//     requires it to fail — the carve-out was replaced, not deleted.
+//   * It does not say what the viewer sees when the countdown JUMPS from
+//     00:00:02 to 00:00:32. That is #146, still open, and nothing in this file
+//     or the wrapper decides it.
 //
-// NOT WIRED TO ANYTHING YET, and that is a handoff note, not an oversight:
-// `main` has no `.github/workflows` at 1433a75. CI and `ci-coverage.sh` are on
-// PR #167, and when that lands this file must be named there or the coverage
-// check will go red on it — correctly.
+// WIRED: `.github/workflows/ci.yml` names this file in the `static` job (added
+// with #171). An earlier revision of this header said it was unwired; that was
+// true at 1433a75, before #167 landed CI at all.
 // ============================================================================
 import { readFileSync } from "node:fs";
 
 const PAGE = "app/auctions/[id]/page.tsx";
 const WRAPPER = "components/bidding/live-status-countdown.tsx";
 
-const EXPECTED = 18;
+const EXPECTED = 21;
 let pass = 0;
 let fail = 0;
 
@@ -139,8 +143,13 @@ function auditWrapper(text) {
     latchIsOr: /===\s*["']ended["']\s*\|\|/.test(src),
     // The plausible, shorter, WRONG version.
     coalescesStatus: /snapshot\?\.auction\.status\s*\?\?/.test(src),
-    forwardsServerEndsAt: /endsAt=\{endsAt\}/.test(src),
-    takesEndsAtFromSnapshot: /endsAt=\{[^}]*snapshot/.test(src),
+    // AUC-13 / #140. These two flipped when the carve-out was lifted: `endsAt`
+    // now comes from the snapshot, with the server value as the RT-R7 floor.
+    frozenServerEndsAt: /endsAt=\{endsAt\}/.test(src),
+    takesEndsAtFromSnapshot: /endsAt=\{[^}]*snapshot\?\.auction\.endsAt/.test(src),
+    // The fallback is half the rule. Taking the snapshot value ALONE renders a
+    // blank countdown until the first cue arrives, which RT-R7 forbids.
+    fallsBackToServerEndsAt: /endsAt=\{[^}]*snapshot\?\.auction\.endsAt\s*\?\?\s*endsAt\s*\}/.test(src),
   };
 }
 
@@ -173,8 +182,9 @@ chk("the latch reads the server status", wrapper.latchReadsServer, true);
 chk("the latch reads the live snapshot too", wrapper.latchReadsSnapshot, true);
 chk("the two are joined by || — ended is one-way", wrapper.latchIsOr, true);
 chk("does NOT ?? the snapshot over the server (the un-ending badge)", wrapper.coalescesStatus, false);
-chk("forwards the SERVER endsAt untouched (#140 stays open)", wrapper.forwardsServerEndsAt, true);
-chk("does NOT take endsAt from the snapshot (that IS #140)", wrapper.takesEndsAtFromSnapshot, false);
+chk("takes endsAt from the snapshot — AUC-13 / #140", wrapper.takesEndsAtFromSnapshot, true);
+chk("falls back to the server endsAt (RT-R7 — never a blank)", wrapper.fallsBackToServerEndsAt, true);
+chk("does NOT forward the frozen server endsAt alone (the #140 defect)", wrapper.frozenServerEndsAt, false);
 
 // --------------------------------------------------------------------------
 // 15-18. THE CONTROLS. Two regressions, each applied to real text and each
@@ -211,6 +221,25 @@ const afterCoalesced = auditWrapper(coalesced);
 chk(
   "resolving with ?? instead of || FAILS the audit",
   afterCoalesced.coalescesStatus || !afterCoalesced.latchIsOr || !afterCoalesced.latchReadsSnapshot,
+  true,
+);
+
+// AUC-13 / #140. The regression this one models is the likeliest of all: the
+// live value is one expression, and "simplifying" it back to the bare prop
+// reads as tidying. It is the defect the issue was opened for.
+console.log("\n-- control C: the countdown re-frozen on the server endsAt (#140) --");
+const refrozen = wrapperText.replace(
+  /endsAt=\{snapshot\?\.auction\.endsAt\s*\?\?\s*endsAt\}/,
+  "endsAt={endsAt}",
+);
+chk("the mutation actually changed the source", refrozen !== wrapperText, true);
+
+const afterRefrozen = auditWrapper(refrozen);
+chk(
+  "re-freezing endsAt on the server value FAILS the audit",
+  !afterRefrozen.takesEndsAtFromSnapshot ||
+    !afterRefrozen.fallsBackToServerEndsAt ||
+    afterRefrozen.frozenServerEndsAt,
   true,
 );
 
