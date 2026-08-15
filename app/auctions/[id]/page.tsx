@@ -5,9 +5,9 @@ import { BidSlot, type ViewerRole } from "@/components/auction/detail/bid-slot";
 import { ProductContent } from "@/components/auction/detail/product-content";
 import { OutcomePendingNote } from "@/components/auction/detail/outcome-pending-note";
 import { SellerOutcome } from "@/components/auction/detail/seller-outcome";
-import { StatusCountdown } from "@/components/auction/detail/status-countdown";
 import { BidHistory } from "@/components/bidding/bid-history";
 import { LivePriceRegion } from "@/components/bidding/live-price-region";
+import { LiveStatusCountdown } from "@/components/bidding/live-status-countdown";
 import { OutcomeBanner } from "@/components/bidding/outcome-banner";
 import { Container, Page } from "@/components/layout/container";
 import { Alert } from "@/components/ui/alert";
@@ -166,9 +166,23 @@ export default async function AuctionDetailPage({
             AUC-13 (#55), fed the PRESENTED status from AUC-16 rather than the
             stored one — which is exactly the seam this component's header said
             it was waiting for.
+
+            BID-17 (#160), Rayan — the seam now also carries the LIVE status.
+            LiveStatusCountdown is not a second status component: it renders
+            this exact StatusCountdown, with these exact props, and changes
+            nothing but where `status` comes from — a server read frozen at
+            render, or the live BID-08 store. Same shape as LivePriceRegion
+            directly below, for the same reason. Mohammed's presentation is
+            untouched by construction (@m7ya505 — review requested on the PR;
+            it is candidate (1) of the two offered on #160).
+
+            SC-23 names "status changes" FIRST of its three clauses and
+            PRD.md:1295 grades it Must. The other two passed already; this was
+            the third, measured in CP-3 F-1 and again on the delivery branch.
           */}
-          <StatusCountdown
-            status={status}
+          <LiveStatusCountdown
+            auctionId={auction.id}
+            serverStatus={status}
             endsAt={auction.endsAt}
             serverNow={result.serverNow}
           />
