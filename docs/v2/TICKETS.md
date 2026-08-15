@@ -243,7 +243,7 @@ Every figure in this section is recomputed from the board by
 appears in a *blocked on* cell, that no `O` appears in a *ratification* cell, and that every
 conflicting record is carried by at least one ticket.
 
-> **Three things here are the owner's to answer, and this board must not answer any of them.**
+> **Six things here are the owner's to answer, and this board must not answer any of them.**
 >
 > **1. `PRD.md:411` puts *search* out of scope and no `R` item covers it.** `R1` quotes that
 > line for categories — but the sentence reads *"categories, search, **and recommendations**"*,
@@ -251,6 +251,14 @@ conflicting record is carried by at least one ticket.
 > `R1` through `V2-C1`, which is a weaker and different claim. Either ratifying D-02 covers
 > search, or search needs its own record and its own `R`. **Opening a seventh row here would
 > be inventing a product decision** (`TEAM.md` rule 16, `CLAUDE.md` §8), so it is not opened.
+>
+> `:411` is not the only line, and the other two are more specific than it is. `PRD.md:1875`
+> — §19.5 — excludes **Advanced search / faceted filtering**, with the reason *"Basic sorting
+> and filtering is Should Have (S6); anything beyond is Future"*, and `PRD.md:2134` files
+> **Search and faceted filtering** as **Phase 5**. `V2-A17`'s own title is *brand, minimum
+> year, price band, ending ≤ 24 h* — four facets. Whether that is still "basic" is the
+> owner's call and nobody else's; what the board can say is that the row naming the feature
+> was not on the table when the reach of `R1` was decided.
 >
 > *(That id is deliberately not spelled out above. Two independent checks in
 > `graph.check.mjs` — "every cited `R` exists" and the pin rule — both went red on the draft
@@ -303,12 +311,63 @@ conflicting record is carried by at least one ticket.
 > **either way**, so if it binds, `R4` is a **direct** conflict and the split one document over
 > becomes four direct and none conditional. Only the owner can say which reading governs.
 >
-> *(Why all three surfaced this late: the `R` register was built by reading the six decision
-> records and following their citations outward. §19.2 is a table in the PRD's exclusions
-> chapter that **no record cites**, so nothing led to it. The one guard that overlaps —
-> INT-08's `no bid increment / minimum raise` — covers item 3 and will go red the day a
-> `bid_increment` column lands, as `CLAUDE.md` §9 already predicts. Nothing at all watches
-> items 1 and 2.)*
+> **4. §19.9 excludes image *editing*, and `R2` cites the row above it.** `R2`'s cell quotes
+> `PRD.md:1915` — **Multiple images per auction** — and that is the row D-06 reverses. Two
+> rows down, `PRD.md:1917` excludes **Image editing / cropping**, with the reason *"Users can
+> prepare images themselves"*. D-04 feature 2 is *«يصلّح الصور» — background, lighting, **crop**,
+> reflection*, and five tickets build it: `V2-C7`, `V2-A14`, `V2-A15`, `V2-A16`, `V2-B12`.
+> **None of them carries any `R`.** `SPEC.md:203` records the scope call — *"Is image editing
+> in scope now that it is known not to be an LLM? **DECIDED — in scope**"* — and it does not
+> cite `:1917`, so the row was not in front of whoever answered.
+>
+> This one has a second edge the others do not: `:1917` has **no §22 row at all.** Multiple
+> images has one (`PRD.md:2104`, Phase 2); editing is excluded and not even filed as a future
+> enhancement. Whether that makes it a firmer exclusion or merely an unlisted one is a
+> reading, and it is the owner's.
+>
+> **5. Two lines say the target user is not a professional seller, and phase 4 builds a
+> seller console.** `PRD.md:1886` — §19.6 — excludes **Bulk listing / seller tools**, with
+> the reason *"Professional sellers are not a target user (§4.2)"*, and `PRD.md:1930`
+> records assumption **A-U1**: *"Users are individuals, not businesses"*. D-03 gives a host a
+> room of lots, an ordered queue, advance/end powers and a control room — `V2-A10`, `V2-A11`,
+> `V2-A12`, `V2-B9`, `V2-B10`, `V2-B11`. That is a seller tool by any reading, and the owner
+> has separately said the hosts are **individuals *and* companies**, which is the exact
+> proposition A-U1 denies. `R3` sits on `V2-A19` alone; none of the six carries anything for
+> either line. This is item 2's question again with a different pair of citations, and it may
+> well have the same answer — but A-U1 is an *assumption* row rather than an exclusion, so
+> ratifying it is a different act, and the board should not assume one covers the other.
+>
+> **6. The deposit is classified as gap-filling because the PRD never says "deposit".**
+> `R6`'s cell reads *"**silent.** Zero occurrences of 'deposit'"*, and that is true of the
+> word. It is not true of the thing: `PRD.md:1806` excludes **Wallets or stored balances**
+> from a table headed *"Explicitly excluded, without exception"*, `PRD.md:1825` excludes
+> **Escrow / settlement**, and `PRD.md:1813` states **SC-67** — *"no screen anywhere in the
+> product offers or **implies** any of the above"*. `V2-A13` and `V2-B10` put a
+> بدون · 25 · 50 · 100 · 500 chooser in front of a bidder to enter a hall.
+>
+> D-05 §2 anticipates exactly this and answers it — *"العربون **محاكاة**… ما فيه بوابة دفع،
+> ولا حقل بطاقة، ولا مبلغ ينتقل فعليًا"* — and that answer is why the board did **not**
+> reclassify `R6` here. But "no money moves" answers §19.1; the word SC-67 uses is *implies*,
+> and a priced entry gate is the case that word exists for. **Rule 4 makes silence safe to
+> build. This is not silence**, so the classification rests on a reading of SC-67 that only
+> the owner can confirm. If it is a conflict, `R6` stops gating nothing and the split becomes
+> five conflicting records rather than four.
+>
+> *(Why all six surfaced this late: the `R` register was built by reading the six decision
+> records and following their citations outward. The PRD's exclusions chapter is reached only
+> when a record happens to cite into it, and §19.2 is a table **no record cites**, so nothing
+> led to it. Items 4, 5 and 6 came from running that read in the other direction — every
+> §19 and §22 row, asked which ticket builds it — which is why they are adjacent to rows the
+> register already had. The one guard that overlaps — INT-08's `no bid increment / minimum
+> raise` — covers item 3 and will go red the day a `bid_increment` column lands, as
+> `CLAUDE.md` §9 already predicts. **Nothing watches items 1, 2, 4, 5 or 6** except the
+> citation resolver added alongside them, which only proves the lines still say what is
+> quoted here.)*
+>
+> **The precedent for what ratifying any of these looks like is already on the record.** When
+> `BR-36` reversed anti-sniping, `docs/decisions/README.md:145` notes that **§19.2 and §22.1
+> were both un-marked** — the exclusion row *and* the future-enhancement row, in the same
+> change. Every item above names its §19 row, and its §22 row where one exists.
 
 A previous draft of this board claimed phase 1 had *"no cross-track dependency at all"* and
 that nine tickets could run in parallel. **Both were wrong**: `V2-B4` needs the category

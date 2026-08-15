@@ -1325,27 +1325,59 @@ if (!section) {
     .map((c) => `${c.doc} → PRD.md:${c.line}`);
   chk("every PRD.md line cited by the V2 docs exists and is not blank", [...new Set(dangling)].sort(), []);
 
-  // The §19.2 rows the board's §19.2 argument rests on. Each is quoted in
-  // TICKETS.md beside its line number, so the quote is checked against the
-  // line — this is the assertion that would have caught the original defect
-  // had anyone cited these rows at all.
+  // Every PRD row one of the ratification blockquote's six items rests on.
+  // Each is quoted in TICKETS.md beside its line number, so the quote is
+  // checked against the line — this is the assertion that would have caught
+  // the original §19.2 defect had anyone cited those rows at all.
+  //
+  // The label deliberately does NOT say how many rows there are. A label built
+  // from the figure it checks renames itself the moment the figure moves, the
+  // negative suite's probe then matches no line, and the run reports NO-OP
+  // instead of the catch it actually made. That is not hypothetical — it is
+  // why the wider-reading assertions above are numbered by ordinal. This list
+  // went from 3 to 12 in one commit; the label did not move.
   const EXCLUSIONS = [
+    // item 1 — search
+    [1875, "Advanced search / faceted filtering"],
+    [2134, "Search and faceted filtering"],
+    // item 2 — sessions and lots
     [1846, "Scheduled future start times"],
     [1847, "Multiple quantity / lots"],
+    // item 3 — the increment
     [1848, "Bid increments of any kind, per-auction or platform-wide"],
+    // item 4 — image editing
+    [1915, "Multiple images per auction"],
+    [1917, "Image editing / cropping"],
+    [2104, "Multiple images and video"],
+    // item 5 — the professional seller
+    [1886, "Bulk listing / seller tools"],
+    [1930, "Users are individuals, not businesses"],
+    // item 6 — the deposit
+    [1806, "Wallets or stored balances"],
+    [1825, "Escrow / settlement"],
   ];
   const moved = EXCLUSIONS
     .filter(([n, text]) => !(PRD[n - 1] ?? "").includes(text))
     .map(([n, text]) => `PRD.md:${n} no longer reads "${text}"`);
-  chk("the three §19.2 exclusion rows still sit on the lines the board cites", moved, []);
+  chk("every PRD row the ratification items rest on still sits on the line cited", moved, []);
 
-  // …and that the board still cites all three. Dropping a citation is how the
+  // …and that the board still cites each one. Dropping a citation is how the
   // finding gets un-found: the rows stay in the PRD, the argument disappears,
   // and nothing goes red.
   const uncited = EXCLUSIONS
     .filter(([n]) => !cites.some((c) => c.doc === "docs/v2/TICKETS.md" && c.line === n))
     .map(([n]) => `PRD.md:${n}`);
-  chk("TICKETS.md still cites all three §19.2 exclusion rows", uncited, []);
+  chk("TICKETS.md still cites every PRD row its ratification items rest on", uncited, []);
+
+  // SC-67 is the one line item 6 turns on, and it is a sentence rather than a
+  // table row: the deposit question is whether a priced entry gate *implies* a
+  // stored balance. If that verb ever softens, item 6 is arguing from a line
+  // that no longer says what it quotes.
+  chk(
+    "PRD.md:1813 still says no screen may imply the excluded payment surface",
+    (PRD[1812] ?? "").includes("offers or implies"),
+    true,
+  );
 }
 
 // ---------------------------------------------------------------------------
