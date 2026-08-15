@@ -9,7 +9,7 @@
 # ---------------------------------------------------------------------------
 # WHY THIS EXISTS
 #
-# `graph.check.mjs` prints 164 PASS lines. That proves 164 comparisons ran and
+# `graph.check.mjs` prints 172 PASS lines. That proves 172 comparisons ran and
 # agreed. It does NOT prove that any of them would have disagreed had the board
 # been wrong — and this particular file is unusually
 # exposed to that, because most of its assertions are anchored by a REGEX
@@ -33,7 +33,7 @@
 # ---------------------------------------------------------------------------
 # WHAT IS PROBED, AND WHAT IS NOT — SAID PLAINLY
 #
-# 115 probes against 164 assertions. The gap is not laziness and it is not
+# 126 probes against 172 assertions. The gap is not laziness and it is not
 # coverage theatre; it is five loops that generate one assertion per row of a
 # table, or per stated reading:
 #
@@ -109,6 +109,22 @@
 # and NO probe, deliberately. That kind already has one, and the rule above is
 # per kind. A probe added there would be the theatre this paragraph refuses.
 #
+# The `ARCHITECTURE.md` sweep (section J) has its OWN list on the same shape and
+# the same budget, and it counts FIVE kinds rather than four. The fifth is why
+# it is spelled out here instead of being folded into the paragraph above:
+#
+#   * a **reversal condition** — an `ADR` conditional whose trigger has fired
+#   * a **prose absolute** — a sentence that simply stopped being true
+#   * a **table row** — a boundary, the same shape as a §19 exclusion
+#   * a **stale count** — a figure that moved underneath a claim
+#   * a **shipped constraint** — a `WITH CHECK` that is live on `main`
+#
+# The last one is not a document and does not fail like one. Prose rots when
+# somebody rewords it; a policy changes when somebody changes BEHAVIOUR, so its
+# two probes are the only ones in this file whose real-world trigger is a
+# migration rather than an edit. That is a louder failure for a better reason,
+# and it is the reason the migration is a declared mutation surface at all.
+#
 # ---------------------------------------------------------------------------
 # A LABEL IS AN ARGUMENT TO grep -F, SO QUOTE IT LIKE ONE
 #
@@ -131,13 +147,26 @@ cd "$(dirname "$0")/../.." || exit 1
 # for a `PRD.md` edit this suite is not allowed to make. Everything else here
 # mutates documents. `PRD.md` is absent from this list on purpose — see the
 # header — and adding it is not a shortcut, it is the thing being refused.
+#
+# THE LAST ENTRY IS THE FIRST EXECUTABLE FILE THIS HARNESS MUTATES, and that is
+# worth one paragraph rather than a silent line. Everything above it is prose or
+# a checker; a migration that is live on `main` is neither. The safety argument
+# is unchanged and it is the harness's, not this suite's: `neg_files` refuses to
+# start if any declared file is dirty, arms the restore trap only AFTER that
+# refusal, and `neg_probe` restores with `git checkout --` before it reads a
+# verdict. Nothing here runs SQL — the migration is read as text by
+# `graph.check.mjs` and mutated as text by section J. The reason to accept the
+# added surface at all is that crossing 6 rests on a shipped `WITH CHECK`, and a
+# pin nothing can break is not a pin.
 neg_files "docs/v2/TICKETS.md
 docs/v2/SPEC.md
 docs/decisions/README.md
 docs/decisions/D-04-ai-product-surface.md
 docs/decisions/D-05-deposit.md
 docs/ai/local-model.md
-tests/v2/graph.check.mjs"
+ARCHITECTURE.md
+tests/v2/graph.check.mjs
+supabase/migrations/20260812120000_bid02_bid_acceptance.sql"
 
 neg_run "node --no-warnings tests/v2/graph.check.mjs"
 
@@ -798,4 +827,116 @@ neg_probe "SPEC.md: §4.0 names the board's ratification column and links to it"
 neg_probe "the decisions index and SPEC §4.0 restate no reach figure" \
   'perl -pi -e '"'"'s/a number copied into a second document/R1 reaches 28 of 40, and a number copied into a second document/'"'"' docs/decisions/README.md'
 
-neg_report "V2-GRAPH-NEGATIVE" 115
+# ---------------------------------------------------------------------------
+# J. THE `ARCHITECTURE.md` CROSSINGS — source of truth #2, which this board
+#    cited zero times until the crossings section was written.
+#
+#    Everything above this point probes the board against the PRODUCT document.
+#    These eleven probe it against the ARCHITECTURE one, and the two are not
+#    interchangeable: a PRD crossing is the owner's to ratify (`PRD.md:2025`
+#    forbids reinterpretation), an architecture crossing is a steward's to
+#    amend (every ADR carries its own reversal condition). The last probe in
+#    this section exists solely to keep those two lists from merging.
+#
+#    Unlike `PRD.md`, `ARCHITECTURE.md` IS a declared mutation surface, so the
+#    pin probes here break the real document rather than the checker's copy of
+#    it. That is the stronger probe and it was available; the PRD ones are
+#    indirect only because the owner's file is off limits.
+# ---------------------------------------------------------------------------
+
+# Blunt, like probe 587 and for the same reason: a vacuity guard is not moved by
+# a subtle edit. If every citation stops matching the regex, the two assertions
+# built on it go quietly vacuous and this is the only thing that says so.
+neg_probe "ARCHITECTURE.md citations were found in TICKETS.md at all" \
+  'perl -pi -e '"'"'s/`ARCHITECTURE\.md:\d+`/that document/g'"'"' docs/v2/TICKETS.md'
+
+# An off-by-one in ONE of two copies — the realistic shape, not a typo. Crossing
+# 4 cites `:958` twice, in the table and in the item, and this moves only the
+# table's copy to `:955`, which is blank. So the dangling check must go red while
+# `TICKETS.md still cites …` stays green: 958 is still cited by the other copy.
+# A probe that broke both would prove one assertion and confound the other.
+neg_probe "every ARCHITECTURE.md line cited by TICKETS.md exists and is not blank" \
+  'perl -pi -e '"'"'s/\*\*4\*\* \| `ARCHITECTURE\.md:958`/**4** | `ARCHITECTURE.md:955`/'"'"' docs/v2/TICKETS.md'
+
+# Four probes on the pin list, one per KIND — the rule from the header, applied
+# to a second document. Kind one: a REVERSAL CONDITION. ADR-3 says what would
+# make it wrong, crossing 1's entire argument is that the named trigger fired,
+# and rewording the trigger means the crossing has to be re-argued from whatever
+# replaced it rather than silently inherited.
+neg_probe "every ARCHITECTURE.md line the crossings section rests on still sits on the line cited" \
+  'perl -pi -e '"'"'s/an outbound integration appears/an outbound integration is introduced/'"'"' ARCHITECTURE.md'
+
+# Kind two: a PROSE ABSOLUTE. §6.5 defines a word — "server-side" — and crossing
+# 2 turns on the definition excluding exactly one place. "Vercel function" going
+# to "serverless function" is the edit somebody makes to sound vendor-neutral,
+# it changes no intent, and it takes the pin with it.
+neg_probe "every ARCHITECTURE.md line the crossings section rests on still sits on the line cited" \
+  'perl -pi -e '"'"'s/not inside a Vercel function/not inside a serverless function/'"'"' ARCHITECTURE.md'
+
+# Kind three: a TABLE ROW — §14.2's, the one crossing 4 rests on. Same shape as
+# a §19 exclusion row and probed separately for the same reason: if the two
+# lists are ever read by different code, a probe on prose says nothing here.
+#
+# The pattern writes the apostrophe in "auction's" as `.`. A literal one would
+# need four levels of quoting to reach perl, and the header's rule is that a
+# probe nobody can read is a probe nobody will maintain.
+neg_probe "every ARCHITECTURE.md line the crossings section rests on still sits on the line cited" \
+  'perl -pi -e '"'"'s/New bids on that auction; that auction.s price/New bids on that auction; its price/'"'"' ARCHITECTURE.md'
+
+# Kind four, and the only pin in this repository that is waiting to be broken on
+# purpose: a STALE COUNT. `:1552` says §21.1 "closes all fifteen"; it holds
+# sixteen. The crossings section leaves that unfixed deliberately, so the
+# document is amended once by its steward rather than twice. This mutation IS
+# that eventual fix. When it stops being a probe and becomes a commit, the note
+# explaining why the figure was left goes red — which is the point. It is not a
+# guard against the correction; it is a guard against the correction landing
+# while a paragraph still describes the figure as uncorrected.
+neg_probe "every ARCHITECTURE.md line the crossings section rests on still sits on the line cited" \
+  'perl -pi -e '"'"'s/closes all fifteen/closes all sixteen/'"'"' ARCHITECTURE.md'
+
+# The other direction: the citation disappears and the line stays put. `:1552`
+# is cited exactly once, so unlike the `:1848` probe in section G there is only
+# one door to close — checked before writing this, not assumed, because "cited
+# once" is the assumption that made that probe report MISSED.
+neg_probe "TICKETS.md still cites every ARCHITECTURE.md line its crossings section rests on" \
+  'perl -pi -e '"'"'s/`ARCHITECTURE\.md:1552` says/the last sentence of that section says/'"'"' docs/v2/TICKETS.md'
+
+# Kind five, twice: the SHIPPED CONSTRAINT. These two are the only probes in the
+# file whose real-world trigger is somebody changing the database rather than
+# somebody rewording a paragraph, and both mutations are edits a reviewer would
+# wave through. Tightening `>=` to `>` reads as hardening a bound. It also means
+# crossing 6 — "a lot cannot be inserted under the policy on `main` today" — is
+# arguing about a `WITH CHECK` that no longer says what it is quoted as saying.
+neg_probe "the shipped auctions insert policy still demands a future end_time at insert time" \
+  'perl -pi -e '"'"'s/end_time >= now\(\)/end_time > now()/'"'"' supabase/migrations/20260812120000_bid02_bid_acceptance.sql'
+
+# And the comment half. De-shouting a SQL comment is the most innocent edit in
+# this suite; the sentence it flattens is the one recording that auction
+# immutability is the ABSENCE of a policy, which is half of crossings 5 and 6.
+neg_probe "the shipped auctions policy block still records that no update or delete path exists" \
+  'perl -pi -e '"'"'s/There is NO update and NO delete policy/There is no update and no delete policy/'"'"' supabase/migrations/20260812120000_bid02_bid_acceptance.sql'
+
+# The self-count. Deleting the row rather than editing the heading, because a
+# dropped row is the mutation that got the reach table twice — there the row and
+# its denominator fell together and nothing noticed. Here the heading holds the
+# figure and the table holds the rows, so they cannot fall together, and this
+# probe is what proves that separation is real rather than asserted.
+neg_probe "the crossings section's stated count matches the rows in its table" \
+  'perl -ni -e '"'"'print unless /^\| \*\*6\*\* \| `20260812120000_/'"'"' docs/v2/TICKETS.md'
+
+# THE SEPARATION. Six `> **n.` items now sit below the owner's eight, numbered
+# 1..6 like his are, and the only thing keeping them apart is that the capture
+# in `graph.check.mjs` stops at the first non-blockquote line. That is a
+# boundary a later editor can erase in one of two ways — by widening the regex,
+# or by promoting a crossing into the owner's list — and the second is the one
+# worth probing, because it is the one somebody does while trying to be helpful.
+#
+# The mutation writes its apostrophe as perl's `\x27`, in the REPLACEMENT rather
+# than the pattern, where the `.` trick of the probes above is not available:
+# the assertion matches a literal "ADR-3's", so the inserted text has to contain
+# a real one. This is the idiom for that, and it is written down here because
+# the alternative is four levels of shell quoting.
+neg_probe "the steward crossings have not been swept into the owner's blockquote" \
+  'perl -pi -e '"'"'s/^> partly because Q3 was left saying/> **9. ADR-3\x27s reversal condition has already fired.**\n> partly because Q3 was left saying/'"'"' docs/v2/TICKETS.md'
+
+neg_report "V2-GRAPH-NEGATIVE" 126

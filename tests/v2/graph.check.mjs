@@ -1441,6 +1441,128 @@ if (!section) {
 }
 
 // ---------------------------------------------------------------------------
+// The same treatment for the OTHER source of truth. `CLAUDE.md` §2 ranks
+// `ARCHITECTURE.md` second, above TICKETS.md — and until the crossings section
+// was written this board cited it zero times, in either direction. Everything
+// above this line watches the product document; nothing watched the
+// architecture one, which is how six crossings sat unnoticed through four
+// sweeps of a document one rank lower.
+//
+// TWO differences from the PRD block, and both are the point rather than
+// bookkeeping:
+//
+//   1. an `ADR` carries its own **reversal condition**. That makes a crossing
+//      here a steward's amendment rather than the owner's ratification, so
+//      these rows deliberately do NOT feed the blockquote count below.
+//   2. one pin is not in a document at all. Crossing 6 rests on a `WITH CHECK`
+//      that is live on `main`, and a policy is not reworded the way prose is —
+//      it is edited by someone changing behaviour. A pin there fails loudly and
+//      for a real reason, which is exactly what is wanted.
+{
+  const ARCH = read("ARCHITECTURE.md").split("\n");
+  const POLICY = read(
+    "supabase/migrations/20260812120000_bid02_bid_acceptance.sql",
+  ).split("\n");
+
+  const archCites = [...TICKETS.matchAll(/`ARCHITECTURE\.md:(\d+)`/g)].map((m) =>
+    Number(m[1]),
+  );
+  chk("ARCHITECTURE.md citations were found in TICKETS.md at all", archCites.length > 0, true);
+
+  const archDangling = [...new Set(archCites)]
+    .filter((n) => !(n >= 1 && n <= ARCH.length) || ARCH[n - 1].trim() === "")
+    .sort((a, b) => a - b)
+    .map((n) => `ARCHITECTURE.md:${n}`);
+  chk("every ARCHITECTURE.md line cited by TICKETS.md exists and is not blank", archDangling, []);
+
+  // FIVE kinds of row, and the probe budget in the negative suite is one per
+  // kind rather than one per tuple — same rule as EXCLUSIONS above, same
+  // reason. A **reversal condition** is a conditional whose trigger has fired;
+  // a **prose absolute** is a sentence that simply stops being true; a **table
+  // row** is a boundary; a **stale count** is a figure that moved underneath a
+  // claim; and the SQL below is a **shipped constraint**, which is the only
+  // kind here that can break a deployment rather than an argument.
+  const ARCH_LINES = [
+    // crossing 1 — ADR-3's reversal condition, and §8.5's long form of it.
+    // Pinned on the trigger clause, not on "None exists in the MVP": the
+    // finding is that the named trigger FIRED, so if the trigger is reworded
+    // the crossing has to be re-argued from whatever replaced it.
+    [1384, "an outbound integration appears"],
+    [469, "or a third-party API"],
+    // crossing 2 — the prose absolute. §6.5's first sentence is the whole
+    // claim; the table under it is just instances.
+    [328, "means **inside PostgreSQL**, not inside a Vercel function"],
+    // crossing 3 — §17.3. TWO pins on the same paragraph for the same reason
+    // PRD.md:798 carries two: the section makes a claim AND issues an
+    // instruction, and the crossings section argues from both halves. Delete
+    // the "should trigger a review" clause and crossing 3 loses its warrant
+    // while the sentence it quotes still reads perfectly.
+    [1218, "the application never holds an elevated credential"],
+    [1218, "is a signal that something has drifted from this architecture"],
+    // crossing 4 — the realtime scope table.
+    [958, "New bids on that auction; that auction's price and status changes"],
+    // crossing 5 — the owner's row, and the sentence that says what it means.
+    // :685 is the pin that matters; :681 is the row it is about.
+    [681, "immutable (BR-31)"],
+    [685, "the structural expression of Q1 and Q3's resolution"],
+    // the three not-crossing results. A negative result is worth exactly as
+    // long as the line it was read against still says what was read — the
+    // same argument that put PRD.md:1936 in the list above.
+    [310, "A separate admin service"],
+    [1372, "a long-running process or in-memory state"],
+    // the deposit's second and third witness.
+    [169, "No payment integration, no PCI scope"],
+    [174, "any payment, contact, or fulfillment capability"],
+    [1532, "Payment, messaging, notification, admin, or fulfillment infrastructure"],
+    // the stale count that is deliberately NOT fixed here. Pinned so that the
+    // day someone does fix it, the note explaining why it was left goes red
+    // instead of quietly describing a figure that has moved.
+    [1552, "closes all fifteen"],
+  ];
+  const archMoved = ARCH_LINES
+    .filter(([n, text]) => !(ARCH[n - 1] ?? "").includes(text))
+    .map(([n, text]) => `ARCHITECTURE.md:${n} no longer reads "${text}"`);
+  chk("every ARCHITECTURE.md line the crossings section rests on still sits on the line cited", archMoved, []);
+
+  const archUncited = [...new Set(ARCH_LINES.map(([n]) => n))]
+    .filter((n) => !archCites.includes(n))
+    .sort((a, b) => a - b)
+    .map((n) => `ARCHITECTURE.md:${n}`);
+  chk("TICKETS.md still cites every ARCHITECTURE.md line its crossings section rests on", archUncited, []);
+
+  // Crossing 6. Not a document — the `auctions_owner_insert` WITH CHECK that is
+  // on `main` today. `V2-A11` says a lot's end_time is computed when the lot
+  // opens; this says a row cannot be inserted without one. Both halves of the
+  // policy block are pinned because the crossings section argues from both:
+  // the insert-time bound, and the comment recording that no update or delete
+  // policy exists at all.
+  chk(
+    "the shipped auctions insert policy still demands a future end_time at insert time",
+    (POLICY[499] ?? "").includes("end_time >= now() + interval '5 minutes'"),
+    true,
+  );
+  chk(
+    "the shipped auctions policy block still records that no update or delete path exists",
+    (POLICY[484] ?? "").includes("There is NO update and NO delete policy on auctions for any user"),
+    true,
+  );
+
+  // The crossings section states its own count, exactly as the owner's
+  // blockquote does below. Six is a number a later sweep will want to raise.
+  const archHeading = TICKETS.split("\n").find((l) =>
+    l.startsWith("### `ARCHITECTURE.md` and this board do not cite each other"),
+  ) ?? "";
+  const archRows = TICKETS.split("\n").filter((l) =>
+    /^\| \*\*\d+\*\* \| `(ARCHITECTURE\.md|20260812120000_)/.test(l),
+  ).length;
+  chk(
+    "the crossings section's stated count matches the rows in its table",
+    [word2num(archHeading.match(/— (\w+) crossings/)?.[1] ?? ""), archRows],
+    [archRows, archRows],
+  );
+}
+
+// ---------------------------------------------------------------------------
 // The blockquote of open questions states its own item count, and the items
 // are numbered by hand. Adding a fourth and leaving the word at "Three" is the
 // same class of drift as every other count in this file — with the difference
@@ -1450,6 +1572,14 @@ if (!section) {
   // the next heading. Running to the heading swept in three paragraphs of
   // ordinary prose, which counted correctly today only because nothing in them
   // happens to be a numbered blockquote item.
+  //
+  // THAT LAST CLAUSE STOPPED BEING TRUE. The crossings section above now puts
+  // six MORE `> **n.` items further down this file, and they are numbered 1..6
+  // like the owner's are. They are a steward's list, not his, and the whole
+  // reason the section sits outside the blockquote is that the two must not be
+  // read as one page of work. Widen this capture to the next heading and it
+  // silently becomes a fourteen-item blockquote addressed to the wrong person.
+  // The separation is asserted below rather than left to the regex.
   const q = grab(
     TICKETS,
     /\*\*(\w+) things here are the owner's to answer[^*]*\*\*([^\n]*(?:\n>[^\n]*)*)/,
@@ -1462,6 +1592,11 @@ if (!section) {
       "TICKETS.md: the blockquote's questions are numbered 1..N with no gap",
       items,
       items.map((_, i) => i + 1),
+    );
+    chk(
+      "the steward crossings have not been swept into the owner's blockquote",
+      q[2].includes("ADR-3's reversal condition has already fired"),
+      false,
     );
   }
 }

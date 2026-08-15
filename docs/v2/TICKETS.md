@@ -516,6 +516,153 @@ conflicting record is carried by at least one ticket.
 > consequence in §21.2.** Q7 also shows the register does not update itself — item 8 exists
 > partly because Q3 was left saying `end_time` is immutable while Q7 was amended to move it.
 
+### `ARCHITECTURE.md` and this board do not cite each other — six crossings, none of them the owner's
+
+**These are deliberately not a ninth blockquote item, and the reason is in the documents
+themselves.** `PRD.md:2025` forbids a decision being *"reopened, reinterpreted, defaulted, or
+worked around during implementation"*, so a PRD crossing can only be closed by the owner. Every
+`ADR` in `ARCHITECTURE.md` §20 instead **carries its own reversal condition in writing** — the
+document authorises its own amendment and says what triggers one. That makes the list below a
+**steward** matter (`CLAUDE.md` §1: stewards advise, they do not gate), and mixing it into the
+owner's eight would make his page longer without making any of it his.
+
+`CLAUDE.md` §2 ranks `ARCHITECTURE.md` **second, above this file**. This board cites it **zero
+times** — not `SPEC.md`, not `TICKETS.md`, not `docs/ai/local-model.md`, counted mechanically.
+Two of the six decision records mention it once each and **both mentions are prospective**:
+`D-01`'s completion checklist has an unticked box reading *"an `ADR` in `ARCHITECTURE.md` §20
+recording that the increment is presentation"*, and `D-03`'s `O4` calls the lot-versus-auction
+choice *"an `ARCHITECTURE.md` decision with a large blast radius"*. Neither cites a line that
+exists today.
+
+The other direction is worse and is the reason this section exists: **`ARCHITECTURE.md`
+contains no V2 vocabulary at all** — no session, no host, no lot, no pause, no deposit, no
+model — and **no ticket on this board changes it**, including the one `D-01` says is required.
+
+| # | The line | What crosses it | Whose call |
+|---|---|---|---|
+| **1** | `ARCHITECTURE.md:1384` — ADR-3's reversal condition | the hosted AI provider | architecture steward |
+| **2** | `ARCHITECTURE.md:328` — "server-side" means inside PostgreSQL | `app/api/ai/*` on Vercel | architecture steward |
+| **3** | `ARCHITECTURE.md:1218` — the application holds no elevated credential | `AI_API_KEY` | architecture steward |
+| **4** | `ARCHITECTURE.md:958` — realtime is scoped per auction | the session room | Rayan (realtime) |
+| **5** | `ARCHITECTURE.md:681`, `:685` — the owner has **no** update rights | host powers, pause | Rayan (bidding/closing) |
+| **6** | `20260812120000_bid02_bid_acceptance.sql:500` — `end_time` required at insert | a lot has none until it opens | Rayan (bidding/closing) |
+
+> **1. ADR-3's reversal condition has already fired, and nobody re-ran the decision.**
+> `ARCHITECTURE.md:1384` names the trigger in its own words — *"an outbound integration appears
+> — payments, an external API, a webhook receiver"* — and then says **"None exists in the
+> MVP"**. `ARCHITECTURE.md:469` says the same thing at length, listing *"or a third-party
+> API"*. `V2-A6`, `V2-A18` and `V2-A20` build exactly that, and it is not a plan — it is a
+> recorded owner decision of **2026-08-15**, quoted at `docs/ai/local-model.md` §4:
+> *"Production uses a hosted OpenAI-compatible provider, selected through a capability check."*
+> `V2-A14` adds a second third party for image processing.
+>
+> The finding is **not** "ADR-3 is wrong". It is that ADR-3 asks a question — *where does an
+> outbound call live?* — and V2 answered it in a document ADR-3 has never heard of, choosing a
+> **third** option ADR-3 never weighed. ADR-3 considered database versus Edge Function;
+> `docs/ai/local-model.md` §5 puts the call in a Next.js **Route Handler** on Vercel. That may
+> well be the right answer. It has not been written down as one.
+
+> **2. §6.5 defines "server-side" as the place V2 does not put its server code.**
+> `ARCHITECTURE.md:328`: *"'Server-side' in Dalal means **inside PostgreSQL**, not inside a
+> Vercel function. This is a deliberate decision (ADR-3, §20)."* Every row of §6.5's table
+> resolves to the database. `lib/ai/` plus `app/api/ai/*` is the first server-side code in this
+> product that is not in the database, and §7.1's trust-tier table has **no row for it** — so
+> the tier of *"the model suggested this"* is unclassified. That is not cosmetic:
+> `docs/ai/local-model.md` §6 rule 3 says **no amount is ever produced by, passed to, or
+> validated by the model**, and "which tier is that enforced in" is precisely the question
+> §7.2 exists to answer.
+
+> **3. §17.3's security property survives; its sentence does not.**
+> `ARCHITECTURE.md:1218`: *"**If the design holds, the application never holds an elevated
+> credential.** … **the appearance of a service-level key in application configuration is a
+> signal that something has drifted from this architecture** and should trigger a review, not a
+> shrug."* V2 puts `AI_API_KEY` in Vercel's environment configuration.
+>
+> **Read carefully, because the two halves come apart.** `AI_API_KEY` is not a Supabase service
+> key: it grants nothing against Dalal's data, bypasses no policy in §11, and the property
+> §17.3 was written to protect — that a leak cannot become a data breach — is untouched. What
+> it *is* is a billable third-party credential, which §17.3's absolute phrasing does not
+> anticipate. Distinguishing "elevated against our data" from "a secret we hold" is a one-line
+> amendment to §17.3 and it should be made deliberately rather than by the sentence quietly
+> becoming untrue. **This section is the review §17.3 asks for.** Which provider, and therefore
+> whose bill, is already `O11` and is not re-raised here.
+
+> **4. There is no subscription scope for a room.**
+> `ARCHITECTURE.md:958` scopes realtime **per auction**, and the next line says *"Not global — a
+> viewer receives only the auction they are watching"*. §14.2's whole cost argument rests on it:
+> a bid fans out to one auction's viewers, which is what keeps NFR-SCA-03 cheap. `V2-B9`,
+> `V2-B10` and `V2-B11` need a viewer to see a **session** — the attendance count («38 حاضر»),
+> which lot is open, the host advancing. That is a channel §14.2 does not have, and its fan-out
+> is a session's whole audience rather than one lot's. `O9` asks whether attendance leaks
+> identity; nothing on this board asks what carries it or what it costs.
+
+> **5. The architecture says the permission a host needs does not exist — and it says so where
+> item 8 is strongest.** `ARCHITECTURE.md:681` gives the owner of an auction `✗` on update
+> (*"immutable (BR-31)"*) and `✗` on delete (*"no cancellation (BR-30)"*), and
+> `ARCHITECTURE.md:685` explains
+> why: *"The owner having **no** update rights is the structural expression of Q1 and Q3's
+> resolution. There is no edit path to secure because there is no edit path."*
+>
+> **That sentence names Q1 and Q3 — the same register entries item 8 rests on.** Item 8 argues
+> from five `PRD.md` lines; this is the sixth line and the only one that says how the rule is
+> *enforced*. `V2-A12` (host powers) and `V2-A19` (pause) both need a write path §11.2 says was
+> deliberately not built. The §11.4 elevated-privilege route is the obvious shape — it is how
+> `place_bid` already moves `end_time` — but `V2-A10`'s change surface does not mention a policy
+> change, and "there is no edit path" is a sentence someone will read while reviewing the ticket
+> that builds one.
+
+> **6. A lot cannot be inserted under the policy that is on `main` today. This one is code, not
+> prose.** `supabase/migrations/20260812120000_bid02_bid_acceptance.sql:500` — inside the
+> `auctions_owner_insert` `WITH CHECK` — requires `end_time >= now() + interval '5 minutes'` at
+> **insert** time, with `:501` capping it at seven days. `V2-A11` says the opposite in one
+> sentence: *"`end_time` is **computed when the lot opens**, not at creation."* If `O4` is
+> answered "a lot is an `auctions` row with a nullable `session_id`" — which is what `D-03` says
+> the owner's «كل قطعة مزاد كامل» *suggests* — then a lot created before its session opens has no
+> `end_time` the policy will accept, and the insert is refused with `42501`.
+>
+> **`O23` is not this question.** `O23` asks whether `BR-38`'s five-minute-to-seven-day bound
+> applies to a *lot's duration*. This is an *insert-time* problem and it survives **either**
+> answer, because the bound is evaluated against `now()` when the row is written, not when the
+> lot runs. The same `WITH CHECK` also demands `status = 'active'` and
+> `current_price = starting_price`, so a not-yet-open lot would be born `active` with `LC-03`
+> having no `end_time` to compare the clock against.
+>
+> The comment above the policy, at `:485`, states the other half in the same breath: *"There is
+> NO update and NO delete policy on auctions for any user"*. Crossings 5 and 6 are one code
+> block.
+
+**Three things were checked and are recorded as not crossing, so nobody re-runs them:**
+
+- **`ARCHITECTURE.md:310`** — *"A separate admin service | No Admin role exists (PRD §4.3)"*.
+  The §19/§22 sweep reached this judgement from `PRD.md` §4.3 and flagged it as the one place a
+  sweep decided a row did *not* apply. Re-tested here from the second source of truth, it
+  **holds**: a host controlling their own session is a seller power over their own property,
+  which is what §6.3 means by "no admin", and no V2 ticket gives anyone authority over another
+  user's auction.
+- **`ARCHITECTURE.md:1372`** — ADR-1's reversal condition, *"a requirement appears that needs a
+  long-running process or in-memory state"*. **Not fired.** Pause is an atomic database
+  operation, a lot advance is host-invoked, and closing already runs on `pg_cron` under ADR-4.
+  Nothing in phase 4 needs a daemon. This is worth recording precisely because a live host-run
+  session *sounds* like it does.
+- **§4.4 and §24's native-mobile and public-API rows** — read, nothing in V2 approaches them.
+
+**And one existing item gets a second and third witness rather than a new number.** The deposit
+(`V2-A13`) is excluded by `ARCHITECTURE.md:169` (*"No payment integration, no PCI scope"*),
+`ARCHITECTURE.md:174` (*"any payment, contact, or fulfillment capability"*) and
+`ARCHITECTURE.md:1532` (*"Payment, messaging,
+notification, admin, or fulfillment infrastructure"*) — all three sourced back to `PRD.md`
+§19.0, which is where item 6 above already argues from. Item 6 does not become stronger by
+being repeated; it becomes harder to dismiss as one stale table row, which is a different
+thing and worth one sentence.
+
+> **One stale figure, left for whoever amends this document.** `ARCHITECTURE.md:1552` says
+> `PRD.md` §21.1 *"closes all fifteen"*. §21.1 holds **sixteen** — Q1 through Q16, no gap — and
+> `CLAUDE.md` §3 cites Q16 by name. The same sentence's *"There are zero unresolved product
+> questions"* was true of V1 and is not of V2, where the `O` register stands at 34. **It is not
+> fixed here on purpose:** the six crossings above will touch §6.5, §8.5, §11.2, §14.2, §17.3
+> and §20, and this document should be amended once by the steward rather than twice, the
+> second time for a word.
+
 A previous draft of this board claimed phase 1 had *"no cross-track dependency at all"* and
 that nine tickets could run in parallel. **Both were wrong**: `V2-B4` needs the category
 contract and `V2-B5` needs the bid contract, and `V2-C1` is itself blocked on `O1`/`O2`.
