@@ -126,6 +126,17 @@ jobs:
       - name: V2 — prove the board check can fail
         run: ./tests/v2/graph-negative.check.sh
 
+      # G0A committed the owner's approved V2 architecture into the tree under
+      # a provenance header that prints a SHA-256 and invites the reader to
+      # check it. An unchecked "verify me" reads as verified, so the digest is
+      # pinned in code and the body is hashed on every PR.
+      - name: V2 — the committed contract is the document the owner approved
+        run: ./tests/v2/contract.check.sh
+
+      # …and the same demand made of that one.
+      - name: V2 — prove the contract check can fail
+        run: ./tests/v2/contract-negative.check.sh
+
       # The same failure one level out, in prose. CLAUDE.md §1 carries the
       # seven-step workflow; TEAM.md §7 and SPEC.md §5.1 each restated it, and
       # three copies that agree are a problem only on the day one is edited.
