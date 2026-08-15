@@ -53,49 +53,80 @@ export function AuctionCard({ auction, serverNow }: AuctionCardProps) {
         href={`/auctions/${auction.id}`}
         className="flex flex-col focus-visible:outline-2 focus-visible:outline-offset-2"
       >
-        <ImageFrame
-          src={auction.imageUrl}
-          /*
-           * The product name IS the alt text: for a listing thumbnail the image
-           * carries no information the name does not. A user-supplied string
-           * lands here, which is fine in an attribute — nothing is interpreted.
-           */
-          alt={auction.name}
-          ratio="square"
-          className="rounded-b-none border-0 border-b"
-        />
+        {/*
+          V2 (auction-card.html): the status pill floats OVER the image rather
+          than competing with the title for its line — which is also what frees
+          the title to run a full line before clamping.
+        */}
+        <div className="relative">
+          <ImageFrame
+            src={auction.imageUrl}
+            /*
+             * The product name IS the alt text: for a listing thumbnail the image
+             * carries no information the name does not. A user-supplied string
+             * lands here, which is fine in an attribute — nothing is interpreted.
+             */
+            alt={auction.name}
+            ratio="square"
+            className="rounded-b-none border-0"
+          />
+          {/*
+            Active, always — the listing is active-only by construction
+            (FR-LIST-05), so there is no state to compute here and no
+            "ending soon" threshold invented. Urgency is the countdown's job,
+            and it already has one. The glowing dot is decorative; the word
+            carries the state (NFR-USA-10).
+          */}
+          <StatusPill tone="active" className="absolute start-3 top-3 z-10">
+            <span
+              aria-hidden="true"
+              className="bg-urge size-1.5 rounded-full shadow-[0_0_8px_var(--c-urge)]"
+            />
+            نشط
+          </StatusPill>
+        </div>
 
-        <CardBody className="gap-2">
-          <div className="flex items-start justify-between gap-2">
-            {/*
-              A product name is user-supplied and may be Latin, Arabic or mixed.
-              Unisolated it reorders the line it sits in (CLAUDE.md §3).
-              line-clamp keeps a 100-character name from setting the card's
-              height (FR-CREATE-04 allows one).
-            */}
-            <h2 className="line-clamp-2 text-base font-bold">
-              <bdi>{auction.name}</bdi>
-            </h2>
-            {/*
-              Active, always — the listing is active-only by construction
-              (FR-LIST-05), so there is no state to compute here and no
-              "ending soon" threshold invented. Urgency is the countdown's job,
-              and it already has one.
-            */}
-            <StatusPill tone="active" className="shrink-0">
-              نشط
-            </StatusPill>
+        <CardBody className="gap-3">
+          {/*
+            A product name is user-supplied and may be Latin, Arabic or mixed.
+            Unisolated it reorders the line it sits in (CLAUDE.md §3).
+            line-clamp keeps a 100-character name from setting the card's
+            height (FR-CREATE-04 allows one).
+          */}
+          <h2 className="line-clamp-2 text-base font-bold">
+            <bdi>{auction.name}</bdi>
+          </h2>
+
+          {/*
+            V2's card footer: the labelled gold price on one side, time and
+            bid count on the other. Gold digits, dim SAR — `Money`'s suffix
+            carries its own text-ink-2, so the wrapper colour reaches only the
+            digits. Containment, isolate and format all stay Money's
+            (NFR-DAT-08); nine digits wide still scrolls inside itself.
+          */}
+          <div className="flex items-end justify-between gap-3">
+            <div className="flex min-w-0 flex-col gap-0.5">
+              <span className="text-ink-3 text-xs font-bold">
+                {hasBids ? "المزايدة الحالية" : "سعر البداية"}
+              </span>
+              <Money
+                amount={hasBids ? auction.currentPrice : auction.startingPrice}
+                size="md"
+                className="text-brand-text"
+              />
+            </div>
+
+            <div className="text-ink-2 flex shrink-0 flex-col items-end gap-0.5 text-xs">
+              {/* FR-LIST-04 — a live countdown, not a static "ends at". */}
+              <Countdown endsAt={auction.endsAt} serverNow={serverNow} />
+              {/*
+                Count, not amount — no Money and no isolate needed for an
+                integer; digits are Western already (BR-42). Derived from
+                bidCount, never from comparing prices (BR-29).
+              */}
+              <span className="num">{hasBids ? `${auction.bidCount} مزايدة` : "بلا مزايدات بعد"}</span>
+            </div>
           </div>
-
-          <div className="flex flex-col gap-0.5">
-            <span className="text-ink-3 text-xs font-bold">
-              {hasBids ? "المزايدة الحالية" : "سعر البداية"}
-            </span>
-            <Money amount={hasBids ? auction.currentPrice : auction.startingPrice} size="md" />
-          </div>
-
-          {/* FR-LIST-04 — a live countdown, not a static "ends at". */}
-          <Countdown endsAt={auction.endsAt} serverNow={serverNow} />
         </CardBody>
       </Link>
     </Card>

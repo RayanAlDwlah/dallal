@@ -21,9 +21,26 @@ export function Card({
   return (
     <Tag
       className={cn(
-        "bg-surface border-rule rounded-lg border",
-        interactive &&
-          "hover:border-rule-strong hover:shadow-e2 transition-[border-color,box-shadow] duration-[120ms]",
+        /*
+         * V2 (design-system/previews/auction-card.html): the surface carries an
+         * INSET hairline (`shadow-e1`) instead of a border. On #07090D an
+         * outer border reads as a gap; the inset ring reads as an edge. Same
+         * box, so no layout shifts against the border version.
+         */
+        "bg-surface rounded-lg shadow-e1",
+        interactive && [
+          /*
+           * His `.card:hover` — "الحدّ يتوهّج عند المرور، ما يتغيّر سُمكه":
+           * the hairline turns gold and glows, its thickness never changes,
+           * and the card lifts 2px. Colours are the palette's gold literal
+           * because a box-shadow cannot read a Tailwind colour token with
+           * per-layer alpha; if --c-brand moves, this moves with the PR that
+           * moves it (one grep: 245,185,66).
+           */
+          "transition-[box-shadow,transform] duration-[150ms] ease-out-soft",
+          "hover:-translate-y-0.5",
+          "hover:shadow-[inset_0_0_0_1px_rgba(245,185,66,0.35),0_0_28px_rgba(245,185,66,0.14)]",
+        ],
         className,
       )}
       {...props}
