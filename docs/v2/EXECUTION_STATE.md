@@ -15,11 +15,11 @@ restating the dependency graph, delete that part and link instead.
 | | |
 |---|---|
 | **Run id** | `e33684e-20260815T0250` |
-| **Last updated** | 2026-08-15, after reading **`ARCHITECTURE.md`** inward against the board — source of truth **#2**, ranked above this file by `CLAUDE.md` §2, cited by it **zero times**, and containing **no V2 vocabulary at all**. Six crossings, and they are a **steward's** list rather than the owner's, because every `ADR` carries its own reversal condition in writing while `PRD.md:2025` forbids reinterpretation. One of the six is not prose: a `WITH CHECK` live on `main`. Three negative results recorded, one of them a re-test of the judgement this file had flagged as most worth a second reader — it holds. Nothing decided, nothing reclassified |
+| **Last updated** | 2026-08-15, after reading **`TEAM.md`** and **`GITHUB_PLAN.md`** inward — sources of truth **#3 and #4**, the last two `CLAUDE.md` §2 names that nothing had read against V2, and **the two that gate the next task**. Five crossings, in a **third category**: these documents configure the issue tracker rather than describe the system, so a crossing is a **team** decision — not the owner's ratification and not a steward's amendment. One row is his and is marked. Three crossings were **measured against the live tracker** and the documents and the tracker *agree* — the finding is that neither has room for V2. Also corrected: the `ARCHITECTURE.md` sweep under-counted its own last finding (13 occurrences, 4 documents, 7 of them in `PRD.md`, so the fix is the **owner's**, not the steward's), and this page's claim that issue creation waits *solely* on the owner. Nothing decided, nothing reclassified |
 | **Branch** | `feature/rayan-v2-spec` |
-| **HEAD** | `00352f4` + this commit |
-| **Base** | **44 commits ahead of `origin/main`** at `00352f4`, and it contains `.github/workflows/ci.yml`, which `main` does not. Everything through `00352f4` **is pushed**; this commit may not be. Push, never force-push — #168 is open and others may be reading it |
-| **CI status** | **`static` GREEN on `ubuntu-latest` at `00352f4`** ([run 31873126786](https://github.com/RayanAlDwlah/dallal/actions/runs/31873126786)), reporting `172 passed, 0 failed` and `126 caught, 0 not caught (0 no-op), 126 of 126 probes reached` — **identical to the macOS clean-tree figures**, as they were at `81578ae` ([31871628931](https://github.com/RayanAlDwlah/dallal/actions/runs/31871628931)) and `61e102f` ([31871898634](https://github.com/RayanAlDwlah/dallal/actions/runs/31871898634)) when they read `164` / `115`. **No figure on this page is macOS-only** — three commits now say so, and the third is the first one where the suite mutates a **shipped migration**, which is exactly the kind of new surface a platform difference would show up on. That is worth stating rather than assuming: this file records a `grep`-dialect divergence that made a suite pass locally and go red in CI, and a probe count is exactly the quantity such a divergence moves. **`database` still RED** on the pre-existing #147 (`auth` and `bidding` both pass; `auction` does not), which **PR #155 fixes and only a human can merge** — so the *run* conclusion reads `failure` while `static` is green. Read the job, not the run. See the correction under the measurement tables before trusting any green row |
+| **HEAD** | `1c96f5b` + this commit |
+| **Base** | **48 commits ahead of `origin/main`** at `1c96f5b`, and it contains `.github/workflows/ci.yml`, which `main` does not. Everything through `1c96f5b` **is pushed**; this commit may not be. Push, never force-push — #168 is open and others may be reading it |
+| **CI status** | **`static` GREEN on `ubuntu-latest` at `1c96f5b`** ([run 31874041504](https://github.com/RayanAlDwlah/dallal/actions/runs/31874041504)), reporting `181 passed, 0 failed` and `138 caught, 0 not caught (0 no-op), 138 of 138 probes reached` — **byte-identical to the macOS clean-tree figures**, as at `00352f4` ([31873126786](https://github.com/RayanAlDwlah/dallal/actions/runs/31873126786), `172`/`126`), `61e102f` and `81578ae`. **No figure on this page is macOS-only**, now across four commits, the last two of which added mutation surfaces — a shipped migration, then two root documents — which is exactly where a platform difference would surface. Worth stating rather than assuming: this file records a `grep`-dialect divergence that made a suite pass locally and go red in CI, and a probe count is precisely the quantity such a divergence moves. **`database` still RED** on the pre-existing #147 (`auth` and `bidding` pass; `auction` does not), which **PR #155 fixes and only a human can merge** — so the *run* conclusion reads `failure` while `static` is green. **Read the job, not the run** |
 | **Operator** | unattended Claude session, owner asleep, reviewing later |
 
 ---
@@ -368,12 +368,36 @@ declaring it out of scope.
    including a re-test of the §19.6 admin judgement this file flagged as most worth a second
    reader — **it holds**. `ARCHITECTURE.md:1552`'s stale count is left **unfixed on purpose**
    and says why. See the section below, and [`#issuecomment-5301265091`](https://github.com/RayanAlDwlah/dallal/pull/168#issuecomment-5301265091) on #168.
-10. Only then create the V2 issues.
+10. ~~**`TEAM.md` and `GITHUB_PLAN.md`, read the same way**~~ — **done**, `6553d24`. Sources of
+   truth **#3 and #4**, the last two `CLAUDE.md` §2 names that nothing had ever read against
+   V2 — and they turned out to be the two that block item 11. **Five crossings**, and unlike
+   items 8 and 9 they are neither the owner's nor a steward's: these are **process** documents
+   with no ADR and no reversal condition, so a crossing here is a **team** decision about how
+   the issue tracker is configured. Three of the five were **measured against the live
+   tracker**, not just read: `gh api .../milestones` returns exactly `M0`–`M4`, all MVP, while
+   `GITHUB_PLAN.md:214` forecloses a sixth in writing; `gh label list` returns **22**, the
+   figure two documents assert as a *total* and a third defends as a merged ticket's AC; and
+   `needs-decision` is forbidden by **four** documents on the premise *"zero open product
+   questions"* against a register of **34**. The fourth is a **missing row** — `TEAM.md` §26
+   calls itself a convenience copy of `PRD.md` §21.1 and holds **fifteen rows for sixteen**,
+   the absent one being **Q16, Arabic RTL and `1,250.00 SAR`**; recorded as a documentation
+   defect and *not* a live risk, because `CLAUDE.md` §3 states it and four guards enforce it.
+   The fifth is the owner's: `bid increment` is still under *"Things nobody may build"*. See
+   the section below.
+11. Only then create the V2 issues.
 
 **Blocked, with the reason:**
 
 - **All 40 V2 tickets** — the board is not to be turned into issues until #168 is internally
-  consistent and owner-approved. The owner said so explicitly.
+  consistent and owner-approved. The owner said so explicitly. **And that is no longer the only
+  gate — this page said "solely" and was wrong.** Item 10 found three more, none of them the
+  owner's: the issues need a **milestone that does not exist** (`GITHUB_PLAN.md:214` forecloses
+  a sixth, and the tracker has exactly the five it names), an **`area:` value that does not
+  exist** (`area:` is `auth`/`auction`/`bidding`/`realtime`/`shared`, and `type:feature` is
+  defined as *"MVP functionality"*), and — for the tickets blocked on an `O` — **a way to say
+  so that four documents forbid**. Those are team decisions, takeable without the owner but
+  not by one session alone. **Creating the issues today would mean inventing a taxonomy in the
+  tracker**, which is `CLAUDE.md` §8's failure mode wearing a different hat.
 - **`V2-00`** — needs a human to merge #155; protection forbids a self-merge.
 - **Six tickets behind an unanswered question raised by this run** — `V2-A4` (`O14`, `O34`),
   `V2-A19` (`O31`, `O32`, `O33`), `V2-A20` (`O11`), `V2-C3`/`V2-A3`/`V2-B5` (`O25`–`O30`). The
@@ -410,12 +434,22 @@ the research passes behind `O14` and `O24` that produce *options* rather than de
 > ask — *which source of truth has nothing watching it?*, not *what is next to the thing I just
 > read?*
 >
-> **The remaining unread surfaces are now the six `D-0x` records read inward** (item 5 read them
+> **`TEAM.md`/`GITHUB_PLAN.md` have come off this list too** — item 10, and the same method
+> picked them: they were ranks **three and four**, and nothing was watching them. That is now
+> four consecutive surfaces chosen by authority, and the fourth was the one that mattered most,
+> because it is the one standing between this board and item 11.
+>
+> **The remaining unread surfaces are the six `D-0x` records read inward** (item 5 read them
 > *against* `PRD.md`; nobody has read them against what the board builds) and
-> **`TEAM.md`/`GITHUB_PLAN.md`**, which the governance amendment swept for ownership text but
-> which nobody has read for V2 crossings. Both are sweeps, not decisions, so both are safe to
-> run unattended; anything they find is a blockquote question or a steward note, never a
-> reclassification.
+> **`docs/contracts/*.md`**, rank **five**, which `CLAUDE.md` §2 says *wins* against an older
+> document — a contract that contradicts a V2 ticket beats the ticket, and no sweep has looked.
+> Both are sweeps, not decisions, so both are safe to run unattended; anything they find is a
+> blockquote question, a steward note or a team note, never a reclassification.
+>
+> **But the honest next move is not another sweep.** Item 11's three team-decision gates are
+> now named and evidenced, and a fifth sweep does not move them. What moves them is a proposal
+> the owner or the other two developers can say yes or no to in one reading — which is work,
+> not a decision, and therefore in scope.
 >
 > One caution earned in item 9, worth more than the finding: the two lists must stay separate.
 > Six `> **n.` items now sit below the owner's eight and are numbered `1..6` like his. They are
@@ -972,6 +1006,94 @@ the suite that is scheduled to become a real commit.
 
 ---
 
+### `TEAM.md` and `GITHUB_PLAN.md` at `6553d24` — the two documents that gate issue creation
+
+Ranks **three and four**. The method from item 9 held — *which source of truth has nothing
+watching it?* — and this time the answer was standing directly in front of the next task.
+The board cites `GITHUB_PLAN.md` **zero** times and `TEAM.md` twice, neither by line; going the
+other way, `TEAM.md` says `v2` twice (once a document version, once a branch-name example) and
+`GITHUB_PLAN.md` six times, **all six about `TEAM.md` v2.0 the document**. Neither process
+document knows the V2 phase exists.
+
+**These are neither the owner's list nor a steward's, and that is a third category.** Items 8
+and 9 split on a real distinction: `PRD.md:2025` forbids reinterpretation, so a PRD crossing is
+the owner's ratification; every `ADR` carries its own reversal condition, so an architecture
+crossing is a steward's amendment. Neither applies here. `TEAM.md` and `GITHUB_PLAN.md` do not
+*describe* the system, they **configure the issue tracker** — so a crossing is a **team**
+decision, takeable without the owner and not by one session. One row is the exception and is
+marked: `bid increment` under "Things nobody may build" is prefaced *"a deliberate product
+decision (PRD SD-05)"*, and that is his.
+
+**Three of the five were measured against the live tracker, not inferred from the documents.**
+This matters because the documents and the tracker **agree** — the finding is not drift, it is
+that both are correct and neither has room for V2:
+
+| Claimed | Measured | Verdict |
+|---|---|---|
+| `GITHUB_PLAN.md:214` — *"no extra milestones are created"* | `gh api …/milestones` → `M0`–`M4`, all MVP | agree; V2 has nowhere to go |
+| `TEAM.md:1076` + `GITHUB_PLAN.md:151` — *"22 labels"* as a total | `gh label list` → **22** | agree; no `area:` fits V2 |
+| `GITHUB_PLAN.md:11` — *"No Issues … created yet"* | **105 issues** | stale, and nothing rests on it |
+
+The fourth crossing is a **missing row**, and it is the one worth reading twice. `TEAM.md:1308`
+introduces §26 as *"a convenience copy for daily work"* of `PRD.md` §21.1. §21.1 holds `Q1`
+through `Q16`; §26 holds **fifteen numbered rows and stops**. The absent decision is **Q16 —
+Arabic right-to-left and the canonical `1,250.00 SAR`**, which governs every string and every
+amount in the product. **It is recorded as a documentation defect and explicitly not as a live
+risk**, because `CLAUDE.md` §3 states Q16 in full and four checks in `tests/guards/run.sh`
+enforce it; saying otherwise would be the inflation this run is forbidden.
+
+**And item 9 under-counted its own last finding — corrected here rather than quietly.** The
+`ARCHITECTURE.md` section left `:1552`'s *"closes all fifteen"* for the steward, reading it as
+one stale word in one document. Counted across the tree it is **13 occurrences in 4 documents**
+— `PRD.md` ×7, `TEAM.md` ×3, `ARCHITECTURE.md` ×2, `README.md` ×1 — against a sixteen-row
+register, and **one of the thirteen is correct and must not be "fixed"** (`PRD.md:2157`,
+*"Version 1.0 raised fifteen product questions"*, is history and sums to fifteen). One of the
+stale twelve is `PRD.md:2027`, **the register's own heading**. Because **seven are in `PRD.md`**,
+which no session may edit, the correction **starts as the owner's, not the steward's** — which
+is the opposite of what item 9 implied.
+
+> **The mechanism is the finding, not the figure.** Q16 was decided 2026-08-12 and added to
+> §21.1. Nothing downstream was renumbered — not the heading above it, not `SD-03`, not the
+> quick reference, which is *why* that table stops at fifteen. **A sixteenth row landed and
+> thirteen counts stayed put.** The V2 ratification asks the owner to do the same thing to the
+> same register, and until this commit there was no check anywhere tying a count to the thing
+> it counts. There are now two, and they are **derived rather than pinned**: the register-vs-copy
+> row count and the census are recomputed every run, so they go red when the defect is **fixed**
+> as well as when it worsens. That is deliberate — it stops a paragraph explaining a gap from
+> outliving the gap.
+
+**A second precedent, recorded because V2 leans on it.** `PRD.md:419` (`SD-03`) says the
+decisions may never be *"reopened"*. §21.1's **`Q7` was reopened** — *"REOPENED AND REVERSED
+2026-08-13"* — and `TEAM.md:1318` carries the same note. Separately, `TEAM.md:1331` records
+*"`anti-sniping extension` was removed from this list on 2026-08-13"*, inline, with the date.
+So both procedures the V2 ratification needs — reopening a register entry, and amending the
+"nobody may build" list — have been performed once each, on this project, and are documented in
+place. **Nothing here reopens anything.** It means the ask is a second instance, not a first.
+
+**Three things were checked and are not findings**, listed because a sweep that only reports
+hits is not measuring: `TEAM.md:1105` and `GITHUB_PLAN.md:776` are permanent-ownership text, but
+`CLAUDE.md` §1 **names both documents** and declares such text stale, so they are governed
+already; and the five milestones' exit criteria were read one at a time and **none is falsified
+by V2** — V2 has no place in the sequence, which is a gap, not a contradiction.
+
+**What the apparatus caught in this change while it was being written**, recorded because it is
+the whole argument for having it — none of the four was visible by reading:
+
+- `GITHUB_PLAN.md:139` and `TEAM.md:1099` were cited from memory. The real lines are `:144` and
+  `:1097`; `:1099` is a **section heading**.
+- `TEAM.md:1318` was written as `:1319`.
+- `` `TEAM.md:1091`/`:1095` `` as a shorthand registered as a **phantom `PRD.md:1095` citation** —
+  the bare `` `:NNN` `` form is reserved for PRD lines by a regex that predates this section.
+- The negative suite reported one **MISSED** and one **NO-OP** *in its own new section*. The
+  MISSED was a **section-J** probe: the census blockquote cites `ARCHITECTURE.md:1552` a second
+  time, so a single-copy mutation two hundred lines away left the assertion satisfied by the
+  survivor. **That is the close-all-doors rule regressing from prose added elsewhere**, and it
+  is the strongest evidence yet that these probes need re-running rather than trusting.
+
+Fixed in `1c96f5b`, committed **separately** from the sweep so the failures and their fixes are
+both in the history rather than only the green end state.
+
+
 ## Decisions and assumptions made by this run
 
 | id | what | evidence | reversible? |
@@ -980,10 +1102,13 @@ the suite that is scheduled to become a real commit.
 | — | Treat the red Vercel check on #155/#165/#167/#168 as **not a code signal** | Vercel returned `api-deployments-free-per-day`, "try again in 24 hours" | yes |
 | — | `PRD.md` is **not touched** by this run | owner: "the owner will ratify it manually" | n/a |
 | — | The untracked migration is **never staged and never edited** | `git status` shows it untracked at every commit in this run | n/a |
-| — | Every board number is **machine-derived**, never hand-counted | `tests/v2/graph.check.mjs`, 172 assertions | it is a procedure |
+| — | Every board number is **machine-derived**, never hand-counted | `tests/v2/graph.check.mjs`, 181 assertions | it is a procedure |
 | — | A **shipped migration** may be a declared mutation surface for a text probe, where `PRD.md` may not | the two are not the same risk: the harness refuses on a dirty tree, restores with `git checkout --`, and runs no SQL — and crossing 6 rests on a live `WITH CHECK`, so a pin nothing can break is not a pin. `PRD.md` stays out because the owner ratifies it by hand | yes — remove it from `neg_files` and the two probes go NO-OP, loudly |
 | — | `PRD.md` is not a **mutation surface** either — not even for a probe that would restore it | an interrupted run must not be able to leave the file the owner ratifies broken; the probe breaks the checker's expectation instead | it is a procedure |
 | — | An **unratified decision blocks a ticket**, exactly as an unanswered question does | not invented here: `docs/decisions/README.md:82` already records the precedence rule, and `CLAUDE.md` §2 already orders the sources. The **`R`→ticket mapping** is judgment, and the rule used is stated in prose for the owner to correct | yes — it is a column, and the owner ratifying anything empties it |
+| — | Two assertions **DERIVE rather than pin** — the register-vs-copy row count and the `fifteen` census are recomputed each run | a pin fails when a claim is reworded; these also fail when the defect is **fixed**, so the paragraph explaining a gap cannot outlive the gap. Q16 landed in `PRD.md` on 2026-08-12 and thirteen counts in four documents stayed put, with nothing anywhere tying a count to the thing it counts | yes — they are two `chk` calls |
+| — | `TEAM.md` and `GITHUB_PLAN.md` are **process** documents, so a crossing in them is a **team** decision — a third category alongside the owner's and the steward's | neither carries an ADR with a reversal condition nor an owner's ratification clause; what they contain is tracker configuration. The one product row in them is marked as the owner's and not counted with the rest | yes — it is a column in the section above |
+| — | Reporting a sweep's **negative results** and its own **caught defects** is part of the sweep, not decoration | a sweep that only reports hits is not measuring; and four of this one's defects — two wrong line numbers, a phantom citation, and a MISSED probe caused by prose added elsewhere — were invisible by reading | it is a procedure |
 | — | A new check is not trusted until a **negative probe** makes it fail | four real check defects found this way, two of them in PZ-8 | it is a procedure |
 
 **No product decision was invented.** Every unresolved one is an `O`-id in
