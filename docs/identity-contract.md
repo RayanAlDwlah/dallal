@@ -228,11 +228,11 @@
 
 | ما يطلبه العقد | أين يتحقّق | الموضع |
 |---|---|---|
-| الهوية من الجلسة، لا من الحمولة (`SEC-Z1`) | `v_uid := auth.uid();` وأول ما تفعله الدالة | `20260812120000:231` |
-| **لا معرّف مزايد في التوقيع إطلاقًا** (`§4.4`) | `place_bid(p_auction_id uuid, p_amount text)` — معاملان، ولا ثالث | `20260812120000:205` |
-| نسبة المزايدة (`BR-01`, `FR-BID-01`) | `insert into public.bids (auction_id, bidder_id, amount) values (p_auction_id, v_uid, v_amount)` | `20260812120000:410` |
-| المالك لا يزايد (`BR-02`) | `if v_owner_id = v_uid then` — و`v_owner_id` مقروء **داخل قفل الصف** | `20260812120000:296` |
-| غير المصادَق عليه حالة صريحة لا انهيار (`§6`) | `if v_uid is null then return public.bid_reject('not_authenticated');` | `20260812120000:232` |
+| الهوية من الجلسة، لا من الحمولة (`SEC-Z1`) | `v_uid := auth.uid();` وأول ما تفعله الدالة | `20260812120000:255` |
+| **لا معرّف مزايد في التوقيع إطلاقًا** (`§4.4`) | `place_bid(p_auction_id uuid, p_amount text)` — معاملان، ولا ثالث | `20260812120000:229` |
+| نسبة المزايدة (`BR-01`, `FR-BID-01`) | `insert into public.bids (auction_id, bidder_id, amount) values (p_auction_id, v_uid, v_amount)` | `20260812120000:434` |
+| المالك لا يزايد (`BR-02`) | `if v_owner_id = v_uid then` — و`v_owner_id` مقروء **داخل قفل الصف** | `20260812120000:320` |
+| غير المصادَق عليه حالة صريحة لا انهيار (`§6`) | `if v_uid is null then return public.bid_reject('not_authenticated');` | `20260812120000:256` |
 
 **والنقطة التي جعلت §4.4 تستحقّ أن تُكتب:** `place_bid` تعمل `SECURITY DEFINER`، أي
 أنها **تتجاوز سياسات الصفوف**. لو كان في توقيعها معامل `p_bidder`، لكانت كل ضمانات §4.2
@@ -271,7 +271,7 @@
 |---|---|---|
 | الهوية المتحقَّق منها في الخادم، لا حالة المتصفح | `const userId = await getVerifiedUserId();` | `app/auctions/new/actions.ts:123` |
 | المالك هو تلك الهوية | `owner_id: userId` في الإدراج | `app/auctions/new/actions.ts:306` |
-| **لا يُنتحَل من العميل** (`SC-39`) | `WITH CHECK` يثبّت `owner_id = (select auth.uid())` | `20260812120000:492` |
+| **لا يُنتحَل من العميل** (`SC-39`) | `WITH CHECK` يثبّت `owner_id = (select auth.uid())` | `20260812120000:516` |
 | والادّعاء مُختبَر لا مُدّعى | «`SC-39` لا يمكن إنشاء مزاد يملكه غيرك» ← `42501` | `tests/auction/immutability.sql:228` |
 
 **والنقطة البنيوية، على نفس منطق §4.4 عندك:** النموذج **لا يحوي حقل مالك إطلاقًا**، و

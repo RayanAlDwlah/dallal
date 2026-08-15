@@ -1,0 +1,67 @@
+<!-- @dsCard group="Foundations" name="Type & money" subtitle="Arabic scale, tabular numerals, the one money format" -->
+<!doctype html>
+<html lang="ar" dir="rtl">
+<meta charset="utf-8">
+<title>الخط والمبالغ</title>
+<style>
+@import url("https://fonts.googleapis.com/css2?family=IBM+Plex+Sans+Arabic:wght@400;500;600&family=Rubik:wght@500;600;700&display=swap");
+:root{--canvas:#07090D;--surface:#0F1219;--raised:#161A23;--hair:rgba(255,255,255,.08);--ink:#E9EDF5;--ink2:#9AA4B8;--ink3:#5C6579;--gold:#F5B942;--teal:#2DD4BF;--red:#FF4D5E;--f-display:"Rubik",system-ui,sans-serif;--f-body:"IBM Plex Sans Arabic",system-ui,sans-serif}
+*{box-sizing:border-box}
+body{margin:0;padding:40px;direction:rtl;background:var(--canvas);color:var(--ink);font-family:var(--f-body);line-height:1.7;-webkit-font-smoothing:antialiased}
+h1{font-family:var(--f-display);font-size:28px;font-weight:600;margin:0 0 4px}
+p.sub{color:var(--ink2);margin:0 0 8px;font-size:15px;max-width:64ch}
+h2{font-size:13px;color:var(--ink3);font-weight:500;letter-spacing:.04em;margin:36px 0 14px}
+.d{font-family:var(--f-display);margin:0 0 10px;line-height:1.25}
+.spec{font-size:12px;color:var(--ink3);font-family:ui-monospace,monospace;direction:ltr;text-align:end;display:block;margin-top:-4px;margin-bottom:18px}
+.num{font-variant-numeric:tabular-nums}
+.sar{font-size:.62em;color:var(--ink2);font-weight:500;margin-inline-start:6px}
+table{width:100%;border-collapse:collapse;font-size:15px}
+td{padding:11px 0;border-bottom:1px solid var(--hair);vertical-align:baseline}
+td:first-child{color:var(--ink2);width:38%;font-size:14px}
+.money{font-family:var(--f-display);font-weight:700;color:var(--gold);font-variant-numeric:tabular-nums}
+.bad{color:var(--red)}
+.ok{color:var(--teal)}
+.panel{background:var(--surface);border-radius:20px;padding:22px;box-shadow:inset 0 0 0 1px var(--hair)}
+</style>
+<h1>الخط والمبالغ</h1>
+<p class="sub">العربي يطلع بشع صغير وجميل كبير. العناوين تكبر، والنص يظل 16 بارتفاع سطر 1.7 — العربي يحتاج تنفّس أكثر من اللاتيني.</p>
+
+<h2>سلّم العرض — Rubik</h2>
+<p class="d" style="font-size:72px;font-weight:700">مزاد مباشر</p><span class="spec">display / 72 / 700</span>
+<p class="d" style="font-size:56px;font-weight:600">ساعة رولكس</p><span class="spec">display / 56 / 600</span>
+<p class="d" style="font-size:40px;font-weight:600">الجلسات الخاصة</p><span class="spec">display / 40 / 600</span>
+<p class="d" style="font-size:32px;font-weight:600">ينتهي خلال ساعة</p><span class="spec">display / 32 / 600</span>
+
+<h2>النص والواجهة — IBM Plex Sans Arabic</h2>
+<p style="font-size:18px;margin:0 0 4px">سطر بارز — 18</p>
+<p style="font-size:16px;margin:0 0 4px">نص الفقرة العادي، وهو الافتراضي في كل الشاشات — 16</p>
+<p style="font-size:14px;color:var(--ink2);margin:0 0 4px">نص ثانوي وتفاصيل البطاقة — 14</p>
+<p style="font-size:13px;color:var(--ink3);margin:0">تسميات وملاحظات باهتة — 13</p>
+
+<h2>الأرقام</h2>
+<div class="panel">
+<table>
+  <tr><td>الأرقام</td><td>غربية 0‑9 دائمًا. الأرقام العربية‑الهندية 0‑9 ما تُستخدم أبدًا.</td></tr>
+  <tr><td>المحاذاة</td><td><code style="font-family:ui-monospace,monospace;font-size:13px">tabular-nums</code> على كل سعر وعدّاد وعدد — عشان ما ترقص الأرقام وهي تتغيّر.</td></tr>
+  <tr><td>الاتجاه</td><td>الرقم داخل عازل ثنائي الاتجاه، وكلمة SAR برّا العازل.</td></tr>
+</table>
+</div>
+
+<h2>صيغة المبلغ — واحدة، في كل مكان، حرفًا بحرف</h2>
+<div class="panel">
+<table>
+  <tr><td>الصيغة</td><td><span class="money num">1,250.00<span class="sar">SAR</span></span></td></tr>
+  <tr><td>مبلغ كبير</td><td><span class="money num">987,654,321.00<span class="sar">SAR</span></span></td></tr>
+  <tr><td>مبلغ صغير</td><td><span class="money num">0.01<span class="sar">SAR</span></span></td></tr>
+  <tr><td>ما نكتبه</td><td class="bad">ر.س · SR · ريال · نقاط · 1250 · 1,250 · 1,250.0</td></tr>
+  <tr><td>الحد الأعلى</td><td class="ok">ما فيه. لا اختصار، لا قصّ، لا «…»، ولا تنسيق بعرض ثابت يطلّع الأرقام الكبيرة ###</td></tr>
+</table>
+</div>
+
+<h2>العدّاد</h2>
+<div class="panel" style="display:flex;gap:36px;flex-wrap:wrap;align-items:baseline">
+  <div><span style="font-family:var(--f-display);font-size:34px;font-weight:600" class="num">02:14:09</span><br><span style="font-size:12px;color:var(--ink3)">فوق 10 دقايق</span></div>
+  <div><span style="font-family:var(--f-display);font-size:34px;font-weight:600;color:var(--red)" class="num">00:00:47</span><br><span style="font-size:12px;color:var(--ink3)">تحت الدقيقة — يصير أحمر</span></div>
+  <div><span style="font-family:var(--f-display);font-size:20px;font-weight:600;color:var(--teal)" class="num">مُدِّد 30 ثانية</span><br><span style="font-size:12px;color:var(--ink3)">مزايدة في آخر 15 ثانية</span></div>
+</div>
+</html>

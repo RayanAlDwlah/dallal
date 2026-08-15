@@ -6,6 +6,7 @@
 | Decided by | Rayan — [`@RayanAlDwlah`](https://github.com/RayanAlDwlah), product owner |
 | Touches | **BR-32** (no bid increment), BR-29 / SC-55 (first bid), BR-03, FR-BID-* |
 | Blocks | the bid panel's input, `place_bid`'s signature, the auction record |
+| Open items | **`O25`–`O30`** (§5) — they block `V2-C3`, `V2-A3`, `V2-B5` |
 | Not yet in | `PRD.md` |
 
 ---
@@ -140,17 +141,22 @@ and there is exactly one acceptable response:
 Everything in §1 is decided. Everything below is not, and each one is a place where
 `CLAUDE.md` §8's failure mode is waiting:
 
-1. **Is the increment required at creation, or optional with a default?** If optional,
-   what is the default, and does "no increment" mean the button is hidden or that it
-   carries some fallback?
-2. **"مضاعفات العشره" — multiples of ten of what?** Ten SAR (10, 20, 30…), or any value
-   that is itself a multiple of ten (so 10 and 500 are legal, 15 is not)? These are
+> **Each open item now carries an `O`-id**, added 2026-08-15. `README.md` rule 5: *"a gap
+> with no id cannot be cited as a blocker, and a gap that cannot be cited gets filled
+> silently."* This record was the last one whose gaps had no ids, and the cost of that was
+> measured, not theorised — see §5a.
+
+1. **`O25` — is the increment required at creation, or optional with a default?** If
+   optional, what is the default, and does "no increment" mean the button is hidden or that
+   it carries some fallback?
+2. **`O26` — "مضاعفات العشره" — multiples of ten of what?** Ten SAR (10, 20, 30…), or any
+   value that is itself a multiple of ten (so 10 and 500 are legal, 15 is not)? These are
    different rules and both fit the sentence.
-3. **Is there an upper bound on the increment?** Note that `BR-21` / `SEC-R3` forbid a
-   ceiling on a *price*. An increment is not a price — but deciding it has a maximum
+3. **`O27` — is there an upper bound on the increment?** Note that `BR-21` / `SEC-R3` forbid
+   a ceiling on a *price*. An increment is not a price — but deciding it has a maximum
    needs to be a decision, not an assumption.
-4. **One button or several?** The prototype shows a single button. ×1 / ×2 / ×5 is an
-   obvious extension and has not been asked for.
+4. **`O28` — one button or several?** The prototype shows a single button. ×1 / ×2 / ×5 is
+   an obvious extension and has not been asked for.
 5. ~~**What does the FIRST press bid?**~~ **ANSWERED 2026-08-15 — see §1a.** The first
    press bids **the starting price itself** (`BR-29` / `SC-55`). Left in place, struck
    through rather than deleted, because the point of this list is that a gap was named
@@ -158,18 +164,39 @@ Everything in §1 is decided. Everything below is not, and each one is a place w
    prototype had already picked an answer, the pick was flagged as an implementation
    choice rather than a decision, and the owner then made it a decision. Numbering is
    unchanged so that §1a's reference to §5.6 does not silently point at the wrong item.
-6. **What if the current price is not a multiple of the increment** — because a crafted
-   request bid `+0.01`, which §2 says must be accepted? Does the button then offer
+6. **`O29` — what if the current price is not a multiple of the increment** — because a
+   crafted request bid `+0.01`, which §2 says must be accepted? Does the button then offer
    `current + increment` (leaving the price off-grid forever), or round up to the next
    multiple? "Round up" is the reasonable-looking answer and it is a **product decision**,
    because it changes what a bidder is charged.
-7. **Can the seller change the increment after publishing?** `BR-31` says an auction is
-   immutable after creation. If the increment lives on the auction row, the answer is no
+7. **`O30` — can the seller change the increment after publishing?** `BR-31` says an auction
+   is immutable after creation. If the increment lives on the auction row, the answer is no
    by construction — but that should be intentional, not incidental.
+
+### 5a. What having no ids cost, measured
+
+The six items above were written down, in this file, under a heading that says *"do NOT pick
+an answer for any of these"* — and the board still called their tickets startable. Measured
+on `docs/v2/TICKETS.md` before this edit:
+
+| ticket | *blocked on* said | actually blocked by |
+|---|---|---|
+| **V2-C3** — contract: the bid button | `—` | `O25`, `O26`, `O27`, `O28`, `O29`, `O30` — **all six** |
+| **V2-A3** — the `bid_increment` column | `—` | `O25` (nullable?), `O26` (the CHECK), `O27` (an upper bound), `O30` (immutable?) |
+| **V2-B5** — the bid button | `—` | `O25` (hidden or fallback), `O28` (one button or three), `O29` (what it offers off-grid) |
+
+All three sat in the board's *"Seven tickets startable today"* set. They were startable in
+the only sense the board could compute — **nothing they cited was open, because they could
+not cite anything.** A gap with no id does not read as a blocker; it reads as an absence of
+blockers, which is the same shape as being ready.
+
+The corrected **unblocked** set is **four**: `V2-A14`, `V2-B1`, `V2-B2`, `V2-B3` — of which
+**two** can actually be started, the other two sitting behind `V2-B1`. Recomputed by
+[`tests/v2/graph.check.mjs`](../../tests/v2/graph.check.mjs), not by hand.
 
 ## 6. What must be true before any of this is implemented
 
-- [ ] §5 answered by the owner — **1 of 7 done** (§5.5, in §1a); 1, 2, 3, 4, 6, 7 open
+- [ ] §5 answered by the owner — **1 of 7 done** (§5.5, in §1a); `O25`–`O30` open
 - [ ] `PRD.md` carries the decision, and `BR-32` gains a sentence distinguishing the
       server rule from the screen affordance
 - [ ] an `ADR` in `ARCHITECTURE.md` §20 recording that the increment is presentation
