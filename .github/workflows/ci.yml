@@ -124,6 +124,15 @@ jobs:
       - name: BID-09 — the auction page mounts the live price region
         run: node --no-warnings tests/realtime/live-price-mount.check.mjs
 
+      - name: BID-17 — the auction page mounts the live status region (#160)
+        run: node --no-warnings tests/realtime/live-status-mount.check.mjs
+
+      # tests/auction/run.sh names its members literally rather than sweeping
+      # the directory, so adding a file there does not run it. This step is the
+      # one that does — ci-coverage.sh said UNWIRED for exactly that reason.
+      - name: AUC — the create form survives a rejection (image + review)
+        run: node --no-warnings tests/auction/create-form-recovery.check.mjs
+
       # #147 — every *.check.mjs must actually LOAD. This suite arrives with
       # #155, which cannot wire it here because this file does not exist on
       # main yet. So the wiring lives on this branch instead.
