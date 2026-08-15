@@ -19,7 +19,7 @@ restating the dependency graph, delete that part and link instead.
 | **Branch** | `feature/rayan-v2-spec` |
 | **HEAD** | `f4ff6f1` + this commit |
 | **Base** | **21 commits ahead of `origin/main`**, and it contains `.github/workflows/ci.yml`, which `main` does not. Everything through `cd6ada6` **is pushed**; `f4ff6f1` and this commit may not be. Push, never force-push — #168 is open and others may be reading it |
-| **CI status** | **`static` has been RED on every push since `03217f7`**, on a guard of my own. `f4ff6f1` is the fix. `database` is red on the pre-existing #147, which **PR #155 fixes and only a human can merge**. See the correction under the measurement tables before trusting a green row |
+| **CI status** | **`static` GREEN at `5fee651`** — first time; it had been red on every push since `03217f7`, on a guard of my own, and `f4ff6f1` is the fix. **`database` still RED** on the pre-existing #147 (`auth` and `bidding` both pass; `auction` does not), which **PR #155 fixes and only a human can merge**. See the correction under the measurement tables before trusting any green row |
 | **Operator** | unattended Claude session, owner asleep, reviewing later |
 
 ---
@@ -161,7 +161,35 @@ run them, because they are the newest and the least travelled.
 
 At `f4ff6f1`, on macOS: `run.sh` **21/21**, `negative.sh` **21 caught / 21**,
 `graph-negative` **52/52, 0 no-op**, `workflow-negative` **16/16, 0 no-op**. 89 probes.
-**Linux: not yet observed.**
+
+### Now observed on Linux — run [31866268505](https://github.com/RayanAlDwlah/dallal/actions/runs/31866268505), at `5fee651`
+
+**`static` is GREEN for the first time since the job was written.** Every one of its fifteen
+steps passed, and the four steps added for the new suites *executed* rather than being skipped
+behind a fail-fast. Read off the CI log, ubuntu-latest, GNU grep, node 22:
+
+| suite | Linux | macOS |
+|---|---|---|
+| `tests/guards/run.sh` | 21 passed, 0 failed, **21 of 21 reached** | 21/21 |
+| `tests/guards/negative.sh` | **21 caught**, 0 not caught, 21 of 21 reached | 21/21 |
+| `tests/v2/graph-negative.check.sh` | **52 caught**, 0 not caught, **0 no-op**, 52 of 52 | 52/52 |
+| `tests/governance/workflow-negative.check.sh` | **16 caught**, 0 not caught, **0 no-op**, 16 of 16 | 16/16 |
+| INT-08 / INT-06 | 17/17, 6/6 | same |
+
+The *reached* counts are quoted deliberately: a suite reporting "0 failed" while reaching 3 of
+52 probes is the #121 shape, and these do not have it. **89 probes now agree across both greps**,
+which is the specific thing points 1–3 above said was missing.
+
+**`database` is still red, and not on anything from this branch.** `auth` passed, `bidding`
+passed — the extension cap, the lock ordering and the money domain all proved on PostgreSQL 17 —
+and `auction` failed on the pre-existing `ERR_MODULE_NOT_FOUND: Cannot find package '@/lib'
+imported from lib/auctions/validation.ts`. That is **#147**, fixed by **PR #155**, which needs a
+human to lift `@Dem4t`'s stale CHANGES_REQUESTED and merge. It is the last thing standing
+between this branch and a fully green board, and **an unattended session cannot do it.**
+
+That `bidding` reported at all is the `if: !cancelled()` guard earning its place: under
+fail-fast this run would have skipped the suite that proves the bidding invariants and looked
+complete while saying nothing about them.
 
 ---
 
