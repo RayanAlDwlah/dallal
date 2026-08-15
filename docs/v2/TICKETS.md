@@ -107,8 +107,19 @@ contract and `V2-B5` needs the bid contract, and `V2-C1` is itself blocked on `O
 **And that is the finding worth reading twice.** `O1` (*is a category required?*) and `O2`
 (*is a sub-category stored?*) look like schema trivia. They gate `V2-C1`, which gates
 `V2-A1` and `V2-C4` and `V2-C5` and `V2-C8` — which is **the entire create flow, the entire
-assistant, and all of phase 4**. Two sentences from the owner unblock roughly two-thirds of
-this board.
+assistant, and all of phase 4**. Two sentences from the owner sit upstream of **27 of the 39
+tickets**.
+
+> **But do not read that as "27 tickets become startable."** They do not, and the difference
+> is worth stating because it is the mistake this board is designed to prevent. Answering
+> `O1` and `O2` moves the startable set from **7 to 12** — measured by re-running the same
+> closure with those two removed, not estimated. The other fifteen carry a *second* blocker
+> further up their chain: `V2-A2` still waits on `O20`, everything in phase 4 still waits on
+> `O4`.
+>
+> **Reach counts what an item sits upstream of. Startability needs every blocker on the
+> chain cleared, not the biggest one.** Add `O20` and the set goes 12 → 14. The board opens
+> up by *clearing chains*, not by answering the highest-reach question first.
 
 ---
 
