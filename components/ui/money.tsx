@@ -104,9 +104,46 @@ export function Money({ amount, size = "md", suffix = true, className }: MoneyPr
         {formatSar(amount)}
       </bdi>
       {suffix ? (
-        <span className={cn("font-ui font-semibold text-ink-2", SUFFIX_SIZE[size])}>
-          {SAR_SUFFIX}
-        </span>
+        <>
+          {/*
+           * A LITERAL SPACE, and it is not redundant with `gap-1` — #156.
+           *
+           * `gap-1` is a layout gap: it separates the two boxes visually and
+           * contributes NOTHING to text. So `textContent` read `1,250.00SAR`,
+           * while CLAUDE.md §4 rule 6 fixes the canonical form as
+           * `1,250.00 SAR` — "one space" — and `formatSarWithSuffix`
+           * (lib/money.ts:130) produces exactly that for every non-rendered
+           * use. The rendered path was the one place the product disagreed
+           * with its own formatter.
+           *
+           * It costs a user who copies a price, and it costs any measurement
+           * that reads `innerText` — #88 and #92 both do, and an assertion on
+           * the canonical string would have failed against visually correct
+           * output.
+           *
+           * WHY THIS DOES NOT INTRODUCE A WRAP OPPORTUNITY: per CSS Flexible
+           * Box Layout §4, a sequence of child text runs between flex items is
+           * wrapped in an anonymous flex item "unless the entire sequence
+           * contains only white space, in which case it is not rendered". The
+           * node exists in the DOM — so `textContent` gets its space — and
+           * generates no box, so there is no break point and no visible double
+           * gap. The spacing stays `gap-1`'s.
+           *
+           * Inside the `suffix` branch, not before it: with `suffix={false}`
+           * there is no indicator to separate, and a trailing space in
+           * `textContent` would be a second defect of the same kind. Measured:
+           * `suffix={false}` renders `1,250.00` with nothing after it.
+           *
+           * ⚠️ The containment on the isolate above — `max-w-full min-w-0
+           * overflow-x-auto` — is untouched, and must stay that way. It is what
+           * lets an amount with no ceiling (BR-21) scroll inside itself instead
+           * of widening the document (measured at 1871px on #120).
+           */}
+          {" "}
+          <span className={cn("font-ui font-semibold text-ink-2", SUFFIX_SIZE[size])}>
+            {SAR_SUFFIX}
+          </span>
+        </>
       ) : null}
     </span>
   );
