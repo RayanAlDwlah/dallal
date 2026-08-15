@@ -1895,7 +1895,11 @@ if (!section) {
   // are two views of one set, so a box added to one and not the other silently
   // drops a box from the signature surface — which is precisely §8.1's own
   // finding ("a signature covers the version it was given on").
-  const boxes = (S011.match(/^- \[ \] \*\*§/gm) ?? []).length;
+  //
+  // The class is `[ x]`, not ` `. Counting only UNTICKED boxes would turn this
+  // red the moment a reviewer does the one thing the list exists to ask for —
+  // a check that punishes compliance is a check that gets deleted.
+  const boxes = (S011.match(/^- \[[ x]\] \*\*§/gm) ?? []).length;
   const s81 = S011.slice(S011.indexOf("### 8.1"));
   const rows = (s81.slice(0, s81.indexOf("\n---")).match(/^\| §/gm) ?? []).length - 1;
   chk("S0-11 §8's tick list and §8.1's status table cover the same number of boxes", boxes, rows);
