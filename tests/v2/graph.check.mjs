@@ -1325,17 +1325,25 @@ if (!section) {
     .map((c) => `${c.doc} → PRD.md:${c.line}`);
   chk("every PRD.md line cited by the V2 docs exists and is not blank", [...new Set(dangling)].sort(), []);
 
-  // Every PRD row one of the ratification blockquote's six items rests on.
-  // Each is quoted in TICKETS.md beside its line number, so the quote is
-  // checked against the line — this is the assertion that would have caught
-  // the original §19.2 defect had anyone cited those rows at all.
+  // Every PRD row one of the ratification blockquote's items rests on. Each is
+  // quoted in TICKETS.md beside its line number, so the quote is checked
+  // against the line — this is the assertion that would have caught the
+  // original §19.2 defect had anyone cited those rows at all.
   //
   // The label deliberately does NOT say how many rows there are. A label built
   // from the figure it checks renames itself the moment the figure moves, the
   // negative suite's probe then matches no line, and the run reports NO-OP
   // instead of the catch it actually made. That is not hypothetical — it is
   // why the wider-reading assertions above are numbered by ordinal. This list
-  // went from 3 to 12 in one commit; the label did not move.
+  // went 3 → 12 → 18 in three commits; the label has not moved once, and the
+  // comment above it does not say "six items" any more for the same reason.
+  //
+  // Two kinds of row sit in this list and the distinction is the §20 sweep's
+  // finding, not a formatting choice. An **exclusion** (§19, §22) says *we
+  // chose not to build this*; an **assumption** (§20) says *we believe nobody
+  // wants it*. Ratifying the first un-marks a row; ratifying the second
+  // retires a belief. `A-U9` and `A-B6` are the precedent for the second act,
+  // and the board argues from both kinds, so both are pinned here.
   const EXCLUSIONS = [
     // item 1 — search
     [1875, "Advanced search / faceted filtering"],
@@ -1343,18 +1351,28 @@ if (!section) {
     // item 2 — sessions and lots
     [1846, "Scheduled future start times"],
     [1847, "Multiple quantity / lots"],
+    [1949, "nobody needs to schedule a future start"],
+    [1945, "An auction sells exactly one item, in one quantity"],
     // item 3 — the increment
     [1848, "Bid increments of any kind, per-auction or platform-wide"],
     // item 4 — image editing
     [1915, "Multiple images per auction"],
     [1917, "Image editing / cropping"],
     [2104, "Multiple images and video"],
-    // item 5 — the professional seller
+    [1978, "no in-product editing is needed"],
+    [1975, "One image per auction is sufficient"],
+    // item 5 — the professional seller. :1936 is the one row here recorded as
+    // a *negative* result — checked, does not appear to break. It is pinned
+    // for exactly that reason: a negative result is only worth anything for as
+    // long as the line it was read against still says what was read.
     [1886, "Bulk listing / seller tools"],
     [1930, "Users are individuals, not businesses"],
+    [1936, "no separate account types are needed"],
     // item 6 — the deposit
     [1806, "Wallets or stored balances"],
     [1825, "Escrow / settlement"],
+    // item 7 — who authors a listing
+    [1952, "Sellers will write their own descriptions and provide their own images"],
   ];
   const moved = EXCLUSIONS
     .filter(([n, text]) => !(PRD[n - 1] ?? "").includes(text))

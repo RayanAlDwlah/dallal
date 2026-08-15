@@ -243,7 +243,7 @@ Every figure in this section is recomputed from the board by
 appears in a *blocked on* cell, that no `O` appears in a *ratification* cell, and that every
 conflicting record is carried by at least one ticket.
 
-> **Six things here are the owner's to answer, and this board must not answer any of them.**
+> **Seven things here are the owner's to answer, and this board must not answer any of them.**
 >
 > **1. `PRD.md:411` puts *search* out of scope and no `R` item covers it.** `R1` quotes that
 > line for categories — but the sentence reads *"categories, search, **and recommendations**"*,
@@ -281,6 +281,16 @@ conflicting record is carried by at least one ticket.
 > |---|---|---|
 > | scheduled starts | `:1846` | **Scheduled future start times** — *"Adds a third lifecycle state with no MVP demand"* |
 > | lots | `:1847` | **Multiple quantity / lots** — *"A fundamentally different auction model"* |
+> | …and its assumption | `:1949` | **A-A5** — *"Auctions become live immediately on creation; **nobody needs to schedule a future start**"* |
+> | …and its assumption | `:1945` | **A-A1** — *"An auction sells exactly **one item, in one quantity**"* |
+>
+> The two assumption rows were added by the §20 sweep and they matter differently from the
+> two exclusions above them. An exclusion says *we chose not to build this*; an assumption
+> says *we believe nobody wants it*. A-A5 is the belief `:1846` rests on, stated as a claim
+> about users rather than about scope — so ratifying D-03 has to retire the belief as well as
+> un-mark the row, the way `A-U9` and `A-B6` were retired in place when their decisions moved.
+> A-A1 is the weaker of the two: a session holds many lots but each lot is still one item in
+> one quantity, so it may survive intact. That is a reading, and it is the owner's.
 >
 > D-03 §1 gives a session a **start date and time** and D-03 §Step 2 is titled *the lots, in
 > order*. Those are not gaps being filled; they are two named exclusions being crossed, which
@@ -325,6 +335,13 @@ conflicting record is carried by at least one ticket.
 > enhancement. Whether that makes it a firmer exclusion or merely an unlisted one is a
 > reading, and it is the owner's.
 >
+> **And §20 states it more plainly than §19 does.** `PRD.md:1978` — **A-I4** — reads *"Users
+> will resize or compress large images themselves if rejected; **no in-product editing is
+> needed**"*. That is not a scope boundary being drawn, it is a belief about what users want,
+> and it is the belief `:1917` rests on. `PRD.md:1975` — **A-I1**, *"One image per auction is
+> sufficient"* — is the same for `:1915`, and D-06 already reverses that one. Both have to be
+> retired for the image work to be consistent with the document it is built against.
+>
 > **5. Two lines say the target user is not a professional seller, and phase 4 builds a
 > seller console.** `PRD.md:1886` — §19.6 — excludes **Bulk listing / seller tools**, with
 > the reason *"Professional sellers are not a target user (§4.2)"*, and `PRD.md:1930`
@@ -336,6 +353,12 @@ conflicting record is carried by at least one ticket.
 > either line. This is item 2's question again with a different pair of citations, and it may
 > well have the same answer — but A-U1 is an *assumption* row rather than an exclusion, so
 > ratifying it is a different act, and the board should not assume one covers the other.
+>
+> One neighbouring row was checked and **does not** appear to break: `PRD.md:1936` — **A-U7**,
+> *"the same person may be both a seller and a bidder; no separate account types are needed"*.
+> Nothing in D-03 creates an account type; a host is a role held over a session, not a kind of
+> user. It is named here because a company hosting a room is the case that would break it, and
+> a later session should not have to rediscover that the question was asked.
 >
 > **6. The deposit is classified as gap-filling because the PRD never says "deposit".**
 > `R6`'s cell reads *"**silent.** Zero occurrences of 'deposit'"*, and that is true of the
@@ -353,21 +376,49 @@ conflicting record is carried by at least one ticket.
 > the owner can confirm. If it is a conflict, `R6` stops gating nothing and the split becomes
 > five conflicting records rather than four.
 >
-> *(Why all six surfaced this late: the `R` register was built by reading the six decision
+> **7. `R5` calls the AI surface gap-filling, and `PRD.md:1952` is not a gap.** `R5`'s cell
+> reads *"**silent.** Zero occurrences of 'AI', 'assistant' or 'machine learning'"*. That is
+> true, and it is the same search that produced item 6's error one row down: the PRD is silent
+> about the **technology** and not about the **function**.
+>
+> **A-A8** — *"**Sellers will write their own descriptions and provide their own images**; no
+> templates needed"* — is an explicit belief about who authors a listing. D-04 feature 1
+> («يكتب الإعلان») reads the images and proposes the title, the description and the category;
+> `V2-A7` and `V2-B8` build it. A machine drafting the description is the proposition A-A8
+> denies, and *"no templates needed"* is the closest the MVP came to anticipating it.
+>
+> This does not make the feature wrong — the owner decided all five, twice, and D-04 §1 records
+> it. It makes **rule 4 the wrong justification**. `R5` gates nothing today on the grounds that
+> silence is safe to build; if A-A8 binds, `R5` gates `V2-A7` and `V2-B8` at least, and the
+> split becomes **six** conflicting records rather than four. Item 6 raises the identical
+> question for `R6`. **Both were classified by keyword search, and the keyword was the wrong
+> unit of meaning** — that is one defect with two instances, not two defects.
+>
+> *(Why all seven surfaced this late: the `R` register was built by reading the six decision
 > records and following their citations outward. The PRD's exclusions chapter is reached only
 > when a record happens to cite into it, and §19.2 is a table **no record cites**, so nothing
 > led to it. Items 4, 5 and 6 came from running that read in the other direction — every
 > §19 and §22 row, asked which ticket builds it — which is why they are adjacent to rows the
-> register already had. The one guard that overlaps — INT-08's `no bid increment / minimum
-> raise` — covers item 3 and will go red the day a `bid_increment` column lands, as
-> `CLAUDE.md` §9 already predicts. **Nothing watches items 1, 2, 4, 5 or 6** except the
-> citation resolver added alongside them, which only proves the lines still say what is
+> register already had. Item 7, and the assumption rows now attached to items 2, 4 and 5, came
+> from doing the same to §20 — reached only because A-U1 turned up in item 5 and proved that an
+> *assumption* row can bind as hard as an exclusion. The one guard that overlaps — INT-08's
+> `no bid increment / minimum raise` — covers item 3 and will go red the day a `bid_increment`
+> column lands, as `CLAUDE.md` §9 already predicts. **Nothing watches the other six** except
+> the citation resolver added alongside them, which only proves the lines still say what is
 > quoted here.)*
+>
+> *(Items 6 and 7 are the same defect twice. `R5` and `R6` were both classified **silent,
+> therefore gap-filling, therefore safe under rule 4**, and both classifications were reached
+> by searching `PRD.md` for a word — "deposit", "AI". The PRD does not organise itself by the
+> vocabulary a later decision happens to use. Any record classified `no` because a term does
+> not appear is worth re-reading against what the feature **does**.)*
 >
 > **The precedent for what ratifying any of these looks like is already on the record.** When
 > `BR-36` reversed anti-sniping, `docs/decisions/README.md:145` notes that **§19.2 and §22.1
 > were both un-marked** — the exclusion row *and* the future-enhancement row, in the same
-> change. Every item above names its §19 row, and its §22 row where one exists.
+> change. Every item above names its §19 row, its §22 row where one exists, and — since the
+> §20 sweep — the **assumption** row underneath it. `A-U9` and `A-B6` show the third of those
+> being retired in place when a decision moved, so the precedent covers all three.
 
 A previous draft of this board claimed phase 1 had *"no cross-track dependency at all"* and
 that nine tickets could run in parallel. **Both were wrong**: `V2-B4` needs the category
