@@ -1,6 +1,6 @@
 #!/usr/bin/env bash
 # ============================================================================
-# Breaks the seven-step governance rule on purpose, sixteen ways, and asserts
+# Breaks the seven-step governance rule on purpose, eighteen ways, and asserts
 # `tests/governance/workflow.check.mjs` notices every one.
 #
 #   bash tests/governance/workflow-negative.check.sh
@@ -13,7 +13,7 @@
 # WHY
 #
 # `CLAUDE.md` §9: "A check is not finished when it passes; it is finished when
-# it has been made to fail on purpose." `workflow.check.mjs` makes fourteen
+# it has been made to fail on purpose." `workflow.check.mjs` makes fifteen
 # assertions and every one of them passed the first time it ran — which is
 # exactly the shape that deserves suspicion, because a check that has never
 # been red has never been shown to be connected to anything.
@@ -70,6 +70,7 @@ README.md
 TEAM.md
 docs/v2/SPEC.md
 docs/v2/TICKETS.md
+docs/v2/ARCHITECTURE-V2.md
 docs/auth-configuration.md"
 
 neg_run "node --no-warnings tests/governance/workflow.check.mjs"
@@ -167,4 +168,40 @@ neg_probe "every document discussing the workflow cites CLAUDE.md §1 as the gov
 neg_probe "more than one document discusses the workflow (else this check is vacuous)" \
   'perl -pi -e '"'"'s/seven[ -]steps?/N-step/gi'"'"' README.md TEAM.md docs/v2/SPEC.md docs/v2/TICKETS.md'
 
-neg_report "GOVERNANCE-WORKFLOW-NEGATIVE" 16
+# ---------------------------------------------------------------------------
+# D. The byte-pinned exemption — the dangerous kind of change, probed twice
+#
+# G0A gave section 2 an exemption: the approved V2 contract quotes text whose
+# bytes are pinned to a SHA-256, so it cannot drift and cannot be reworded to
+# comply. An exemption is the most dangerous thing to add to a guard — it is
+# the "add an ignore" move `CLAUDE.md` §9 names as worse than a red build, and
+# it is only NOT that move if both of the properties below hold. Neither is
+# self-evident from reading the check, which is why neither is left to
+# inspection.
+# ---------------------------------------------------------------------------
+
+# D1. THE EXEMPTION CANNOT GROW QUIETLY.
+#
+# The exempt set is keyed on a `tail -n +N` verify command, and exactly one
+# file in the tree is really pinned — `contract.check.sh` pins that one path,
+# not a class of them. So nothing stops another document from advertising a
+# verify command nothing enforces, which would be self-exemption from section 2
+# achieved by adding one line to a file. The check names the exempt path, and a
+# second one has to be argued for in a reviewed change instead.
+neg_probe "exactly one document is a byte-pinned quotation, and it is the V2 contract" \
+  'printf "%s\n" "Verify with: tail -n +5 README.md | shasum -a 256" >> README.md'
+
+# D2. THE EXEMPTION IS NARROW — THIS IS THE ONE THAT MATTERS.
+#
+# It covers the pinned BODY, not the file. Keyed on the path instead of the
+# offset, section 2 would go silent across the whole contract — and the
+# provenance header, which this repository wrote, which is editable, and which
+# is exactly where a helpful summary of the workflow would be tempting to add,
+# would become an undetected fourth copy. Every other assertion in this suite
+# would still pass while that hole existed.
+#
+# So: paste step 4 ABOVE the pinned offset and require it to still be caught.
+neg_probe "step 4 is a numbered step in exactly one document" \
+  'perl -pi -e '"'"'s/^# The canonical V2 contract$/4. The ticket declares an **expected change surface** — the files it is likely to touch.\n\n# The canonical V2 contract/'"'"' docs/v2/ARCHITECTURE-V2.md'
+
+neg_report "GOVERNANCE-WORKFLOW-NEGATIVE" 18

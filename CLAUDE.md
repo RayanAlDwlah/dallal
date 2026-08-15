@@ -463,9 +463,21 @@ session. So each now has a counterpart that runs in CI beside it:
 > distrusted on sight: run the two checks and read their totals.
 
 - **`tests/v2/graph-negative.check.sh`** — 52 probes against `graph.check.mjs`.
-- **`tests/governance/workflow-negative.check.sh`** — 16 probes against `workflow.check.mjs`,
+- **`tests/governance/workflow-negative.check.sh`** — 18 probes against `workflow.check.mjs`,
   including one per step of the seven-step loop, because a seven-long loop is short enough to
   cover exhaustively and each step's copy is caught by a *different* fingerprint.
+
+  **Two of those probes guard an exemption, which is the thing §9 says not to add.** G0A had
+  to give section 2 one: the owner's approved V2 contract is committed verbatim, its bytes are
+  pinned to a SHA-256, and it uses *"expected change surface"* as an ordinary noun on a
+  numbered line — so it trips a fingerprint and **cannot be edited to comply.** An exemption is
+  only not an ignore list if it cannot grow quietly and is not wider than its reason, so one
+  probe asserts the exempt set is exactly one named file, and one pastes a step into the
+  contract's *editable provenance header* and requires it still to be caught. The second was
+  run against a path-keyed implementation on purpose: it reported **MISSED**, then **CAUGHT**
+  against the offset-keyed one. **A probe that cannot tell the correct design from the lazy one
+  is not evidence** — and that is the only reason the exemption is keyed on the published body
+  offset rather than the path.
 - **`tests/lib/negative.sh`** — the shared harness they source. It is a library, refuses to be
   executed, and exists so that the `git checkout --` restore loop and its **trap ordering**
   are written once. That ordering is a safety property, not a style: on 2026-08-15 a trap
