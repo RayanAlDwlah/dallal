@@ -5,8 +5,8 @@
 #   ./tests/guards/run.sh
 #
 # Needs nothing: no Docker, no node, no network, no credentials. It reads the
-# tree and asserts fifteen facts about it. It finishes in under a second, which
-# is deliberate: a guard nobody minds running is a guard that runs.
+# tree and asserts seventeen facts about it. It finishes in under a second,
+# which is deliberate: a guard nobody minds running is a guard that runs.
 #
 # ---------------------------------------------------------------------------
 # WHY THIS FILE EXISTS

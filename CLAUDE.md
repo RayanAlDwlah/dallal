@@ -342,8 +342,9 @@ migration:
 
 Three things in `tests/guards/` are new and each answers a different question:
 
-- **`run.sh`** — fifteen checks over the tree, in under a second. They are the rules from
-  §3, §4, §6 and §5 that lived **only** in this file until now: no `Number()`/`parseFloat`
+- **`run.sh`** — seventeen checks over the tree, in under a second. They are the rules from
+  §3, §4, §6, §5 **and now §1** that lived **only** in this file until now: no
+  `Number()`/`parseFloat`
   on an amount, every `*_price` read carrying `::text` (§4.7), `bid_history.amount` coming
   from `sar_text()`, no money column declared bare `numeric`, no second formatter outside
   `lib/money.ts`, no `ر.س`, no Arabic-Indic digit, `dir="rtl"` declared exactly once and in
@@ -351,7 +352,19 @@ Three things in `tests/guards/` are new and each answers a different question:
   `NEXT_PUBLIC_*SERVICE_ROLE*`, and no `.order("created_at")` on bid history. It strips
   comments before matching, because this repository documents its absences and a plain grep
   reports the healthiest files as the worst offenders.
-- **`negative.sh`** — breaks all fifteen rules on purpose and asserts each one is caught. A
+
+  **The last two are the governance rules from §1**, added 2026-08-15, and they exist
+  because the prose alone had already failed once: no tracked document may re-introduce
+  *"do not write code you do not own"*, and no tracked document may forbid a **named
+  person** from touching something. They read `git ls-files '*.md'` — never `find` —
+  because the first version used `find`, reported four and twenty violations on a tree
+  whose tracked files were clean, and every single match came from `.claude/worktrees/`:
+  stale checkouts of this repository sitting inside it, git-ignored, absent from a CI
+  checkout. That check would have been **green in CI and red locally**, which is the
+  precise inversion of a useful guard. Both strip quoted text first, because this
+  repository retires a rule by quoting it, and a check that cannot tell *"we deleted
+  this"* from *"we require this"* earns an ignore list within a week.
+- **`negative.sh`** — breaks all seventeen rules on purpose and asserts each one is caught. A
   check that stays green while its rule is violated is reported as a **failure of the
   check**. This is not ceremony: it found two real defects in `run.sh` the first time it
   ran. **A guard that cannot fail is worse than no guard.**

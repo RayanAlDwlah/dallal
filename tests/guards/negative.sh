@@ -9,8 +9,8 @@
 # ---------------------------------------------------------------------------
 # WHY THIS EXISTS
 #
-# `./tests/guards/run.sh` printing fifteen PASS lines proves one thing: that
-# fifteen commands ran and returned the numbers expected. It does NOT prove
+# `./tests/guards/run.sh` printing seventeen PASS lines proves one thing: that
+# seventeen commands ran and returned the numbers expected. It does NOT prove
 # that any of them would have returned a different number had the rule been
 # broken. A check with a typo'd pattern, a swallowed exit code, or a path that
 # matches nothing passes exactly as loudly as a check that works — and it
@@ -220,10 +220,10 @@ probe "no .order(\"created_at\")" \
 # that is actually a violation. They are the reason the stripping can be
 # trusted: if it ever grew to swallow plain prose, both would report MISSED.
 probe "the deleted refusal rule has not come back" \
-  "perl -pi -e 's{^}{Do not write code you do not own.\n} if \\\$. == 1' TEAM.md"
+  "perl -pi -e 's{^}{Do not write code you do not own.\n} if \$. == 1' TEAM.md"
 
 probe "forbids a named person from touching something" \
-  "perl -pi -e 's{^}{Mohammed must not touch the money formatter.\n} if \\\$. == 1' TEAM.md"
+  "perl -pi -e 's{^}{Mohammed must not touch the money formatter.\n} if \$. == 1' TEAM.md"
 
 # ---------------------------------------------------------------------------
 ran=$((pass + fail))
