@@ -1335,7 +1335,7 @@ if (!section) {
   // negative suite's probe then matches no line, and the run reports NO-OP
   // instead of the catch it actually made. That is not hypothetical — it is
   // why the wider-reading assertions above are numbered by ordinal. This list
-  // went 3 → 12 → 18 → 29 in four commits; the label has not moved once, and
+  // went 3 → 12 → 18 → 30 in four commits; the label has not moved once, and
   // the comment above it does not say "six items" any more for the same reason.
   //
   // THREE kinds of row sit in this list, and the distinctions are findings
@@ -1377,11 +1377,17 @@ if (!section) {
     // item 7 — who authors a listing
     [1952, "Sellers will write their own descriptions and provide their own images"],
     // item 8 — a host ending a published lot early. Four lines across three
-    // sections, and :798 is the one that is a RATIONALE rather than a rule:
-    // item 8's argument is that BR-30's stated reason — an informal reserve —
-    // survives onto the new power unchanged. Edit that clause away and the
-    // argument goes with it while every rule it cites still reads fine.
+    // sections, and :798 carries TWO pins because it carries two things.
+    //
+    // The first is BR-30's rule. The second is its RATIONALE, and it is pinned
+    // separately after a probe proved the first pin does not cover it: item 8's
+    // argument is not merely that BR-30 exists, it is that BR-30's stated
+    // reason — an informal reserve — survives onto the new power unchanged.
+    // Delete that clause and the argument goes with it while the rule half
+    // still reads perfectly, so a pin on the rule half stays green through the
+    // exact edit item 8 warns about. One line, two claims, two pins.
     [798, "Once published it runs to its end time and closes automatically"],
+    [798, "would hold an informal reserve, undermining BR-06 and fairness"],
     [1218, "no branches, no cancellation, and no manual intervention"],
     [1223, "requiring no administrator and no human action"],
     [2031, "A published auction runs to its end time and closes"],

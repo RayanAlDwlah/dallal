@@ -87,8 +87,8 @@
 # untouched.
 #
 # Five of those six aim at the same assertion from different rows. Its list went
-# 3 → 12 → 18 → 29 as §19/§22, then §20, then §21 were read inward, and one probe
-# against one tuple stops being evidence for twenty-eight others: the loop body
+# 3 → 12 → 18 → 30 as §19/§22, then §20, then §21 were read inward, and one probe
+# against one tuple stops being evidence for twenty-nine others: the loop body
 # is shared, but a typo in a newly added tuple is not caught by a probe on an old
 # one.
 #
@@ -96,11 +96,13 @@
 # where the line is drawn: it is probe-per-KIND, not probe-per-row. Four kinds
 # sit in that list and each gets at least one probe — a §19/§22 **exclusion**
 # row (two probes, because that kind spans two sections), a §20 **assumption**
-# row, a §21 **register entry**, and the one **rationale clause** (`:798`),
-# whose deletion leaves every rule it is cited beside still reading perfectly
-# while the argument built on it is gone. Each is a different table, a different
+# row, a §21 **register entry**, and the one **rationale clause** (`:798`,
+# pinned separately from the rule that shares its line — that separation exists
+# because this probe found it missing), whose deletion leaves every rule it is
+# cited beside still reading perfectly while the argument built on it is gone.
+# Each is a different table, a different
 # shape of sentence, and — if any two are ever read by different code — a
-# different failure. Twenty-nine probes against one shared loop body would be
+# different failure. Thirty probes against one shared loop body would be
 # coverage theatre; five against four kinds is the claim the suite can actually
 # defend.
 #
@@ -589,14 +591,14 @@ neg_probe "every PRD row the ratification items rest on still sits on the line c
   'perl -pi -e '"'"'s/\[1847, "Multiple quantity \/ lots"\]/[1847, "Multiple quantity or lots"]/'"'"' tests/v2/graph.check.mjs'
 
 # The same assertion, aimed at one of the rows added by the inward sweep rather
-# than at the §19.2 three. A list that grew from 3 to 29 entries is a list where
+# than at the §19.2 three. A list that grew from 3 to 30 entries is a list where
 # one probe against one entry stops being evidence for the rest: the loop body
 # is shared, but a typo in a new tuple is not caught by a probe on an old one.
 neg_probe "every PRD row the ratification items rest on still sits on the line cited" \
   'perl -pi -e '"'"'s/\[1917, "Image editing \/ cropping"\]/[1917, "Image editing and cropping"]/'"'"' tests/v2/graph.check.mjs'
 
 # And a third, aimed at a §20 ASSUMPTION row rather than a §19/§22 exclusion.
-# Not probe-per-tuple — 29 tuples would mean 29 probes and the loop body is one
+# Not probe-per-tuple — 30 tuples would mean 30 probes and the loop body is one
 # line. It is probe-per-KIND: the two probes above both aim at table rows in an
 # "excluded" table, and the §20 sweep added a row that reads as ordinary prose
 # in a differently-shaped table. If the two shapes were ever read by different
@@ -610,14 +612,31 @@ neg_probe "every PRD row the ratification items rest on still sits on the line c
 neg_probe "every PRD row the ratification items rest on still sits on the line cited" \
   'perl -pi -e '"'"'s/\[2031, "A published auction runs to its end time and closes"\]/[2031, "A published auction runs until its end time and closes"]/'"'"' tests/v2/graph.check.mjs'
 
-# Fifth, and the one most worth having: `:798` is a RATIONALE clause, not a
-# rule. Item 8 does not merely say BR-30 exists — it says BR-30's stated reason
-# (an informal reserve) survives onto the host-advance power unchanged. Delete
-# that clause from the PRD and every rule item 8 cites still reads perfectly
-# while the argument it actually makes is gone. No other pinned row has that
-# property, which is precisely why one probe on one tuple is not evidence here.
+# Fifth, and the one most worth having: `:798` is a RATIONALE clause as well as
+# a rule. Item 8 does not merely say BR-30 exists — it says BR-30's stated
+# reason (an informal reserve) survives onto the host-advance power unchanged.
+# Delete that clause from the PRD and every rule item 8 cites still reads
+# perfectly while the argument it actually makes is gone. No other pinned row
+# has that property, which is precisely why one probe on one tuple is not
+# evidence here.
+#
+# THIS PROBE ALREADY EARNED ITS KEEP, AND NOT THE WAY IT WAS MEANT TO. Its
+# first draft truncated the tuple to "…runs to its end time and closes",
+# expecting the shortened string to stop matching. It came back MISSED, and the
+# check was right twice over:
+#
+#   1. the comparison is `.includes()`, so a truncated expectation is still
+#      contained in the line. A pin can only be broken by CHANGING a word, never
+#      by dropping one — a shorter expectation is a weaker pin, not a false one.
+#      Anyone adding a probe to this label will hit that; it is written here so
+#      they hit it once.
+#   2. the real defect, which the probe found and the reading had not: the
+#      single `:798` tuple pinned BR-30's RULE half, and item 8 argues from its
+#      REASON half. The edit item 8 warns about — deleting the informal-reserve
+#      clause — would have left this assertion green. `graph.check.mjs` now
+#      carries two tuples on line 798, and this probe aims at the second.
 neg_probe "every PRD row the ratification items rest on still sits on the line cited" \
-  'perl -pi -e '"'"'s/\[798, "Once published it runs to its end time and closes automatically"\]/[798, "Once published it runs to its end time and closes"]/'"'"' tests/v2/graph.check.mjs'
+  'perl -pi -e '"'"'s/would hold an informal reserve, undermining BR-06 and fairness/would hold an informal minimum, undermining BR-06 and fairness/'"'"' tests/v2/graph.check.mjs'
 
 # Dropping a citation is how a finding gets un-found: the rows stay in the PRD,
 # the argument quietly stops pointing at them, and nothing else goes red.
