@@ -3,7 +3,8 @@
 منصة مزادات مباشرة بالعربية (RTL). Next.js + Supabase (PostgreSQL · Auth · Realtime · Storage)
 على Vercel. **المبالغ محاكاة — ما فيه دفع حقيقي ولا حقل بطاقة في أي مكان في المنتج.**
 
-- **Supabase:** مشروع `dallal-v2` (`dymmjhtuoxmrzssofjgl`) — Frankfurt / eu-central-1
+- **الإنتاج:** https://dallal-rust.vercel.app — من فرع `delivery/v2-app` على مشروع Vercel `dallal`
+- **Supabase:** مشروع `dallal-prod` (`yfszokbunbqesigdfuwk`) في Dem4t' Org — سكيمة V2 مركّبة 2026-08-15
 - **المواصفة المرئية:** `design-system/previews/*.html` — عشرة ملفات هي مرجع كل شاشة
 - **تاريخ V1:** المخطط القديم في `supabase/archive-v1/`، والوثائق في `docs/` — للقراءة، مو للبناء
 
