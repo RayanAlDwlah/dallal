@@ -1281,6 +1281,100 @@ if (!section) {
 }
 
 // ---------------------------------------------------------------------------
+// EVERY `PRD.md:NNN` CITATION IS RESOLVED AGAINST THE FILE.
+//
+// This section exists because of a defect found on 2026-08-15, and it is worth
+// stating what the defect actually was: not a wrong line number, but an
+// argument built on the PRD being SILENT about something it excludes by name.
+// §19.2 rows :1846 (scheduled future start times) and :1847 (multiple quantity
+// / lots) were cited by nothing on this board, so nothing led a reader there,
+// so the board concluded silence and classified the gap as safe to fill. It was
+// not silence. It was two named exclusions.
+//
+// A line number is the most quietly rotting citation there is. Insert one
+// paragraph above it and it still parses, still reads, and points a screen
+// away from what it claimed. So each one is resolved: the line must exist, and
+// where the citing prose quotes the row it points at, the PRD line must still
+// contain that quote. The second half is the one that matters — a citation
+// that resolves to the wrong live line is worse than one that resolves to
+// nothing, because it looks checked.
+{
+  const PRD = read("PRD.md").split("\n");
+
+  // The sources that argue from the PRD. Not a glob: a document that starts
+  // citing line numbers should be added here deliberately, by someone who then
+  // has to look at what it cites.
+  const CITERS = [
+    ["docs/v2/TICKETS.md", TICKETS],
+    ["docs/v2/SPEC.md", SPEC],
+    ["docs/decisions/README.md", DEC_README],
+  ];
+
+  const cites = [];
+  for (const [name, body] of CITERS) {
+    for (const m of body.matchAll(/`PRD\.md:(\d+)`|`PRD\.md` §[\d.]+ — [^\n]*?`:(\d+)`|`:(\d+)`/g)) {
+      const n = Number(m[1] ?? m[2] ?? m[3]);
+      cites.push({ doc: name, line: n });
+    }
+  }
+
+  chk("PRD citations were found at all", cites.length > 0, true);
+
+  const dangling = cites
+    .filter((c) => !(c.line >= 1 && c.line <= PRD.length) || PRD[c.line - 1].trim() === "")
+    .map((c) => `${c.doc} → PRD.md:${c.line}`);
+  chk("every PRD.md line cited by the V2 docs exists and is not blank", [...new Set(dangling)].sort(), []);
+
+  // The §19.2 rows the board's §19.2 argument rests on. Each is quoted in
+  // TICKETS.md beside its line number, so the quote is checked against the
+  // line — this is the assertion that would have caught the original defect
+  // had anyone cited these rows at all.
+  const EXCLUSIONS = [
+    [1846, "Scheduled future start times"],
+    [1847, "Multiple quantity / lots"],
+    [1848, "Bid increments of any kind, per-auction or platform-wide"],
+  ];
+  const moved = EXCLUSIONS
+    .filter(([n, text]) => !(PRD[n - 1] ?? "").includes(text))
+    .map(([n, text]) => `PRD.md:${n} no longer reads "${text}"`);
+  chk("the three §19.2 exclusion rows still sit on the lines the board cites", moved, []);
+
+  // …and that the board still cites all three. Dropping a citation is how the
+  // finding gets un-found: the rows stay in the PRD, the argument disappears,
+  // and nothing goes red.
+  const uncited = EXCLUSIONS
+    .filter(([n]) => !cites.some((c) => c.doc === "docs/v2/TICKETS.md" && c.line === n))
+    .map(([n]) => `PRD.md:${n}`);
+  chk("TICKETS.md still cites all three §19.2 exclusion rows", uncited, []);
+}
+
+// ---------------------------------------------------------------------------
+// The blockquote of open questions states its own item count, and the items
+// are numbered by hand. Adding a fourth and leaving the word at "Three" is the
+// same class of drift as every other count in this file — with the difference
+// that the reader who miscounts here is the owner, deciding.
+{
+  // The capture stops at the first line that is not a blockquote line, not at
+  // the next heading. Running to the heading swept in three paragraphs of
+  // ordinary prose, which counted correctly today only because nothing in them
+  // happens to be a numbered blockquote item.
+  const q = grab(
+    TICKETS,
+    /\*\*(\w+) things here are the owner's to answer[^*]*\*\*([^\n]*(?:\n>[^\n]*)*)/,
+    "TICKETS.md states how many questions the ratification blockquote raises",
+  );
+  if (q) {
+    const items = [...q[2].matchAll(/^> \*\*(\d+)\. /gm)].map((m) => Number(m[1]));
+    chk("TICKETS.md: how many questions the blockquote raises", word2num(q[1]), items.length);
+    chk(
+      "TICKETS.md: the blockquote's questions are numbered 1..N with no gap",
+      items,
+      items.map((_, i) => i + 1),
+    );
+  }
+}
+
+// ---------------------------------------------------------------------------
 // The suite's own labels, checked for a collision the negative harness cannot
 // see. `neg_probe` locates a check with `grep -F -- "$label" | head -1` and
 // demands the line start with FAIL. So if label A is a substring of label B and
