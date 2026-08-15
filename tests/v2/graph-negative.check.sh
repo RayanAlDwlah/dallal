@@ -9,7 +9,7 @@
 # ---------------------------------------------------------------------------
 # WHY THIS EXISTS
 #
-# `graph.check.mjs` prints 181 PASS lines. That proves 181 comparisons ran and
+# `graph.check.mjs` prints 190 PASS lines. That proves 190 comparisons ran and
 # agreed. It does NOT prove that any of them would have disagreed had the board
 # been wrong — and this particular file is unusually
 # exposed to that, because most of its assertions are anchored by a REGEX
@@ -33,7 +33,7 @@
 # ---------------------------------------------------------------------------
 # WHAT IS PROBED, AND WHAT IS NOT — SAID PLAINLY
 #
-# 138 probes against 181 assertions. The gap is not laziness and it is not
+# 147 probes against 190 assertions. The gap is not laziness and it is not
 # coverage theatre; it is five loops that generate one assertion per row of a
 # table, or per stated reading:
 #
@@ -167,6 +167,7 @@ docs/ai/local-model.md
 ARCHITECTURE.md
 TEAM.md
 GITHUB_PLAN.md
+docs/v2/TRACKER_PROPOSAL.md
 tests/v2/graph.check.mjs
 supabase/migrations/20260812120000_bid02_bid_acceptance.sql"
 
@@ -1044,4 +1045,77 @@ neg_probe "the \`fifteen\` decision-count claim still stands at thirteen across 
 neg_probe "the board section's stated count matches the rows in its table" \
   'perl -ni -e '"'"'print unless /^\| \*\*5\*\* \| `TEAM\.md:1334`/'"'"' docs/v2/TICKETS.md'
 
-neg_report "V2-GRAPH-NEGATIVE" 138
+# ---------------------------------------------------------------------------
+# L. TRACKER_PROPOSAL.md — the decision request
+#
+# Nine probes. Every one of them mutates the PROPOSAL, never the documents it
+# describes, and that asymmetry is the point of the section: sections A–K prove
+# the board notices when the tree moves, and this one proves the board notices
+# when the *proposal* stops describing the tree.
+#
+# The distinction matters more here than anywhere else in this suite, because a
+# proposal is the one artefact in the repository that is READ ONCE AND ACTED
+# ON. A stale sweep gets re-read and argued with. A stale proposal gets
+# approved — somebody replies "2A" to a table that no longer covers every
+# ticket, and the drift is now a decision.
+#
+# Nothing below pins its prose. A decision request must stay rewritable by
+# whoever answers it; what may not drift is the arithmetic underneath.
+# ---------------------------------------------------------------------------
+
+# The edit list. This is the probe with the nastiest failure mode behind it: a
+# ref that has slipped by one still looks like a citation, and whoever executes
+# the answer edits the neighbouring line. CI stays green, because no pin covers
+# a line the proposal invented — which is why the check exists rather than
+# relying on the BOARD_LINES pins to catch it.
+neg_probe "every TEAM.md line TRACKER_PROPOSAL.md's edit list names exists and is not blank" \
+  'perl -pi -e '"'"'s/^- `TEAM\.md:1095` and/- `TEAM.md:99999` and/'"'"' docs/v2/TRACKER_PROPOSAL.md'
+
+neg_probe "every GITHUB_PLAN.md line TRACKER_PROPOSAL.md's edit list names exists and is not blank" \
+  'perl -pi -e '"'"'s/^- `GITHUB_PLAN\.md:271` \(S0-14\)/- `GITHUB_PLAN.md:99999` (S0-14)/'"'"' docs/v2/TRACKER_PROPOSAL.md'
+
+# Gate 2's arithmetic, both halves, and they are separate defects. Here the
+# stated count moves and the list does not — the shape of a hand-edited table.
+neg_probe "TRACKER_PROPOSAL.md's area table states, row by row, a count matching its own ticket list" \
+  'perl -pi -e '"'"'s/^\| `area:sessions` \*\*new\*\* \| 8 \|/| `area:sessions` **new** | 9 |/'"'"' docs/v2/TRACKER_PROPOSAL.md'
+
+# …and here the count is right and the coverage is not. Renaming one ticket to
+# a row that does not exist leaves the total at 8 and passes the check above,
+# so this needs its own assertion and its own probe. `V2-B11` is the host
+# control room; under this mutation it would be created with no area label.
+neg_probe "TRACKER_PROPOSAL.md assigns an area to every board ticket, exactly once" \
+  'perl -pi -e '"'"'s/B9, B10, B11 \|/B9, B10, B99 |/'"'"' docs/v2/TRACKER_PROPOSAL.md'
+
+# The closing argument. Slip a guard-table row by one line and the proposal
+# still claims CI will catch the edit — but :215 is pinned by nothing, so the
+# claim is now false in the one paragraph whose whole job is to be true.
+neg_probe "every line TRACKER_PROPOSAL.md says a guard pins is actually pinned" \
+  'perl -pi -e '"'"'s/^\| `GITHUB_PLAN\.md:214` —/| `GITHUB_PLAN.md:215` —/'"'"' docs/v2/TRACKER_PROPOSAL.md'
+
+# The prose total that sits above that table. Written as a word, so parsed as
+# one — same rule as every other count in this suite.
+neg_probe "TRACKER_PROPOSAL.md's pin arithmetic — total, edited, untouched — still adds up" \
+  'perl -pi -e '"'"'s/The other eleven stay green/The other ten stay green/'"'"' docs/v2/TRACKER_PROPOSAL.md'
+
+# Gate 3's table, three ways, because it fails three ways.
+#
+# One: the count drifts from SPEC.md's grouping.
+neg_probe "TRACKER_PROPOSAL.md's tracking issues still group the register exactly as SPEC.md does" \
+  'perl -pi -e '"'"'s/O15, O16, O17, O18, O19 \| 5 \|/O15, O16, O17, O18, O19 | 4 |/'"'"' docs/v2/TRACKER_PROPOSAL.md'
+
+# Two: the count is right and the ids are wrong. This is the one a count-only
+# check waves through, and it is the worst of the three in practice — the
+# tracking issue exists, the ticket is linked to it, and it is the wrong one.
+neg_probe "TRACKER_PROPOSAL.md lists the register's own O items under each record, not merely the count" \
+  'perl -pi -e '"'"'s/\| O20, O21, O22, \*\*O23\*\* \| 4 \|/| O20, O21, O22, **O99** | 4 |/'"'"' docs/v2/TRACKER_PROPOSAL.md'
+
+# Three: the double-count disappears. `O23` is mapped to two records on
+# purpose, the sum overshoots by exactly one because of it, and that overshoot
+# IS gate 3's argument — the thing a label cannot express. Tidy it away and the
+# table becomes internally consistent while the paragraph beside it, which
+# explains the extra row, becomes a lie. Consistency is not the property being
+# checked here; agreement with SPEC.md is.
+neg_probe "TRACKER_PROPOSAL.md's tracking table still overshoots the register by exactly the shared item" \
+  'perl -pi -e '"'"'s/\| O20, O21, O22, \*\*O23\*\* \| 4 \|/| O20, O21, O22 | 3 |/'"'"' docs/v2/TRACKER_PROPOSAL.md'
+
+neg_report "V2-GRAPH-NEGATIVE" 147

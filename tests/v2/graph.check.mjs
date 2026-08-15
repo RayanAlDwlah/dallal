@@ -1707,6 +1707,122 @@ if (!section) {
     [word2num(boardHeading.match(/— (\w+) crossings/)?.[1] ?? ""), boardRows],
     [boardRows, boardRows],
   );
+
+  // -------------------------------------------------------------------------
+  // TRACKER_PROPOSAL.md — the most perishable document in this tree, and the
+  // only one that is a QUESTION rather than a record. Everything else here
+  // describes something that is already true; this one describes something
+  // somebody still has to answer, so it rots in a way the others cannot: the
+  // board moves, the guards move, and it goes on asking for the wrong thing
+  // in a form that still reads as authoritative. Every assertion below is
+  // DERIVED. Nothing pins its prose, deliberately — a decision request should
+  // be rewritable without a test telling its author which words to use.
+  const PROP = read("docs/v2/TRACKER_PROPOSAL.md");
+
+  // Same dangling check the two process documents get. A proposal whose edit
+  // list points at a line that has moved is worse than no edit list, because
+  // whoever executes it edits the WRONG line and CI stays green — none of the
+  // pins below cover a line the proposal invented.
+  for (const [doc, lines] of [["TEAM.md", TEAMD], ["GITHUB_PLAN.md", PLAN]]) {
+    const esc = doc.replace(".", "\\.");
+    const bad = [...new Set(
+      [...PROP.matchAll(new RegExp("`" + esc + ":(\\d+)`", "g"))].map((m) => Number(m[1])),
+    )]
+      .filter((n) => !(n >= 1 && n <= lines.length) || lines[n - 1].trim() === "")
+      .sort((a, b) => a - b)
+      .map((n) => `${doc}:${n}`);
+    chk(`every ${doc} line TRACKER_PROPOSAL.md's edit list names exists and is not blank`, bad, []);
+  }
+
+  // Gate 2 rests on an assignment of every board row to an area. A proposal
+  // that covers 40 of 41 ships one ticket with no label at all, and the row it
+  // drops is whichever was added last — the newest and least-reviewed on the
+  // board. Both halves are checked: the per-row arithmetic, and the coverage.
+  const propArea = [...PROP.matchAll(/^\| `area:(\w+)`[^|]*\|\s*(\d+)\s*\|([^|]+)\|/gm)];
+  const expand = (cell) =>
+    (cell.match(/\bV2-00\b|\b[ABC]\d+\b/g) ?? []).map((t) => (t === "V2-00" ? t : `V2-${t}`));
+  chk(
+    "TRACKER_PROPOSAL.md's area table states, row by row, a count matching its own ticket list",
+    propArea
+      .map(([, a, n, cell]) => [`area:${a}`, Number(n), expand(cell).length])
+      .filter(([, n, len]) => n !== len),
+    [],
+  );
+  const assigned = propArea.flatMap(([, , , cell]) => expand(cell));
+  chk(
+    "TRACKER_PROPOSAL.md assigns an area to every board ticket, exactly once",
+    {
+      unassigned: [...board.keys()].filter((t) => !assigned.includes(t)).sort(),
+      twice: assigned.filter((t, i) => assigned.indexOf(t) !== i).sort(),
+      invented: assigned.filter((t) => !board.has(t)).sort(),
+    },
+    { unassigned: [], twice: [], invented: [] },
+  );
+
+  // The proposal's closing argument is "accepting this turns CI red, and that
+  // is the mechanism working". If a line it names stops being pinned, the
+  // argument becomes decoration — and the reader has no way to tell, because
+  // an unpinned line reads exactly like a pinned one.
+  const pinnedSet = new Set(BOARD_LINES.map(([doc, n]) => `${doc}:${n}`));
+  const propPinned = [...PROP.matchAll(/^\| `(TEAM\.md|GITHUB_PLAN\.md):(\d+)`/gm)]
+    .map((m) => `${m[1]}:${m[2]}`);
+  chk(
+    "every line TRACKER_PROPOSAL.md says a guard pins is actually pinned",
+    propPinned.filter((r) => !pinnedSet.has(r)).sort(),
+    [],
+  );
+  chk(
+    "TRACKER_PROPOSAL.md's pin arithmetic — total, edited, untouched — still adds up",
+    [
+      word2num(PROP.match(/pins (\w+) board lines/)?.[1] ?? ""),
+      word2num(PROP.match(/\*\*(\w+) of them are lines this\s+proposal edits\*\*/)?.[1] ?? ""),
+      word2num(PROP.match(/The other (\w+) stay green/)?.[1] ?? ""),
+    ],
+    [pinnedSet.size, propPinned.length, pinnedSet.size - propPinned.length],
+  );
+
+  // Option 3A costs nothing precisely BECAUSE the grouping is the register's
+  // own, taken from SPEC.md rather than invented here. Derive both sides: the
+  // day a seventh record appears, or an O item is re-homed, the proposal stops
+  // describing the register it claims to be a view of.
+  const specD = new Map();
+  for (const line of SPEC.split("\n")) {
+    const m = line.match(/^\|\s*\*\*(O\d+)\*\*\s*\|[^|]*\|([^|]*)\|/);
+    if (m) {
+      for (const d of m[2].match(/\bD-\d+\b/g) ?? []) {
+        specD.set(d, (specD.get(d) ?? new Set()).add(m[1]));
+      }
+    }
+  }
+  const propD = [...PROP.matchAll(/^\| `(D-\d+)`[^|]*\|([^|]*)\|\s*(\d+)\s*\|/gm)];
+  chk(
+    "TRACKER_PROPOSAL.md's tracking issues still group the register exactly as SPEC.md does",
+    Object.fromEntries(propD.map((m) => [m[1], Number(m[3])])),
+    Object.fromEntries([...specD].sort().map(([d, s]) => [d, s.size])),
+  );
+  // …and the O items it lists are the ones SPEC.md maps there, not just the
+  // right COUNT of them. A row that says 11 and lists eleven wrong ids passes
+  // the check above and sends a ticket to the wrong tracking issue.
+  chk(
+    "TRACKER_PROPOSAL.md lists the register's own O items under each record, not merely the count",
+    propD
+      .map((m) => [m[1], (m[2].match(/\bO\d+\b/g) ?? []).sort().join(",")])
+      .filter(([d, got]) => got !== [...(specD.get(d) ?? [])].sort().join(",")),
+    [],
+  );
+  // The distinct total is the register's size. Stated separately from the
+  // per-record grouping because the interesting number is the one the sum
+  // OVERSHOOTS: O23 is mapped twice on purpose, and that double-count is the
+  // whole of gate 3's argument. If it ever stops overshooting, the argument
+  // has lost its example and the prose around it is stale.
+  chk(
+    "TRACKER_PROPOSAL.md's tracking table still overshoots the register by exactly the shared item",
+    [
+      propD.reduce((a, m) => a + Number(m[3]), 0),
+      new Set(propD.flatMap((m) => m[2].match(/\bO\d+\b/g) ?? [])).size,
+    ],
+    [register.size + 1, register.size],
+  );
 }
 
 // ---------------------------------------------------------------------------
