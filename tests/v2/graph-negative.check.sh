@@ -33,7 +33,7 @@
 # ---------------------------------------------------------------------------
 # WHAT IS PROBED, AND WHAT IS NOT — SAID PLAINLY
 #
-# 139 probes against 181 assertions. The gap is not laziness and it is not
+# 138 probes against 181 assertions. The gap is not laziness and it is not
 # coverage theatre; it is five loops that generate one assertion per row of a
 # table, or per stated reading:
 #
@@ -900,8 +900,12 @@ neg_probe "every ARCHITECTURE.md line the crossings section rests on still sits 
 # is cited exactly once, so unlike the `:1848` probe in section G there is only
 # one door to close — checked before writing this, not assumed, because "cited
 # once" is the assumption that made that probe report MISSED.
+# CLOSE ALL DOORS. This probe read MISSED the moment section K's census
+# blockquote cited :1552 a second time — one mutation, two copies, assertion
+# still satisfied by the survivor. It now strips every copy, which is the only
+# form of this mutation that stays honest as the prose grows.
 neg_probe "TICKETS.md still cites every ARCHITECTURE.md line its crossings section rests on" \
-  'perl -pi -e '"'"'s/`ARCHITECTURE\.md:1552` says/the last sentence of that section says/'"'"' docs/v2/TICKETS.md'
+  'perl -pi -e '"'"'s/`ARCHITECTURE\.md:1552`/that line/g'"'"' docs/v2/TICKETS.md'
 
 # Kind five, twice: the SHIPPED CONSTRAINT. These two are the only probes in the
 # file whose real-world trigger is somebody changing the database rather than
@@ -999,7 +1003,7 @@ neg_probe "every board line the crossings section rests on still sits on the lin
 # prohibition defended rather than merely present. Dropping the clause leaves
 # the ticket reading perfectly and removes the thing crossing 3 cites it for.
 neg_probe "every board line the crossings section rests on still sits on the line cited" \
-  'perl -pi -e '"'"'s/ · `needs-decision` does not exist//'"'"' GITHUB_PLAN.md'
+  'perl -pi -e '"'"'s/ and that `needs-decision` does not exist//'"'"' GITHUB_PLAN.md'
 
 # Kind four — PRODUCT PROHIBITION. Removing `bid increment` from "Things
 # nobody may build" is the edit ratifying D-01 requires, and it is the one
@@ -1040,4 +1044,4 @@ neg_probe "the \`fifteen\` decision-count claim still stands at thirteen across 
 neg_probe "the board section's stated count matches the rows in its table" \
   'perl -ni -e '"'"'print unless /^\| \*\*5\*\* \| `TEAM\.md:1334`/'"'"' docs/v2/TICKETS.md'
 
-neg_report "V2-GRAPH-NEGATIVE" 139
+neg_report "V2-GRAPH-NEGATIVE" 138
