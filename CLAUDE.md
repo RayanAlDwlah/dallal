@@ -337,7 +337,7 @@ migration:
 
 | job | cost | what it runs |
 |---|---|---|
-| `static` | seconds, no Docker | the three guard scripts, the V2 board check, INT-06, INT-08, the realtime checks, `lint`, `typecheck`, `build` |
+| `static` | seconds, no Docker | the three guard scripts, the V2 board check, **the governance workflow check**, INT-06, INT-08, the realtime checks, `lint`, `typecheck`, `build` |
 | `database` | minutes, PostgreSQL 17 in Docker | `tests/auth/run.sh`, `tests/auction/run.sh`, `tests/bidding/run.sh` |
 
 Three things in `tests/guards/` are new and each answers a different question:
@@ -424,6 +424,28 @@ A fourth now runs beside them, on the planning documents rather than the tree:
   reach section must be pinned by a table row or by a sentence-level assertion, so adding an
   id to that prose costs a row. **Write the rule in the guard, not only in the guide**; a
   rule that lives only in a document is followed exactly as well as this one was.
+
+- **`tests/governance/workflow.check.mjs`** — the same failure again, in prose this time,
+  and about **this file**. §1's seven-step workflow was also written out as a numbered list
+  in `TEAM.md` §7 and in `docs/v2/SPEC.md` §5.1: three copies, in agreement, on the day they
+  were written. Agreement is the state in which a duplicated list looks harmless, and this
+  repository already holds the receipt for what comes next — when the ownership model was
+  amended, the amendment had to carry a list of other documents still describing the old one,
+  because each had restated it instead of pointing at it.
+
+  The steps are now written **once**, here, and the two restatements are gone; what those
+  sections legitimately added — what `ready` means on the V2 board, which lane a surface
+  belongs to, what to do when a steward is away — stayed. The check extracts each step's
+  distinctive phrasing **from this file** rather than carrying its own copy, so rewording a
+  step moves the detector with it, and then refuses to find those phrases in a numbered list
+  anywhere else. It also requires every document that discusses the workflow to cite §1 as
+  the governing statement.
+
+  Two of its own probes came back **MISSED** before it was committed, and both were real:
+  fingerprinting a step by its longest bolded phrase went blind when that one bold was
+  removed, and the vacuity guard fired the moment de-duplication succeeded, because the
+  detector it depended on had nothing left to detect. **A check is not finished when it
+  passes; it is finished when it has been made to fail on purpose.**
 
 ### The rule when a guard goes red and you believe the code is right
 

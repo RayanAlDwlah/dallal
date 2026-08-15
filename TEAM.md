@@ -312,15 +312,19 @@ see `CLAUDE.md` §8.
 > until it merges, and then it is over. Ownership is temporary responsibility, not an
 > authorization boundary.
 
-`CLAUDE.md` §1 is the governing statement and carries the seven-step workflow. In short:
+**The seven steps are in [`CLAUDE.md` §1](CLAUDE.md), and they are not repeated here.**
 
-1. Check dependencies and confirm the issue is **`ready`**.
-2. **Claim it** before writing code.
-3. Branch **per ticket**: `feature/<ticket-id>-<short-name>`.
-4. The ticket declares an **expected change surface**, not exclusive file ownership.
-5. If two tickets need the same file, **merge the shared contract or foundation first**.
-6. The PR states **changed files, verification evidence, remaining risks, handoff notes**.
-7. After merge, **any available contributor** claims the next ready ticket.
+This section used to restate them, in shorter words, and so did [`docs/v2/SPEC.md`](docs/v2/SPEC.md)
+§5.1 — three copies of one list. They agreed on 2026-08-15 and that is exactly when the
+duplication is invisible: a copy costs nothing until the day someone edits one of them. This
+repository already has that receipt. When the ownership model was amended, the amendment had
+to carry a list of six other documents still describing the old one, because each had
+restated it rather than pointed at it.
+
+So the rule is now mechanical, in `tests/governance/workflow.check.mjs`: **the numbered list
+lives in `CLAUDE.md` §1 and every other document points at it.** A document may add whatever
+its own readers need — the table below is this section's addition, and it stays. What no
+document may do is write the steps out again.
 
 ### The two things that still stop you
 

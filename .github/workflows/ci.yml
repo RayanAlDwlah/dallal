@@ -119,6 +119,13 @@ jobs:
       - name: V2 — the board's two copies of the graph agree, and its counts are real
         run: node --no-warnings tests/v2/graph.check.mjs
 
+      # The same failure one level out, in prose. CLAUDE.md §1 carries the
+      # seven-step workflow; TEAM.md §7 and SPEC.md §5.1 each restated it, and
+      # three copies that agree are a problem only on the day one is edited.
+      # This extracts the steps FROM CLAUDE.md and refuses a second copy.
+      - name: governance — the seven-step workflow is written exactly once
+        run: node --no-warnings tests/governance/workflow.check.mjs
+
       - name: INT-08 — the excluded-features audit
         run: ./tests/integration/excluded-features.check.sh
 

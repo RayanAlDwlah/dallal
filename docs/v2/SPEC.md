@@ -341,25 +341,30 @@ in-flight tickets can be sequenced instead of collided. It is not a licence and 
 fence. If a lane-B ticket genuinely needs a line in `lib/`, it writes the line — and says
 so in the PR's changed-files section, which is where a surprise gets noticed.
 
-### 5.1 The workflow — seven steps, per ticket
+### 5.1 The workflow — what its seven steps mean on this board
 
-1. **Check dependencies and confirm the issue is `ready`** — every id in its *depends on*
-   is merged, and no id in its *blocked on* is still open.
-2. **Claim the issue before coding.** Assign it to yourself. An unclaimed ticket is
-   available to anyone; a claimed one is not being done twice.
-3. **One branch per ticket:** `feature/<ticket-id>-<short-name>` — e.g.
-   `feature/V2-A3-bid-increment`. Not one long-lived branch per person.
-4. **The ticket declares an expected change surface, not exclusive file ownership.** If
-   your work lands outside the surface you declared, that is information for the PR, not a
-   violation.
-5. **If two tickets need the same file, merge the shared contract or foundation first.**
-   That is what the **C** lane is for, and why every contract in `TICKETS.md` now has a
-   ticket id and a real file path instead of a name like `contract-A1` that pointed at
-   nothing.
-6. **A PR carries four things:** changed files · verification evidence · remaining risks ·
-   handoff notes. Evidence means output, not the assertion that something passes.
-7. **After merge, any available contributor claims the next ready ticket.** Including a
-   ticket in a lane the previous one was not in.
+**The seven steps are in [`CLAUDE.md` §1](../../CLAUDE.md), and this section does not repeat
+them.** It used to, and so did `TEAM.md` §7 — three numbered copies of one list, in
+agreement, which is the only state in which a duplicated list looks harmless.
+`tests/governance/workflow.check.mjs` now refuses a second copy; §4 above says two copies of
+a graph drift "in the direction that makes the plan look better", and prose is no better
+behaved than a table.
+
+What is board-specific, and is not in §1 because it could not be:
+
+- **Step 1's `ready` has a definition here**, and it is the one this document's checks use:
+  every id in a ticket's *depends on* is merged, **and** no id in its *blocked on* is still
+  open. §4.3 is where the second half is looked up. Unblocked is not `ready` — §4.4.
+- **Step 4's declared surface is the lane table above.** If your work lands outside the
+  surface you declared, that is information for the PR's changed-files section, not a
+  violation.
+- **Step 5 is what the C lane is for** — and why every contract in `TICKETS.md` now has a
+  ticket id and a real file path, instead of a name like `contract-A1` that pointed at
+  nothing.
+- **Step 6's "verification evidence" means output.** Not the assertion that something
+  passes. That distinction is the recurring defect on this project.
+- **Step 7 does not keep you in a lane.** The next ticket you claim may be in a different
+  one from the last.
 
 The only two things that legitimately stop you are: **the product question is not decided**
 (a `blocked on` id in §4.3), and **your change would break a stated contract**. Neither of
