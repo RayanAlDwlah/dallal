@@ -15,11 +15,11 @@ restating the dependency graph, delete that part and link instead.
 | | |
 |---|---|
 | **Run id** | `e33684e-20260815T0250` |
-| **Last updated** | 2026-08-15, after reading `PRD.md` §19.2 against D-03 and measuring both wider readings of `R3` (`bb4161a`..`7e4fd90`) — this file is the commit that follows it |
+| **Last updated** | 2026-08-15, after reading `PRD.md` §19 and §22 **inward** against the board — three more crossings, none decided (`bb4161a`..`02feda4`) — this file is the commit that follows it |
 | **Branch** | `feature/rayan-v2-spec` |
-| **HEAD** | `7e4fd90` + this commit |
-| **Base** | **33 commits ahead of `origin/main`**, and it contains `.github/workflows/ci.yml`, which `main` does not. Everything through `7e4fd90` **is pushed**; this commit may not be. Push, never force-push — #168 is open and others may be reading it |
-| **CI status** | **`static` GREEN at `7e4fd90`** on `ubuntu-latest` ([run 31869670980](https://github.com/RayanAlDwlah/dallal/actions/runs/31869670980)) — the new counts are **no longer macOS-only**: Linux reports `163 passed, 0 failed` and `108 caught, 0 not caught (0 no-op), 108 of 108 probes reached`, the same figures measured here. **`database` still RED** on the pre-existing #147 (`auth` and `bidding` both pass; `auction` does not), which **PR #155 fixes and only a human can merge**. See the correction under the measurement tables before trusting any green row |
+| **HEAD** | `02feda4` + this commit |
+| **Base** | **35 commits ahead of `origin/main`**, and it contains `.github/workflows/ci.yml`, which `main` does not. Everything through `02feda4` **is pushed**; this commit may not be. Push, never force-push — #168 is open and others may be reading it |
+| **CI status** | **`static` GREEN on `ubuntu-latest` at `7e4fd90`** ([run 31869670980](https://github.com/RayanAlDwlah/dallal/actions/runs/31869670980)), reporting `163 passed, 0 failed` and `108 caught, 0 no-op, 108 of 108 reached` — **identical to the macOS figures**, which is the claim worth making given the `grep`-dialect divergence recorded below. `02feda4` has landed since and takes those to **164 / 111**; that pair is **macOS-only until the next run reports**. **`database` still RED** on the pre-existing #147 (`auth` and `bidding` both pass; `auction` does not), which **PR #155 fixes and only a human can merge**. See the correction under the measurement tables before trusting any green row |
 | **Operator** | unattended Claude session, owner asleep, reviewing later |
 
 ---
@@ -324,7 +324,15 @@ declaring it out of scope.
    Posted on #168 as
    [`#issuecomment-5300954926`](https://github.com/RayanAlDwlah/dallal/pull/168#issuecomment-5300954926).
    See the §19.2 section below.
-6. Only then create the V2 issues.
+6. ~~**The same read run inward — §19 and §22 against what V2 builds**~~ — **done**, `02feda4`.
+   The sweep item that was in the fallback queue below, promoted because item 5 named its own
+   blind spot. Three more crossings — image *editing* (`:1917`, two rows from the one `R2`
+   cites), the professional-seller lines (`:1886`, A-U1 at `:1930`) and the deposit against
+   SC-67 (`:1813`) — plus two more specific lines for item 1. **The blockquote has six
+   questions now, not three.** Nothing reclassified. Posted on #168 as
+   [`#issuecomment-5301005402`](https://github.com/RayanAlDwlah/dallal/pull/168#issuecomment-5301005402).
+   See the inward-sweep section below.
+7. Only then create the V2 issues.
 
 **Blocked, with the reason:**
 
@@ -340,12 +348,21 @@ declaring it out of scope.
 stalls: the #168 corrective items; documentation-consistency sweeps; re-verifying `#165`; and
 the research passes behind `O14` and `O24` that produce *options* rather than decisions.
 
-> The D-0x-versus-`PRD.md` re-read has come off this list because it ran, and what it found
-> suggests the next one: **§19.2 was invisible because the sweep read records outward to the
-> sections they cite.** The remaining exclusion tables — §19.1, §19.3..§19.n and §22.1 — have
-> not been read *inward*, against what V2 actually builds, and that is a different question
-> from the one already answered. It is a sweep, not a decision, so it is safe to run
-> unattended; anything it finds is a blockquote question, never a reclassification.
+> **The inward sweep of §19 and §22 has also come off this list, because it ran** — that is
+> item 6 above, and it found three more crossings. What it leaves behind is a narrower and
+> less promising question, recorded so the next session does not re-run the broad one thinking
+> it is new: **§19.3, §19.4, §19.7 and §19.8 were read and produced nothing.** No V2 ticket
+> builds notifications, messaging, ratings, a native app, multi-language, multi-currency, MFA
+> or OAuth. §19.6's *admin dashboard* row was considered and rejected as a finding — a host
+> controlling their **own** session is a seller power, not platform administration, and §4.3
+> is about the latter. That judgement is the one most worth a second reader's eye, since it is
+> the only place the sweep decided a row did *not* apply rather than surfacing it.
+>
+> The remaining unread surface is **§20's other assumption rows and §21**. A-U1 turned out to
+> matter (item 5), so the rest of §20 is the obvious next place — assumptions are weaker than
+> exclusions and a sweep there will likely be quieter, but A-U1 is the proof that "weaker" is
+> not "empty". It is a sweep, not a decision, so it is safe to run unattended; anything it
+> finds is a blockquote question, never a reclassification.
 
 ---
 
@@ -526,6 +543,55 @@ weak guard. A renamed §4.1 makes `indexOf` return `-1`, and `slice` reads `-1` 
 end* rather than raising — the slice silently widens to most of the file and the check passes
 for an unrelated reason. Both bounds are now asserted, in order, before the slice is used.
 
+### The same read run inward, at `02feda4` — §19 and §22 against what V2 builds
+
+The §19.2 finding above named its own cause: the `R` register was built by reading each record
+**outward** to the lines it cites, so a row **no record cites is unreachable by construction**.
+That is a defect in the method, not in anyone's attention, and the remedy is to run the method
+backwards — every `§19` exclusion row and every `§22` future row, asked *which V2 ticket builds
+this?*
+
+Three more crossings. All three are **adjacent to rows the register already had**, which is
+exactly what an outward read predicts and is the strongest evidence the diagnosis was right:
+
+| # | the row nobody cited | what builds it | why it was missed |
+|---|---|---|---|
+| 4 | `PRD.md:1917` — **Image editing / cropping** | `V2-C7`, `V2-A14`, `V2-A15`, `V2-A16`, `V2-B12`; D-04 feature 2 crops and relights | `R2` cites `:1915`, **two rows above it**. `SPEC.md:203` decided "in scope" without the row in front of it. `:1917` also has **no §22 twin** — excluded and not even filed as future |
+| 5 | `PRD.md:1886` — **Bulk listing / seller tools**, *"professional sellers are not a target user"*; and `:1930` **A-U1**, *"users are individuals, not businesses"* | phase 4's host control room — `V2-A10`, `A11`, `A12`, `B9`, `B10`, `B11` | item 2's question with different citations. A-U1 is an **assumption** row, not an exclusion, so ratifying it is a different act and one does not cover the other |
+| 6 | `PRD.md:1806` **wallets or stored balances**, `:1825` **escrow**, `:1813` **SC-67** — *"no screen … offers or **implies**"* | `V2-A13`, `V2-B10` — a بدون · 25 · 50 · 100 · 500 chooser to enter a hall | `R6` reads *"silent. Zero occurrences of 'deposit'"* — true of the **word**, reached by keyword search. D-05 §2 answers "no money moves", which answers §19.1, not the verb SC-67 uses |
+
+Item 1 also gained the two lines more specific than the `:411` it already quoted: `:1875`
+excludes faceted filtering outright, `:2134` files it as Phase 5, and `V2-A17`'s own title is
+four facets.
+
+**Nothing was reclassified and no `R` moved.** All six are questions in the blockquote. The
+precedent for what ratifying any of them looks like was already on the record and is now named
+in the board: when `BR-36` reversed anti-sniping, `docs/decisions/README.md:145` notes **§19.2
+and §22.1 were both un-marked** — exclusion row *and* future row, one change.
+
+The pinned-row list went **3 → 12**, so every line these arguments rest on is resolved against
+`PRD.md`, must still carry the text quoted beside it, and must still be cited by `TICKETS.md`.
+SC-67 got its own assertion because it is a sentence rather than a table row and item 6 turns
+on one verb in it.
+
+**Both labels lost their embedded count**, and this is the first time that rule paid. *"the
+three §19.2 exclusion rows"* renames itself the moment the list grows; the probe then matches
+no line and the suite reports **NO-OP instead of the catch it made**. The rule was learned one
+commit earlier on the wider-reading assertions — this list going 3 → 12 is precisely the event
+it was written for.
+
+```
+V2 — graph.check.mjs   164 passed, 0 failed                                    (163)
+V2 — graph-negative    111 caught, 0 not caught (0 no-op), 111 of 111 reached  (108)
+```
+
+**No probe defect this time** — five new probes, all CAUGHT on the first run, against two of
+the previous three. The difference is not luck: the two probes that failed last commit failed
+because a mutation was aimed at a moving target (an indentation level, one of two citation
+sites). These were written after that, and the two aimed at the 12-entry list deliberately hit
+**different tuples** — a shared loop body means one probe on one tuple is not evidence for the
+other eleven.
+
 ---
 
 ## Decisions and assumptions made by this run
@@ -536,7 +602,7 @@ for an unrelated reason. Both bounds are now asserted, in order, before the slic
 | — | Treat the red Vercel check on #155/#165/#167/#168 as **not a code signal** | Vercel returned `api-deployments-free-per-day`, "try again in 24 hours" | yes |
 | — | `PRD.md` is **not touched** by this run | owner: "the owner will ratify it manually" | n/a |
 | — | The untracked migration is **never staged and never edited** | `git status` shows it untracked at every commit in this run | n/a |
-| — | Every board number is **machine-derived**, never hand-counted | `tests/v2/graph.check.mjs`, 163 assertions | it is a procedure |
+| — | Every board number is **machine-derived**, never hand-counted | `tests/v2/graph.check.mjs`, 164 assertions | it is a procedure |
 | — | `PRD.md` is not a **mutation surface** either — not even for a probe that would restore it | an interrupted run must not be able to leave the file the owner ratifies broken; the probe breaks the checker's expectation instead | it is a procedure |
 | — | An **unratified decision blocks a ticket**, exactly as an unanswered question does | not invented here: `docs/decisions/README.md:82` already records the precedence rule, and `CLAUDE.md` §2 already orders the sources. The **`R`→ticket mapping** is judgment, and the rule used is stated in prose for the owner to correct | yes — it is a column, and the owner ratifying anything empties it |
 | — | A new check is not trusted until a **negative probe** makes it fail | four real check defects found this way, two of them in PZ-8 | it is a procedure |
