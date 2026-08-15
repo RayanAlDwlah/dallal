@@ -15,11 +15,11 @@ restating the dependency graph, delete that part and link instead.
 | | |
 |---|---|
 | **Run id** | `e33684e-20260815T0250` |
-| **Last updated** | 2026-08-15, after the `f4ff6f1` guard fix — this file is the commit that follows it |
+| **Last updated** | 2026-08-15, after the ratification-column re-read (`e87a170`) — this file is the commit that follows it |
 | **Branch** | `feature/rayan-v2-spec` |
-| **HEAD** | `f4ff6f1` + this commit |
-| **Base** | **21 commits ahead of `origin/main`**, and it contains `.github/workflows/ci.yml`, which `main` does not. Everything through `cd6ada6` **is pushed**; `f4ff6f1` and this commit may not be. Push, never force-push — #168 is open and others may be reading it |
-| **CI status** | **`static` GREEN at `5fee651`** — first time; it had been red on every push since `03217f7`, on a guard of my own, and `f4ff6f1` is the fix. **`database` still RED** on the pre-existing #147 (`auth` and `bidding` both pass; `auction` does not), which **PR #155 fixes and only a human can merge**. See the correction under the measurement tables before trusting any green row |
+| **HEAD** | `e87a170` + this commit |
+| **Base** | **26 commits ahead of `origin/main`**, and it contains `.github/workflows/ci.yml`, which `main` does not. Everything through `e87a170` **is pushed**; this commit may not be. Push, never force-push — #168 is open and others may be reading it |
+| **CI status** | **`static` GREEN at `5fee651`**, the first time since the job was written. Four commits have landed since, all documents and checks — the Linux verdict on `e87a170` is whatever the next run says, and **the four new-suite rows below are macOS-only until it reports**. **`database` still RED** on the pre-existing #147 (`auth` and `bidding` both pass; `auction` does not), which **PR #155 fixes and only a human can merge**. See the correction under the measurement tables before trusting any green row |
 | **Operator** | unattended Claude session, owner asleep, reviewing later |
 
 ---
@@ -315,7 +315,10 @@ declaring it out of scope.
    itself meta-probed: a mutation that changes nothing reports **NO-OP**, a label no check
    prints reports **BROKEN**, and an unwatched edit reports **MISSED**. It discriminates all
    four, so the 68 are signal. Each suite's header names what it does **not** probe.
-4. Only then create the V2 issues.
+4. ~~**Adversarial re-read of the board itself, before it becomes issues**~~ — **done**,
+   `d1d8c2e`..`e87a170`. It found that the board could only write half of `ready`. See the
+   section below.
+5. Only then create the V2 issues.
 
 **Blocked, with the reason:**
 
@@ -334,6 +337,88 @@ adversarial re-reads of the D-0x records against `PRD.md`; and the research pass
 
 ---
 
+## The adversarial re-read of the board — what it found, at `e87a170`
+
+**`ready` has two halves and the board could only write one.** It could say a ticket was
+*unblocked* — no open owner question anywhere in its dependency chain. It had no column for
+*cleared* — no **unratified contradiction of `PRD.md`** anywhere in that chain. Those are
+different gates, and the second one is not an invention of this run: `docs/decisions/
+README.md:82` already records the precedence rule that makes it real — *"The owner ratifies,
+or nothing is safe."* Six decisions sit in that state as `R1`–`R6`, and the register even
+forbids the shortcut of folding them into the `O` register (line 89).
+
+So the fix is a **sixth column**, not a seventh `O`-id. Ten tickets carry an `R` directly.
+
+**Every figure already in the board was correct.** That was measured with a scratch script
+before a word of the new prose was written, and it overturned the prediction — the expectation
+was degenerate sentences like "4 → 4, nothing released". The actual defect is subtler and
+worse: two figures were **load-bearing for a precondition nobody had written down.**
+*"Answering `O1`+`O2` moves the unblocked set 4 → 9"* is right **given `R1` is ratified**, and
+nothing said so.
+
+| measured | figure |
+|---|---|
+| tickets downstream of at least one unratified decision | **36 of 40** |
+| the four that are not | `V2-A14`, `V2-B1`, `V2-B2`, `V2-B3` — **the same four that are unblocked** |
+| unblocked tickets held by ratification alone **today** | **zero** — which is why nothing is stuck yet |
+| the same figure once `O1` and `O2` are answered | **five**, all unblocked, **none ready**, all waiting on one signature |
+
+**This is the D-01 failure one register over**, in the same week this board wrote D-01's up:
+there the questions had no ids, here the ids had no column.
+
+### The second finding — one document over
+
+`docs/decisions/README.md` summarised its own `conflict?` column in prose and said **three**
+records contradict the PRD, next to a table with **four** non-`no` rows. Neither number was
+false: `R4`'s cell reads *depends on an open item*, so "three" is true of the direct ones. It
+survived because the sentence answered a narrower question than the paragraph around it asked
+— and `TICKETS.md` gates three tickets on `R4`, so the two documents disagreed about how many
+decisions were holding work, one of them by omission. Now stated as three direct + one
+conditional, with five assertions re-deriving both lists from the table.
+
+### Verification, and the three defects the probes found that reading did not
+
+| suite | at `e87a170` | was |
+|---|---|---|
+| `tests/v2/graph.check.mjs` | **PASS 143/143** | 93 |
+| `tests/v2/graph-negative.check.sh` | **PASS 88 caught / 88, 0 no-op** | 52 |
+| `tests/guards/run.sh` / `negative.sh` | **PASS 21/21**, **21 caught / 21** | same |
+| `tests/guards/ci-coverage.sh` | **PASS** 21 suites, 0 unwired | same |
+| `tests/governance/workflow{,-negative}` | **PASS 14/14**, **16 caught / 16** | same |
+| INT-08 / INT-06 static / the three realtime checks | **PASS** 17/17, 6/6, 20/20 + 14/14 + 12/12 | same |
+| `npm run lint` / `typecheck` / `build` | 0 errors (4 pre-existing warnings) / exit 0 / exit 0 | same |
+
+macOS only, as always — the Linux run is whatever CI says next. **No migration and no
+application code changed, so the Docker rows earlier in this file were not re-run and are not
+restated.**
+
+Three defects, none of them found by reading:
+
+1. **The pin rule was nearly unfallible.** It auto-exempted `R5`/`R6` because they conflict
+   with nothing, which left it able to catch only ids that two other assertions already
+   caught. Deleted the exemption; `R5`/`R6` are now pinned through an asserted sentence.
+2. **Three new labels silently disarmed two working probes.** `neg_probe` finds a check with
+   `grep -F -- "$label" | head -1`, so a label that *contains* an earlier one and prints after
+   it answers for it. Adding three `…, restated` labels turned two probes from CAUGHT to
+   MISSED with neither check touched. A new assertion now forbids the shape, and it
+   immediately found more than the two already known — including the generated `reach of On`
+   family, where `O2` is a prefix of `O20`..`O29` and nine labels answered for one.
+3. **The same symptom, arriving through the shell.** The delimiter added to fix (2) was
+   written in double quotes, so the shell ran command substitution and the label reached
+   `neg_probe` as `"reach of "`. Single quotes. `word2num("fourth")` returning null is a
+   fourth, smaller instance: the draft wrote a count as an ordinal, which reads fine and
+   cannot be checked.
+
+**Two questions were surfaced and deliberately not answered** (`TEAM.md` rule 16). Both are in
+the closing blockquote of `TICKETS.md`'s ratification section:
+
+- `PRD.md:411` puts **search** out of scope and no `R` item covers it. `V2-C8`/`V2-A17`/`V2-A8`
+  inherit `R1` through `V2-C1`, which is a weaker claim than the one that may be needed.
+- Does `R3` reach `V2-A11`/`V2-A12`? Measured at **1 → 3** on a throwaway copy of the board;
+  the edit was discarded, and an assertion proves it was discarded.
+
+---
+
 ## Decisions and assumptions made by this run
 
 | id | what | evidence | reversible? |
@@ -342,7 +427,8 @@ adversarial re-reads of the D-0x records against `PRD.md`; and the research pass
 | — | Treat the red Vercel check on #155/#165/#167/#168 as **not a code signal** | Vercel returned `api-deployments-free-per-day`, "try again in 24 hours" | yes |
 | — | `PRD.md` is **not touched** by this run | owner: "the owner will ratify it manually" | n/a |
 | — | The untracked migration is **never staged and never edited** | `git status` shows it untracked at every commit in this run | n/a |
-| — | Every board number is **machine-derived**, never hand-counted | `tests/v2/graph.check.mjs`, 93 assertions | it is a procedure |
+| — | Every board number is **machine-derived**, never hand-counted | `tests/v2/graph.check.mjs`, 143 assertions | it is a procedure |
+| — | An **unratified decision blocks a ticket**, exactly as an unanswered question does | not invented here: `docs/decisions/README.md:82` already records the precedence rule, and `CLAUDE.md` §2 already orders the sources. The **`R`→ticket mapping** is judgment, and the rule used is stated in prose for the owner to correct | yes — it is a column, and the owner ratifying anything empties it |
 | — | A new check is not trusted until a **negative probe** makes it fail | four real check defects found this way, two of them in PZ-8 | it is a procedure |
 
 **No product decision was invented.** Every unresolved one is an `O`-id in
