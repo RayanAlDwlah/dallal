@@ -15,11 +15,11 @@ restating the dependency graph, delete that part and link instead.
 | | |
 |---|---|
 | **Run id** | `e33684e-20260815T0250` |
-| **Last updated** | 2026-08-15, after reading `PRD.md` §20 **inward** against the board — four more crossings, one of them item 6's defect a second time, none decided (`db8f777`) — this file is the commit that follows it |
+| **Last updated** | 2026-08-15, after reading `PRD.md` §21 — the **Product Decision Register** — inward against the board. Item 8 is the largest finding of the three sweeps and the only one whose tickets carry no `R` at all; two more register lines (`:2032`, `:2035`) were found on a second pass that only happened because the "crosses nothing" sentence was re-read before being written. Nothing decided (`81578ae` + this commit) |
 | **Branch** | `feature/rayan-v2-spec` |
-| **HEAD** | `db8f777` + this commit |
-| **Base** | **37 commits ahead of `origin/main`** at `db8f777`, and it contains `.github/workflows/ci.yml`, which `main` does not. Everything through `db8f777` **is pushed**; this commit may not be. Push, never force-push — #168 is open and others may be reading it |
-| **CI status** | **`static` GREEN on `ubuntu-latest` at `db8f777`** ([run 31870785163](https://github.com/RayanAlDwlah/dallal/actions/runs/31870785163)), reporting `164 passed, 0 failed` and `113 caught, 0 no-op, 113 of 113 reached` — **identical to the macOS figures**, which is the claim worth making given the `grep`-dialect divergence recorded below. **No figure on this page is macOS-only.** **`database` still RED** on the pre-existing #147 (`auth` and `bidding` both pass; `auction` does not), which **PR #155 fixes and only a human can merge**. See the correction under the measurement tables before trusting any green row |
+| **HEAD** | `81578ae` + this commit |
+| **Base** | **40 commits ahead of `origin/main`** at `81578ae`, and it contains `.github/workflows/ci.yml`, which `main` does not. Everything through `81578ae` **is pushed**; this commit may not be. Push, never force-push — #168 is open and others may be reading it |
+| **CI status** | **macOS GREEN at `81578ae`** on a clean tree: `164 passed, 0 failed` and `115 caught, 0 not caught (0 no-op), 115 of 115 reached`. **Linux not yet confirmed for these two figures** — the last `ubuntu-latest` run is [31870785163](https://github.com/RayanAlDwlah/dallal/actions/runs/31870785163) at `db8f777`, which matched macOS exactly at `164 / 113`; the run for `81578ae` was pushed and had not reported when this was written. **Check it before quoting `115` as a cross-platform figure** — this file already records a `grep`-dialect divergence that made a suite pass locally and go red in CI, and a probe count is exactly the quantity such a divergence moves. **`database` still RED** on the pre-existing #147 (`auth` and `bidding` both pass; `auction` does not), which **PR #155 fixes and only a human can merge**. See the correction under the measurement tables before trusting any green row |
 | **Operator** | unattended Claude session, owner asleep, reviewing later |
 
 ---
@@ -340,7 +340,21 @@ declaring it out of scope.
    excludes the *function*. Nothing reclassified. Posted on #168 as
    [`#issuecomment-5301053151`](https://github.com/RayanAlDwlah/dallal/pull/168#issuecomment-5301053151).
    See the §20 section below.
-8. Only then create the V2 issues.
+8. ~~**§21, the Product Decision Register, read the same way**~~ — **done**, `4cfe47d`,
+   `81578ae` and this commit. **The last unread `PRD.md` surface**, and the sweep found that
+   **no document on this board cites a single line of it** — zero matches in `:2019`–`:2073`
+   from `TICKETS.md`, `SPEC.md` or any of the six records, checked mechanically. **The
+   blockquote has eight questions now, not seven.** Item 8 — *a host can end a published lot
+   early, and five lines say nobody can* — is the largest of the three sweeps and the only
+   ratification item whose tickets (`V2-A11`, `V2-A12`) carry **no `R` at all**. It is a
+   **fairness** question rather than a scope one; read it on its own terms. Two defects were
+   found on the way and both are written up below: a pin aimed at the wrong half of `:798`,
+   found by a MISSED probe, and a "crosses nothing" sentence that was one commit from being
+   false. Nothing reclassified, nothing decided. Posted on #168 as
+   [`#issuecomment-5301121679`](https://github.com/RayanAlDwlah/dallal/pull/168#issuecomment-5301121679);
+   `:2032` and `:2035` arrived after that comment and need a short addendum. See the §21
+   section below.
+9. Only then create the V2 issues.
 
 **Blocked, with the reason:**
 
@@ -673,6 +687,149 @@ divergence moves.
 **What §20 did *not* produce, so nobody re-runs it:** the remaining assumption rows in §20 were
 read and cross nothing this board builds. §21 is the next unread surface, and it has not been
 started.
+
+> **That last sentence has since been acted on, and the paragraph it sits in was nearly wrong
+> the same way §21's was.** The §21 sweep below found that its own draft "crosses nothing"
+> sentence was false for two of twelve rows. This one was re-checked at the same time and
+> holds — but the pattern is now named twice, so treat every *"and it produced nothing"*
+> paragraph on this page as a claim to re-verify, not a result to rely on.
+
+---
+
+### §21 at `81578ae` — the register nothing cites, and the pin that watched the wrong clause
+
+**The last unread PRD surface, and it was last for a reason worth recording.** §21 is the
+**Product Decision Register**. It opens with *"There are ZERO unresolved product questions"*, and
+`:2025` reads: *"No decision here may be reopened, reinterpreted, defaulted, or worked around
+during implementation."* `:2067` says how one *is* reopened — *"The resolution is recorded here
+first, then built"* — and **here** means `PRD.md`, not a `D-0x` record.
+
+**Checked mechanically at `eca50cd`: zero citations into `PRD.md:2019`–`:2073`** from
+`TICKETS.md`, `SPEC.md`, or any of the six decision records. Not one line of the register is
+referenced anywhere on this board.
+
+That is the outward-read defect a third time, and this instance names the *method* fault rather
+than another instance of it: **each sweep chose its next surface by adjacency to the previous
+finding.** §19.2 was reached because a record cited near it; §20 because `A-U1` turned up inside
+item 5. Nothing was adjacent to §21, so nothing led there — and §21 is the section the other
+three are summarised *into*. **It should have been read first and was read last.** If a fourth
+sweep is ever run, pick the surface by authority, not by adjacency.
+
+| # | the §21 line nobody cited | what it collides with |
+|---|---|---|
+| **8** | `:2031` **Q1** — *"**No cancellation.** … A published auction runs to its end time and closes"* | `D-03` §3.1's host advance; `V2-A11`, `V2-A12` |
+| **8** | `:2032` **Q2** — *"**No reserve price.** … **no hidden threshold, no "reserve not met" outcome**"* | the same, and it is the **sharpest** of the five — see below |
+| **8** | `:798` **BR-30** + `:1218` + `:1223` — *"no branches, no cancellation, and no manual intervention"*, *"no administrator and no human action"* | the same |
+| 8 | `:2033` **Q3** — *"starting price, **end time**, and image are immutable once published"* | pause moves `end_time`; `V2-A19` carries `R3`, but `R3` does not cite Q3 |
+| 3 | `:2034` **Q4** — *"**Never `+5 / +10 / +50`**"*; `:2055` — *"**Implementers must not add one**"* | `D-01`'s button in multiples of ten |
+| 2 | `:2035` **Q5** — *"5 minutes to 7 days, inclusive, **measured from creation using server time**"* | `D-03` §1's scheduled start; the register row underneath item 2 |
+
+**Q2 forbids the OUTCOME where Q1 forbids the control, and that is the strongest line in the
+item.** Q1 removes the cancel button; Q2 removes the *result* — there is no state in which an
+auction ends without its highest bid winning, *"no hidden threshold, no 'reserve not met'
+outcome."* A host who advances past a lot sitting below what he hoped for produces a
+reserve-not-met outcome under another name, **and does it with no threshold stored anywhere** —
+which is exactly why `:798` calls the seller version an *informal* reserve. Removing the control
+while leaving the outcome reachable is the gap Q2 closes and the advance re-opens.
+
+**Q5 bites differently from an exclusion.** It does not only bound a duration, it fixes when the
+clock starts — *at creation*. A session scheduled for next Tuesday creates its lots now, so
+either "creation" comes to mean something `PRD.md` does not define, or a five-minute lot has a
+from-creation duration of a week and Q5's upper bound is crossed by scheduling alone. **A
+measured bound changing, not a row being un-marked.**
+
+**Item 8 is the largest finding of the three sweeps and the only one whose tickets carry no `R`
+at all.** `V2-A11` and `V2-A12` both show `—`. And the strongest form of it is *not* "a row is
+stale": **BR-30's own stated reason survives onto the new power unchanged.** `:798` gives the
+reason as *"a seller able to cancel after seeing a low price would hold an **informal reserve**,
+undermining BR-06 and fairness."* A host who advances past a lot at a disappointing price is
+holding an informal reserve by that exact definition. `D-03` §3.1 reasons carefully about a
+*different* abuse of advance — defeating anti-sniping, refused server-side — and never mentions
+BR-30.
+
+**The board also has the question one level too high.** `O10` asks whether a *session* can be
+cancelled and is open; the *lot* advance is asked about nowhere.
+
+**Recorded as a fairness question, not a scope one.** Items 1–7 ask whether V2 may build
+something the MVP deferred — an ordinary question for a second version, and the honest answer to
+most is probably *yes*. Item 8 asks whether a host may hold an informal reserve, which is the
+class of rule `CLAUDE.md` §5 says was deliberately removed and whose **absence is the
+requirement**. Do not let it be read as the eighth instance of the same pattern.
+
+**Item 3 is explicitly NOT decided by this.** `D-01` §2's server-vs-screen distinction may hold —
+Q4 answers *"is there a minimum bid increment?"*, and a button offering `+10` while the server
+accepts `+0.01` imposes no minimum. But `:2034` is a register entry and `:2025` forbids
+*reinterpreting* one. Whether `D-01` §2 is a distinction or a reinterpretation is the owner's
+call, and this run did not make it.
+
+**The BR-36 precedent gained a fourth act, demonstrated by Q7 itself.** `:2037` was rewritten in
+place — *"REOPENED AND REVERSED 2026-08-13"* — with its accepted consequence at `:2056`. So the
+full act, already performed once on this document, is: un-mark the §19 row, un-mark the §22 row,
+retire the §20 assumption, **amend the §21 register entry**, and write the consequence in §21.2.
+Q7 also proves the register does not update itself: **item 8 exists partly because Q3 was left
+saying `end_time` is immutable while Q7 was amended to move it.**
+
+```
+V2 — graph.check.mjs   164 passed, 0 failed                                    (unchanged again)
+V2 — graph-negative    115 caught, 0 not caught (0 no-op), 115 of 115 reached  (113)
+```
+
+#### The MISSED, and the defect it found — read this before adding a probe to that label
+
+The negative suite came back **`114 caught, 1 not caught`** on the first clean-tree run at
+`4cfe47d`. The check was right **twice over**, and only one of the two is about the probe:
+
+1. **The probe's own fault.** Its mutation *truncated* the expected string
+   (`"…and closes automatically"` → `"…and closes"`). The comparison is `.includes()`, so a
+   truncated expectation is still contained in the line. **A pin can only be broken by *changing*
+   a word, never by dropping one** — a shorter expectation is a weaker pin, not a false one.
+2. **The defect it exposed, which the reading had not.** The single `:798` tuple pinned BR-30's
+   **rule** half, and item 8 argues from its **reason** half. Both live on line 798; delete the
+   reason and the rule still reads perfectly, so the pin stayed green through **the exact edit
+   item 8 warns about**. The comment above the tuple even said *"edit that clause away and the
+   argument goes with it"* — while the tuple below it pinned the other clause. **A pin aimed at
+   the wrong half of the line it cites is not watching anything.**
+
+Fixed in `81578ae`: both halves pinned (`EXCLUSIONS` 18 → **30**, two tuples on line 798), probe
+re-aimed at a word change. This is §9's doctrine paying out in the intended direction — reading
+the assertion would not have found it, because **the comment and the tuple disagreed, and the
+comment is the part a reader believes.**
+
+`graph.check.mjs` stayed at 164 for the third commit running: tuples were added, not `chk` calls.
+Stated every time on purpose — coverage growing while the assertion count holds still is the
+shape that should draw suspicion.
+
+**Two probes added, by kind not by row** — a §21 *register entry* and the one *rationale clause*.
+Four kinds now sit in that list and each has at least one probe. Thirty probes against a one-line
+shared loop body would be theatre; five against four kinds is the claim the suite can defend. The
+two count-naming probes were re-aimed to eight, which is the recurring tax the header names.
+
+#### The sentence that was one commit away from being false
+
+**Q2 and Q5 were not in the first draft of this section.** It was about to say *"the remaining
+twelve register entries were read and cross nothing this board builds"* — the unbacked
+already-verified sentence this project keeps producing, and the one thing `docs` doctrine says to
+distrust hardest. The finding, the guard change, the commit and **the comment on #168 had all
+already gone out** naming four §21 lines.
+
+What caught it was re-reading the twelve before writing the claim, exactly as the §20 sweep
+re-read its own "crosses nothing" line. Two of them crossed, and one of them (**Q2**) is now the
+strongest single line in item 8. A third (**Q9**, *"no chat, messaging, or contact exchange"*)
+was checked properly rather than assumed: `grep` across `SPEC.md`, `TICKETS.md` and
+`D-03` returns one hit, and it is the word "chat" describing the owner's own conversation, not a
+product surface. **Q9 genuinely does not cross** — recorded as a negative result for the same
+reason `:1936` was, so nobody re-derives it.
+
+**The rule this earns:** the "what this sweep did *not* find" paragraph is the most dangerous
+paragraph on the page, because it is the one that talks the next session out of looking. Write it
+last, and re-read the rows before writing it. Twice now that has been the step that produced a
+finding.
+
+**What §21 did *not* produce, so nobody re-runs it:** the remaining ten register entries
+(**Q6, Q8, Q9, Q10, Q11, Q12, Q13, Q14, Q15, Q16**) were each read against what V2 builds and
+none crosses. Q9 is the one worth naming, above. **All four PRD surfaces — §19, §20, §21, §22 —
+have now been read inward.** There is no fifth. A future sweep should aim at the `D-0x` records
+or at `ARCHITECTURE.md`, not at `PRD.md`.
 
 ---
 

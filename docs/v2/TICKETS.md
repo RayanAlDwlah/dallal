@@ -295,6 +295,15 @@ conflicting record is carried by at least one ticket.
 > | lots | `:1847` | **Multiple quantity / lots** — *"A fundamentally different auction model"* |
 > | …and its assumption | `:1949` | **A-A5** — *"Auctions become live immediately on creation; **nobody needs to schedule a future start**"* |
 > | …and its assumption | `:1945` | **A-A1** — *"An auction sells exactly **one item, in one quantity**"* |
+> | …and its register entry | `:2035` | **Q5** — *"**5 minutes to 7 days**, inclusive, **measured from creation using server time**"* |
+>
+> **`:2035` is the §21 row underneath this item, and it bites differently from the exclusions
+> above it.** Q5 does not merely bound a duration — it fixes the instant the clock starts, *at
+> creation*. A session scheduled for next Tuesday creates its lots now, so either "creation"
+> comes to mean something `PRD.md` does not define, or a five-minute lot has a from-creation
+> duration of a week and Q5's upper bound is crossed by scheduling alone. That is a **measured
+> bound changing**, not a row being un-marked, and it is the shape item 8 names as the fourth
+> act of the `BR-36` precedent.
 >
 > The two assumption rows were added by the §20 sweep and they matter differently from the
 > two exclusions above them. An exclusion says *we chose not to build this*; an assumption
@@ -419,7 +428,7 @@ conflicting record is carried by at least one ticket.
 > question for `R6`. **Both were classified by keyword search, and the keyword was the wrong
 > unit of meaning** — that is one defect with two instances, not two defects.
 >
-> **8. A host can end a published lot early, and four lines say nobody can.** This is the
+> **8. A host can end a published lot early, and five lines say nobody can.** This is the
 > largest item here and the only one where the tickets that build the power carry **no `R` at
 > all**:
 >
@@ -429,6 +438,15 @@ conflicting record is carried by at least one ticket.
 > | the lifecycle | `:1218` | *"This is the **complete and only** lifecycle. There are **no branches, no cancellation, and no manual intervention** anywhere in it"* |
 > | …and again | `:1223` | *"The transition to Ended is **automatic**, driven by the end time, requiring **no administrator and no human action**"* |
 > | the register | `:2031` | **Q1** — *"**No cancellation.** No cancel control, no cancellation rule … A published auction runs to its end time and closes."* |
+> | the register, again | `:2032` | **Q2** — *"**No reserve price.** The highest valid bid wins regardless of amount. **No hidden threshold, no "reserve not met" outcome.**"* |
+>
+> **`:2032` is the sharpest of the five, because it forbids the outcome rather than the
+> control.** Q1 removes the cancel *button*; Q2 removes the *result* — there is no state in
+> which an auction ends without its highest bid winning. A host who advances past a lot sitting
+> below what he hoped for produces a "reserve not met" outcome under another name, and does it
+> without any threshold being stored anywhere, which is precisely why `:798` calls the seller
+> version an **informal** reserve. Removing the control while leaving the outcome reachable is
+> the gap this row closes.
 >
 > D-03 §3.1 grants the opposite, in the owner's words: *«الزر للمضيف اللي يبي **يسرّع**»* — a
 > host button that closes a lot before its end time. `V2-A11` (*open / close a lot*) and

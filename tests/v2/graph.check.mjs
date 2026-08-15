@@ -1335,7 +1335,7 @@ if (!section) {
   // negative suite's probe then matches no line, and the run reports NO-OP
   // instead of the catch it actually made. That is not hypothetical — it is
   // why the wider-reading assertions above are numbered by ordinal. This list
-  // went 3 → 12 → 18 → 30 in four commits; the label has not moved once, and
+  // went 3 → 12 → 18 → 32 in four commits; the label has not moved once, and
   // the comment above it does not say "six items" any more for the same reason.
   //
   // THREE kinds of row sit in this list, and the distinctions are findings
@@ -1356,6 +1356,10 @@ if (!section) {
     [1847, "Multiple quantity / lots"],
     [1949, "nobody needs to schedule a future start"],
     [1945, "An auction sells exactly one item, in one quantity"],
+    // Q5, item 2's register entry. It bounds a duration AND fixes when the
+    // clock starts; scheduling crosses the second half, so the pin is on that
+    // half rather than on "5 minutes to 7 days".
+    [2035, "inclusive, measured from creation using server time"],
     // item 3 — the increment
     [1848, "Bid increments of any kind, per-auction or platform-wide"],
     // item 4 — image editing
@@ -1376,7 +1380,7 @@ if (!section) {
     [1825, "Escrow / settlement"],
     // item 7 — who authors a listing
     [1952, "Sellers will write their own descriptions and provide their own images"],
-    // item 8 — a host ending a published lot early. Four lines across three
+    // item 8 — a host ending a published lot early. Five lines across three
     // sections, and :798 carries TWO pins because it carries two things.
     //
     // The first is BR-30's rule. The second is its RATIONALE, and it is pinned
@@ -1391,6 +1395,10 @@ if (!section) {
     [1218, "no branches, no cancellation, and no manual intervention"],
     [1223, "requiring no administrator and no human action"],
     [2031, "A published auction runs to its end time and closes"],
+    // Q2 forbids the OUTCOME where Q1 forbids the control, which is why item 8
+    // leans on it hardest. Pinned on the rule rather than on the "reserve not
+    // met" phrase, which carries quotes the probe would have to escape twice.
+    [2032, "The highest valid bid wins regardless of amount"],
     [2033, "starting price, end time, and image are immutable once published"],
     // §21's own authority. This is the third kind of row: not a boundary and
     // not a belief, but the sentence that makes every item above binding

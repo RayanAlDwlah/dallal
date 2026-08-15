@@ -87,8 +87,8 @@
 # untouched.
 #
 # Five of those six aim at the same assertion from different rows. Its list went
-# 3 → 12 → 18 → 30 as §19/§22, then §20, then §21 were read inward, and one probe
-# against one tuple stops being evidence for twenty-nine others: the loop body
+# 3 → 12 → 18 → 32 as §19/§22, then §20, then §21 were read inward, and one probe
+# against one tuple stops being evidence for thirty-one others: the loop body
 # is shared, but a typo in a newly added tuple is not caught by a probe on an old
 # one.
 #
@@ -100,11 +100,14 @@
 # pinned separately from the rule that shares its line — that separation exists
 # because this probe found it missing), whose deletion leaves every rule it is
 # cited beside still reading perfectly while the argument built on it is gone.
-# Each is a different table, a different
-# shape of sentence, and — if any two are ever read by different code — a
-# different failure. Thirty probes against one shared loop body would be
-# coverage theatre; five against four kinds is the claim the suite can actually
-# defend.
+# Each is a different table, a different shape of sentence, and — if any two are
+# ever read by different code — a different failure. Thirty-two probes against
+# one shared loop body would be coverage theatre; five against four kinds is the
+# claim the suite can actually defend.
+#
+# The §21 sweep's second pass added two more register entries (`:2032`, `:2035`)
+# and NO probe, deliberately. That kind already has one, and the rule above is
+# per kind. A probe added there would be the theatre this paragraph refuses.
 #
 # ---------------------------------------------------------------------------
 # A LABEL IS AN ARGUMENT TO grep -F, SO QUOTE IT LIKE ONE
@@ -591,14 +594,14 @@ neg_probe "every PRD row the ratification items rest on still sits on the line c
   'perl -pi -e '"'"'s/\[1847, "Multiple quantity \/ lots"\]/[1847, "Multiple quantity or lots"]/'"'"' tests/v2/graph.check.mjs'
 
 # The same assertion, aimed at one of the rows added by the inward sweep rather
-# than at the §19.2 three. A list that grew from 3 to 30 entries is a list where
+# than at the §19.2 three. A list that grew from 3 to 32 entries is a list where
 # one probe against one entry stops being evidence for the rest: the loop body
 # is shared, but a typo in a new tuple is not caught by a probe on an old one.
 neg_probe "every PRD row the ratification items rest on still sits on the line cited" \
   'perl -pi -e '"'"'s/\[1917, "Image editing \/ cropping"\]/[1917, "Image editing and cropping"]/'"'"' tests/v2/graph.check.mjs'
 
 # And a third, aimed at a §20 ASSUMPTION row rather than a §19/§22 exclusion.
-# Not probe-per-tuple — 30 tuples would mean 30 probes and the loop body is one
+# Not probe-per-tuple — 32 tuples would mean 32 probes and the loop body is one
 # line. It is probe-per-KIND: the two probes above both aim at table rows in an
 # "excluded" table, and the §20 sweep added a row that reads as ordinary prose
 # in a differently-shaped table. If the two shapes were ever read by different
