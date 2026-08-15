@@ -7,7 +7,7 @@ const button = cva(
     "inline-flex items-center justify-center gap-2",
     "rounded-md border font-semibold leading-none",
     "cursor-pointer select-none",
-    "transition-colors duration-[120ms] ease-out-soft",
+    "transition-[background-color,border-color,box-shadow,transform] duration-[150ms] ease-out-soft",
     "disabled:cursor-not-allowed disabled:opacity-45",
     // Buttons go full width on phones. NFR-USA-06 / 375px is the base layer.
     "w-full sm:w-auto",
@@ -15,7 +15,14 @@ const button = cva(
   {
     variants: {
       tone: {
-        primary: "bg-brand text-on-brand border-brand hover:bg-brand-hover hover:border-brand-hover",
+        /*
+         * V2 (bid-button.html): the gold action lifts 1px and GLOWS on hover
+         * rather than darkening — on a dark canvas a darker hover reads as
+         * disabled. Glow colour is the palette gold literal (a box-shadow
+         * layer cannot carry a token with its own alpha). Presses settle back.
+         */
+        primary:
+          "bg-brand text-on-brand border-brand hover:bg-brand-hover hover:border-brand-hover hover:-translate-y-px hover:shadow-[0_0_28px_rgba(245,185,66,0.35)] active:translate-y-0 active:shadow-none disabled:hover:translate-y-0 disabled:hover:shadow-none",
         secondary: "bg-surface text-ink border-rule-strong hover:bg-sunk hover:border-ink-3",
         ghost: "bg-transparent text-brand-text border-transparent hover:bg-brand-weak",
         danger: "bg-stop text-on-stop border-stop hover:bg-stop-hover hover:border-stop-hover",

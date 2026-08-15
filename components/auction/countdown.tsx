@@ -83,7 +83,13 @@ export function Countdown({ endsAt, serverNow, className }: CountdownProps) {
     <div
       className={cn(
         "inline-flex items-center gap-2 text-sm",
-        over ? "text-calm-text" : final || soon ? "text-urge-text" : "text-ink-2",
+        /*
+         * V2 splits what was one urgency colour into two (type-and-money.html):
+         * teal while the end is near («فوق 10 دقايق» ends), RED under the
+         * minute — "تحت الدقيقة — يصير أحمر". Red is reserved for the final
+         * seconds and errors, so `soon` must not use it.
+         */
+        over ? "text-calm-text" : final ? "text-stop-text" : soon ? "text-urge-text" : "text-ink-2",
         className,
       )}
     >
@@ -98,7 +104,7 @@ export function Countdown({ endsAt, serverNow, className }: CountdownProps) {
         aria-hidden="true"
         className={cn(
           "num text-money-md font-bold",
-          over ? "text-calm-text" : final || soon ? "text-urge-text" : "text-ink",
+          over ? "text-calm-text" : final ? "text-stop-text" : soon ? "text-urge-text" : "text-ink",
           final && "motion-safe:animate-pulse",
         )}
       >

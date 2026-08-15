@@ -59,32 +59,60 @@ export function SiteHeader({ viewer }: { viewer: Viewer | null }) {
 
   const nav = viewer ? [...PUBLIC_NAV, ...MEMBER_NAV] : PUBLIC_NAV;
 
+  /*
+   * V2 (design-system/previews/topbar.html): the header is a FLOATING bar —
+   * rounded, translucent, blurred — sitting on the canvas rather than a
+   * full-bleed strip with a border. Structure, links, the logout form, the
+   * mobile menu and every aria-* are unchanged; this is the same header in a
+   * different shell.
+   *
+   * What the preview shows and this deliberately does NOT add: the search
+   * field (no search exists — an input wired to nothing is a fake affordance),
+   * the notification bell (PRD §N1–N4 grades notifications Future), and the
+   * avatar-instead-of-name (FR-AUTH-15 wants the signed-in identity STATED;
+   * an initial in a circle weakens that). Each becomes real when its feature
+   * does.
+   */
   return (
-    <header className="bg-surface border-rule sticky top-0 z-20 border-b">
-      <Container className="flex min-h-16 items-center justify-between gap-4">
-        <Link
-          href="/"
-          className="text-lg font-bold"
-          aria-label="دلال — الصفحة الرئيسية"
-        >
-          دلال
-        </Link>
+    <header className="sticky top-0 z-20 pt-3">
+      <Container>
+        <div className="bg-surface/80 shadow-e1 rounded-lg backdrop-blur-xl">
+          <div className="flex min-h-16 items-center justify-between gap-4 px-4">
+            <Link
+              href="/"
+              className="text-xl font-bold"
+              aria-label="دلال — الصفحة الرئيسية"
+            >
+              {/* His logo: the wordmark with a gold full stop. Decorative. */}
+              دلال
+              <span aria-hidden="true" className="text-brand-text">
+                .
+              </span>
+            </Link>
 
         {/* Desktop navigation. Hidden on phones, where the menu below serves. */}
         <nav aria-label="التنقل الرئيسي" className="hidden md:block">
           <ul className="flex items-center gap-1">
             {nav.map((item) => {
               const current = isCurrent(pathname, item.href);
+              /*
+               * V2: «أنشئ مزادًا» is the bar's one gold CTA (his `nav a.cta`).
+               * Everything else is a quiet pill — the current page marked by a
+               * soft white wash, not by gold, so gold keeps meaning "act".
+               */
+              const cta = item.href === "/auctions/new";
               return (
                 <li key={item.href}>
                   <Link
                     href={item.href}
                     aria-current={current ? "page" : undefined}
                     className={cn(
-                      "flex min-h-tap items-center rounded-md px-3 text-sm font-semibold transition-colors duration-[120ms]",
-                      current
-                        ? "bg-brand-weak text-brand-text"
-                        : "text-ink-2 hover:bg-sunk hover:text-ink",
+                      "flex min-h-tap items-center rounded-md px-3.5 text-sm font-semibold transition-colors duration-[120ms]",
+                      cta
+                        ? "bg-brand text-on-brand hover:bg-brand-hover"
+                        : current
+                          ? "bg-white/7 text-ink"
+                          : "text-ink-2 hover:bg-white/5 hover:text-ink",
                     )}
                   >
                     {item.label}
@@ -109,12 +137,25 @@ export function SiteHeader({ viewer }: { viewer: Viewer | null }) {
             <LogoutButton className="text-brand-text flex min-h-tap cursor-pointer items-center px-2 text-sm font-semibold" />
           </div>
         ) : (
-          <Link
-            href="/login"
-            className="text-brand-text hidden min-h-tap items-center px-2 text-sm font-semibold md:flex"
-          >
-            تسجيل الدخول
-          </Link>
+          /*
+           * V2's visitor bar pairs a quiet «دخول» with the gold «إنشاء حساب»
+           * CTA. Both routes exist (S0-08); this only surfaces /register in
+           * the bar, it invents no flow.
+           */
+          <div className="hidden items-center gap-1 md:flex">
+            <Link
+              href="/login"
+              className="text-ink-2 hover:text-ink flex min-h-tap items-center rounded-md px-3 text-sm font-semibold transition-colors duration-[120ms]"
+            >
+              تسجيل الدخول
+            </Link>
+            <Link
+              href="/register"
+              className="bg-brand text-on-brand hover:bg-brand-hover flex min-h-tap items-center rounded-md px-3.5 text-sm font-semibold transition-colors duration-[120ms]"
+            >
+              إنشاء حساب
+            </Link>
+          </div>
         )}
 
         <button
@@ -129,16 +170,17 @@ export function SiteHeader({ viewer }: { viewer: Viewer | null }) {
             {open ? "✕" : "☰"}
           </span>
         </button>
-      </Container>
+          </div>
 
-      {/*
-        Mobile navigation. Rendered only when open so its links stay out of
-        the tab order while collapsed — `hidden` alone would not do that.
-      */}
-      {open ? (
-        <nav id={menuId} aria-label="التنقل الرئيسي" className="border-rule border-t md:hidden">
-          <Container className="py-2">
-            <ul className="flex flex-col">
+          {/*
+            Mobile navigation — INSIDE the floating bar, so opening it extends
+            the same rounded surface instead of bolting a full-width strip
+            under a rounded one. Rendered only when open so its links stay out
+            of the tab order while collapsed — `hidden` alone would not do that.
+          */}
+          {open ? (
+            <nav id={menuId} aria-label="التنقل الرئيسي" className="border-rule border-t px-2 md:hidden">
+              <ul className="flex flex-col py-2">
               {nav.map((item) => {
                 const current = isCurrent(pathname, item.href);
                 return (
@@ -185,10 +227,11 @@ export function SiteHeader({ viewer }: { viewer: Viewer | null }) {
                   </Link>
                 )}
               </li>
-            </ul>
-          </Container>
-        </nav>
-      ) : null}
+              </ul>
+            </nav>
+          ) : null}
+        </div>
+      </Container>
     </header>
   );
 }
