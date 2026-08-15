@@ -1,0 +1,202 @@
+# ============================================================================
+# Dalal CI — the thing that runs the suites nobody was running.
+#
+# Until this file existed, `.github/` held an issue template and a PR template
+# and nothing else. Test suites were written, maintained, argued over in
+# review, and executed only when a human remembered to type the command. Any
+# one of us could have merged a PR that broke the money domain or the RTL rules
+# and the only way anyone would have found out is by running something later,
+# by hand, for an unrelated reason.
+#
+# Three developers, three Claude sessions that cannot see each other, one
+# protected branch. This file is the part of the review that does not get
+# tired, does not forget, and does not take somebody's word for it.
+#
+# ---------------------------------------------------------------------------
+# REWRITTEN FOR V2 ON 2026-08-16 — AND WHAT THAT COST, SAID FIRST
+#
+# This file arrived on `delivery/v2-app` from `main`, where it wires suites the
+# V2 branch DELETED along with the V1 product: tests/auth/, tests/auction/,
+# tests/bidding/, tests/realtime/, tests/ui/. Twelve steps and an entire
+# `database` job named files that are not in this tree. A workflow that names a
+# missing file does not go quietly green — it goes red on `No such file` — but
+# a red for the wrong reason is its own defect: it trains everyone to expect
+# red and stop reading.
+#
+# So every step below names a file that exists here, and the steps that named
+# deleted files are GONE rather than commented out.
+#
+# ---------------------------------------------------------------------------
+# THE REGRESSION THIS FILE IS NOT ALLOWED TO HIDE
+#
+# **There is no `database` job any more, and V2 has no database suite at all.**
+#
+# On `main` that job started a throwaway postgres:17 and ran three SQL suites,
+# and the bidding one is the suite that proved the extension cap, the lock
+# ordering, the `sar_amount` domain and the concurrency behaviour — the four
+# properties CLAUDE.md §5 calls non-negotiable. V2 rewrote `place_bid` (D-01's
+# server-side increment, `supabase/migrations/20260815100000_core_schema.sql`)
+# and the suite that would have checked the rewrite was deleted with the tree it
+# tested. **Nothing mechanical is watching the bid operation on this branch.**
+#
+# That is a real loss and it is stated here rather than left to be discovered.
+# CLAUDE.md §0 records `tests/bidding-v2/` as owed work; this is the other half
+# of that entry.
+#
+# What the next session needs to know before writing it, so it is not
+# re-derived: the V2 schema cannot be applied to a bare postgres:17 the way V1's
+# could. `core_schema.sql` references `auth.users`, `auth.uid()`,
+# `storage.buckets`, `storage.objects`, `storage.foldername()` and the
+# `supabase_realtime` publication. A ~40-line stub migration creating those
+# ahead of the real ones is what makes the whole V2 schema applicable in a
+# container — and applying it at all is already a test, because a syntax error
+# or an unsatisfiable constraint in a migration currently reaches production
+# unchecked.
+#
+# ---------------------------------------------------------------------------
+# THE SHAPE — one job now, not two
+#
+# `static` costs seconds and needs no Docker, so it runs on every push of every
+# branch and is ordered cheapest-first: a money or RTL violation should be on
+# screen before the toolchain has warmed up.
+#
+# Every suite here is CREDENTIAL-FREE by construction. That is not a
+# coincidence — this repository is PUBLIC (CLAUDE.md §6), and a workflow secret
+# readable by a fork's `pull_request_target` is not a place to put a key that
+# reaches our database. It is also why the allowlist in
+# `tests/guards/ci-coverage.sh` is now empty: on `main` it excused three suites
+# that needed real project credentials, and all three were deleted with V1.
+#
+# That completeness is not a comment anyone has to trust.
+# `tests/guards/ci-coverage.sh` runs below and FAILS if a suite exists in
+# tests/ that is neither wired into this file nor written down with a reason.
+# Add a test and forget to run it, and CI tells you — which is the failure this
+# whole file exists to stop, applied to itself.
+# ============================================================================
+name: CI
+
+on:
+  pull_request:
+  push:
+    branches: [main]
+
+# A second push to the same branch cancels the first. The suites are
+# deterministic, so a superseded run has nothing to say.
+concurrency:
+  group: ci-${{ github.ref }}
+  cancel-in-progress: true
+
+permissions:
+  contents: read
+
+jobs:
+  # =========================================================================
+  # static — no Docker, no credentials, no network beyond npm. Seconds.
+  # =========================================================================
+  static:
+    name: static — guards, lint, types, build
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+        with:
+          # tests/guards/run.sh asks git what is TRACKED, and
+          # tests/guards/negative.sh restores mutated files with
+          # `git checkout --`. Both need real git history, not the
+          # detached snapshot a fetch-depth of 1 leaves behind.
+          fetch-depth: 0
+
+      - uses: actions/setup-node@v4
+        with:
+          # >= 22 is a hard floor: tests/integration/check-imports.check.sh
+          # runs each *.check.mjs through native type-stripping. On an older
+          # node it reports NOT-RUN and counts that as a FAILURE (#121) rather
+          # than skipping quietly — so a wrong version here is loud, but there
+          # is no reason to make it happen.
+          node-version: 22
+          cache: npm
+
+      - run: npm ci
+
+      # --- the guards ------------------------------------------------------
+      # First, because they are the cheapest and because a money or RTL
+      # violation should be on screen in under two seconds.
+      - name: guards — the rules with nothing else holding them
+        run: ./tests/guards/run.sh
+
+      # A guard that cannot fail is worse than no guard: it reports green for
+      # its own reasons while the rule it names rots. This breaks every rule on
+      # purpose and asserts the suite catches each one. It mutates tracked files
+      # and restores them, which is why fetch-depth is 0 above.
+      - name: guards — prove every check can fail
+        run: ./tests/guards/negative.sh
+
+      # And this asserts THIS FILE is complete — that no suite in tests/ is
+      # silently unrun. See the header.
+      - name: guards — every suite is either in CI or written down as not
+        run: ./tests/guards/ci-coverage.sh
+
+      # --- the board and the governance prose ------------------------------
+      # The V2 dependency graph is written twice — SPEC.md §4.3's `blocks`
+      # column and TICKETS.md's `blocked on` column — and both documents state
+      # their own totals in English prose. SPEC.md says two copies of a graph
+      # drift "in the direction that makes the plan look better", then claimed
+      # they had been reconciled "mechanically": true once, by hand, with no
+      # way for the next editor to fail. This is that sentence made runnable.
+      - name: V2 — the board's two copies of the graph agree, and its counts are real
+        run: node --no-warnings tests/v2/graph.check.mjs
+
+      # …and the same demand made of it that `negative.sh` makes of the guards.
+      # Every defect this check has ever found was found by a probe, and every
+      # one of those probes lived in /tmp until it was committed here.
+      - name: V2 — prove the board check can fail
+        run: ./tests/v2/graph-negative.check.sh
+
+      # The same failure one level out, in prose. CLAUDE.md carries the
+      # seven-step workflow; TEAM.md §7 and SPEC.md §5.1 each restated it, and
+      # three copies that agree are a problem only on the day one is edited.
+      # This extracts the steps FROM CLAUDE.md and refuses a second copy.
+      - name: governance — the seven-step workflow is written exactly once
+        run: node --no-warnings tests/governance/workflow.check.mjs
+
+      # Sixteen probes, one per step of the loop plus the section-level rules.
+      # Two of this check's assertions exist because a probe came back MISSED;
+      # the probes are now committed rather than remembered.
+      - name: governance — prove the workflow check can fail
+        run: ./tests/governance/workflow-negative.check.sh
+
+      # --- the product audits ----------------------------------------------
+      # Re-aimed at V2 on 2026-08-16, and two of its checks were found passing
+      # for reasons unrelated to the rule they named — see §3 of the file.
+      - name: INT-08 — the excluded-features audit
+        run: ./tests/integration/excluded-features.check.sh
+
+      - name: INT-06 — the statically decidable half of 375 px
+        run: ./tests/integration/responsive-375.check.sh
+
+      # #147 — every *.check.mjs must actually LOAD, and no `@/` value import
+      # appears anywhere in the check graph. On `main` this step carried a guard
+      # against being merged before #155; #155 is merged and the file is here,
+      # so the guard is gone and the suite runs plainly.
+      - name: INT — the check harness itself loads (#147)
+        run: ./tests/integration/check-imports.check.sh
+
+      # --- the toolchain ---------------------------------------------------
+      - name: lint
+        run: npm run lint
+
+      - name: typecheck
+        run: npm run typecheck
+
+      # The build runs with NO environment variables at all, and that is the
+      # assertion, not a convenience. Every route is server-rendered on demand,
+      # so nothing calls the public Supabase config at build time. The day
+      # someone adds a statically prerendered page that reads the database, this
+      # step goes red with the exact error that function raises — before the
+      # missing value reaches Supabase as the string "undefined" and surfaces
+      # days later as an unexplained network error.
+      #
+      # The AI layer is env-gated and hides itself when unconfigured
+      # (CLAUDE.md §0), so a build with no GEMINI key is the configuration this
+      # step is meant to prove, not a gap in it.
+      - name: build (deliberately with no credentials)
+        run: npm run build

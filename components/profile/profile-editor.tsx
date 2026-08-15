@@ -1,6 +1,7 @@
 "use client";
 
 import { useMemo, useRef, useState } from "react";
+import Image from "next/image";
 import { useRouter } from "next/navigation";
 
 import { ALLOWED_IMAGE_TYPES, publicImageUrl } from "@/lib/images";
@@ -85,8 +86,9 @@ export function ProfileEditor({
         style={{ background: "linear-gradient(140deg,#2A3140,#171C26)" }}
       >
         {avatarUrl ? (
-          // eslint-disable-next-line @next/next/no-img-element
-          <img src={avatarUrl} alt="" className="size-full object-cover" />
+          // 64 px is the button's own size (`size-16`); next/image serves the
+          // thumbnail instead of the full upload the user just made.
+          <Image src={avatarUrl} alt="" width={64} height={64} className="size-full object-cover" />
         ) : (
           initialName.trim().charAt(0)
         )}

@@ -1,4 +1,5 @@
 import type { Metadata } from "next";
+import Image from "next/image";
 import Link from "next/link";
 import { redirect } from "next/navigation";
 
@@ -139,15 +140,16 @@ export default async function ProfilePage() {
                     className="hairline flex items-center gap-3.5 rounded-[14px] bg-raised px-3.5 py-3 transition hover:bg-white/[.06]"
                   >
                     <span
-                      className="hairline size-11 flex-none overflow-hidden rounded-[10px]"
+                      className="hairline relative size-11 flex-none overflow-hidden rounded-[10px]"
                       style={{ background: "linear-gradient(140deg,#232B39,#141922)" }}
                     >
                       {s.cover_image ? (
-                        // eslint-disable-next-line @next/next/no-img-element
-                        <img
+                        <Image
                           src={auctionImageUrl(s.cover_image)}
                           alt=""
-                          className="size-full object-cover"
+                          fill
+                          sizes="44px"
+                          className="object-cover"
                         />
                       ) : null}
                     </span>

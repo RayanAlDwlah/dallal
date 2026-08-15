@@ -1,5 +1,6 @@
 "use client";
 
+import Image from "next/image";
 import Link from "next/link";
 import { useEffect, useRef, useState } from "react";
 
@@ -35,8 +36,9 @@ export function UserMenu({
         style={{ background: "linear-gradient(140deg,#2A3140,#171C26)" }}
       >
         {avatarUrl ? (
-          // eslint-disable-next-line @next/next/no-img-element
-          <img src={avatarUrl} alt="" className="size-full object-cover" />
+          // 38 px is the button's own size; the avatar is served at 2× for
+          // retina by next/image rather than shipping the original upload.
+          <Image src={avatarUrl} alt="" width={38} height={38} className="size-full object-cover" />
         ) : (
           displayName.trim().charAt(0)
         )}

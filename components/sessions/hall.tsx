@@ -1,5 +1,6 @@
 "use client";
 
+import Image from "next/image";
 import Link from "next/link";
 import { useCallback, useEffect, useMemo, useRef, useState } from "react";
 
@@ -284,15 +285,16 @@ export function Hall({
             <>
               <div className="flex items-start gap-4">
                 <span
-                  className="hairline size-[104px] flex-none overflow-hidden rounded-[15px] sm:size-[148px]"
+                  className="hairline relative size-[104px] flex-none overflow-hidden rounded-[15px] sm:size-[148px]"
                   style={{ background: "linear-gradient(140deg,#232B39,#141922)" }}
                 >
                   {current.images[0] ? (
-                    // eslint-disable-next-line @next/next/no-img-element
-                    <img
+                    <Image
                       src={auctionImageUrl(current.images[0])}
                       alt=""
-                      className="size-full object-cover"
+                      fill
+                      sizes="(min-width: 640px) 148px, 104px"
+                      className="object-cover"
                     />
                   ) : null}
                 </span>
@@ -426,11 +428,12 @@ export function Hall({
           ) : (
             <div className="relative -m-5 overflow-hidden rounded-[22px] sm:-m-6">
               {session.cover_image ? (
-                // eslint-disable-next-line @next/next/no-img-element
-                <img
+                <Image
                   src={auctionImageUrl(session.cover_image)}
                   alt=""
-                  className="absolute inset-0 size-full scale-105 object-cover opacity-30 blur-[2px]"
+                  fill
+                  sizes="100vw"
+                  className="scale-105 object-cover opacity-30 blur-[2px]"
                 />
               ) : (
                 <div
@@ -579,11 +582,12 @@ export function Hall({
                   style={{ background: "linear-gradient(140deg,#232B39,#141922)" }}
                 >
                   {lot.images[0] ? (
-                    // eslint-disable-next-line @next/next/no-img-element
-                    <img
+                    <Image
                       src={auctionImageUrl(lot.images[0])}
                       alt=""
-                      className="size-full object-cover"
+                      fill
+                      sizes="52px"
+                      className="object-cover"
                     />
                   ) : null}
                   <span className="num absolute bottom-0.5 start-0.5 rounded-[5px] bg-black/60 px-1 text-[10px] text-ink2">
