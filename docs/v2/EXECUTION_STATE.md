@@ -15,11 +15,11 @@ restating the dependency graph, delete that part and link instead.
 | | |
 |---|---|
 | **Run id** | `e33684e-20260815T0250` |
-| **Last updated** | 2026-08-15, after the ratification-column re-read (`e87a170`) — this file is the commit that follows it |
+| **Last updated** | 2026-08-15, after reading `PRD.md` §19.2 against D-03 and measuring both wider readings of `R3` (`bb4161a`..`7e4fd90`) — this file is the commit that follows it |
 | **Branch** | `feature/rayan-v2-spec` |
-| **HEAD** | `e87a170` + this commit |
-| **Base** | **26 commits ahead of `origin/main`**, and it contains `.github/workflows/ci.yml`, which `main` does not. Everything through `e87a170` **is pushed**; this commit may not be. Push, never force-push — #168 is open and others may be reading it |
-| **CI status** | **`static` GREEN at `5fee651`**, the first time since the job was written. Four commits have landed since, all documents and checks — the Linux verdict on `e87a170` is whatever the next run says, and **the four new-suite rows below are macOS-only until it reports**. **`database` still RED** on the pre-existing #147 (`auth` and `bidding` both pass; `auction` does not), which **PR #155 fixes and only a human can merge**. See the correction under the measurement tables before trusting any green row |
+| **HEAD** | `7e4fd90` + this commit |
+| **Base** | **33 commits ahead of `origin/main`**, and it contains `.github/workflows/ci.yml`, which `main` does not. Everything through `7e4fd90` **is pushed**; this commit may not be. Push, never force-push — #168 is open and others may be reading it |
+| **CI status** | **`static` GREEN at `7e4fd90`** on `ubuntu-latest` ([run 31869670980](https://github.com/RayanAlDwlah/dallal/actions/runs/31869670980)) — the new counts are **no longer macOS-only**: Linux reports `163 passed, 0 failed` and `108 caught, 0 not caught (0 no-op), 108 of 108 probes reached`, the same figures measured here. **`database` still RED** on the pre-existing #147 (`auth` and `bidding` both pass; `auction` does not), which **PR #155 fixes and only a human can merge**. See the correction under the measurement tables before trusting any green row |
 | **Operator** | unattended Claude session, owner asleep, reviewing later |
 
 ---
@@ -318,7 +318,13 @@ declaring it out of scope.
 4. ~~**Adversarial re-read of the board itself, before it becomes issues**~~ — **done**,
    `d1d8c2e`..`e87a170`. It found that the board could only write half of `ready`. See the
    section below.
-5. Only then create the V2 issues.
+5. ~~**Adversarial re-read of the D-0x records against `PRD.md`**~~ — **done**,
+   `bb4161a`..`7e4fd90`. It found `PRD.md` §19.2, an excluded table **no record cites**, which
+   excludes three things V2 builds by name. The blockquote has three questions now, not two.
+   Posted on #168 as
+   [`#issuecomment-5300954926`](https://github.com/RayanAlDwlah/dallal/pull/168#issuecomment-5300954926).
+   See the §19.2 section below.
+6. Only then create the V2 issues.
 
 **Blocked, with the reason:**
 
@@ -331,9 +337,15 @@ declaring it out of scope.
   answered by this run**, by design — `CLAUDE.md` §8, `TEAM.md` rule 16.
 
 **Fallback queue** (independent, safe, needs no unblocking) — used the moment the above
-stalls: the #168 corrective items; documentation-consistency sweeps; re-verifying `#165`;
-adversarial re-reads of the D-0x records against `PRD.md`; and the research passes behind
-`O14` and `O24` that produce *options* rather than decisions.
+stalls: the #168 corrective items; documentation-consistency sweeps; re-verifying `#165`; and
+the research passes behind `O14` and `O24` that produce *options* rather than decisions.
+
+> The D-0x-versus-`PRD.md` re-read has come off this list because it ran, and what it found
+> suggests the next one: **§19.2 was invisible because the sweep read records outward to the
+> sections they cite.** The remaining exclusion tables — §19.1, §19.3..§19.n and §22.1 — have
+> not been read *inward*, against what V2 actually builds, and that is a different question
+> from the one already answered. It is a sweep, not a decision, so it is safe to run
+> unattended; anything it finds is a blockquote question, never a reclassification.
 
 ---
 
@@ -443,6 +455,77 @@ the closing blockquote of `TICKETS.md`'s ratification section:
 - Does `R3` reach `V2-A11`/`V2-A12`? Measured at **1 → 3** on a throwaway copy of the board;
   the edit was discarded, and an assertion proves it was discarded.
 
+### `PRD.md` §19.2, at `7e4fd90` — and why the sweep above did not find it
+
+**There are three questions now, not two, and the second one's stated reason was false.**
+
+The `R` register was built by reading each `D-0x` record **outward** to the PRD sections it
+cites. §19.2 — *Advanced auction mechanics* — is cited by **no record**, so nothing led a
+reader there. `grep -rn '19\.2' docs/v2/ docs/decisions/` returns only the `BR-36` worked
+example. Reading records outward can only ever find what a record already points at; the
+exclusion table is the one place a **missing** pointer is the finding.
+
+| | `PRD.md` | the row, quoted |
+|---|---|---|
+| scheduled starts | `:1846` | **Scheduled future start times** — *"Adds a third lifecycle state with no MVP demand"* |
+| lots | `:1847` | **Multiple quantity / lots** — *"A fundamentally different auction model"* |
+| increments | `:1848` | **Bid increments of any kind, per-auction or platform-wide** — *"Decided against entirely (BR-32)"* |
+
+`D-03` §1 gives a session a **start date and time** and §Step 2 is titled *the lots, in order*.
+The board had classified those as **silence** — `R5`/`R6`-shaped, gap-filling, safe to build
+under rule 4. They are two named exclusions, which is `R3`'s shape. On the wide reading
+(carriers `V2-C6`, `V2-A10`, `V2-A11`, `V2-A12`, `V2-B9`, `V2-B10`) **`R3`'s reach goes
+1 → 9** — third-largest gate rather than smallest. Measured on a throwaway copy; discarded;
+the discard is asserted.
+
+`:1848` is the same question for `D-01`'s button, and it bears on `R4`'s **classification**
+rather than its parameters: `R4` is conditional on `O25` (required or optional field), but if
+`:1848` binds, the prior question is whether the field exists at all. INT-08 is already the
+tripwire — it goes red the day a `bid_increment` column lands.
+
+**Nothing was re-scoped and no `R` was reclassified.** All three are questions in the
+blockquote, with both readings and their numbers, for the owner. What did land is the
+mechanism that would have caught it: every `PRD.md:NNN` citation in the three documents (23 of
+them) is resolved against the file, the three §19.2 rows must still carry the text quoted
+beside their numbers, and `TICKETS.md` must still cite all three — dropping a citation is how
+a finding gets un-found.
+
+`PRD.md` is read and never written, and it is **not** in the negative suite's `neg_files`
+either. Its probe breaks the checker's expectation instead, so an interrupted probe run cannot
+leave the file the owner ratifies in a broken state.
+
+```
+V2 — graph.check.mjs      163 passed, 0 failed          (143 at e87a170)
+V2 — graph-negative       108 caught, 0 not caught (0 no-op), 108 of 108 reached   (88)
+guards                    21 passed / 21 caught / ci-coverage 21 suites, 0 unwired
+governance                14 passed / 16 caught of 16
+INT-08                    17 passed, 17 of 17 reached
+lint / typecheck          0 errors (4 pre-existing warnings) / exit 0
+```
+
+**Confirmed on Linux**, not just here: `static` is green at `7e4fd90`
+([run 31869670980](https://github.com/RayanAlDwlah/dallal/actions/runs/31869670980)) reporting
+`163 passed, 0 failed` and `108 caught, 0 not caught (0 no-op), 108 of 108 probes reached` —
+identical to the macOS figures above. That agreement is the point of citing both: the
+`grep`-dialect divergence recorded further up this file is exactly the kind of thing that makes
+a probe count differ between the two, and here it did not.
+
+**Both probe failures on the way were defects in the probe, not in the check** — which is the
+usual direction and the reason the suite is run rather than read:
+
+- **NO-OP** — `wider reading #1 — the hypothetical was discarded`. The mutation hard-coded two
+  spaces of indentation to find the restore line; moving that line into the new loop put it one
+  level deeper and the mutation matched nothing. The checker was fine. What had stopped working
+  was the only evidence that its self-honesty assertion could ever fail.
+- **MISSED** — `TICKETS.md still cites all three §19.2 exclusion rows`. The mutation removed
+  `PRD.md:1848` and the check stayed green, because the same row is cited again six lines later
+  as a bare `:1848`. The check was right; the probe was aimed at one of two doors.
+
+A third, caught before commit: `SPEC.slice(indexOf("### 4.0 "), indexOf("### 4.1 "))` with a
+weak guard. A renamed §4.1 makes `indexOf` return `-1`, and `slice` reads `-1` as *one from the
+end* rather than raising — the slice silently widens to most of the file and the check passes
+for an unrelated reason. Both bounds are now asserted, in order, before the slice is used.
+
 ---
 
 ## Decisions and assumptions made by this run
@@ -453,7 +536,8 @@ the closing blockquote of `TICKETS.md`'s ratification section:
 | — | Treat the red Vercel check on #155/#165/#167/#168 as **not a code signal** | Vercel returned `api-deployments-free-per-day`, "try again in 24 hours" | yes |
 | — | `PRD.md` is **not touched** by this run | owner: "the owner will ratify it manually" | n/a |
 | — | The untracked migration is **never staged and never edited** | `git status` shows it untracked at every commit in this run | n/a |
-| — | Every board number is **machine-derived**, never hand-counted | `tests/v2/graph.check.mjs`, 143 assertions | it is a procedure |
+| — | Every board number is **machine-derived**, never hand-counted | `tests/v2/graph.check.mjs`, 163 assertions | it is a procedure |
+| — | `PRD.md` is not a **mutation surface** either — not even for a probe that would restore it | an interrupted run must not be able to leave the file the owner ratifies broken; the probe breaks the checker's expectation instead | it is a procedure |
 | — | An **unratified decision blocks a ticket**, exactly as an unanswered question does | not invented here: `docs/decisions/README.md:82` already records the precedence rule, and `CLAUDE.md` §2 already orders the sources. The **`R`→ticket mapping** is judgment, and the rule used is stated in prose for the owner to correct | yes — it is a column, and the owner ratifying anything empties it |
 | — | A new check is not trusted until a **negative probe** makes it fail | four real check defects found this way, two of them in PZ-8 | it is a procedure |
 
