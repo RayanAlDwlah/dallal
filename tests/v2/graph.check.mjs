@@ -1826,6 +1826,127 @@ if (!section) {
 }
 
 // ---------------------------------------------------------------------------
+// M. The contracts, which rank 5 in CLAUDE.md §2 and WIN against an older
+// document. That last property is why these assertions exist at all: a stale
+// PRD paragraph is merely wrong, but a stale contract clause is wrong AND
+// authoritative, so a session obeying the authority order correctly is led
+// into the defect. Three of the four contracts were amended on 2026-08-15 for
+// collisions with what V2 builds, and each amendment states a fact about
+// another file. Every assertion below recomputes both sides.
+// ---------------------------------------------------------------------------
+{
+  const S011 = read("docs/contracts/S0-11-auction-record.md");
+  const S012 = read("docs/contracts/S0-12-money.md");
+  const BID02 = read("docs/contracts/BID-02-bid-operation.md");
+  const MONEY = read("lib/money.ts");
+  const INT08 = read("tests/integration/excluded-features.check.sh");
+
+  // A contract that states the end_time write-door rule and does not name the
+  // pause door is the armed-stale-copy case: rank 5 beats an older document,
+  // so it would out-rank the very decision that superseded it.
+  //
+  // The predicate has to detect the CLAIM, not three tokens in one file. The
+  // first draft asked for end_time + place_bid + "only" anywhere in the
+  // document and flagged BID-02-verification.md, which says "verified the only
+  // way that counts" about LC-03 and never mentions the door rule at all. So:
+  // "only" must be followed by place_bid inside one sentence, and end_time must
+  // be within 300 characters of that. S0-12 §9.4's "Only `place_bid` inserts
+  // bids and writes `current_price`" is correctly NOT caught — it is a claim
+  // about the bids write path, which pause does not touch and does not change.
+  const DOOR = /(end_time[\s\S]{0,300}?\bonly\b[^.\n]{0,40}place_bid)|(\bonly\b[^.\n]{0,40}place_bid[\s\S]{0,300}?end_time)/i;
+  chk(
+    "every contract stating the end_time door rule names BOTH doors, not just place_bid",
+    Object.entries({
+      "S0-11-auction-record.md": S011,
+      "S0-12-money.md": S012,
+      "BID-02-bid-operation.md": BID02,
+      "BID-02-verification.md": read("docs/contracts/BID-02-verification.md"),
+    })
+      .filter(([, t]) => DOOR.test(t) && !/pause/i.test(t))
+      .map(([f]) => f)
+      .sort(),
+    [],
+  );
+
+  // S0-11 §7's notice claims three artefacts prohibit bid_increment and that
+  // V2-A3 names only one. Each membership is recomputed. When V2-A3 lands and
+  // amends all three, this SHOULD go red — the notice's "the prohibition
+  // stands" becomes false at that moment and the notice is what must change.
+  chk(
+    "all three artefacts S0-11 §7 says prohibit bid_increment still do",
+    {
+      "S0-11 §7 row": /❌ `bid_increment`/.test(S011),
+      "S0-12 §9.5": /\*\*No re-added checks\.\*\* No increment/.test(S012),
+      // INT-08 spells it as a regex alternation, not a literal — the first
+      // draft of this line asked for /bid_increment/ and reported a check that
+      // has been there all along as missing.
+      INT08: /bid_\?increment/.test(INT08),
+      "S0-11 §10 countersigned it as holding": /No `bid_increment`/.test(S011),
+    },
+    { "S0-11 §7 row": true, "S0-12 §9.5": true, INT08: true, "S0-11 §10 countersigned it as holding": true },
+  );
+  chk(
+    "S0-11 §7's notice states the artefact count it actually lists",
+    word2num(S011.match(/(\w+) artefacts prohibit that column today/)?.[1] ?? ""),
+    3,
+  );
+
+  // §8 is the tick list; §8.1 maps each box to its status after 5adaad2. They
+  // are two views of one set, so a box added to one and not the other silently
+  // drops a box from the signature surface — which is precisely §8.1's own
+  // finding ("a signature covers the version it was given on").
+  const boxes = (S011.match(/^- \[ \] \*\*§/gm) ?? []).length;
+  const s81 = S011.slice(S011.indexOf("### 8.1"));
+  const rows = (s81.slice(0, s81.indexOf("\n---")).match(/^\| §/gm) ?? []).length - 1;
+  chk("S0-11 §8's tick list and §8.1's status table cover the same number of boxes", boxes, rows);
+
+  const table = s81.slice(0, s81.indexOf("\n---"));
+  const endorsed = (table.match(/✅/g) ?? []).length + (table.match(/🟡/g) ?? []).length;
+  chk(
+    "S0-11 §8.1's stated untouched-box count is the one its own table produces",
+    word2num(s81.match(/^(\w+) boxes are untouched/m)?.[1] ?? ""),
+    rows - endorsed,
+  );
+
+  // S0-12 §9.6 argues from an inventory of lib/money.ts. An inventory that is
+  // allowed to drift is a recollection, and the whole point of §9.6 is that
+  // the addition primitive is ABSENT — a claim that has to be re-measured.
+  const declared = [...(S012.match(/Its exported values are exactly, and exhaustively:\n([\s\S]*?)—/) ?? [])[1]
+    ?.matchAll(/`(\w+)`/g) ?? []].map((m) => m[1]).sort();
+  const actual = [...MONEY.matchAll(/^export (?:function|const) (\w+)/gm)].map((m) => m[1]).sort();
+  chk("S0-12 §9.6's inventory of lib/money.ts is exactly the module's exported values", declared, actual);
+  chk(
+    "S0-12 §9.6's stated export counts match the module",
+    [
+      word2num(S012.match(/\*\*(\w+), of which (?:\w+) are\n\s*functions/)?.[1] ?? ""),
+      word2num(S012.match(/of which (\w+) are\n\s*functions/)?.[1] ?? ""),
+    ],
+    [actual.length, (MONEY.match(/^export function /gm) ?? []).length],
+  );
+  chk(
+    "no addition primitive has appeared in lib/money.ts while §9.6 still says none exists",
+    actual.filter((n) => /^(add|plus|sum|subtract|minus|multiply|divide)/i.test(n)),
+    [],
+  );
+
+  // BID-02's pause note turns on one measurable fact: the flag is shared by the
+  // bids-insert gate and the end_time gate. If a future migration splits them,
+  // the note's argument evaporates and the note must be rewritten rather than
+  // left standing as a reason that no longer holds.
+  const mig = read("supabase/migrations/20260814000000_bid15_closing_and_extension.sql");
+  const bid02mig = read("supabase/migrations/20260812120000_bid02_bid_acceptance.sql");
+  chk(
+    "BID-02's pause note still describes a real overload — one flag, both gates",
+    {
+      bidsInsertGate: /bids_only_via_place_bid[\s\S]*?dalal\.in_place_bid/.test(bid02mig),
+      endTimeGate: /new\.end_time is distinct from old\.end_time[\s\S]*?dalal\.in_place_bid/.test(mig),
+      noteExists: /READ THIS BEFORE IMPLEMENTING PAUSE/.test(BID02),
+    },
+    { bidsInsertGate: true, endTimeGate: true, noteExists: true },
+  );
+}
+
+// ---------------------------------------------------------------------------
 // The blockquote of open questions states its own item count, and the items
 // are numbered by hand. Adding a fourth and leaving the word at "Three" is the
 // same class of drift as every other count in this file — with the difference
