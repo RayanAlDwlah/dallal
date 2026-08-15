@@ -447,6 +447,36 @@ A fourth now runs beside them, on the planning documents rather than the tree:
   detector it depended on had nothing left to detect. **A check is not finished when it
   passes; it is finished when it has been made to fail on purpose.**
 
+That sentence was true of `tests/guards/` and a promise everywhere else. Those two document
+checks carry **107 assertions** and, until 2026-08-15, not one committed probe between them —
+the probes that found the four defects above lived in `/tmp` and were gone by the next
+session. So each now has a counterpart that runs in CI beside it:
+
+- **`tests/v2/graph-negative.check.sh`** — 52 probes against `graph.check.mjs`.
+- **`tests/governance/workflow-negative.check.sh`** — 16 probes against `workflow.check.mjs`,
+  including one per step of the seven-step loop, because a seven-long loop is short enough to
+  cover exhaustively and each step's copy is caught by a *different* fingerprint.
+- **`tests/lib/negative.sh`** — the shared harness they source. It is a library, refuses to be
+  executed, and exists so that the `git checkout --` restore loop and its **trap ordering**
+  are written once. That ordering is a safety property, not a style: on 2026-08-15 a trap
+  armed one block too early fired on the way out of the refusal that had just declined to
+  touch anything, and destroyed uncommitted work. `tests/guards/negative.sh` is deliberately
+  **not** converted to use it — rewriting a working safety mechanism for a cosmetic gain is
+  the trade this file exists to refuse.
+
+It adds a fourth verdict the original could not express. `CAUGHT` / `MISSED` / `BROKEN` assume
+the mutation happened; **`NO-OP` says it did not, and blames the probe.** That is not
+hypothetical — during PZ-8 a probe silently failed to edit its second file and reported
+`MISSED` against a check that was fine, and a reader chasing it would have "fixed" working
+code. A mutation that dirties nothing is now a failure of the suite.
+
+**Each suite's header names what it does not probe, and why.** Three loop families in the
+graph suite, and in the governance suite both an assertion whose falsification would mean
+untracking a hundred files and a limitation the check states about itself. An unprobed
+assertion that is written down is a known gap; an unprobed assertion that is not is a
+coverage claim that is quietly false — which is the same defect as the stale count, one level
+up, and the reason `ci-coverage.sh` exists at all.
+
 ### The rule when a guard goes red and you believe the code is right
 
 **It will happen, and the answer is never an ignore list.** Some of these rules are absolute

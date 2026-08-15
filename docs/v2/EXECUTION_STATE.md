@@ -15,10 +15,10 @@ restating the dependency graph, delete that part and link instead.
 | | |
 |---|---|
 | **Run id** | `e33684e-20260815T0250` |
-| **Last updated** | 2026-08-15, after PZ-8 — this file is the commit that follows `d819d44` |
+| **Last updated** | 2026-08-15, after queue item 3 — this file is the commit that follows `aa8b70d` |
 | **Branch** | `feature/rayan-v2-spec` |
-| **HEAD** | `d819d44` + this commit |
-| **Base** | **17 commits ahead of `origin/main`**, and it contains `.github/workflows/ci.yml`, which `main` does not. **11 of those 17 were not yet pushed when this line was written** — `f407862` … this commit, the Phase Zero corrective run. Pushing them is step 1 of the queue below; if `origin/feature/rayan-v2-spec` is at this commit or later, that step is done |
+| **HEAD** | `aa8b70d` + this commit |
+| **Base** | **19 commits ahead of `origin/main`**, and it contains `.github/workflows/ci.yml`, which `main` does not. Everything through `aa8b70d` **is pushed**; this commit is the only one that may not be. Push, never force-push — #168 is open and others may be reading it |
 | **Operator** | unattended Claude session, owner asleep, reviewing later |
 
 ---
@@ -90,6 +90,33 @@ project keeps catching.
 | `tests/v2/graph.check.mjs` | **PASS** 93/93 | 57 |
 | `tests/governance/workflow.check.mjs` | **PASS** 14/14 | new in PZ-8 |
 | `npx tsc --noEmit` | exit 0 | exit 0 |
+
+### Re-measured again at this commit — still the credential-free half only
+
+Same caveat, unchanged and for the same reason: this commit adds two shell suites, one
+sourced library, `ci.yml` steps and `CLAUDE.md` §9 prose. **No migration, no application code,
+so the Docker rows above were not re-run and are not restated here.**
+
+| suite | at this commit | was at `d819d44` |
+|---|---|---|
+| `tests/guards/run.sh` | **PASS** 20/20 | 20/20 |
+| `tests/guards/ci-coverage.sh` | **PASS** 21 suites, 0 unwired, 13 workflow steps | 19 suites, 11 steps |
+| `tests/v2/graph.check.mjs` | **PASS** 93/93 | 93/93 |
+| `tests/v2/graph-negative.check.sh` | **PASS** 52 caught / 52, 0 no-op | new |
+| `tests/governance/workflow.check.mjs` | **PASS** 14/14 | 14/14 |
+| `tests/governance/workflow-negative.check.sh` | **PASS** 16 caught / 16, 0 no-op | new |
+| `tests/integration/excluded-features.check.sh` | **PASS** 17/17 | not re-run |
+| `tests/integration/responsive-375.check.sh` | **PASS** | not re-run |
+| `tests/realtime/ux-rules.check.mjs` | **PASS** 14/14 | not re-run |
+| `npm run lint` | 0 errors, **6 pre-existing warnings** | not re-run |
+| `npm run typecheck` | exit 0 | exit 0 |
+| `npm run build` | exit 0 | not re-run |
+
+**`tests/guards/negative.sh` is run after the commit, not before it** — and so are the two new
+suites when their surface includes a file being edited. All three refuse a dirty tree by
+design, and `workflow-negative.check.sh` declares `CLAUDE.md` in its surface, so it cannot run
+in the same breath as an edit to §9. Sequence: edit → run everything that tolerates a dirty
+tree → commit → run the three refusers. Its result at this commit is in the commit message.
 
 ---
 
@@ -207,11 +234,14 @@ declaring it out of scope.
    open and others may be reading it.
 2. ~~Measure #155 against both blocks and approve it~~ — **done**, see above. What is left on
    it is one human action: dismiss `@Dem4t`'s review, or have him re-review, then merge.
-3. **A committed negative suite for `graph.check.mjs` and `workflow.check.mjs`.** Deliberately
-   deferred, and it is the largest remaining integrity gap: 107 assertions across the two, with
-   no committed counterpart to `tests/guards/negative.sh`. Every probe run so far lived in
-   `/tmp` and is gone. `tests/guards/negative.sh` found two real defects in `run.sh` the first
-   time it ran; the `/tmp` suites found four in these two, including two in PZ-8 alone.
+3. ~~**A committed negative suite for `graph.check.mjs` and `workflow.check.mjs`**~~ — **done.**
+   `tests/v2/graph-negative.check.sh` (52 probes), `tests/governance/workflow-negative.check.sh`
+   (16), and the shared `tests/lib/negative.sh` they source; both wired into `ci.yml`, which
+   `ci-coverage.sh` had already gone red about — **21 suites, 0 unwired**. All 68 probes CAUGHT
+   on the first run, which is the result that deserves the least trust, so the harness was
+   itself meta-probed: a mutation that changes nothing reports **NO-OP**, a label no check
+   prints reports **BROKEN**, and an unwatched edit reports **MISSED**. It discriminates all
+   four, so the 68 are signal. Each suite's header names what it does **not** probe.
 4. Only then create the V2 issues.
 
 **Blocked, with the reason:**
