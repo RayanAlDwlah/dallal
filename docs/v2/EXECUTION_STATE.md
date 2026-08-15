@@ -367,7 +367,7 @@ declaring it out of scope.
    refuses a lot with no `end_time` at insert. Three negative results are recorded on purpose,
    including a re-test of the §19.6 admin judgement this file flagged as most worth a second
    reader — **it holds**. `ARCHITECTURE.md:1552`'s stale count is left **unfixed on purpose**
-   and says why. See the section below.
+   and says why. See the section below, and [`#issuecomment-5301265091`](https://github.com/RayanAlDwlah/dallal/pull/168#issuecomment-5301265091) on #168.
 10. Only then create the V2 issues.
 
 **Blocked, with the reason:**
