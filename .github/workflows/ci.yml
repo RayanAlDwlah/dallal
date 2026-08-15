@@ -124,6 +124,28 @@ jobs:
       - name: BID-09 — the auction page mounts the live price region
         run: node --no-warnings tests/realtime/live-price-mount.check.mjs
 
+      # #147 — every *.check.mjs must actually LOAD. This suite arrives with
+      # #155, which cannot wire it here because this file does not exist on
+      # main yet. So the wiring lives on this branch instead.
+      #
+      # THIS STEP IS RED UNTIL #155 MERGES, ON PURPOSE. The alternative was an
+      # ALLOWLIST line, and an allowlist entry for a suite that CI can perfectly
+      # well run is exactly the ignore CLAUDE.md §9 forbids. A red that names its
+      # own precondition is the honest shape.
+      #
+      # Measured 2026-08-15 on this branch with #155's file copied in:
+      #   18 suite(s) found · 1 unwired · CI-COVERAGE: FAIL — 1 problem(s)
+      # Neither PR's own CI catches this if the second one merges stale: GitHub
+      # does not re-run a PR when its base moves, and no status check is
+      # required on main.
+      - name: INT — the check harness itself loads (#147, suite from #155)
+        run: |
+          if [ ! -f tests/integration/check-imports.check.sh ]; then
+            echo "::error::tests/integration/check-imports.check.sh is absent — PR #155 has not merged yet. Merge #155 before #167; this step is the wiring #155 could not carry."
+            exit 1
+          fi
+          ./tests/integration/check-imports.check.sh
+
       # --- the toolchain ---------------------------------------------------
       - name: lint
         run: npm run lint
