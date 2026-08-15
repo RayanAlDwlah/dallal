@@ -526,8 +526,14 @@ neg_probe "TICKETS.md header: ticket count" \
 # printed after it would be wrong and all of them would agree with each other —
 # the failure mode with no symptom. So the restore is asserted, and the only way
 # to probe an assertion about the checker is to break the checker.
+#
+# The leading indentation is matched with `\s*` and put back through $1. It was
+# hard-coded to two spaces, and moving the restore one level deeper — into the
+# loop over the stated readings — turned this probe into a NO-OP: the mutation
+# matched nothing, the checker stayed green, and the verdict was "the PROBE is
+# broken" rather than a missed catch. That is the whole point of running these.
 neg_probe "wider reading #1 — the hypothetical was discarded" \
-  'perl -pi -e '"'"'s/^  for \(const \[t, arr\] of saved\) board\.get\(t\)\.ratif = arr;.*$/  \/\/ restore removed by probe/'"'"' tests/v2/graph.check.mjs'
+  'perl -pi -e '"'"'s/^(\s*)for \(const \[t, arr\] of saved\) board\.get\(t\)\.ratif = arr;.*$/$1\/\/ restore removed by probe/'"'"' tests/v2/graph.check.mjs'
 
 # ---------------------------------------------------------------------------
 # H. The decisions index restates the direct/conditional split in prose, one
