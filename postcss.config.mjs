@@ -1,7 +1,4 @@
-/**
- * Tailwind CSS v4 is configured from CSS, not from a JS config file.
- * There is no tailwind.config.js — see design/STACK.md §2 and app/globals.css.
- */
+/** Tailwind CSS v4 — configured from CSS (app/globals.css), no tailwind.config file. */
 const config = {
   plugins: ["@tailwindcss/postcss"],
 };

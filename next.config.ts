@@ -1,12 +1,41 @@
 import type { NextConfig } from "next";
 
 /**
- * Dalal — Next.js configuration
- *
- * Deliberately minimal. ARCHITECTURE.md §18.5 constrains the app to Vercel's
- * stateless execution model: no long-running process, no in-memory state.
- * Nothing here should introduce either.
+ * Image optimisation is allowed only from the Supabase storage public-object
+ * route for our buckets. The host falls back to *.supabase.co so `next build`
+ * never requires credentials; localhost patterns cover the local Supabase
+ * stack during development.
  */
-const nextConfig: NextConfig = {};
+function storageHostname(): string {
+  const url = process.env.NEXT_PUBLIC_SUPABASE_URL;
+  if (!url) return "*.supabase.co";
+  try {
+    return new URL(url).hostname;
+  } catch {
+    return "*.supabase.co";
+  }
+}
+
+const nextConfig: NextConfig = {
+  images: {
+    remotePatterns: [
+      {
+        protocol: "https",
+        hostname: storageHostname(),
+        pathname: "/storage/v1/object/public/**",
+      },
+      {
+        protocol: "http",
+        hostname: "127.0.0.1",
+        pathname: "/storage/v1/object/public/**",
+      },
+      {
+        protocol: "http",
+        hostname: "localhost",
+        pathname: "/storage/v1/object/public/**",
+      },
+    ],
+  },
+};
 
 export default nextConfig;

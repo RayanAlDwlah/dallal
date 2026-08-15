@@ -2,7 +2,7 @@
 # https://supabase.com/docs/guides/local-development/cli/config
 # A string used to distinguish different Supabase projects on the same host. Defaults to the
 # working directory name when running `supabase init`.
-project_id = "dllal"
+project_id = "dallal-v2"
 
 [api]
 enabled = true
@@ -179,12 +179,7 @@ enable_anonymous_sign_ins = false
 # Allow/disallow testing manual linking of accounts
 enable_manual_linking = false
 # Passwords shorter than this value will be rejected as weak. Minimum 6, recommended 8 or more.
-# CHANGED FROM THE CLI DEFAULT OF 6. FR-AUTH-04: "at least 8 characters". Shipping
-# the generated 6 would put a value in the repository that contradicts the PRD.
-# @Dem4t owns this; change it if you read FR-AUTH-04 differently, but change the
-# PRD in the same breath. (This block configures the LOCAL stack only — the hosted
-# project is unaffected until someone runs `supabase config push`.)
-minimum_password_length = 8
+minimum_password_length = 6
 # Passwords that do not meet the following requirements will be rejected as weak. Supported values
 # are: `letters_digits`, `lower_upper_letters_digits`, `lower_upper_letters_digits_symbols`
 password_requirements = ""
@@ -228,10 +223,6 @@ enable_signup = true
 # addresses. If disabled, only the new email is required to confirm.
 double_confirm_changes = true
 # If enabled, users need to confirm their email address before signing in.
-# LEAVE THIS false. FR-AUTH-07 (decided, formerly Q8): "Email verification is not
-# required... no verification step, no verification email, and no 'unverified'
-# account state." Turning it on is the single most plausible well-meaning change
-# in this file and it violates a recorded product decision.
 enable_confirmations = false
 # If enabled, users will need to reauthenticate or have logged in recently to change their password.
 secure_password_change = false

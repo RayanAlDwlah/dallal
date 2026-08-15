@@ -6,6 +6,35 @@ before writing code.**
 
 ---
 
+## 0. Status note — V2 shipped 2026-08-15 (read before "fixing" anything)
+
+The tree now carries the **V2 product**: the app built from `design-system/previews/*.html`
+(Rayan's approved designs, implemented in `Dem4t/dallal-v2`, merged here), running on
+Supabase project `dymmjhtuoxmrzssofjgl` with the self-contained schema in
+`supabase/migrations/20260815100000_core_schema.sql`. Decided by Rayan (bidding steward)
+with the owner's ship directive; reviews were waived for the ship window.
+
+Where this file and V2 diverge, **V2 as shipped governs**, and the diffs are these:
+
+- **§5's "no bid increment" bullet is superseded.** V2 auctions carry a seller-chosen
+  `bid_increment` (D-01 taken to its conclusion: the bidder presses a button, the server
+  enforces `current_price + increment` inside `place_bid`'s row lock). Everything else in
+  §5 — the anti-snipe shape, forward-only `end_time`, the `CHECK`-capped 20 extensions,
+  server-clock eligibility, history ordered by `bids.id` — is intact in the V2 schema.
+- **File references in §5/§9 describe the V1 tree.** V1 migrations live under
+  `supabase/archive-v1/` (including the uncommitted `20260815090000_sec_*` recovered from
+  the last V1 session). The V1 test suites and `design/` experiments were removed on the
+  ship branch — git history and the pre-V2 branches keep them.
+- **§4 (money), §6 (security/privacy), §3 (Arabic RTL) are unchanged** and the V2 code
+  complies: amounts are strings end-to-end, `::text` on every money select, one formatter,
+  `sar_amount` with no typmod, email never leaves the auth schema.
+- **The AI layer** (`lib/ai/`, `app/api/ai/*`) is input/display-path only, per
+  `design-system/previews/ai.html`: it never bids, never accepts/rejects/ends anything,
+  never sees an email or internal id, and a model never produces an amount — the price
+  suggestion is SQL over ended auctions. Unconfigured, it hides itself.
+
+---
+
 ## 1. What Dalal is
 
 A live auction platform: sellers list items, buyers bid, the highest bid at the end time

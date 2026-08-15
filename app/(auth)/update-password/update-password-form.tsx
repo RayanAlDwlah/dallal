@@ -2,45 +2,53 @@
 
 import { useActionState } from "react";
 
-import { Alert } from "@/components/ui/alert";
-import { Button } from "@/components/ui/button";
-import { Field } from "@/components/ui/field";
-import { Input } from "@/components/ui/input";
-import { PASSWORD_MIN_LENGTH } from "@/lib/auth/validation";
-import { updatePasswordAction, type AuthFormState } from "../actions";
+import { updatePassword, type AuthFormState } from "@/app/(auth)/actions";
 
-/** AUTH-13 — FR-AUTH-30. */
+const initial: AuthFormState = { error: null };
+
 export function UpdatePasswordForm() {
-  const [state, formAction, pending] = useActionState<AuthFormState, FormData>(
-    updatePasswordAction,
-    {},
-  );
+  const [state, action, pending] = useActionState(updatePassword, initial);
 
   return (
-    <form action={formAction} className="flex flex-col gap-5">
-      {state.error ? <Alert tone="error">{state.error}</Alert> : null}
-
-      <Field
-        label="كلمة المرور الجديدة"
-        hint={`${PASSWORD_MIN_LENGTH} أحرف على الأقل.`}
-        error={state.fieldErrors?.password}
+    <form action={action} className="hairline rounded-[22px] bg-surface p-6">
+      <label className="mb-1.5 block text-[13.5px] font-semibold" htmlFor="password">
+        كلمة المرور الجديدة
+      </label>
+      <input
+        id="password"
+        name="password"
+        type="password"
         required
-      >
-        {(props) => (
-          <Input
-            {...props}
-            name="password"
-            type="password"
-            autoComplete="new-password"
-            dir="ltr"
-            className="text-start"
-          />
-        )}
-      </Field>
+        minLength={8}
+        autoComplete="new-password"
+        dir="ltr"
+        className="field mb-1.5 text-start"
+      />
+      <p className="mb-5 text-[12.5px] text-ink3">8 محارف على الأقل.</p>
 
-      <Button type="submit" loading={pending}>
-        حفظ كلمة المرور
-      </Button>
+      <label className="mb-1.5 block text-[13.5px] font-semibold" htmlFor="confirm">
+        تأكيد كلمة المرور
+      </label>
+      <input
+        id="confirm"
+        name="confirm"
+        type="password"
+        required
+        minLength={8}
+        autoComplete="new-password"
+        dir="ltr"
+        className="field text-start"
+      />
+
+      {state.error ? (
+        <p className="mt-4 rounded-[13px] bg-[rgba(255,77,94,.08)] px-4 py-3 text-[13.5px] text-[#FFB3BB] [box-shadow:inset_0_0_0_1px_rgba(255,77,94,.24)]">
+          {state.error}
+        </p>
+      ) : null}
+
+      <button type="submit" disabled={pending} className="btn-gold mt-6 h-12 w-full text-[15px]">
+        {pending ? "جارٍ الحفظ…" : "احفظ كلمة المرور"}
+      </button>
     </form>
   );
 }

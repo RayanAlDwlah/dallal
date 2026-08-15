@@ -1,49 +1,44 @@
+import type { Metadata } from "next";
 import Link from "next/link";
 
-import { Page } from "@/components/layout/container";
-import { Alert } from "@/components/ui/alert";
-import { Card, CardBody } from "@/components/ui/card";
-import { getVerifiedUserId } from "@/lib/auth/identity";
+import { createClient } from "@/lib/supabase/server";
 
 import { UpdatePasswordForm } from "./update-password-form";
 
-export const metadata = { title: "كلمة مرور جديدة — دلال" };
+export const metadata: Metadata = { title: "كلمة مرور جديدة" };
 
 export default async function UpdatePasswordPage() {
-  /*
-   * Reaching this screen without a session means the recovery link was never
-   * exchanged — expired, already used, or opened directly. FR-AUTH-29 requires
-   * a clear message and a way to request a new one, not an empty form that
-   * fails on submit.
-   */
-  const userId = await getVerifiedUserId();
+  /* Reaching this page means the recovery link already established a session
+     in /auth/callback. Without one there is nothing to change, and saying so
+     here is kinder than a form that fails on submit. */
+  const supabase = await createClient();
+  const {
+    data: { user },
+  } = await supabase.auth.getUser();
 
-  if (!userId) {
+  if (!user) {
     return (
-      <Page title="كلمة مرور جديدة" width="narrow">
-        <div className="flex flex-col gap-4">
-          <Alert tone="error" title="الرابط لم يعد صالحًا">
-            افتح رابط إعادة التعيين من بريدك، أو اطلب رابطًا جديدًا.
-          </Alert>
-          <Link href="/reset-password" className="text-brand-text text-sm font-semibold">
+      <div className="mx-auto mt-14 w-full max-w-[420px]">
+        <div className="hairline rounded-[22px] bg-surface p-6 text-center">
+          <h1 className="m-0 mb-1.5 font-display text-[20px] font-semibold">
+            الرابط غير صالح أو انتهت صلاحيته
+          </h1>
+          <p className="m-0 mb-6 text-sm text-ink2">
+            روابط الاستعادة تنتهي بعد فترة قصيرة، وتُستخدم مرة وحدة. اطلب رابطًا جديدًا.
+          </p>
+          <Link href="/reset-password" className="btn-gold h-11 px-6 text-sm">
             اطلب رابطًا جديدًا
           </Link>
         </div>
-      </Page>
+      </div>
     );
   }
 
   return (
-    <Page
-      title="كلمة مرور جديدة"
-      description="اختر كلمة مرور جديدة لحسابك."
-      width="narrow"
-    >
-      <Card>
-        <CardBody>
-          <UpdatePasswordForm />
-        </CardBody>
-      </Card>
-    </Page>
+    <div className="mx-auto mt-14 w-full max-w-[420px]">
+      <h1 className="mb-1 font-display text-[28px] font-semibold">كلمة مرور جديدة</h1>
+      <p className="mb-7 text-[15px] text-ink2">اختر كلمة مرور جديدة لحسابك.</p>
+      <UpdatePasswordForm />
+    </div>
   );
 }
