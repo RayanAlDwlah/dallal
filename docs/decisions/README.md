@@ -48,19 +48,35 @@ nothing: where a record here and the PRD disagree, **the PRD wins and the record
 | | Decision | Status | Touches |
 |---|---|---|---|
 | [D-01](D-01-bid-increment-button.md) | The bid control is a **button carrying a seller-set amount**, not a typed number | `DECIDED` | **BR-32**, BR-29, FR-BID-* |
+| [D-02](D-02-categories.md) | **Thirteen categories**, sourced not invented — and the category changes which fields the form asks for | `DECIDED` | `auctions` schema, create form, browse |
+| [D-03](D-03-sessions.md) | **Sessions** — a room of lots opened one at a time, run live by a host. A kind of auction, **not a kind of account** | `DECIDED in shape` | new entity, **BR-36**, LC-03, BR-31 |
+| [D-04](D-04-ai-product-surface.md) | The **AI is five specific things in five places** — and measurement kills two of them | `DECIDED in shape` | create, browse, detail. **Never** the bidding path |
+| [D-05](D-05-deposit.md) | The **deposit is simulated**, paid once for the hall, and unlocks **bidding not watching** | `DECIDED in shape` | `CLAUDE.md` §1, D-03, bid eligibility |
+| [D-06](D-06-images-and-create-flow.md) | **Images first**, up to ten, first one is the cover — and the four-step create flow | `DECIDED` | AUC-04, ADR-6, BR-31 |
 
-### Raised but NOT decided — do not build
+The five previously listed here as *"raised but not decided"* are now the five records
+above. They were decided by the owner approving the prototype in
+`design-system/previews/*.html` on **2026-08-15**, and each record quotes the prototype or
+the owner directly.
 
-These came out of the interactive prototype (`design-system/build/index.html`). The owner
-has seen them and liked the design. **Liking a prototype is not ratifying a rule**, and
-none of the questions below has an answer yet:
+**`DECIDED in shape` means: the feature is real and buildable, and the record's own "Still
+open" section still contains questions that must NOT be answered by a session.** D-03 §4.1
+and D-02 §4.1 are the two expensive ones — see `docs/v2/SPEC.md` §4.
 
-| | Area | The unanswered part |
-|---|---|---|
-| — | **Categories** | The prototype shows 13 categories sourced from حراج. Is that the list? Are they fixed or extensible? Is one required per auction? |
-| — | **Multiple images** | How many? Which is the card image? What happens to `AUC-04`'s single-image path and `ADR-6`'s upload-before-create ordering? |
-| — | **AI** | Where exactly is its boundary? It must never touch the money path or the outcome path, and its key must never be `NEXT_PUBLIC_` — but "search and describe only" is a guess until it is decided. |
-| — | **Deposit (العربون)** | Everything. Amount, who holds it, what happens on a win or a loss. **It must be recorded as simulated** — `CLAUDE.md` §1: no money changes hands. |
-| — | **Sessions (الجلسات)** | The largest by far, and deliberately last. A new entity, lot ordering, per-lot duration, pausing, host powers. |
+Sessions remain sequenced last by the owner: *"داخلة، بس آخر شي"*.
 
-Sequenced last by the owner: *"داخلة، بس آخر شي"*.
+### Two things measurement changed, which no document predicted
+
+[`docs/ai/local-model.md`](../ai/local-model.md) measured all five AI features against the
+free local model before any of them was built. Two did not survive:
+
+- **«يصلّح الصور» is not an LLM task at all.** No text or vision-language model outputs an
+  edited image. It had been sitting inside the word "AI" and nobody had noticed.
+- **«يقترح سعر البداية» is a SQL query, not a model call.** The model produced a corrupt or
+  wrong amount on **ten runs out of ten**, stably, at `temperature: 0` — which is also why
+  D-04 §4 forbids the AI from touching an amount in either direction.
+
+### What to build from
+
+`docs/v2/SPEC.md` and `docs/v2/TICKETS.md` — 24 tickets across two parallel tracks, and the
+six questions the board is actually waiting on.

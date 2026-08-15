@@ -1,0 +1,77 @@
+/* ==========================================================================
+   Dalal — design system tokens
+   Dark futuristic · bento · editorial Arabic · RTL
+
+   Colour carries meaning here, it is not decoration:
+     gold  = money, prices, the primary action
+     teal  = live, active, realtime
+     red   = the final seconds
+     green = you won
+   ========================================================================== */
+
+@import url("https://fonts.googleapis.com/css2?family=IBM+Plex+Sans+Arabic:wght@400;500;600&family=Rubik:wght@500;600;700&display=swap");
+
+:root {
+  /* surfaces */
+  --canvas:  #07090D;
+  --surface: #0F1219;
+  --raised:  #161A23;
+  --hair:    rgba(255, 255, 255, 0.08);
+  --hair-strong: rgba(255, 255, 255, 0.14);
+
+  /* text */
+  --ink:  #E9EDF5;
+  --ink2: #9AA4B8;
+  --ink3: #5C6579;
+
+  /* semantic */
+  --gold:      #F5B942;
+  --gold-dim:  #C98A16;
+  --gold-weak: rgba(245, 185, 66, 0.12);
+  --teal:      #2DD4BF;
+  --teal-weak: rgba(45, 212, 191, 0.12);
+  --red:       #FF4D5E;
+  --red-weak:  rgba(255, 77, 94, 0.12);
+  --green:     #34D399;
+  --purple:    #7C3AED;
+
+  /* shape */
+  --r-btn:   12px;
+  --r-card:  20px;
+  --r-panel: 28px;
+
+  /* elevation — dark UI does not show drop shadows, so glow */
+  --e-rest:   inset 0 0 0 1px rgba(255, 255, 255, 0.06);
+  --e-raised: inset 0 0 0 1px rgba(255, 255, 255, 0.08), 0 8px 32px rgba(0, 0, 0, 0.5);
+  --e-live:   inset 0 0 0 1px rgba(45, 212, 191, 0.30), 0 0 24px rgba(45, 212, 191, 0.25);
+  --e-urgent: inset 0 0 0 1px rgba(255, 77, 94, 0.30), 0 0 24px rgba(255, 77, 94, 0.30);
+
+  /* type */
+  --f-display: "Rubik", system-ui, sans-serif;
+  --f-body: "IBM Plex Sans Arabic", system-ui, sans-serif;
+}
+
+/* Arabic needs more leading than Latin. Digits stay Western and tabular. */
+body {
+  margin: 0;
+  padding: 40px;
+  direction: rtl;
+  background: var(--canvas);
+  color: var(--ink);
+  font-family: var(--f-body);
+  font-size: 16px;
+  line-height: 1.7;
+  -webkit-font-smoothing: antialiased;
+}
+
+.num { font-variant-numeric: tabular-nums; }
+
+/* Every amount is 1,250.00 SAR — the Latin indicator sits outside the
+   isolate so the decimal point and the indicator cannot reorder. There is
+   no maximum price: never truncate, cap, or ellipsize an amount. */
+.money { font-variant-numeric: tabular-nums; font-family: var(--f-display); }
+.money .sar { font-size: 0.62em; color: var(--ink2); font-weight: 500; margin-inline-start: 6px; }
+
+.row { display: flex; align-items: center; gap: 12px; flex-wrap: wrap; }
+.stack { display: flex; flex-direction: column; gap: 24px; }
+.label { font-size: 13px; color: var(--ink3); letter-spacing: .02em; }

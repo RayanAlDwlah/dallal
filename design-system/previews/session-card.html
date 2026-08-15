@@ -1,0 +1,83 @@
+<!-- @dsCard group="Auction" name="Session card" subtitle="Scheduled multi-item auction with an entry deposit" -->
+<!doctype html>
+<html lang="ar" dir="rtl">
+<meta charset="utf-8">
+<title>بطاقة الجلسة</title>
+<style>
+@import url("https://fonts.googleapis.com/css2?family=IBM+Plex+Sans+Arabic:wght@400;500;600&family=Rubik:wght@500;600;700&display=swap");
+:root{--canvas:#07090D;--surface:#0F1219;--raised:#161A23;--hair:rgba(255,255,255,.08);--ink:#E9EDF5;--ink2:#9AA4B8;--ink3:#5C6579;--gold:#F5B942;--teal:#2DD4BF;--red:#FF4D5E;--purple:#7C3AED;--f-display:"Rubik",system-ui,sans-serif;--f-body:"IBM Plex Sans Arabic",system-ui,sans-serif}
+*{box-sizing:border-box}
+body{margin:0;padding:40px;direction:rtl;background:var(--canvas);color:var(--ink);font-family:var(--f-body);line-height:1.7;-webkit-font-smoothing:antialiased}
+h1{font-family:var(--f-display);font-size:28px;font-weight:600;margin:0 0 4px}
+p.sub{color:var(--ink2);margin:0 0 8px;font-size:15px;max-width:64ch}
+h2{font-size:13px;color:var(--ink3);font-weight:500;letter-spacing:.04em;margin:34px 0 14px}
+.num{font-variant-numeric:tabular-nums}
+.sar{font-size:.66em;color:var(--ink2);font-weight:500;margin-inline-start:5px}
+
+.bento{display:grid;grid-template-columns:1.6fr 1fr;gap:16px}
+@media(max-width:760px){.bento{grid-template-columns:1fr}}
+.s{background:var(--surface);border-radius:20px;overflow:hidden;box-shadow:inset 0 0 0 1px var(--hair);position:relative;transition:.15s}
+.s:hover{transform:translateY(-2px);box-shadow:inset 0 0 0 1px rgba(45,212,191,.3),0 0 30px rgba(45,212,191,.12)}
+.cov{height:150px;position:relative;background:linear-gradient(135deg,#1E2431,#10141C)}
+.cov.big{height:196px}
+.cov::after{content:"";position:absolute;inset:0;background:radial-gradient(70% 90% at 30% 10%,rgba(124,58,237,.28),transparent 65%),radial-gradient(60% 80% at 85% 70%,rgba(45,212,191,.2),transparent 65%)}
+.badge{position:absolute;inset-block-start:12px;inset-inline-start:12px;z-index:2;display:inline-flex;align-items:center;gap:6px;height:26px;padding:0 11px;border-radius:999px;font-size:12px;font-weight:600;backdrop-filter:blur(8px)}
+.b-live{background:rgba(45,212,191,.18);color:var(--teal);box-shadow:inset 0 0 0 1px rgba(45,212,191,.32)}
+.b-live .d{width:6px;height:6px;border-radius:50%;background:var(--teal);box-shadow:0 0 8px var(--teal)}
+.b-soon{background:rgba(255,255,255,.08);color:var(--ink2)}
+.host{position:absolute;inset-block-end:12px;inset-inline-start:12px;z-index:2;display:flex;align-items:center;gap:9px}
+.host .lg{width:34px;height:34px;border-radius:10px;background:#0B0E14;display:grid;place-items:center;font-family:var(--f-display);font-weight:700;font-size:13px;color:var(--gold);box-shadow:inset 0 0 0 1px var(--hair)}
+.host b{font-size:14px;font-weight:600;display:block;line-height:1.3}
+.host small{font-size:12px;color:var(--ink2)}
+.bd{padding:16px}
+.bd h3{font-family:var(--f-display);font-size:18px;font-weight:600;margin:0 0 10px}
+.facts{display:flex;gap:14px;flex-wrap:wrap;font-size:13px;color:var(--ink2);font-variant-numeric:tabular-nums}
+.facts span{display:inline-flex;align-items:center;gap:5px}
+.dep{margin-top:14px;display:flex;align-items:center;justify-content:space-between;gap:12px;padding-top:14px;border-top:1px solid var(--hair)}
+.dep .k{font-size:12px;color:var(--ink3);display:block}
+.dep .v{font-family:var(--f-display);font-size:18px;font-weight:700;color:var(--gold);font-variant-numeric:tabular-nums}
+.enter{height:42px;padding:0 20px;border:0;border-radius:12px;background:var(--gold);color:#1A1204;font-family:var(--f-body);font-size:14px;font-weight:600;cursor:pointer;white-space:nowrap}
+.enter.ghost{background:transparent;color:var(--ink);box-shadow:inset 0 0 0 1px var(--hair)}
+.note{font-size:13px;color:var(--ink3);margin-top:14px;max-width:64ch}
+</style>
+<h1>بطاقة الجلسة</h1>
+<p class="sub">الجلسة نوع مزاد، مو نوع حساب. أي أحد — فرد أو شركة — عنده كمية يقدر ينشئ وحدة: عدّة منتجات بالتتابع، موعد محدّد، وعربون دخول يحدّده صاحبها.</p>
+
+<h2>مباشرة الآن وقادمة</h2>
+<div class="bento">
+
+  <article class="s">
+    <div class="cov big">
+      <span class="badge b-live"><span class="d"></span>مباشر الآن</span>
+      <div class="host"><div class="lg">مج</div><div><b>معرض المجد للسيارات</b><small>الرياض</small></div></div>
+    </div>
+    <div class="bd">
+      <h3>مزاد السيارات الأسبوعي</h3>
+      <div class="facts">
+        <span>12 سيارة</span><span>·</span><span>المعروض الآن 4 من 12</span><span>·</span><span>38 حاضر</span>
+      </div>
+      <div class="dep">
+        <div><span class="k">عربون الدخول</span><span class="v num">50.00<span class="sar">SAR</span></span></div>
+        <button class="enter">ادخل القاعة</button>
+      </div>
+    </div>
+  </article>
+
+  <article class="s">
+    <div class="cov">
+      <span class="badge b-soon">تبدأ 9:00 م</span>
+      <div class="host"><div class="lg">ف</div><div><b>فهد العتيبي</b><small>فرد</small></div></div>
+    </div>
+    <div class="bd">
+      <h3>ساعات فاخرة مستعملة</h3>
+      <div class="facts"><span>7 قطع</span><span>·</span><span>بعد 2:41:00</span></div>
+      <div class="dep">
+        <div><span class="k">عربون الدخول</span><span class="v num">25.00<span class="sar">SAR</span></span></div>
+        <button class="enter ghost">احجز مكانك</button>
+      </div>
+    </div>
+  </article>
+
+</div>
+<p class="note">العربون محاكاة — ما فيه دفع حقيقي ولا حقول بطاقة في أي مكان في المنتج.</p>
+</html>

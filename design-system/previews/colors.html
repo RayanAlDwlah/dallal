@@ -1,0 +1,53 @@
+<!-- @dsCard group="Foundations" name="Colour" subtitle="Surfaces, text, and the four semantic colours" -->
+<!doctype html>
+<html lang="ar" dir="rtl">
+<meta charset="utf-8">
+<title>الألوان</title>
+<style>
+@import url("https://fonts.googleapis.com/css2?family=IBM+Plex+Sans+Arabic:wght@400;500;600&family=Rubik:wght@500;600;700&display=swap");
+:root{--canvas:#07090D;--surface:#0F1219;--raised:#161A23;--hair:rgba(255,255,255,.08);--ink:#E9EDF5;--ink2:#9AA4B8;--ink3:#5C6579;--gold:#F5B942;--teal:#2DD4BF;--red:#FF4D5E;--green:#34D399;--purple:#7C3AED;--f-display:"Rubik",system-ui,sans-serif;--f-body:"IBM Plex Sans Arabic",system-ui,sans-serif}
+*{box-sizing:border-box}
+body{margin:0;padding:40px;direction:rtl;background:var(--canvas);color:var(--ink);font-family:var(--f-body);line-height:1.7;-webkit-font-smoothing:antialiased}
+h1{font-family:var(--f-display);font-size:28px;font-weight:600;margin:0 0 4px}
+p.sub{color:var(--ink2);margin:0 0 32px;font-size:15px}
+h2{font-size:13px;color:var(--ink3);font-weight:500;letter-spacing:.04em;margin:32px 0 12px}
+.grid{display:grid;grid-template-columns:repeat(auto-fill,minmax(180px,1fr));gap:12px}
+.sw{background:var(--surface);border-radius:16px;padding:12px;box-shadow:inset 0 0 0 1px var(--hair)}
+.chip{height:56px;border-radius:10px;box-shadow:inset 0 0 0 1px var(--hair)}
+.nm{font-size:14px;margin:10px 0 0}
+.hx{font-size:12px;color:var(--ink3);font-family:ui-monospace,monospace;font-variant-numeric:tabular-nums;direction:ltr;text-align:end}
+.use{font-size:12px;color:var(--ink2);margin:2px 0 0}
+</style>
+<h1>الألوان</h1>
+<p class="sub">اللون يحمل معنى، مو زينة. الذهبي مبلغ، التركوازي حيّ، الأحمر ثواني أخيرة، الأخضر فوز.</p>
+
+<h2>الأسطح</h2>
+<div class="grid">
+  <div class="sw"><div class="chip" style="background:#07090D"></div><p class="nm">canvas</p><p class="use">خلفية الصفحة</p><p class="hx">#07090D</p></div>
+  <div class="sw"><div class="chip" style="background:#0F1219"></div><p class="nm">surface</p><p class="use">البطاقات</p><p class="hx">#0F1219</p></div>
+  <div class="sw"><div class="chip" style="background:#161A23"></div><p class="nm">raised</p><p class="use">اللوحات فوق البطاقة</p><p class="hx">#161A23</p></div>
+  <div class="sw"><div class="chip" style="background:rgba(255,255,255,.08)"></div><p class="nm">hair</p><p class="use">الحد الوحيد المسموح</p><p class="hx">#FFF 8%</p></div>
+</div>
+
+<h2>النص</h2>
+<div class="grid">
+  <div class="sw"><div class="chip" style="background:#E9EDF5"></div><p class="nm">ink</p><p class="use">أساسي</p><p class="hx">#E9EDF5</p></div>
+  <div class="sw"><div class="chip" style="background:#9AA4B8"></div><p class="nm">ink2</p><p class="use">ثانوي</p><p class="hx">#9AA4B8</p></div>
+  <div class="sw"><div class="chip" style="background:#5C6579"></div><p class="nm">ink3</p><p class="use">تسميات باهتة</p><p class="hx">#5C6579</p></div>
+</div>
+
+<h2>الدلالة</h2>
+<div class="grid">
+  <div class="sw"><div class="chip" style="background:#F5B942"></div><p class="nm">gold</p><p class="use">مبلغ · مزاد · الفعل الأساسي</p><p class="hx">#F5B942</p></div>
+  <div class="sw"><div class="chip" style="background:#2DD4BF"></div><p class="nm">teal</p><p class="use">مباشر · نشط · لحظي</p><p class="hx">#2DD4BF</p></div>
+  <div class="sw"><div class="chip" style="background:#FF4D5E"></div><p class="nm">red</p><p class="use">الثواني الأخيرة · رفض</p><p class="hx">#FF4D5E</p></div>
+  <div class="sw"><div class="chip" style="background:#34D399"></div><p class="nm">green</p><p class="use">فُزت</p><p class="hx">#34D399</p></div>
+  <div class="sw"><div class="chip" style="background:#7C3AED"></div><p class="nm">purple</p><p class="use">داخل توهّج الهيرو فقط</p><p class="hx">#7C3AED</p></div>
+</div>
+
+<h2>توهّج الهيرو — المكان الوحيد المسموح فيه تدرّج</h2>
+<div style="height:160px;border-radius:20px;position:relative;overflow:hidden;background:var(--surface);box-shadow:inset 0 0 0 1px var(--hair)">
+  <div style="position:absolute;inset:-40%;background:radial-gradient(40% 50% at 25% 40%,rgba(245,185,66,.5),transparent 70%),radial-gradient(40% 50% at 70% 60%,rgba(45,212,191,.45),transparent 70%),radial-gradient(45% 55% at 50% 20%,rgba(124,58,237,.45),transparent 70%);filter:blur(60px);opacity:.55"></div>
+  <div style="position:relative;padding:28px"><span style="font-family:var(--f-display);font-size:22px;font-weight:600">مزاد مباشر الآن</span></div>
+</div>
+</html>
