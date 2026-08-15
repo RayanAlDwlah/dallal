@@ -148,7 +148,7 @@ forget.
 |---|---|---|---|---|
 | [D-01](D-01-bid-increment-button.md) | The bid control is a **button carrying a seller-set amount**, not a typed number | `DECIDED` | **O25–O30** | **BR-32**, BR-29, FR-BID-* |
 | [D-02](D-02-categories.md) | **Thirteen categories**, sourced not invented — and the category changes which fields the form asks for. Values are **validated `jsonb` over normalized category and field-definition tables** | `DECIDED` | O1, O2, O3 | `auctions` schema, create form, browse |
-| [D-03](D-03-sessions.md) | **Sessions** — a room of lots opened one at a time, run live by a host. A kind of auction, **not a kind of account**. **Pause is supported** | `DECIDED` | O4–O10, O23 | new entity, **BR-36**, LC-03, BR-31 |
+| [D-03](D-03-sessions.md) | **Sessions** — a room of lots opened one at a time, run live by a host. A kind of auction, **not a kind of account**. **Pause is supported** | `DECIDED` | O4–O10, O23, **O31–O33** | new entity, **BR-36**, LC-03, BR-31 |
 | [D-04](D-04-ai-product-surface.md) | The **AI is five specific things in five places**, and **all five are in scope** — measurement decided the technology for each | `DECIDED` | O11–O14, O24 | create, browse, detail. **Never** the bidding path |
 | [D-05](D-05-deposit.md) | The **deposit is simulated**, paid once for the hall, unlocks **bidding not watching**, and **access expires with the session — no refund transaction** | `DECIDED` | O15–O19 | `CLAUDE.md` §1, D-03, bid eligibility |
 | [D-06](D-06-images-and-create-flow.md) | **Images first, 1 to 10, required and server-validated**, first one is the cover — and the four-step create flow | `DECIDED` | O20–O23 | AUC-04, ADR-6, BR-31 |
@@ -158,7 +158,7 @@ above. They were decided by the owner approving the prototype in
 `design-system/previews/*.html` on **2026-08-15**, and each record quotes the prototype or
 the owner directly.
 
-**All six records are `DECIDED`. Thirty open items remain**, each with an id, each
+**All six records are `DECIDED`. Thirty-three open items remain**, each with an id, each
 named in its record's "Still open" section, and each citable from a ticket's *blocked on*
 column. Register: [`docs/v2/SPEC.md` §4.3](../v2/SPEC.md).
 
@@ -169,6 +169,18 @@ column. Register: [`docs/v2/SPEC.md` §4.3](../v2/SPEC.md).
 > not a filing convention. It is the mechanism, and this is what its absence looks like: not
 > a wrong answer anywhere, just a hole in the numbering that renders as good news. The six
 > are now `O25`–`O30`; the unblocked set went **7 → 4**; D-01 §5a has the measurement.
+>
+> **`O31`–`O33` are the same failure in a record that looked complete.** D-03 §3.0 marks
+> pause `DECIDED` and lists four conditions, so the section reads finished — and all four
+> are about the **lot being paused**, in a product where a session is a room of many lots.
+> Nothing said whether a pause may last forever, what it does to the lots queued behind it,
+> or — reading two owner sentences from the same day — whether the operation takes a lot or
+> the session. `V2-A19` carried `blocked on: —`. **A record can be `DECIDED` and still have
+> gaps; `DECIDED` is a status on the record, never a claim about its coverage.** D-03 §4a.
+>
+> **The ratio is the finding.** Three passes over these records added **nine** ids to a
+> register of twenty-four — none of them a new question, all of them written down already,
+> in prose, under headings that read as settled.
 
 **None of the six is `IN PRD`, and three of them contradict it** — `R1`, `R2`, `R3` in the
 ratification gate above. That is an owner action, not a contributor judgement, and it is

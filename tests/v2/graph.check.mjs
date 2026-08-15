@@ -238,6 +238,53 @@ chk(
   [],
 );
 
+// ---------------------------------------------------------------------------
+// 2b. The register's `source` column and the decisions index are a THIRD copy
+//     of the same mapping, and until 2026-08-15 nothing compared them.
+//
+// A negative probe deleting `O31–O33` from the D-03 index row left this check
+// green: the ids still existed, still blocked V2-A19, still passed every
+// assertion above. Only the index — the page a reader opens FIRST to ask "what
+// is still open under sessions?" — had gone quiet about them. That is the D-01
+// failure exactly: a record whose open questions are real and whose index cell
+// does not mention them. `README.md` rule 5 says open items are tracked with
+// ids; this asserts the tracking actually reaches the tracker.
+// ---------------------------------------------------------------------------
+const expandOs = (cell) => {
+  const out = new Set();
+  // Ranges are written with an en dash: "O4–O10". A plain list is "O1, O2, O3".
+  for (const m of cell.matchAll(/\bO(\d+)\b(?:\s*\*{0,2}\s*[–-]\s*\*{0,2}O(\d+)\b)?/g)) {
+    const a = Number(m[1]);
+    const b = m[2] === undefined ? a : Number(m[2]);
+    for (let i = a; i <= b; i++) out.add(`O${i}`);
+  }
+  return [...out].sort((x, y) => Number(x.slice(1)) - Number(y.slice(1)));
+};
+
+const indexRows = new Map(); // D-0n -> the O-ids its Open items cell claims
+for (const line of DEC_README.split("\n")) {
+  const m = line.match(/^\|\s*\[(D-\d+)\]\([^)]*\)\s*\|([^|]*)\|([^|]*)\|([^|]*)\|/);
+  if (m) indexRows.set(m[1], expandOs(m[4]));
+}
+chk("decisions index: every D-record row was parsed", indexRows.size, 6);
+
+const bySource = new Map(); // D-0n -> the O-ids the register sources to it
+for (const line of SPEC.split("\n")) {
+  const m = line.match(/^\|\s*\*\*(O\d+)\*\*\s*\|([^|]*)\|([^|]*)\|/);
+  if (!m) continue;
+  for (const rec of m[3].match(/\bD-\d+\b/g) ?? []) {
+    if (!bySource.has(rec)) bySource.set(rec, []);
+    bySource.get(rec).push(m[1]);
+  }
+}
+for (const rec of [...indexRows.keys()].sort()) {
+  chk(
+    `decisions index: ${rec}'s open items match the register's source column`,
+    indexRows.get(rec),
+    (bySource.get(rec) ?? []).sort((x, y) => Number(x.slice(1)) - Number(y.slice(1))),
+  );
+}
+
 console.log();
 console.log("--- the totals both documents state about themselves");
 
@@ -265,6 +312,28 @@ if (hdr) {
   chk("TICKETS.md header: blocking edges", Number(hdr[3]), blkEdges);
   chk("TICKETS.md header: items that block a ticket", Number(hdr[4]), blocking.size);
   chk("TICKETS.md header: register size", Number(hdr[5]), register.size);
+}
+
+// The decisions index states the register size too, in words, in a third
+// document — and a probe reverting it to "Thirty" left every other assertion
+// green. Three copies of a number is three chances for one of them to rot.
+const decTotal = grab(
+  DEC_README,
+  /All ([a-z-]+) records are `DECIDED`\. ([A-Za-z-]+) open items remain/,
+  "the decisions index states the record count and the register size",
+);
+if (decTotal) {
+  chk("decisions index: record count", word2num(decTotal[1]), indexRows.size);
+  chk("decisions index: register size", word2num(decTotal[2]), register.size);
+}
+
+const ticketsReg = grab(
+  TICKETS,
+  /\n([A-Za-z-]+) open items, listed in full with their sources in/,
+  "TICKETS.md's register section states the register size",
+);
+if (ticketsReg) {
+  chk("TICKETS.md reach section: register size", word2num(ticketsReg[1]), register.size);
 }
 
 const spec43 = grab(
@@ -373,6 +442,7 @@ if (reachRow) {
 console.log();
 console.log("--- the reach table");
 const reachTable = TICKETS.split("\n").filter((l) => /^\| \*\*O\d+\*\*/.test(l));
+const assertedHere = new Set(); // ids this section actually pins to the graph
 let reachRows = 0;
 for (const line of reachTable) {
   const m = line.match(
@@ -388,7 +458,10 @@ for (const line of reachTable) {
     )
     : [from];
   // A span row states one figure that must hold for each member individually.
-  for (const o of span) chk(`reach of ${o}`, Number(n), reachOf([o]).size);
+  for (const o of span) {
+    assertedHere.add(o);
+    chk(`reach of ${o}`, Number(n), reachOf([o]).size);
+  }
   chk(`reach denominator on the ${from}${to ? `–${to}` : ""} row`, Number(denom), tickets);
 }
 chk("every row of the reach table was parsed", reachRows, reachTable.length);
@@ -417,6 +490,7 @@ if (second) {
   const released = new Set(
     startableWith(new Set(["O1", "O2"])).filter((t) => !startable.includes(t)),
   );
+  assertedHere.add("O1").add("O2");
   chk(
     "TICKETS.md: reached by O1/O2 but not released by them",
     Number(second[1]),
@@ -424,9 +498,14 @@ if (second) {
   );
 }
 
+// The number classes below are [a-z-], not [a-z]: these counts crossed twenty
+// when O31-O33 landed, "twenty-one" carries a hyphen, and a class that excludes
+// it turns a rewording into "the sentence this reads is gone" — the check going
+// blind in exactly the way it exists to prevent. word2num already parses the
+// hyphenated form; only the class was narrower than the vocabulary.
 const few = grab(
   TICKETS,
-  /\*\*([a-z]+) items reach six tickets or fewer\*\*/,
+  /\*\*([a-z-]+) items reach six tickets or fewer\*\*/,
   "TICKETS.md states how many items reach six or fewer",
 );
 if (few) {
@@ -439,7 +518,7 @@ if (few) {
 
 const lonely = grab(
   TICKETS,
-  /\*\*([a-z]+) reach exactly one ticket\*\*/,
+  /\*\*([a-z-]+) reach exactly one ticket\*\*/,
   "TICKETS.md states how many items reach exactly one ticket",
 );
 if (lonely) {
@@ -452,7 +531,7 @@ if (lonely) {
 
 const named = grab(
   TICKETS,
-  /The three that reach exactly six are ([^;]+);\s*`(O\d+)` reaches ([a-z]+)\./,
+  /The three that reach exactly six are ([^;]+);\s*`(O\d+)` reaches ([a-z-]+)\./,
   "TICKETS.md names the items reaching exactly six",
 );
 if (named) {
@@ -461,10 +540,44 @@ if (named) {
     idsIn(named[1]).sort(),
     [...reachEvery].filter(([, n]) => n === 6).map(([o]) => o).sort(),
   );
+  for (const o of idsIn(named[1])) assertedHere.add(o);
+  assertedHere.add(named[2]);
   chk(`TICKETS.md: reach of ${named[2]}`, word2num(named[3]), reachEvery.get(named[2]));
 }
 
 // ---------------------------------------------------------------------------
+// The rule CLAUDE.md §9 states, enforced instead of trusted: if a number is
+// worth writing in prose, give it a row the check can reach.
+//
+// Every assertion above reads a row or a sentence it already knows about. None
+// of them notices an id being DISCUSSED in this section with no row and no
+// sentence-level check — which is precisely how "`O11` reaches none" survived,
+// and how the first draft of the `O31` paragraph reintroduced it. So: collect
+// every id this section names, subtract the ids something above actually
+// pinned to the graph, and require the remainder to be empty.
+//
+// Adding an id to this section therefore costs a row or a checked sentence.
+// That is the intended price. The alternative is prose that reads as verified
+// because it sits next to numbers that are.
+// ---------------------------------------------------------------------------
+const sectionRe = /\n## The register this board is waiting on\n([\s\S]*?)(?=\n## |$)/;
+const section = TICKETS.match(sectionRe);
+if (!section) {
+  fail++;
+  console.log(
+    "FAIL  the reach section could not be located\n" +
+      "        the '## The register this board is waiting on' heading was renamed",
+  );
+} else {
+  const namedInProse = new Set(section[1].match(/\bO\d+\b/g) ?? []);
+  chk(
+    "every O-id discussed in the reach section is pinned by a row or a checked sentence",
+    [...namedInProse].filter((o) => !assertedHere.has(o))
+      .sort((a, b) => Number(a.slice(1)) - Number(b.slice(1))),
+    [],
+  );
+}
+
 console.log();
 console.log(`${pass} passed, ${fail} failed`);
 if (fail === 0) {

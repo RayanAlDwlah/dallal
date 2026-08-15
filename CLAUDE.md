@@ -416,6 +416,15 @@ A fourth now runs beside them, on the planning documents rather than the tree:
   the false one, so the third rule this file now carries is: **if a number is worth writing in
   prose, give it a row the check can reach.**
 
+  That rule lasted about an hour as prose. The change that added `O31`–`O33` stated their
+  reach in a paragraph and gave them no rows — the `O11` shape again, in the same file, by
+  the session that had just finished writing the lesson down. What caught it was not care:
+  it was a **negative probe** mutating a figure and observing that nothing went red. The
+  check now enforces the rule instead of relying on it — every `O`-id named anywhere in the
+  reach section must be pinned by a table row or by a sentence-level assertion, so adding an
+  id to that prose costs a row. **Write the rule in the guard, not only in the guide**; a
+  rule that lives only in a document is followed exactly as well as this one was.
+
 ### The rule when a guard goes red and you believe the code is right
 
 **It will happen, and the answer is never an ignore list.** Some of these rules are absolute

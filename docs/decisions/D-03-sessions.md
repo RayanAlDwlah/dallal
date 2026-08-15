@@ -122,6 +122,11 @@ licence to move the clock.
 update**. A pause implemented by turning the guard off is a pause that removed the
 invariant. Ticket: **V2-A19**.
 
+> **Do not read this section as a complete specification of pause.** All four conditions
+> above are about the **paused lot**. What a pause does to the rest of the session — a bound
+> on how long it may last, the lots queued behind it, and whether the operation even takes a
+> lot or a session — is **`O31`, `O32` and `O33` in §4a**, and V2-A19 is blocked on all three.
+
 ### 3.1 The one rule in here that is a correctness rule, not a UX rule
 
 > «أغلق وافتح القطعة 3» تنغلق تلقائيًا لمّا يخلص وقت القطعة — الزر للمضيف اللي يبي يسرّع،
@@ -180,6 +185,46 @@ tickets it blocks. Answered items are struck rather than deleted so the numberin
    inclusive — as a standalone auction? A lot carries a duration rather than an absolute end
    time (§2 step 1), so the bound applies to a different quantity and may not transfer.
    *Blocks V2-A10, V2-C6.* Raised in [D-06](D-06-images-and-create-flow.md) §5 item 6.
+
+### 4a. What pause left open — three questions the decision did not reach
+
+Item 1 above is answered: pause exists, it is host-only and atomic, and it moves `end_time`
+forward by the paused duration. §3.0 states four conditions and **all four are about the lot
+being paused**. A session is not one lot — it is *«قطعة تفتح، تنتهي، تفتح اللي بعدها»* — and
+none of the four says what a pause does to the rest of the room.
+
+> **These are raised, not decided** (`CLAUDE.md` §8, `TEAM.md` rule 16). In each one the
+> *reasonable* answer is already visible, which is exactly the condition §8 warns about.
+
+10. **`O31` — Is total paused time bounded, and what happens if the host pauses and never
+    resumes?** `CLAUDE.md` §5 is unambiguous about why the 20-extension cap is a `CHECK` and
+    not an `if`: *"without it a contested auction never ends, never finalizes, and never has
+    a winner."* Pause is the second door onto `end_time` and it currently has **no cap of
+    any kind** — one host, one un-resumed pause, and the lot hangs exactly as an uncapped
+    extension chain would. Whether the answer is a maximum total, a maximum per pause, an
+    auto-resume, or a deliberate *"no bound, the host is trusted"*, it has to be **decided** —
+    and if it is a bound, it belongs where the extension cap lives, not in an `if`. One
+    quantity this does *not* settle either way: `BR-38` bounds the duration chosen at
+    **creation**, and a realised `end_time` already runs past it (20 × 30 s). *Blocks
+    V2-A19.*
+11. **`O32` — Does pausing lot 3 move lots 4…N, and is a waiting lot's time a promise?**
+    Lots chain — one ends, the next opens — so a ten-minute pause on lot 3 delays everything
+    behind it by ten minutes, mechanically. What is undecided is whether that is *correct*,
+    and what a bidder was promised: someone who came for lot 9 read a time in the live room,
+    and this product has no messaging (`CLAUDE.md` §1) to tell them it moved. The answer
+    decides whether a waiting lot shows a **time**, an **order**, or nothing.
+    *Blocks V2-A19, V2-B10, V2-B11.*
+12. **`O33` — Is pause an operation on a LOT or on the SESSION? Two owner sentences from the
+    same day disagree.** §3.0 records *"pauses and resumes a **lot**"*; §3.2 records the
+    owner listing what is newly decided as *«ترتيب القطع، المدة لكل قطعة، **إيقاف الجلسة
+    مؤقتًا**، وصلاحيات المضيف»* — pausing **the session**. Those are different operations:
+    one takes a lot id and one takes a session id; one is impossible between lots and the
+    other is the ordinary case for a host who needs five minutes. The control room draws a
+    single «أوقف مؤقتًا» button and the button does not disclose which it is.
+    **Surfaced, not resolved** — `CLAUDE.md` §2: *"If you find a contradiction between
+    documents, surface it. Do not silently pick a side."* A session picking the reading that
+    suits the code it is about to write is how the other reading gets deleted.
+    *Blocks V2-A19, V2-B11.*
 
 ## 5. Sequencing
 

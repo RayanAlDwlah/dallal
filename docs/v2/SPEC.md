@@ -198,7 +198,7 @@ the register below exists so that every one of them can.
 | Q5 | What happens to a deposit when the session ends? | **DECIDED — access expires with the session; there is no refund transaction** |
 | Q6 | Is at least one image required? | **DECIDED — 1 to 10 images, required, validated server-side** |
 
-### 4.3 The open register — thirty real blockers
+### 4.3 The open register — thirty-three real blockers
 
 Every unresolved item from every decision record, given an id so a ticket can cite it.
 **None of these may be answered by whoever picks up the ticket** (`CLAUDE.md` §8). A ticket
@@ -236,6 +236,9 @@ whose *blocked on* column names an id is not startable in the part that touches 
 | **O28** | **One button, or several** (×1 / ×2 / ×5)? The prototype shows one. The extension is obvious and has not been asked for | D-01 | V2-C3, V2-B5 |
 | **O29** | The current price is **off-grid** after a crafted `+0.01` bid that D-01 §2 says must be accepted. Does the button then offer `current + increment`, or round up to the next multiple? **Round-up changes what a bidder is charged** | D-01 | V2-C3, V2-B5 |
 | **O30** | Can the seller **change the increment after publishing**? `BR-31` freezes the auction; if the increment lives on the row the answer is no *by construction* — which is not the same as by decision | D-01 | V2-C3, V2-A3 |
+| **O31** | **Is total paused time bounded, and what if the host never resumes?** Pause is the second door onto `end_time` and has no cap. `CLAUDE.md` §5 says why the extension cap is a `CHECK`: without it the auction never ends, never finalizes, never has a winner. A pause reaches the same state through the other door | D-03 | V2-A19 |
+| **O32** | **Does pausing lot 3 move lots 4…N — and was a waiting lot's displayed time a promise?** Lots chain, so it moves them mechanically; whether that is right, and what a bidder who came for lot 9 is shown, is not decided. There is no messaging to tell them (§6, `CLAUDE.md` §1) | D-03 | V2-A19, V2-B10, V2-B11 |
+| **O33** | **Does pause take a LOT or the SESSION?** Two owner sentences from 2026-08-15 disagree — D-03 §3.0 says *"pauses and resumes a lot"*, §3.2 quotes «إيقاف الجلسة مؤقتًا». Different id, different function, different behaviour between lots. Surfaced under `CLAUDE.md` §2, not resolved | D-03 | V2-A19, V2-B11 |
 
 **`O25`–`O30` are not new questions — they are old questions that finally have ids.** All
 six have been written down in [D-01 §5](../decisions/D-01-bid-increment-button.md) since the
@@ -268,8 +271,17 @@ three values" claim was retracted to prevent.
 result, and ship a check that fails on an incomplete record. It picks no provider and sets
 no threshold; it is blocked on `O11` like any other ticket waiting on the owner.
 
-**30 of the 30 items block a ticket.** There is no longer one that does not — and the one
+**33 of the 33 items block a ticket.** There is no longer one that does not — and the one
 that did not was not special, it was the one whose work had gone missing.
+
+**`O31`–`O33` came from the same audit and have the same shape as `O25`–`O30`: they are not
+new questions.** D-03 §3.0 records pause as `DECIDED` and states four conditions, and every
+one of the four is about **the lot being paused**. A session is a room of lots. Nothing said
+what a pause does to the lots behind it, whether it may last forever, or — reading two owner
+sentences from the same day — whether the operation takes a lot at all. `V2-A19` read
+`blocked on: —` and sat in the unblocked set while the most consequential of the three, an
+**uncapped second door onto `end_time`**, is the exact failure `CLAUDE.md` §5 makes the
+extension cap a `CHECK` constraint to prevent.
 
 **The *blocks* column above and the *blocked on* column in `TICKETS.md` are the same graph,
 written twice.** Two copies of a graph drift — silently, and in the direction that makes the

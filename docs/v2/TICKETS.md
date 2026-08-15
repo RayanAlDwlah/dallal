@@ -4,7 +4,7 @@ Read [`SPEC.md`](SPEC.md) first. Every ticket below is sized for **one Claude se
 has a single deliverable, a named proof, and it does not require answering a product
 question. **A ticket that turns out to need a product decision stops and asks** — that is
 the whole point of the "blocked on" column, and every id in that column resolves to a real
-entry in [`SPEC.md` §4.3](SPEC.md#43-the-open-register--thirty-real-blockers).
+entry in [`SPEC.md` §4.3](SPEC.md#43-the-open-register--thirty-three-real-blockers).
 
 **Nothing here is a GitHub issue yet.** The repository is public and forty issues are hard
 to undo. Opening them is a separate, explicit decision, and it happens **only after the
@@ -43,16 +43,17 @@ still open.
 
 ## The board
 
-**40 tickets, plus `V2-00`.** 69 dependency edges between tickets; 47 blocking edges onto
-**30** of the 30 open owner questions.
+**40 tickets, plus `V2-00`.** 69 dependency edges between tickets; 53 blocking edges onto
+**33** of the 33 open owner questions.
 
 Every number in this document — including that one — is recomputed from these two tables by
 [`tests/v2/graph.check.mjs`](../../tests/v2/graph.check.mjs). Run it before you believe a
 count here, and run it again after you edit a cell. A board that states its own totals in
 prose is a board that will state them wrongly.
 
-**Every one of the thirty now blocks a ticket. Until 2026-08-15 `O11` did not, and that was
-not a property of `O11` — it was a hole in this board.** The paragraph that used to sit here
+**Every one of the thirty-three now blocks a ticket. Until 2026-08-15 `O11` did not, and
+that was not a property of `O11` — it was a hole in this board.** The paragraph that used to
+sit here
 argued that *which* hosted provider gates only the **production deployment**, and that a
 deployment is not a row on a ticket board. The first half is right. The second half quietly
 disposed of the work: [`docs/ai/local-model.md` §4](../ai/local-model.md) states as a
@@ -62,6 +63,17 @@ documents and in no plan is the shape `D-01 §3` already named — *a follow-up 
 and promises are not mechanisms*. **V2-A20** is that requirement as a deliverable. It still
 does not deploy anything and it still does not pick a provider; it makes deploying without
 qualification visible.
+
+**`V2-A19` — pause — read `blocked on: —` on the same day, and for the same reason.**
+[D-03 §3.0](../decisions/D-03-sessions.md) records pause as `DECIDED` and lists four
+conditions; **all four are about the lot being paused.** A session is a room of lots. Nobody
+had written down what a pause does to the lots queued behind it (`O32`), whether it may last
+forever (`O31`), or — comparing two owner sentences from the same day — whether the operation
+takes a lot or the whole session (`O33`). `O31` is the one to read first: pause is the
+**second door onto `end_time`** and it has no cap, and `CLAUDE.md` §5 already says in plain
+words what an uncapped door does — *"without it a contested auction never ends, never
+finalizes, and never has a winner."* That is why the extension cap is a `CHECK` constraint
+and not an `if`, and it is reachable through pause today.
 
 | id | lane | ticket | depends on | blocked on |
 |---|---|---|---|---|
@@ -92,7 +104,7 @@ qualification visible.
 | **V2-A16** | A | **The enhancement pipeline** + «رجّع الأصلية» server side | V2-A14, V2-A15 | **O24** |
 | **V2-A17** | A | **Deterministic filters**: brand, minimum year, price band, ending ≤ 24 h | V2-A1, V2-C8 | — |
 | **V2-A18** | A | **Provider capability contract test** — vision + structured output | V2-A6 | — |
-| **V2-A19** | A | **Pause / resume** — atomic, host-only, `end_time` forward by the paused duration | V2-A10, V2-A11 | — |
+| **V2-A19** | A | **Pause / resume** — atomic, host-only, `end_time` forward by the paused duration | V2-A10, V2-A11 | **O31, O32, O33** |
 | **V2-A20** | A | **Qualify the production provider** — run V2-A18 against it, record the evidence, and check the record | V2-A18 | **O11** |
 | **V2-B1** | B | Design tokens: colours, type scale, money rendering | V2-00 | — |
 | **V2-B2** | B | The auction card — one component, everywhere | V2-B1 | — |
@@ -103,8 +115,8 @@ qualification visible.
 | **V2-B7** | B | Image uploader — drag-reorder, cover, 1–10, limits | V2-B6, V2-C2 | **O22** |
 | **V2-B8** | B | AI surfaces: suggestion card, editable chips, Q&A box | V2-B6, V2-C5 | **O13** |
 | **V2-B9** | B | Create-session wizard | V2-B6, V2-C6 | **O8, O16** |
-| **V2-B10** | B | Session card + the live room | V2-B2, V2-C6 | **O15** |
-| **V2-B11** | B | Host control room | V2-B10 | **O9, O19** |
+| **V2-B10** | B | Session card + the live room | V2-B2, V2-C6 | **O15, O32** |
+| **V2-B11** | B | Host control room | V2-B10 | **O9, O19, O32, O33** |
 | **V2-B12** | B | **Enhancement surface**: «حسّن الصور» · «رجّع الأصلية» · «صور معدّلة» | V2-B7, V2-C7 | **O24** |
 
 ### Unblocked, startable, and how many people can actually work
@@ -650,6 +662,20 @@ section K):
 - **the guard must still refuse an unflagged update.** A pause implemented by turning the
   guard off is a pause that removed the invariant.
 
+**Blocked on `O31`, `O32` and `O33` — and this cell read `—` until 2026-08-15.** Everything
+above is decided and every line of it is about **the lot being paused**. A session is a room
+of lots, and three things nobody wrote down are each load-bearing on this ticket's schema:
+
+| | what it decides here |
+|---|---|
+| **`O31`** — is total paused time bounded; what if the host never resumes? | whether there is a **`CHECK` constraint** at all, and on what column. `CLAUDE.md` §5 makes the extension cap a constraint rather than an `if` because *"without it a contested auction never ends, never finalizes, and never has a winner"* — pause is the other door onto `end_time` and today it has no cap. **Build this ticket without an answer and the invariant is gone by the more reasonable-looking of two routes** |
+| **`O32`** — does pausing lot 3 move lots 4…N? | whether resume writes one row or N, and whether a queued lot stores a time at all |
+| **`O33`** — a lot, or the session? | the function's signature. `pause_lot(lot_id)` and `pause_session(session_id)` are not the same operation, and D-03 §3.0 and §3.2 quote the owner saying each |
+
+Two of the three are `SECURITY DEFINER` surface (`CLAUDE.md` §6) and one is a bidding
+invariant (§5), so this ticket **requests Rayan's steward review** whatever the answers turn
+out to be — per `CLAUDE.md` §1, requested and not waited on.
+
 ### V2-A12 — host powers
 «أنهِ الجلسة» and the advance control. Pause is V2-A19. **Blocked on O6** (lots still
 waiting when the session ends) and **O7** (the host never shows up).
@@ -682,12 +708,19 @@ still undecided is who can see the entrant list (**O19**), what the attendance c
 (**O9**), what a losing bidder is told about the expired deposit (**O15**), and how
 «بدعوة فقط» invitations reach anyone at all (**O8**).
 
+**And what that button says.** «أوقف مؤقتًا» is one control, and D-03 quotes the owner
+describing pause as a **lot** operation in one sentence and as *«إيقاف الجلسة مؤقتًا»* — a
+**session** operation — in another (**`O33`**). Whichever it is, the lot list behind it shows
+بالانتظار rows whose timing a pause moves, and whether those rows carry a **time**, an
+**order**, or nothing is **`O32`** — which also lands on the public live room (V2-B10), where
+the person who came for lot 9 is reading it and cannot be told it changed.
+
 ---
 
 ## The register this board is waiting on
 
-Thirty open items, listed in full with their sources in
-[`SPEC.md` §4.3](SPEC.md#43-the-open-register--thirty-real-blockers). The two that
+Thirty-three open items, listed in full with their sources in
+[`SPEC.md` §4.3](SPEC.md#43-the-open-register--thirty-three-real-blockers). The two that
 unblock the most work are not the ones that look important.
 
 The **reach** column is the count of tickets that cannot start until the item is answered —
@@ -706,6 +739,9 @@ anything it waits on. Every figure below is printed by
 | **O4** | Is a lot an `auctions` row, or a separate entity? | **9 of 40** — and it is by far the expensive one to *reverse*, which reach does not measure |
 | **O23** | Does a lot use the same `BR-38` bound? | **9 of 40** |
 | **O24** | Which image-processing provider? | **4 of 40** — and V2-A14 exists to produce the options |
+| **O32** | Does pausing lot 3 move lots 4…N? | **3 of 40** — V2-A19, and the two screens that render a paused room |
+| **O33** | A lot, or the session? | **2 of 40** — V2-A19 and the host control room; it decides a function signature, not a screen |
+| **O31** | Is total paused time bounded? | **1 of 40** — V2-A19. The lowest reach on this board and the one that can remove an invariant |
 | **O11** | Which hosted provider? | **1 of 40** — V2-A20. It reached **nothing** until 2026-08-15, and the reason was not that it blocks nothing: the ticket it blocks did not exist |
 
 **The D-01 row is new, and its position in this table is the point.** Those six questions
@@ -719,10 +755,23 @@ and test if it is answered late — `O21` is a storage-cleanup rule. Sort by rea
 *what unblocks the most work today*; sort by blast radius to decide *what costs the most to
 get wrong*. They are different questions and this board answers only the first.
 
-Across the whole register, **eighteen items reach six tickets or fewer** and
-**ten reach exactly one ticket**. The three that reach exactly six are `O3`, `O8` and `O12`;
-`O10` reaches five. Every number here is reproducible from the *depends on* / *blocked on*
-columns — that is the point of writing the graph down instead of asserting it.
+Across the whole register, **twenty-one items reach six tickets or fewer** and
+**eleven reach exactly one ticket**. The three that reach exactly six are `O3`, `O8` and
+`O12`; `O10` reaches five. Every number here is reproducible from the *depends on* /
+*blocked on* columns — that is the point of writing the graph down instead of asserting it.
+
+**Reach is not blast radius, and `O31` is this table's sharpest example.** It reaches
+**one** ticket and sits at the bottom of every ordering here — and what it decides is
+whether an uncapped pause can hold a lot open forever, the same failure the extension cap is
+a `CHECK` constraint to prevent (`CLAUDE.md` §5). `O4` carries the same warning higher up.
+Sort by reach to plan the week; do not sort by reach to decide what is dangerous.
+
+**`O31`, `O32` and `O33` got rows above for the reason the next paragraph gives.** This
+section was written in the same change that added them, and the first draft stated their
+reach in this prose and nowhere else — the exact shape the `O11` failure had, reproduced
+within an hour of documenting it. A negative probe found it: mutating a reach figure that
+lives only in a sentence changes nothing a check can see. They have rows now, so
+`graph.check.mjs` asserts all three.
 
 **The `O11` row is what an unchecked sentence looks like when it goes wrong.** This
 paragraph used to end *"`O11` reaches none, for the reason given at the top of the board."*
