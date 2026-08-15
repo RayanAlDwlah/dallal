@@ -167,6 +167,13 @@ would require, is the **`R` register** in
 **Only the owner ratifies.** No ticket below may edit `PRD.md`, and no ticket resolves this
 by choosing a side. Two checks in `tests/guards/run.sh` hold the queue; neither can ratify.
 
+**Which work this actually holds** is the **`ratification`** column in
+[`TICKETS.md`](TICKETS.md), which cites an `R` on each ticket whose own deliverable would put
+that record in front of users ahead of the PRD. Read it before calling anything *ready*: an
+unratified record upstream leaves a ticket **unblocked and not `ready`**, and those were one
+word until the column existed. Every figure about how far each record reaches is computed
+there, from the board — this section does not restate any of them, on purpose.
+
 ### 4.1 The vocabulary — corrected
 
 `docs/decisions/README.md` defines three statuses and **`DECIDED in shape` is not one of

@@ -9,7 +9,7 @@
 # ---------------------------------------------------------------------------
 # WHY THIS EXISTS
 #
-# `graph.check.mjs` prints 143 PASS lines. That proves 143
+# `graph.check.mjs` prints 150 PASS lines. That proves 150
 # comparisons ran and agreed. It does NOT prove that any of them would have
 # disagreed had the board been wrong — and this particular file is unusually
 # exposed to that, because most of its assertions are anchored by a REGEX
@@ -33,7 +33,7 @@
 # ---------------------------------------------------------------------------
 # WHAT IS PROBED, AND WHAT IS NOT — SAID PLAINLY
 #
-# 88 probes against 143 assertions. The gap is not laziness and
+# 95 probes against 150 assertions. The gap is not laziness and
 # it is not coverage theatre; it is four loops that generate one assertion per
 # row of a table:
 #
@@ -533,4 +533,52 @@ neg_probe "decisions index: the split accounts for every record gating a V2 tick
 neg_probe "no assertion label is findable only by matching a different one" \
   'perl -pi -e '"'"'s/"TICKETS.md: unblocked once O1 and O2 are answered"/"TICKETS.md: unblocked before O1\/O2 — after, that is"/'"'"' tests/v2/graph.check.mjs'
 
-neg_report "V2-GRAPH-NEGATIVE" 88
+# ---------------------------------------------------------------------------
+# I. THE TWO CROSS-DOCUMENT POINTERS into the board's `ratification` column.
+#
+#    A pointer is the cheapest thing in this repository to write and the most
+#    expensive to notice has rotted, because a stale cross-reference still
+#    reads like an answer. These seven mutations break each pointer the way it
+#    would actually break: a reclassified record, a moved file, a renamed
+#    heading, and a figure helpfully copied to where a reader would find it.
+# ---------------------------------------------------------------------------
+neg_probe "decisions index: how many records gate a ticket" \
+  'perl -pi -e '"'"'s/\*\*Four of the six gate/**Five of the six gate/'"'"' docs/decisions/README.md'
+
+# Count right, membership wrong — again the half a reader checks last.
+neg_probe "decisions index: which records gate a ticket" \
+  'perl -pi -e '"'"'s/gate at least one ticket: `R1`, `R2`, `R3`, `R4`\./gate at least one ticket: `R1`, `R2`, `R3`, `R5`./'"'"' docs/decisions/README.md'
+
+# The other half of the same sentence. `R5`/`R6` gating nothing is a CLAIM — it
+# is what makes the register's silence about the AI surface and the deposit
+# safe to build on — so it is checked, not inferred from the first list.
+neg_probe "decisions index: which records gate nothing" \
+  'perl -pi -e '"'"'s/`R5` and `R6` gate/`R5` and `R4` gate/'"'"' docs/decisions/README.md'
+
+# A moved or renamed board leaves prose that still reads correctly and links
+# nowhere. Nothing between here and `main` resolves a relative path.
+neg_probe "decisions index: the pointer links to the board" \
+  'perl -pi -e '"'"'s{\(\.\./v2/TICKETS\.md\)}{(../v2/BOARD.md)}'"'"' docs/decisions/README.md'
+
+# The slice bounds, not the pointer. `indexOf` returns -1 for a renamed heading
+# and `slice` reads -1 as "one from the end" rather than raising, so an
+# unguarded slice of a renamed section quietly widens to most of the file and
+# the check downstream passes for a reason unrelated to §4.0.
+neg_probe "SPEC.md: §4.0 and §4.1 headings both found, in order" \
+  'perl -pi -e '"'"'s/^### 4\.1 The vocabulary/### 4.1bis The vocabulary/'"'"' docs/v2/SPEC.md'
+
+neg_probe "SPEC.md: §4.0 names the board's ratification column and links to it" \
+  'perl -pi -e '"'"'s{\[`TICKETS\.md`\]\(TICKETS\.md\)}{`TICKETS.md`}'"'"' docs/v2/SPEC.md'
+
+# The anti-duplication rule. Both pointers omit every per-record reach figure so
+# the reach table keeps exactly one home — and "deliberately omitted" is only a
+# rule if something notices when a later editor helpfully copies one in. This
+# mutation is that helpful edit, not a hostile one.
+#
+# It inserts the figure into the sentence that FORBIDS it, and deliberately
+# leaves every regex anchor in the paragraph intact — so the only thing that
+# can go red is the rule itself, not a grab() collapsing next to it.
+neg_probe "the decisions index and SPEC §4.0 restate no reach figure" \
+  'perl -pi -e '"'"'s/a number copied into a second document/R1 reaches 28 of 40, and a number copied into a second document/'"'"' docs/decisions/README.md'
+
+neg_report "V2-GRAPH-NEGATIVE" 95

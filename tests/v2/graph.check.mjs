@@ -753,6 +753,81 @@ if (idxSplit) {
   );
 }
 
+// ---------------------------------------------------------------------------
+// The two cross-document pointers into the board's `ratification` column.
+//
+// A reader landing in `docs/decisions/README.md` or in `SPEC.md` §4.0 learns
+// that six decisions are unratified and cannot find, from there, which work
+// that holds. The pointers close that. They are checked for the same reason
+// every other sentence here is: a hand-written cross-reference is the single
+// most common stale thing in this repository, and a pointer that has rotted
+// is worse than no pointer — it reads as an answer.
+//
+// The decisions index states the gating split IN WORDS, so the words are
+// re-derived. It deliberately restates no reach figure; that is asserted too,
+// below, because "do not duplicate this number" is only a rule if something
+// notices when someone does.
+{
+  const gating = new Set();
+  for (const [, v] of board) for (const r of v.ratif) gating.add(r);
+  const gatingIds = [...gating].sort(byNum);
+  const idleIds = [...rRegister.keys()].filter((r) => !gating.has(r)).sort(byNum);
+
+  const ptr = grab(
+    DEC_README,
+    /\*\*([A-Za-z-]+) of the six gate at least one ticket: ((?:`R\d+`(?:, )?)+)\.\*\*\s+((?:`R\d+`(?: and )?)+) gate\s+nothing/,
+    "decisions index points at the board's ratification column",
+  );
+  if (ptr) {
+    chk("decisions index: how many records gate a ticket", word2num(ptr[1]), gatingIds.length);
+    chk("decisions index: which records gate a ticket", rIdsIn(ptr[2]).sort(byNum), gatingIds);
+    chk("decisions index: which records gate nothing", rIdsIn(ptr[3]).sort(byNum), idleIds);
+  }
+
+  // The pointer has to resolve. A relative link is not checked by any renderer
+  // on the way to `main`, so a moved file leaves a sentence that still reads
+  // correctly and goes nowhere.
+  chk(
+    "decisions index: the pointer links to the board",
+    /\[`docs\/v2\/TICKETS\.md`\]\(\.\.\/v2\/TICKETS\.md\)/.test(DEC_README),
+    true,
+  );
+
+  // SPEC.md §4.0 gets the same pointer and no figures at all. Slicing the
+  // section rather than searching the whole file is the point: `SPEC.md`
+  // mentions TICKETS.md in a dozen places, and a check that any of them exists
+  // would pass with §4.0 saying nothing.
+  //
+  // Both bounds are asserted, in order, before the slice is trusted. A missing
+  // heading makes `indexOf` return -1, and `slice` treats -1 as "one from the
+  // end" rather than raising — so an unchecked slice of a renamed section
+  // silently becomes either the empty string or most of the file, and the
+  // check downstream of it passes for a reason that has nothing to do with
+  // §4.0.
+  const i40 = SPEC.indexOf("### 4.0 ");
+  const i41 = SPEC.indexOf("### 4.1 ");
+  chk("SPEC.md: §4.0 and §4.1 headings both found, in order", i40 >= 0 && i41 > i40, true);
+  const s40 = i40 >= 0 && i41 > i40 ? SPEC.slice(i40, i41) : "";
+  chk(
+    "SPEC.md: §4.0 names the board's ratification column and links to it",
+    /\*\*`ratification`\*\* column in\s+\[`TICKETS\.md`\]\(TICKETS\.md\)/.test(s40),
+    true,
+  );
+
+  // Neither pointer may restate a reach figure. The reach table lives on the
+  // board in one place; a copy is a second place for it to be wrong, and this
+  // is the assertion that makes "do not restate" enforceable rather than
+  // aspirational. `N of 40` is the shape those figures take.
+  chk(
+    "the decisions index and SPEC §4.0 restate no reach figure",
+    [
+      ...(DEC_README.match(/\b\d+ of (?:the )?40\b/g) ?? []),
+      ...(s40.match(/\b\d+ of (?:the )?40\b/g) ?? []),
+    ],
+    [],
+  );
+}
+
 // The grouped list, checked per group. A correct total next to a ticket filed
 // under the wrong R is still a lie, and it is the more likely error of the two:
 // the count is written once and the grouping is written ten times.

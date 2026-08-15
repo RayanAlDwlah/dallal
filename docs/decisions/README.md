@@ -101,6 +101,28 @@ last time two different ideas shared one label.
 | **R5** | [D-04](D-04-ai-product-surface.md) — five AI features | **silent.** Zero occurrences of "AI", "assistant" or "machine learning" in `PRD.md` | no | a new FR section. Gap-filling, not supersession — safe to build under rule 4 |
 | **R6** | [D-05](D-05-deposit.md) — the simulated deposit | **silent.** Zero occurrences of "deposit" | no | a new rejection reason alongside `BR-23`. Gap-filling |
 
+### Where an `R` stops being paperwork and starts blocking work
+
+This register says what each record is **waiting on**. It does not say what is **waiting on
+it** — and until 2026-08-15 nothing did, which meant four ids could say *not safe to build*
+with nowhere on the board to cite them.
+
+That place is now the **`ratification`** column in
+[`docs/v2/TICKETS.md`](../v2/TICKETS.md). It carries an `R` on the ticket whose **own
+deliverable** would put that record in front of users ahead of `PRD.md` — not on everything
+downstream of it, which the dependency closure already propagates for free.
+
+**Four of the six gate at least one ticket: `R1`, `R2`, `R3`, `R4`.** `R5` and `R6` gate
+nothing, and that is this register working rather than failing — `PRD.md` is silent about the
+AI surface and about the deposit, silence is gap-filling, **rule 4** above makes gap-filling
+safe to build, and a ratification gate on either would be a gate nobody asked for.
+
+That split is re-derived from the board and from the `conflict?` column above by
+[`tests/v2/graph.check.mjs`](../../tests/v2/graph.check.mjs), which fails if a record ever
+gates a ticket while claiming to contradict nothing, or contradicts the PRD while gating no
+work. **The per-record reach figures live on the board and are deliberately not restated
+here** — a number copied into a second document is a number that can drift in one of them.
+
 ### R3 is not hypothetical — the drift already happened
 
 `CLAUDE.md` §5 carries the pause amendment today, in the file that governs `end_time`:
