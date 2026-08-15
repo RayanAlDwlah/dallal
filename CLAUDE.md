@@ -448,9 +448,19 @@ A fourth now runs beside them, on the planning documents rather than the tree:
   passes; it is finished when it has been made to fail on purpose.**
 
 That sentence was true of `tests/guards/` and a promise everywhere else. Those two document
-checks carry **107 assertions** and, until 2026-08-15, not one committed probe between them —
+checks carry **214 assertions** and, until 2026-08-15, not one committed probe between them —
 the probes that found the four defects above lived in `/tmp` and were gone by the next
 session. So each now has a counterpart that runs in CI beside it:
+
+> **That figure said `107` until G0A, and it was wrong by half.** It was true when written and
+> the graph check grew past it; nothing was watching, because this is the one count in §9 that
+> **no check reaches** — `EXPECTED` is pinned in `run.sh`, the guard count is pinned against
+> this file, and this number sits between them unpinned. It is therefore the exact defect the
+> section it lives in was written about, surviving inside the argument against itself. Pinning
+> it means executing both node checks to count them, which `run.sh` must not do — it is the
+> seconds-no-Docker job and would run them twice per CI pass. **The fix is a real ticket, not a
+> line in this paragraph**, and until it lands this figure is hand-maintained and should be
+> distrusted on sight: run the two checks and read their totals.
 
 - **`tests/v2/graph-negative.check.sh`** — 52 probes against `graph.check.mjs`.
 - **`tests/governance/workflow-negative.check.sh`** — 16 probes against `workflow.check.mjs`,

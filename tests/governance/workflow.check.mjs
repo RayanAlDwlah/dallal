@@ -165,10 +165,53 @@ const files = execFileSync("git", ["ls-files", "*.md"], { cwd: ROOT, encoding: "
   .split("\n").filter(Boolean).filter((f) => !f.startsWith("node_modules/"));
 chk("the tracked markdown set was found", files.length > 5, true);
 
+// A byte-pinned quotation cannot drift, and cannot be edited to comply.
+//
+// `docs/v2/ARCHITECTURE-V2.md` carries the owner's approved V2 contract
+// verbatim below a stated offset, and `tests/v2/contract.check.sh` pins those
+// bytes to a SHA-256. Section 2's premise is that a second numbered copy of the
+// seven steps will drift away from `CLAUDE.md` §1 — but a quotation whose bytes
+// are pinned cannot drift, and cannot be reworded to comply without breaking
+// the pin. Both governance checks already strip quoted text inline, for the
+// reason this repository retires a rule by quoting it; this is the same act at
+// file scope.
+//
+// The real collision is narrower than "it restates a step", and worth naming
+// because the fix is not to weaken the fingerprint. The contract's own
+// deliverable list says "…acceptance criteria, expected change surfaces, and
+// the base SHA", which is step 4's fingerprint used as an ordinary noun in a
+// sentence about something else. Section 3 below already anticipates exactly
+// this and guards it with a two-phrase threshold, calling one hit "a
+// coincidence". Section 2 cannot borrow that threshold — its per-step probes
+// each paste ONE step, and raising the bar to two would turn all seven MISSED.
+// So the exemption is scoped to the pinned bytes instead of to the phrase.
+//
+// It is keyed on the verify command the header publishes, so the two checks
+// compose: this one trusts the offset, and `contract.check.sh` proves the
+// offset is honest and the bytes below it are the approved ones. It covers ONLY
+// the pinned body — the provenance header above it is repository-authored, is
+// editable, and stays subject to every assertion here.
+const PINNED = new Map(); // path -> 1-based first line of the pinned body
+for (const f of files) {
+  const m = read(f).match(/tail -n \+(\d+)\s/);
+  if (m) PINNED.set(f, Number(m[1]));
+}
+
+// The exemption is self-limiting: a second pinned document has to be added
+// HERE, in a reviewed change that says why, rather than by dropping a
+// `tail -n +N` line into a file and going quiet. Without this, any document
+// could exempt itself from section 2 by advertising a verify command nothing
+// enforces — `contract.check.sh` pins one file, not a class of them.
+chk(
+  "exactly one document is a byte-pinned quotation, and it is the V2 contract",
+  [...PINNED.keys()].sort(),
+  ["docs/v2/ARCHITECTURE-V2.md"],
+);
+
 const numberedLines = new Map(); // path -> normalized "N. …" lines
 for (const f of files) {
   const out = [];
-  const src = read(f).split("\n");
+  const src = read(f).split("\n").slice(0, (PINNED.get(f) ?? Infinity) - 1);
   for (let i = 0; i < src.length; i++) {
     if (!/^\s*\d+\.\s+\S/.test(src[i])) continue;
     // a numbered item wraps; join its continuation so a phrase split across

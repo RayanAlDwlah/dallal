@@ -32,7 +32,7 @@ that states what decision moved — and move the digest in the same commit.
 
 **What this file does not do.** It does not ratify anything into `PRD.md`. Product decisions
 live in `PRD.md` and nowhere else (`CLAUDE.md` §2); the V2 amendments the owner ratified
-alongside this contract are in `PRD.md` §23, and this file is downstream of them.
+alongside this contract are in `PRD.md` §24, and this file is downstream of them.
 
 ---
 

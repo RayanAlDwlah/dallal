@@ -3,7 +3,7 @@
 | Field | Value |
 |---|---|
 | Document | Dalal — Live Auction Platform, MVP PRD |
-| Version | **3.0 (Final — all product decisions closed)** |
+| Version | **3.0 (Final — all product decisions closed)** · **amended 2026-08-15 for Version 2 — read §24 first** |
 | Date | 2026-08-12 |
 | Owner | Product Management |
 | Status | **Finalized** — **all fifteen product decisions closed. Zero unresolved product questions** (§21) |
@@ -11,7 +11,7 @@
 | **Platform** | **Responsive web application (website).** Desktop and mobile **browsers**. **Not** a native mobile app — see §1.1 |
 | Currency | **Saudi Riyal (SAR)** — all displayed values are **simulated demonstration values** |
 | Financial scope | **Dalal does not process real money.** No payments, no settlement — see §19.0 |
-| Next phase | Architecture → task breakdown → implementation |
+| Next phase | **Version 2 is under way.** §24 carries the ratified V2 product amendments; `docs/v2/ARCHITECTURE-V2.md` is the technical contract that implements them |
 
 > ### ⚠ Financial Scope — read before any other section
 >
@@ -408,7 +408,7 @@ Ordered by priority within each tier. "Must Have" is the release gate: the MVP d
 
 ### 7.3 Future — explicitly outside the MVP
 
-Payment processing and settlement; checkout; shipping and fulfilment; reserve prices; proxy/automatic bidding; buy-it-now; **auction cancellation** (BR-30); **auction editing after publish** (BR-31); email/push notifications; **buyer–seller messaging or contact exchange**; ratings and reviews; categories, search, and recommendations; admin dashboards and moderation tooling; multi-language and multi-currency; native mobile applications; social sharing and following; advanced analytics; bulk listing tools; multi-image galleries and video.
+Payment processing and settlement; checkout; shipping and fulfilment; reserve prices; proxy/automatic bidding; buy-it-now; **auction cancellation** (BR-30); **auction editing after publish** (BR-31); email/push notifications; **buyer–seller messaging or contact exchange**; ratings and reviews; recommendations; admin dashboards and moderation tooling; multi-language and multi-currency; native mobile applications; social sharing and following; advanced analytics; bulk listing tools; video. **Amended 2026-08-15 (§24): categories, search and multi-image galleries are Version 2 scope and have been struck from this list. Everything else on it is unchanged, and §19.0's financial boundary is not narrowed by any part of V2.**
 
 See *Out of Scope* (§19) and *Future Enhancements* (§22) for detail and rationale.
 
@@ -505,7 +505,7 @@ Requirements are numbered `FR-<area>-<n>` and are written to be individually tes
 
 **Optional fields**
 
-- **FR-CREATE-03** The MVP must not offer optional auction fields. Every field is required. **There is no reserve-price field** (BR-35); category and condition are Future.
+- **FR-CREATE-03** **AMENDED 2026-08-15 — §24.3.** A V1 auction offers no optional fields; every field is required. **There is still no reserve-price field** (BR-35), in V1 or V2. **A V2 auction carries a required category, and the category determines a set of optional item attributes** — a painting has no mileage, so those cannot be required. Every supplied attribute is validated on the server against its declared type and permitted values, and an invalid one is rejected rather than stored.
 
 **Validation rules** — all enforced server-side; the client should mirror them for fast feedback.
 
@@ -524,7 +524,7 @@ Requirements are numbered `FR-<area>-<n>` and are written to be individually tes
 
 **Image requirements**
 
-- **FR-CREATE-15** Exactly one image per auction in the MVP. Multiple images are Future.
+- **FR-CREATE-15** **AMENDED 2026-08-15 — §24.4.** Exactly one image per auction on a V1 auction. **A V2 auction carries at least 1 and at most 10 images, in a seller-chosen order, the first being the cover.** Images are required and are validated server-side against their bytes. Video remains out of scope (§19.9).
 - **FR-CREATE-16** Accepted formats: JPEG, PNG, WebP. Other types must be rejected with a clear message.
 - **FR-CREATE-17** Maximum file size: 5 MB. Larger uploads must be rejected before the auction is created, with a clear message.
 - **FR-CREATE-18** File type must be validated server-side, not by file extension alone.
@@ -648,7 +648,7 @@ Second bid: 250 SAR  → VALID
 - **FR-BID-06** **The first bid on an auction may equal the starting price.** This is an explicit, deliberate special case *(decided; formerly Q6)*. Rationale: `Starting price: 100 SAR` reads to a user as "bidding starts at 100 SAR", so rejecting a bid of exactly 100 SAR contradicts the plain meaning of the label. Once that first bid is accepted, the uniform "strictly greater" rule governs everything after it (BR-29).
 - **FR-BID-07** A bid must be numeric, greater than zero, expressed in SAR, and have at most two decimal places.
 - **FR-BID-08** **There is no maximum bid amount in the MVP.** No ceiling exists and none may be introduced during implementation *(decided; formerly Q12)*. The only amount constraints are FR-BID-05 and FR-BID-07. See BR-21 for the accepted consequence.
-- **FR-BID-09** **There is no minimum bid increment.** A bid of one SAR above the current price is exactly as valid as a bid of one hundred SAR above it *(decided; formerly Q4)*. The system must never require `+5 SAR`, `+10 SAR`, `+50 SAR`, or any other step. The sole amount rule is the minimum acceptable bid.
+- **FR-BID-09** **There is no minimum bid increment on a V1 auction.** A bid of one SAR above the current price is exactly as valid as a bid of one hundred SAR above it *(decided; formerly Q4)*. The system must never require `+5 SAR`, `+10 SAR`, `+50 SAR`, or any other step **on a typed amount**. The sole amount rule for a V1 auction is the minimum acceptable bid. **AMENDED 2026-08-15 — §24.5:** a V2 auction has no amount field to impose a step on. Its bid equals the current price plus the seller's immutable increment, exactly, and that amount is computed on the server.
 - **FR-BID-10** The minimum acceptable bid must be visible to the user before they submit, stated in SAR, and must make the inclusive/exclusive distinction clear — for example `Bidding starts at 100 SAR` when there are no bids, and `Enter more than 250 SAR` once bidding is under way.
 
 **Concurrent bids** — product-level statements, not implementation.
@@ -781,7 +781,7 @@ These are the authoritative rules of the product. Every one must be enforced **s
 | **BR-13** | Current price is always the highest accepted bid; before any bid it is the starting price. | Single definition of "the price"; removes ambiguity between listing, detail, and validation |
 | **BR-14** | An auction becomes Active immediately on creation and is publicly visible. | No draft state in MVP (FR-CREATE-26/27) |
 | **BR-15** | Auction state transitions are one-directional: Active → Ended. An ended auction can never return to Active. | Prevents reopening, extending, or re-running a settled outcome |
-| **BR-16** | **NARROWED 2026-08-13.** Nobody may change an auction's end time — not the seller, not an admin, not any edit path. It is still fixed against every human and every application route (reinforced by BR-31). **The single exception is the automatic anti-sniping extension in BR-36**, which moves it forward only, in 30-second steps, only as part of accepting a bid, and at most 20 times. | Foundation of a fair, predictable close. The original wording, *"fixed at creation and cannot change"*, was written when BR-36 forbade extension; BR-36 was reversed and this rule had to narrow rather than disappear. What it protects — **no one can move an auction's deadline** — is unchanged and is enforced structurally |
+| **BR-16** | **NARROWED 2026-08-13. AMENDED 2026-08-15 — §24.6a.** Nobody may change an auction's end time — not the seller, not an admin, not any edit path. It is still fixed against every human and every application route (reinforced by BR-31). **There are exactly two doors and no third:** the automatic anti-sniping extension in BR-36, which moves it forward only, in 30-second steps, only as part of accepting a bid, and at most 20 times; **and a host resuming a paused session lot**, which moves it forward by exactly the paused duration and by nothing else. Neither door accepts an arbitrary value, and **the end time never moves backwards under any mechanism**. | Foundation of a fair, predictable close. The original wording, *"fixed at creation and cannot change"*, was written when BR-36 forbade extension; BR-36 was reversed and this rule had to narrow rather than disappear. The 2026-08-15 amendment adds the second door for sessions and nothing else. What it protects — **no one can move an auction's deadline to a value of their choosing** — is unchanged and is enforced structurally |
 | **BR-17** | Winner determination runs exactly once per auction and is idempotent. | A recorded outcome never changes on reprocessing (FR-END-10) |
 | **BR-18** | Bid history is append-only and permanent, and remains publicly visible after close. | Auditability; every outcome must be explainable from history |
 | **BR-19** | All time-based decisions use authoritative server time; client clocks are display-only. | Client clocks are wrong, skewed, or manipulated |
@@ -795,9 +795,9 @@ These are the authoritative rules of the product. Every one must be enforced **s
 | **BR-27** | Every rejected bid must be accompanied by a specific reason the user can act on. | Users cannot compete fairly if failures are opaque |
 | **BR-28** | The **minimum acceptable bid** is: the **starting price inclusive** when the auction has no bids; any amount **strictly greater than the current price** when it has at least one. | One governing definition for bid validity, removing all ambiguity between the first bid and later bids |
 | **BR-29** | **The first bid on an auction may equal the starting price.** This is an explicit special case; every bid after it must be strictly greater than the current price. | `Starting price: 100 SAR` means "bidding starts at 100 SAR"; rejecting exactly 100 SAR contradicts the label users read |
-| **BR-30** | **An auction cannot be cancelled.** Once published it runs to its end time and closes automatically. There is no `Cancelled` state. | A seller able to cancel after seeing a low price would hold an informal reserve, undermining BR-06 and fairness |
-| **BR-31** | **A published auction is immutable.** Name, description, starting price, end time, and image cannot be changed after creation, by anyone. | Changing terms mid-auction is unfair to anyone who already bid against those terms |
-| **BR-32** | **There is no minimum bid increment.** Any amount meeting BR-28 is valid, whether it exceeds the current price by 1 SAR or 1,000 SAR. | The only amount rule is BR-28; no `+5 / +10 / +50` step may be imposed |
+| **BR-30** | **An auction cannot be cancelled.** Once published it runs to its end time and closes automatically. There is no `Cancelled` state. **V2 (§24.6): a session host may close the currently open lot early. That is a close, not a cancel** — it determines a winner from the bids received, it is refused during an active extension window, and it produces no `Cancelled` state. | A seller able to cancel after seeing a low price would hold an informal reserve, undermining BR-06 and fairness. **An early close cannot serve that purpose: it ends a lot by awarding it, never by withdrawing it** |
+| **BR-31** | **A published auction is immutable.** Name, description, starting price, end time, and image cannot be changed after creation, by anyone — and in V2 neither can category, item attributes, image order, or the bid increment. **One narrow exception, §24.4:** where AI editing was applied, the seller may restore an **original** image after publish; it is one-way, restore-only, and recorded. | Changing terms mid-auction is unfair to anyone who already bid against those terms. **The restore exception survives that test because it only ever moves a listing toward the unedited truth** — it cannot make an item look better than a bidder already believed, and being one-way is what stops it becoming an edit path |
+| **BR-32** | **There is no minimum bid increment on a V1 auction.** Any amount meeting BR-28 is valid, whether it exceeds the current price by 1 SAR or 1,000 SAR. **This rule is unamended and remains absolutely true of every auction it was ever true of.** A V2 auction is a different kind of auction with a seller-set step and no amount field at all — §24.5, scoped by §24.1. | The only amount rule for a V1 auction is BR-28; no `+5 / +10 / +50` step may be imposed on one. **A live auction never changes its rules underneath the people bidding on it**, which is why V2's reversal is scoped to auctions created under V2 rather than applied to existing ones |
 | **BR-33** | The auction currency is **Saudi Riyal (SAR)** for all prices and bids. **All SAR values are simulated demonstration values; Dalal processes no real money.** | Realistic price representation without any financial scope (§19.0) |
 | **BR-34** | **The product ends at result display.** After winner determination, the system displays the outcome and takes no further action — no payment, no contact exchange, no fulfillment. | Defines the MVP's terminal boundary unambiguously |
 | **BR-35** | **Auctions have no reserve price.** The highest valid bid at close wins, whatever its amount. There is no hidden threshold and no "reserve not met" outcome. | A reserve would add a third close outcome and hidden state, changing winner determination and all three result views. Sellers can achieve the same effect openly by setting a higher starting price |
@@ -1215,12 +1215,12 @@ Winner Determined
 Result Displayed
 ```
 
-This is the complete and only lifecycle. There are **no branches, no cancellation, and no manual intervention** anywhere in it:
+This is the complete and only lifecycle **of a standalone auction**. There are **no branches, no cancellation, and no manual intervention** anywhere in it, and V2 does not change that. **A session lot additionally admits two bounded, host-only controls — early close and pause (§24.6). Neither can produce a different winner than the bids would have, and neither exists outside a session.**
 
 - **Draft is not a persisted state.** It exists only as the unsubmitted creation form (§12.1).
 - **There is no `Cancelled` state.** An auction cannot be cancelled once published (BR-30).
 - **An auction cannot be edited** once it enters Active (BR-31).
-- **The transition to Ended is automatic**, driven by the end time, requiring no administrator and no human action (BR-15, FR-END-02).
+- **The transition to Ended is automatic**, driven by the end time, requiring no administrator and no human action (BR-15, FR-END-02). **In V2 a session host may close the open lot early (§24.6) — a deliberate, bounded, recorded act by the host, never an administrator. The automatic transition remains the only way a standalone auction ends.**
 - **Result Displayed is terminal.** Nothing follows it (BR-34).
 
 ### 12.1 States
@@ -1841,19 +1841,19 @@ Everything listed is explicitly **not built** in the MVP. Each has a reason; ite
 | **Bid retraction** | Directly conflicts with BR-05 immutability |
 | **Auction editing after publish** | **Decided against (BR-31)** — changing terms mid-auction is unfair to existing bidders |
 | **Auction cancellation** | **Decided against (BR-30)** — would function as a hidden reserve and undermine trust |
-| **Minimum bid increments** | **Decided against (BR-32)** — the only amount rule is BR-28 |
+| **Minimum bid increments** | ~~Decided against (BR-32).~~ **Un-marked for V2 — reversed 2026-08-15 (§24.5).** A V2 auction carries a required, immutable, seller-set increment and no amount field. **BR-32 is unchanged for V1 auctions**, where the only amount rule is still BR-28 |
 | **Maximum price or bid ceiling** | **Decided against (BR-21)** — no product requirement justifies one |
-| **Scheduled future start times** | Adds a third lifecycle state with no MVP demand |
-| **Multiple quantity / lots** | A fundamentally different auction model |
-| **Bid increments of any kind, per-auction or platform-wide** | Decided against entirely (BR-32); the sole amount rule is BR-28 |
+| **Scheduled future start times** | ~~Adds a third lifecycle state with no MVP demand.~~ **Un-marked for sessions only — 2026-08-15 (§24.6).** A session has a scheduled start; a standalone auction still goes live on creation (BR-14) and still has no Draft state |
+| **Multiple quantity / lots** | ~~A fundamentally different auction model.~~ **Un-marked 2026-08-15 (§24.6)** — and the original reason was right: a session **is** a different model, built as an ordered room of single-item lots opened one at a time, never as a quantity on an auction |
+| **Bid increments of any kind, per-auction or platform-wide** | ~~Decided against entirely (BR-32).~~ **Un-marked for V2 — 2026-08-15 (§24.5).** V2 increments are **per-auction and seller-set**; a **platform-wide** increment is still excluded, and V1 auctions are unchanged — the sole amount rule for one is still BR-28 |
 
 ### 19.3 Communication
 
 | Excluded | Reason |
 |---|---|
-| **Email / push / SMS notifications** | See §16; engagement, not correctness |
+| **Email / push / SMS notifications** | **Still excluded — §24.9 does not reopen them.** See §16; engagement, not correctness. **What V2 adds is the in-product notification (§24.9).** The excluded thing was the delivery channel and its per-event preference design, not the fact of telling a user they were outbid |
 | **Buyer–seller messaging or contact exchange** | **Decided against (BR-34, FR-END-17).** The product displays the result and stops; there is nothing for the parties to arrange, since no goods or money change hands |
-| **Comments or Q&A on listings** | Moderation burden, no core-loop value |
+| **Comments or Q&A on listings** | ~~Moderation burden, no core-loop value.~~ **Narrowed 2026-08-15 (§24.11).** `اسأل البائع` is a public question about **one item**, on its auction, ending when the auction does. An open comment system is still excluded, and BR-34 is untouched |
 | **Newsletters / marketing** | Not a product requirement |
 
 ### 19.4 Social and reputation
@@ -1871,8 +1871,8 @@ Everything listed is explicitly **not built** in the MVP. Each has a reason; ite
 | Excluded | Reason |
 |---|---|
 | **Recommendation systems** | Requires data volume and behavior history the MVP does not have |
-| **Categories and taxonomy** | Valuable at scale; unnecessary at MVP volume |
-| **Advanced search / faceted filtering** | Basic sorting and filtering is Should Have (S6); anything beyond is Future |
+| **Categories and taxonomy** | ~~Valuable at scale; unnecessary at MVP volume.~~ **Un-marked 2026-08-15 (§24.3).** Category is required on every V2 auction and lot, comes from a **sourced** catalogue, and determines which optional validated attributes the create form offers |
+| **Advanced search / faceted filtering** | ~~Anything beyond basic sorting and filtering (S6) is Future.~~ **Un-marked 2026-08-15 (§24.8).** Text search and category filtering are V2 surfaces, expressed in the URL and rendered by the existing browse surface. **Recommendations and saved searches remain Future** |
 | **Saved searches / alerts** | Depends on notifications |
 
 ### 19.6 Operations and administration
@@ -1883,7 +1883,7 @@ Everything listed is explicitly **not built** in the MVP. Each has a reason; ite
 | **Moderation queues / reporting** | Depends on admin tooling; handled out-of-band at MVP scale (§4.3) |
 | **User suspension / banning** | Same |
 | **Analytics dashboards** | Not needed to validate the core loop |
-| **Bulk listing / seller tools** | Professional sellers are not a target user (§4.2) |
+| **Bulk listing / seller tools** | **Narrowed 2026-08-15 (§24.6).** Professional sellers are still not a target user (§4.2), and there is no bulk import, no CSV upload, and no seller dashboard. **A session is a seller listing several lots in one room** — the only part of this row V2 crosses |
 | **Data export / reporting** | No MVP demand |
 
 ### 19.7 Platform reach
@@ -1912,9 +1912,9 @@ Everything listed is explicitly **not built** in the MVP. Each has a reason; ite
 
 | Excluded | Reason |
 |---|---|
-| **Multiple images per auction** | One image is sufficient to evaluate an item (FR-CREATE-15) |
+| **Multiple images per auction** | ~~One image is sufficient to evaluate an item (FR-CREATE-15).~~ **Un-marked 2026-08-15 (§24.4).** A V2 auction carries 1 to 10 ordered images and the first is the cover. **Video is still excluded** |
 | **Video** | Storage and playback complexity, no core-loop value |
-| **Image editing / cropping** | Users can prepare images themselves |
+| **Image editing / cropping** | ~~Users can prepare images themselves.~~ **Un-marked 2026-08-15 (§24.10, touchpoint 2).** Four operations — background, lighting, crop, reflection — **each separately consented**, the original never deleted, the reversal working after publish, and the listing labelled as edited |
 | **Automatic image moderation** | Depends on moderation tooling |
 
 ---
@@ -1927,13 +1927,13 @@ Assumptions the team is making. **Every assumption that once required confirmati
 
 | ID | Assumption | Confirm? |
 |---|---|---|
-| A-U1 | Users are individuals, not businesses, and are comfortable using a web application. | |
+| A-U1 | Users are individuals, not businesses, and are comfortable using a web application. **Still true after V2:** `فرد` / `منشأة` is self-declared presentation metadata a user picks about themselves, which nothing in the product branches on (§24.12). | Resolved — §24.12 |
 | A-U2 | **Decided:** users access Dalal through a modern desktop or mobile **web browser**. No native application is built or expected (§1.1). | Resolved |
 | A-U3 | Users will accept email + password registration and do not require social sign-in. | |
 | A-U4 | Users are willing to register before bidding; the account requirement is not a blocker. | |
 | A-U5 | Users trust the platform enough to participate without ratings, reviews, or reputation. | |
 | A-U6 | **Decided:** users accept that Dalal is a demonstration with simulated SAR prices, that no money changes hands, and that the product provides no settlement, contact, or delivery of any kind (§19.0, BR-34). | Resolved |
-| A-U7 | The same person may be both a seller and a bidder; no separate account types are needed. | |
+| A-U7 | The same person may be both a seller and a bidder; no separate account types are needed. **V2 does not reopen this** — `فرد` / `منشأة` grants nothing, restricts nothing, and is never verified (§24.12). | Resolved — §24.12 |
 | A-U8 | Users understand basic auction concepts (bidding, outbidding, closing time) without a tutorial. | |
 | A-U9 | **Decided:** users may forget their passwords, and the MVP provides a self-service reset (M24). This assumption is retired. | Resolved |
 | A-U10 | **Decided:** the interface is **Arabic, right-to-left**, single-locale (BR-41, §1.2). English is not a required interface language. | Resolved |
@@ -1942,14 +1942,14 @@ Assumptions the team is making. **Every assumption that once required confirmati
 
 | ID | Assumption | Confirm? |
 |---|---|---|
-| A-A1 | An auction sells exactly one item, in one quantity. | |
+| A-A1 | An auction sells exactly one item, in one quantity. **V2: a session lot is also exactly one item** — a session is an ordered room of single-item lots, never a multi-quantity auction (§24.6). | Resolved — §24.6 |
 | A-A2 | **Decided:** auctions are simple ascending-price auctions with **no reserve price** (BR-35). | Resolved |
 | A-A3 | **Decided:** an auction's terms are fixed and immutable once published (BR-31). | Resolved |
 | A-A4 | **Decided:** an auction cannot be cancelled after publishing (BR-30). Sellers accept that a mistake cannot be undone (EC-26). | Resolved |
-| A-A5 | Auctions become live immediately on creation; nobody needs to schedule a future start. | |
+| A-A5 | Auctions become live immediately on creation; nobody needs to schedule a future start. **Re-decided 2026-08-15 (§24.6):** a standalone auction still becomes live immediately (BR-14); **a session has a scheduled start**, and its lots open one at a time when the host runs the room. | Resolved — §24.6 |
 | A-A6 | **Decided:** auction durations are **5 minutes to 7 days** (BR-38). This range covers all MVP needs. | Resolved |
 | A-A7 | **Decided:** a single currency — SAR — is used platform-wide, with simulated values (BR-33). | Resolved |
-| A-A8 | Sellers will write their own descriptions and provide their own images; no templates needed. | |
+| A-A8 | Sellers will write their own descriptions and provide their own images; no templates needed. **Amended 2026-08-15 in one respect (§24.10):** a seller may start from an AI proposal, which they edit or discard. **What is published is what the seller approved — the seller remains the author.** | Resolved — §24.10 |
 | A-A9 | Auction volume during the MVP is low enough that manual, out-of-band moderation is workable. | Accepted gap (§4.3) |
 | A-A10 | Ended auctions are retained indefinitely; no archival or deletion policy is needed. | |
 
@@ -1958,7 +1958,7 @@ Assumptions the team is making. **Every assumption that once required confirmati
 | ID | Assumption | Confirm? |
 |---|---|---|
 | A-B1 | Bidders enter explicit amounts; nobody expects proxy or automatic bidding in the MVP. | |
-| A-B2 | **Decided:** no bid increment is required; the minimum acceptable bid (BR-28) is the sole amount rule (BR-32). | Resolved |
+| A-B2 | **Decided:** no bid increment is required on a V1 auction; the minimum acceptable bid (BR-28) is the sole amount rule there (BR-32). **Re-decided for V2 on 2026-08-15:** a V2 auction has a required, immutable, seller-set increment and no amount field at all (§24.5). | Resolved — and scoped, §24.1 |
 | A-B3 | **Decided:** the first bid **may equal** the starting price; every bid after it must be strictly greater (BR-29). | Resolved |
 | A-B4 | **Decided:** a user may bid again while already leading, provided the bid is strictly greater than the current price (BR-24, FR-BID-04). | Resolved |
 | A-B5 | Bidders accept that bids are final and cannot be retracted. | |
@@ -1972,10 +1972,10 @@ Assumptions the team is making. **Every assumption that once required confirmati
 
 | ID | Assumption | Confirm? |
 |---|---|---|
-| A-I1 | One image per auction is sufficient to evaluate an item. | |
+| A-I1 | One image per auction is sufficient to evaluate an item. **Re-decided 2026-08-15 (§24.4):** 1 to 10 ordered images, the first being the cover. | Resolved — §24.4 |
 | A-I2 | JPEG, PNG, and WebP cover what users will upload. | |
 | A-I3 | A 5 MB limit is generous enough for phone photographs. | |
-| A-I4 | Users will resize or compress large images themselves if rejected; no in-product editing is needed. | |
+| A-I4 | Users will resize or compress large images themselves if rejected; no in-product editing is needed. **Re-decided 2026-08-15 (§24.10):** four separately consented in-product editing operations exist, the original is never deleted, and the reversal works after publish. | Resolved — §24.10 |
 | A-I5 | Images may be publicly readable, including by unauthenticated visitors. | |
 | A-I6 | Uploaded images do not require automated content moderation during the MVP. | Accepted gap (§4.3) |
 | A-I7 | Image storage cost and volume are negligible at MVP scale. | |
@@ -2022,21 +2022,21 @@ Assumptions the team is making. **Every assumption that once required confirmati
 >
 > Every question raised during PRD development has been answered. This section is the **decision register**: a single traceable list of all fifteen decisions, each pointing to the requirement that states it authoritatively.
 >
-> **No decision here may be reopened, reinterpreted, defaulted, or worked around during implementation.** If a genuinely new ambiguity is discovered while building — something this document does not address at all — it must be raised with the team and resolved as a product decision recorded here. It must never be silently invented in code.
+> **No decision here may be reopened, reinterpreted, defaulted, or worked around during implementation.** If a genuinely new ambiguity is discovered while building — something this document does not address at all — it must be raised with the team and resolved as a product decision recorded here. It must never be silently invented in code. **Several answers below were amended for Version 2 on 2026-08-15 — by the product owner, in writing, in the open, with a ledger in §24.14. That is the only way any of them may move, and it is what "reopened" is being contrasted with here.**
 
 ### 21.1 The fifteen decisions
 
 | # | Question | **Final decision** | Authoritative requirement |
 |---|---|---|---|
-| **Q1** | Can a seller cancel an active auction? | **No cancellation.** No cancel control, no cancellation rule, no `Cancelled` state. A published auction runs to its end time and closes. | BR-30 · FR-CREATE-25 · §12.0 · §12.4 |
+| **Q1** | Can a seller cancel an active auction? | **No cancellation.** No cancel control, no cancellation rule, no `Cancelled` state. A published auction runs to its end time and closes. **V2 clarification (§24.6):** a session host may close the open lot early — that **closes and awards** it, and is refused during an active extension window. It is not a cancellation and creates no `Cancelled` state. | BR-30 · FR-CREATE-25 · §12.0 · §12.4 · **§24.6** |
 | **Q2** | Can an auction have a minimum reserve price? | **No reserve price.** The highest valid bid wins regardless of amount. No hidden threshold, no "reserve not met" outcome. Sellers can set a higher starting price instead. | BR-35 · FR-END-05 |
-| **Q3** | Can a seller edit a published auction? | **No editing after publication.** Name, description, starting price, end time, and image are immutable once published. | BR-31 · FR-CREATE-24 · FR-SEC-04 · FR-SEC-09 |
-| **Q4** | Is there a minimum bid increment? | **No fixed increment.** Any amount meeting the minimum acceptable bid is valid — `+0.01 SAR` is as valid as `+1,000 SAR`. Never `+5 / +10 / +50`. | BR-32 · FR-BID-09 · EC-24 |
+| **Q3** | Can a seller edit a published auction? | **No editing after publication.** Name, description, starting price, end time, and image are immutable once published — and in V2 so are category, item attributes, image order and the bid increment. **One narrow exception (§24.4):** a one-way, recorded restore of an **original** image where AI editing was applied. | BR-31 · FR-CREATE-24 · FR-SEC-04 · FR-SEC-09 · **§24.4** |
+| **Q4** | Is there a minimum bid increment? | **AMENDED AND SCOPED 2026-08-15 — §24.5.** **V1 auctions: no fixed increment.** Any amount meeting the minimum acceptable bid is valid — `+0.01 SAR` is as valid as `+1,000 SAR` — and no platform-imposed step exists. Never `+5 / +10 / +50`. **V2 auctions: the seller sets a required, immutable increment**, and a bid equals the current price plus that increment exactly. There is no amount field to impose a step on. | BR-32 · FR-BID-09 · EC-24 · **§24.1 · §24.5** |
 | **Q5** | What are the auction duration bounds? | **5 minutes to 7 days**, inclusive, measured from creation using server time. | BR-38 · FR-CREATE-09 · FR-CREATE-10 · FR-CREATE-10a |
 | **Q6** | Must the first bid exceed the starting price? | **No — it may equal it.** `First Bid ≥ Starting Price`. Every bid after the first must be strictly greater than the current price. Explicit, documented special case. | BR-28 · BR-29 · FR-BID-06 · EC-23 |
-| **Q7** | Should the end time extend for late bids (anti-sniping)? | **REOPENED AND REVERSED 2026-08-13. Anti-sniping exists.** An accepted bid in the final **15 seconds** adds **30 seconds**, repeating, capped at **20 extensions**. The original answer was "no anti-sniping; the end time is fixed", and it stood from the PRD's first version until this amendment. | BR-36 · BR-16 · FR-END-01 · SC-74/74a/74b/74c |
+| **Q7** | Should the end time extend for late bids (anti-sniping)? | **REOPENED AND REVERSED 2026-08-13. Anti-sniping exists.** An accepted bid in the final **15 seconds** adds **30 seconds**, repeating, capped at **20 extensions**. The original answer was "no anti-sniping; the end time is fixed", and it stood from the PRD's first version until this amendment. **EXTENDED 2026-08-15 — §24.6a: a host resuming a paused session lot is the second and only other door**, moving the end time forward by exactly the paused duration, never counting against the 20-extension cap, and bounded by a 300-second cumulative pause budget. | BR-36 · BR-16 · FR-END-01 · SC-74/74a/74b/74c · **§24.6a** |
 | **Q8** | Must a user verify their email? | **No email verification.** A user may register and immediately browse, create, and bid. **A valid, unique email is still required at registration** — it is the login identifier and the only password-reset channel. | BR-37 · FR-AUTH-07 · FR-AUTH-07a · FR-AUTH-07b |
-| **Q9** | How do the seller and winner make contact? | **They do not.** No chat, messaging, or contact exchange. The system displays the result and stops. | BR-34 · FR-END-17 · FR-DETAIL-21a · §19.0 |
+| **Q9** | How do the seller and winner make contact? | **They do not.** No chat, messaging, or contact exchange. The system displays the result and stops. **Unchanged by V2:** `اسأل البائع` (§24.11) is a public question about an item, on its auction, ending when the auction does — not a channel between two people. | BR-34 · FR-END-17 · FR-DETAIL-21a · §19.0 · **§24.11** |
 | **Q10** | Should bid history be public? | **Public bid history**, visible on the auction to every viewer including unauthenticated visitors. Display names only — never emails. | BR-40 · FR-BID-22 · FR-BID-22a · FR-DETAIL-10 |
 | **Q11** | Must display names be unique? | **Yes, unique across all accounts.** Validated at registration. The internal identifier remains the source of truth for attribution. | BR-39 · FR-PROF-03 · FR-PROF-03a · FR-PROF-03b |
 | **Q12** | What currency, and what maximum price? | **Saudi Riyal (SAR)**, simulated demonstration values, no real money. **No maximum price and no bid ceiling** — none may be invented later. | BR-21 · BR-33 · FR-CREATE-07 · FR-CREATE-13 · FR-BID-08 · §19.0 |
@@ -2052,8 +2052,8 @@ Each decision below has a downside the team accepted deliberately. They are reco
 | Decision | Accepted consequence | Why it is acceptable |
 |---|---|---|
 | **Q1 + Q3** — no cancellation, no editing | A mistaken listing cannot be corrected or removed by anyone (EC-26). Duplicate submissions are permanent (EC-21) | Deliberate fairness protection. Raises the importance of pre-submission clarity (FR-CREATE-26a) and duplicate prevention |
-| **Q4 + Q12** — no increment, no ceiling | Penny-increment bid wars are possible (EC-24); one very large bid can dominate an auction (EC-25) | Values are simulated. No product requirement justifies either constraint. **Implementers must not add one** (SD-05) |
-| **Q7** — anti-sniping, **as amended 2026-08-13** | A contested auction can run up to **10 minutes** past the end time shown at creation, so "ends at 8:00" is not a promise. The countdown and realtime propagation must both handle an end time that moves | The fairness complaint it fixes was judged to outweigh that, and the 20-extension cap keeps the overrun bounded and easy to explain |
+| **Q4 + Q12** — no increment, no ceiling | Penny-increment bid wars are possible on a V1 auction (EC-24); one very large bid can dominate an auction (EC-25). **V2 (§24.5) removes the first by removing the amount field, and accepts a new consequence in its place: a seller who sets a poor increment gets a poor auction** | Values are simulated. No product requirement justifies either constraint on a V1 auction. **Implementers must not add one** (SD-05). **The V2 increment is the seller's, set once at creation — nobody may add a server-side clamp, correction, suggestion or minimum on top of it — and there is still no ceiling anywhere, in V1 or V2** |
+| **Q7** — anti-sniping, **as amended 2026-08-13 and extended 2026-08-15** | A contested auction can run up to **10 minutes** past the end time shown at creation, so "ends at 8:00" is not a promise. The countdown and realtime propagation must both handle an end time that moves. **A session lot can run up to 300 seconds later still if the host pauses it (§24.6a)** | The fairness complaint it fixes was judged to outweigh that, and the 20-extension cap keeps the overrun bounded and easy to explain. **The pause budget is capped and auto-resumes when exhausted for the same reason: neither door may be open-ended** |
 | **Q8** — no email verification | A user registering with an address they cannot access can never reset their password, and no Admin exists to help (§4.3) | Dalal holds nothing of real value (§19.0). FR-AUTH-07b requires the registration form to make the recovery role of the email clear |
 | **Q9** — no contact system | The winner and seller cannot reach each other | There is nothing to arrange — no goods or money move (§19.0) |
 | **Q10** — public bid history | Participation is visible to anyone on the internet | Core to the transparency promise. Display names only; registration must make this clear |
@@ -2064,7 +2064,7 @@ Each decision below has a downside the team accepted deliberately. They are reco
 
 > **`PRD.md` is the product source of truth.** Follow it.
 >
-> If implementation surfaces a genuinely new ambiguity — a situation this document does not address at all — **raise it with the team.** Do not pick a default, do not infer an answer from another product, and do not encode a guess. The resolution is recorded here first, then built.
+> If implementation surfaces a genuinely new ambiguity — a situation this document does not address at all — **raise it with the team.** Do not pick a default, do not infer an answer from another product, and do not encode a guess. The resolution is recorded here first, then built. **§24 is that rule followed at scale:** every V2 amendment was decided by the owner, recorded under `docs/decisions/`, and ratified into this document before the code was written.
 >
 > The distinction that matters: a **technical verification item** (does the platform support X?) is the architecture's business and is tracked in `ARCHITECTURE.md`. A **product decision** (what should the system do?) belongs here. A technical finding never silently rewrites a product requirement.
 
@@ -2081,8 +2081,8 @@ The MVP determines a winner, displays the result, and stops. The most valuable n
 
 | Enhancement | Value | Notes |
 |---|---|---|
-| **Outbid notifications (N1)** | Highest-value single addition; brings bidders back, raises final prices | Email delivery already exists for password reset (§16.5), so the remaining cost is per-event design and preferences |
-| **Won / ended notifications (N2, N3, N4)** | Closes the gap for absent users | Natural companion to N1 |
+| **Outbid notifications (N1)** | Highest-value single addition; brings bidders back, raises final prices | **In-product: built in V2 (§24.9).** **By email: still future** — §19.3 still excludes the channel. Email delivery already exists for password reset (§16.5), so the remaining cost there is per-event design and preferences |
+| **Won / ended notifications (N2, N3, N4)** | Closes the gap for absent users | **In-product: built in V2 (§24.9). By email, push or SMS: still future.** Natural companion to N1 |
 | **Anti-sniping time extension** | Fixes the most-cited fairness complaint of fixed-end auctions | ~~Explicitly not MVP.~~ **Reopened and built, 2026-08-13 (BR-36).** No longer a future enhancement |
 | **Relisting an unsold auction** | Sellers with no bids currently must recreate from scratch | Pairs with N5; partly compensates for having no editing (BR-31) |
 | **Buyer–seller contact mechanism** | Would make the outcome actionable | **Explicitly not MVP (BR-34).** Only meaningful alongside Phase 3 commerce — there is nothing to arrange while no goods or money move |
@@ -2250,3 +2250,394 @@ Unchanged from v1.0: identity and access (§8.1, §8.2); auction creation and me
 4. Resolve the **technical** verification items in `ARCHITECTURE.md` §22 during Sprint 0. These are platform questions, not product questions.
 
 **Not started:** implementation, database schema, SQL, API specifications, Supabase configuration, GitHub Actions, and GitHub Issues.
+
+---
+
+## 24. Version 2 — the ratified product amendments
+
+> ### Read this before reading any earlier section
+>
+> **Everything above this line describes Version 1.** It is still authoritative for
+> everything V2 does not touch, and most of it V2 does not touch. This section names the
+> places where it does, and **where this section and an earlier section disagree, this
+> section governs.**
+>
+> **This is a ratification, not a proposal.** The decisions below were made by the product
+> owner and recorded in `docs/decisions/D-01` … `D-06` between 2026-08-13 and 2026-08-15.
+> They were held out of this document by the gate in `docs/decisions/README.md`, which says
+> only the owner ratifies. **The owner directed this amendment in writing on 2026-08-15**,
+> in the same instruction that approved `docs/v2/ARCHITECTURE-V2.md` — the technical
+> contract that implements it. §24.14 is the ledger of every line that moved.
+
+### 24.0 Precedence, and the one thing that has not changed
+
+`CLAUDE.md` §2 is unchanged: **this document is the product source of truth.** V2 does not
+create a second one. `docs/v2/ARCHITECTURE-V2.md` is the technical contract and is
+subordinate to this section; the `docs/decisions/D-0*` records are now **history**, because
+what they were holding is here.
+
+**§19.0 is untouched and is not negotiable.** Dalal processes no real money. Every SAR
+amount in V2 — including the session deposit in §24.7 — is a simulated demonstration value.
+There is no payment processing, no gateway, no card field, no wallet, no stored balance, no
+settlement, and no screen that offers or implies one. V2 **widens the product; it does not
+cross that boundary**, and every amendment below is written to stay inside it.
+
+### 24.1 The scoping rule — V1 auctions keep V1 rules
+
+Every amendment below is scoped, not retroactive. An auction created under V1 rules keeps
+them for its whole life; V2 rules apply to auctions created under V2.
+
+| | V1 auctions | V2 auctions |
+|---|---|---|
+| Bidding | a bidder types any amount meeting BR-28 | one button, one amount, set by the seller (§24.5) |
+| Images | exactly one | 1 to 10, ordered (§24.4) |
+| Category | none | required, from the catalogue (§24.3) |
+
+**This rule is what makes the amendments below safe to state absolutely.** BR-32 — *there
+is no minimum bid increment* — is not deleted, weakened, or made conditional on a feature
+flag. It remains exactly true of every auction it was ever true of. A live V1 auction does
+not change its rules underneath the people bidding on it, and **BR-31's promise that
+published terms are immutable is the reason this scoping is required rather than merely
+tidy.**
+
+### 24.2 What V2 adds, in one list
+
+Nothing here is optional or "if there is time". The delivery order and the honest cut line
+are in `docs/v2/ARCHITECTURE-V2.md` §13.
+
+1. **Categories** and category-dependent item attributes (§24.3)
+2. **Images: 1 to 10, ordered, the first is the cover** (§24.4)
+3. **A seller-set bid increment and one-button bidding** (§24.5)
+4. **Sessions** — a room of lots run live by a host (§24.6)
+5. **A simulated deposit** that gates bidding in a session (§24.7)
+6. **Search and filtering** across the catalogue (§24.8)
+7. **In-product notifications** (§24.9)
+8. **Five AI touchpoints**, in five specific places (§24.10)
+9. **`اسأل البائع`** — a narrow, evidence-bounded question path (§24.11)
+
+### 24.3 Categories and category-dependent attributes
+
+**Supersedes:** §19.5 *"Categories and taxonomy — valuable at scale; unnecessary at MVP
+volume"*; §22.5's *Categories and taxonomy* row; **FR-CREATE-03**'s prohibition on optional
+auction fields.
+
+| | Ratified |
+|---|---|
+| **Category is required** | Every V2 auction and every session lot carries exactly one category. There is no "uncategorized" |
+| **The catalogue is sourced, not invented** | The category tree is taken from a cited external source and recorded with its provenance. **A category nobody can point at the origin of is not in the catalogue** |
+| **Attributes are category-dependent** | Choosing a category determines which additional item attributes the create form offers — year and mileage for a vehicle, dimensions for a painting |
+| **Those attributes are optional, and validated** | **This is the amendment to FR-CREATE-03.** V2 auctions may carry optional fields. Optional does not mean unchecked: every supplied value is validated on the server against the field's declared type and permitted values, and an invalid value is rejected rather than stored |
+| **Attributes are presentation and search, never price or eligibility** | No attribute affects what a bid must be, whether a bid is accepted, or who wins |
+
+**Why FR-CREATE-03 had to move rather than be worked around.** It says *"the MVP must not
+offer optional auction fields; every field is required."* A category-dependent attribute
+set cannot be required — a painting has no mileage. The rule was written to stop a create
+form growing a dozen half-used inputs, and that concern is met by the sourced catalogue and
+server validation instead. **The rule is amended in the open, which is the only way it may
+be amended (§21.3).**
+
+### 24.4 Images — 1 to 10, ordered, and the first one is the cover
+
+**Supersedes:** §19.9 *"Multiple images per auction"*; §22.2's *Multiple images and video*
+row; **FR-CREATE-15** (*"exactly one image per auction"*); **A-I1** and **A-I4**;
+and **BR-31** in one narrow respect, stated below.
+
+| | Ratified |
+|---|---|
+| **Count** | **At least 1, at most 10.** Images are required — an auction with none cannot be published |
+| **Order is meaningful** | The seller orders the images, and **the first is the cover** — the one every card, listing and search result shows |
+| **Images come first in the create flow** | The seller uploads before writing anything, because §24.10's first AI touchpoint reads the images to propose the text |
+| **Validated on the server** | Type and size are checked server-side after upload, against the bytes rather than the declared name |
+| **After publish, order is frozen** | Reordering, adding and removing are locked once the auction is published — BR-31 holds |
+| **One exception to BR-31: `رجّع الأصلية`** | Where AI editing was applied (§24.10), the seller may restore the **original** image after publish. It is **one-way** — restore only, never re-apply — and it is recorded |
+
+**Why the restore exception exists, and why it is safe.** BR-31 freezes published terms so
+nobody can improve their listing after bids arrive. Restoring an original does the
+opposite: it removes an enhancement and moves the listing **toward** the unedited truth. It
+can only ever make the item look worse than the bidder already believed, so it cannot
+disadvantage anyone who has already bid. **Being one-way is what makes that argument hold**
+— a seller who could toggle back and forth would have an edit path, and BR-31 would be
+gone.
+
+**Video remains out of scope** (§19.9). Nothing here reopens it.
+
+### 24.5 The bid increment — reversed for V2
+
+**Supersedes, for V2 auctions only:** §19.2's *Minimum bid increments* and *Bid increments
+of any kind, per-auction or platform-wide*; §22.2's *Minimum bid increments* row;
+**A-B2**; and the register's answer at **§21.1 Q4**.
+
+> **This is the sharpest reversal in this section, and it is deliberately scoped.**
+> `BR-32` — *there is no minimum bid increment* — **remains true, unamended, for every V1
+> auction.** What changed is that a V2 auction is a different kind of auction, and its
+> seller sets the step.
+
+| | Ratified |
+|---|---|
+| **The seller sets it, once** | The increment is chosen at creation, is **required**, and is **immutable** thereafter (BR-31) |
+| **What is a valid increment** | A positive whole number of SAR, and a multiple of 10 |
+| **What a bid must be** | The **first** bid equals the starting price exactly. Every bid after it equals the current price plus the increment, **exactly** |
+| **One button, no amount field** | The bidder does not type a number. The screen shows the single amount the next bid will be, and the bidder confirms it |
+| **The server decides, not the screen** | The next valid amount is computed on the server. A request carrying a stale amount is rejected with a specific reason, and the bidder is shown the new amount |
+| **Not a floor — an equality** | This is **not** a minimum raise on top of a free-text amount. There is no amount to raise. A V2 auction accepts one amount at a time |
+
+**`FR-BID-09` and the three absent checks.** `CLAUDE.md` §5 forbids a bid increment, a
+maximum, and a leading-bidder rejection, and lists their **absence** as the requirement.
+Two of those three are untouched: **there is still no maximum price and no bid ceiling**
+(BR-21, §21.1 Q12, and §24.13), and **a leading bidder may still bid again** (BR-24). The
+first is amended here for V2 and **nowhere else** — and because a V2 bid is an equality
+rather than a floor, a V2 auction has no "minimum acceptable bid above which anything
+goes." The distinction matters when reading `FR-BID-09`, which forbids the server
+*requiring a step on a typed amount*. V2 does not require a step on a typed amount. It
+does not accept a typed amount.
+
+**The accepted consequence.** A V2 seller who sets the increment badly gets a bad auction —
+too large and nobody bids, too small and the history is long. That is the seller's choice
+to make and to live with, and it is the price of removing the typing mistake that a free
+amount field invites. **Nobody may add a server-side correction, suggestion, clamp, or
+minimum to protect a seller from their own increment.**
+
+### 24.6 Sessions — a room of lots, run live by a host
+
+**Supersedes:** §19.2's *Multiple quantity / lots* (*"a fundamentally different auction
+model"*) and *Scheduled future start times*; §19.6's *Bulk listing / seller tools*;
+**A-A1** and **A-A5**; and **§12**'s claim that the lifecycle has *no manual intervention*,
+in the narrow respect stated below.
+
+A **session** is a scheduled room containing an **ordered list of lots**. A host opens them
+one at a time; each open lot is a live auction under the V2 rules above. It is **a kind of
+auction, not a kind of account** — no new role, no permission tier, no verification.
+
+| | Ratified |
+|---|---|
+| **Composition** | A session has information (title, description, cover, scheduled start) and an ordered list of lots. Each lot carries its own category, duration, starting price and increment |
+| **Scheduled start** | A session has a start time in the future. **This is the amendment to §19.2's exclusion of scheduled starts**, and it is scoped to sessions — a standalone auction still goes live on creation (BR-14) |
+| **Publish, then lock** | Lots may be added, removed and reordered freely **before publish**. After publish, and until the session actually starts, the list is **locked** |
+| **The hall is public** | **Watching is open to everyone**, including unauthenticated visitors, exactly as bid history is (BR-40). Bidding requires the deposit (§24.7) |
+| **One lot open at a time** | Exactly one lot in a session is open for bidding at any moment. The rest are queued or finished |
+| **Duration is per lot** | Each lot runs for its own configured duration, between 5 minutes and 1 hour |
+| **Anti-sniping applies per lot** | BR-36 is unchanged: a bid in the final 15 seconds extends that lot by 30 seconds, to a cap of 20 |
+| **The host may close a lot early** | A deliberate, host-only action on the currently open lot. It is **protected**: it is refused during an active extension window, so it can never be used to cut off a contested lot mid-fight |
+| **The host may pause** | Pause is host-only, and a paused lot **accepts no bids**. Resuming moves the lot's end time **forward by exactly the paused duration** — see §24.6a |
+| **`أنهِ الجلسة` ends after the current lot** | It stops the queue. It does **not** cancel the open lot, discard its result, or void a winner |
+| **Early host close is not cancellation** | BR-30 stands. A closed lot **closes** — it determines a winner from the bids it received, exactly as a natural close does |
+
+#### 24.6a Pause, and the second door on the end time
+
+**This is the amendment to BR-16**, whose V1 wording named the anti-sniping extension as
+*the single exception*. There are now **exactly two doors**, and no third:
+
+1. the automatic anti-sniping extension of BR-36 — forward, in 30-second steps, only as
+   part of accepting a bid, at most 20 times; and
+2. **a host resuming a paused lot** — forward, by exactly the wall-clock duration of the
+   pause, and by nothing else.
+
+**What did not change, and is still absolute:**
+
+- **The end time moves forward only.** Never backwards, by any mechanism, by any caller.
+  A pause does not rewind a clock; a resume *adds* the time the lot stood still.
+- **Nobody may set an end time to an arbitrary value.** Neither door accepts one. Both move
+  it by a defined quantity, and every other path is refused.
+- **Pause is not an extension.** It never counts against, or advances, the 20-extension cap.
+- **A paused lot is not biddable**, and that refusal is explicit rather than a side effect
+  of the moved end time.
+- **Pause is bounded.** A session has a **cumulative pause budget of 300 seconds**. When it
+  is exhausted the lot resumes automatically, so a host cannot hold a room open forever.
+
+**On §12's *no manual intervention*.** That sentence described a standalone auction and
+remains true of one: nobody can pause, extend, close or cancel it. **Inside a session the
+host has two deliberate controls — early close and pause — and both are bounded, both are
+recorded, and neither can produce a different winner than the bids would have.**
+
+### 24.7 The simulated deposit
+
+**Narrows, without reopening:** §19.0 and §19.1. **Nothing here is a payment.**
+
+| | Ratified |
+|---|---|
+| **What it is** | A **row**: this user has entered this session's hall. A state transition with no financial component |
+| **What it gates** | **Bidding, not watching.** Anyone may watch a session. Only an entrant may bid in it |
+| **Paid once, per session** | One entry covers every lot in the room. It is not per lot |
+| **The amount** | The host chooses from `بدون · 25 · 50 · 100 · 500` or another amount. `بدون` — no deposit — is a valid choice, and a session set that way is open to all bidders |
+| **It expires with the session** | Access ends when the session does. **There is no refund, because there was no payment** |
+| **Enforced on the server** | A bid from a user who never entered the hall is rejected by the server, not hidden by a button (SC-43) |
+| **A rejected bid still never extends** | `CLAUDE.md` §5. A bid refused for want of an entry does not move the end time |
+
+> **The failure mode, named now so it cannot be discovered later as a gap.** A future
+> reader sees "deposit", finds no payment integration, and concludes the feature is
+> half-built. **It is out of scope by decision, not by omission.** There is no gateway, no
+> card field, no balance, and no amount that moves — anywhere in the product. The amount is
+> a label on a button, exactly as every other SAR value in Dalal is simulated.
+
+The deposit is an **eligibility rule**, in the same category as *the auction has not ended*.
+It is emphatically **not** a fourth member of the three checks `CLAUDE.md` §5 forbids: it is
+not a minimum raise, not a ceiling, and not a leading-bidder rejection.
+
+### 24.8 Search and filtering
+
+**Supersedes:** §19.5's *Advanced search / faceted filtering*; §22.5's *Search and faceted
+filtering* row.
+
+| | Ratified |
+|---|---|
+| **Search is a first-class surface** | Buyers find items by text and by filtering on category, and the filters are visible and editable |
+| **It filters the existing browse surface** | Search is **not a separate page with its own layout**. Filters are expressed in the URL so a result set can be linked and shared |
+| **Results use the same card as everywhere else** | The same auction card that the home, browse and category surfaces use. **A visually similar copy is not the same component** |
+
+Recommendation systems remain out of scope (§19.5, §22.5). Saved searches and alerts remain
+out of scope. **Neither is reopened here.**
+
+### 24.9 Notifications — in-product only
+
+**Narrows:** §19.3's *Email / push / SMS notifications*; §22.1's notification rows.
+
+| | Ratified |
+|---|---|
+| **In-product notifications exist** | A viewer sees, inside the product, that they were outbid, that an auction they bid on ended, and that a session they entered is starting |
+| **Email, push and SMS remain excluded** | §19.3 is **not** reversed. Transactional email exists only where it already did — password reset (§16.5). No marketing, no digests, no push, no SMS |
+| **Notification history is the first thing cut** | If the deadline forces a reduction, durable history goes before the live notification does — `docs/v2/ARCHITECTURE-V2.md` §13 |
+
+**Why the distinction is load-bearing.** §19.3 excluded notifications as *engagement, not
+correctness*, and the reason it gave was delivery infrastructure and per-event preference
+design. An in-product notification needs neither. **The excluded thing was the channel,
+not the fact.**
+
+### 24.10 The AI product surface — five touchpoints, in five places
+
+**Fills a gap rather than superseding anything.** This document was silent on AI: no
+occurrence of "AI", "assistant" or "machine learning" appears above this section.
+
+> **The AI is not a chat button in the corner, and there is no sixth icon in the top bar.**
+> That is part of the decision, not a summary of it. It is five features, each attached to a
+> screen where the user already has a problem.
+
+| # | What | Where | Made of |
+|---|---|---|---|
+| 1 | **`يكتب الإعلان`** — reads the uploaded images and proposes a title, a description and a category | create, after the images | a vision model |
+| 2 | **`يصلّح الصور`** — background, lighting, crop, reflection | create, on the images | an image pipeline, not a text model |
+| 3 | **`يفهم البحث`** — an Arabic sentence becomes **visible, editable filter chips** | browse | a model for category and keywords, **deterministic parsers for every number** |
+| 4 | **`يجاوب عن القطعة`** — answers a buyer's question **from the seller's description and the validated attributes, and from nothing else** | auction detail | a grounded model |
+| 5 | **`يقترح سعر البداية`** — a range derived from comparable **ended** auctions | create, **seller only** | **SQL over the auction data. Not a model call** |
+
+**Four product rules govern all five. Each is a decision, not a guideline.**
+
+1. **Every AI output is a suggestion the user edits or discards.** Nothing is applied
+   silently, and nothing is unremovable. The seller is the author of their listing —
+   **A-A8 is amended in exactly this respect and no further**: the seller may start from a
+   proposal, and what is published is what they approved.
+2. **The AI never determines, adjusts, or suggests an amount to a bidder, and never touches
+   the bidding path.** Touchpoint 5 produces a *range* from real ended auctions, it is shown
+   **only to a seller setting a starting price**, and it is computed arithmetically. A
+   bidder must never see a machine's opinion of what an item is worth — that would make the
+   platform a price authority. **This is why touchpoint 5 contains no language model:**
+   asked for an amount, the measured model was wrong on ten runs out of ten, stably.
+3. **Touchpoint 4 answers only from the seller's own words and the validated attributes,
+   and `ما أعرف` must be an easy answer.** A model that invents a service history has
+   invented a claim the seller never made, on a page where somebody is about to bid.
+   **Refusing is correct behaviour**, not a failure.
+4. **Image editing is disclosed, reversible, and separately consented.** The four
+   operations in touchpoint 2 are **gated one at a time** — the seller enables each
+   individually, never as one switch. The **original is never deleted**, `رجّع الأصلية`
+   works after publish (§24.4), and a listing with edited images **says so on the page**.
+
+> **On the fourth rule.** The prototype calls this `حدّ أخلاقي مو تقني` — an ethical limit,
+> not a technical one. An auction platform that silently beautifies the goods is lying to
+> the bidder. **Retained original, working reversal, and a visible label: all three, or
+> none.**
+
+If a provider is unavailable, **every one of the five degrades to the product working
+without it.** No AI touchpoint is on the path of creating an auction, placing a bid, or
+closing one.
+
+### 24.11 `اسأل البائع` — the narrow exception to "no messaging"
+
+**Narrows:** §19.3's *Comments or Q&A on listings*, and clarifies **BR-34** / **§21.1 Q9**.
+
+| | Ratified |
+|---|---|
+| **What exists** | A buyer may ask a question **about the item**, on the auction. The seller may answer it. Both are public on the auction, exactly as bid history is |
+| **What does not exist** | No inbox, no thread, no direct messages, no contact exchange, no notification channel between two people, and no way to reach a user off the auction |
+| **BR-34 is unchanged** | The seller and the winner still **do not** make contact. The product still displays the result and stops. There is nothing to arrange, because nothing moves |
+| **It must not be a button that does nothing** | Either the ask-and-answer path works, or the control is absent. **A control that opens an empty promise is worse than no control** |
+
+**Why this is not the excluded thing.** §19.3 excluded Q&A for *moderation burden, no
+core-loop value*. What is ratified here is bounded to the item, attached to one auction,
+public, and ends when the auction does — and §24.10's touchpoint 4 answers most questions
+from the seller's own description without the seller doing anything. **The excluded thing
+was an open comment system. This is a question about a lot.**
+
+### 24.12 Presentation vocabulary — `حاضر`, `مزايد`, `فرد`, `منشأة`
+
+These four words appear on V2 screens. Each is defined here because each **looks like** an
+identity or permission claim and **none of them is one.**
+
+| Word | What it means | What it is **not** |
+|---|---|---|
+| **`حاضر`** | A count of people currently present in a room, from anonymous presence. **Identity-free** — it never names anyone and never reveals who is watching | Not a list of viewers, not a per-user status, not stored |
+| **`مزايد`** | A count of connected users who hold a valid entry to the session and could therefore bid | Not a count of people who *have* bid, and not a bidder list |
+| **`فرد`** | Self-declared presentation metadata on a profile: this seller presents as an individual | **Not an account type.** Grants nothing, restricts nothing, is never verified |
+| **`منشأة`** | Self-declared presentation metadata: this seller presents as a business | **Not an account type, not a verified business, not a permission tier.** Grants nothing and restricts nothing |
+
+**`فرد` / `منشأة` do not reopen A-U1 or A-U7.** A-U7's claim — *no separate account types
+are needed* — is **still true**, and is the reason these two are metadata rather than roles.
+A label a user picks about themselves, which no code reads to decide what they may do, is
+not an account type. **Nothing anywhere in the product may branch on it**, and no
+verification, badge, or trust signal may be built on it without a new decision recorded
+here first.
+
+**`حاضر` and email privacy.** §14 and `CLAUDE.md` §6 are unchanged: email addresses are
+never visible to anyone but their owner, and internal identifiers stay internal. Presence is
+a **number**, which is what makes it safe to show to everyone.
+
+### 24.13 What V2 does not change
+
+Stated explicitly, because the amendments above are extensive and a reader could reasonably
+wonder how far they reach. **Every one of these is unchanged and none is reopened here:**
+
+- **No real money.** §19.0 in full — no payments, no gateway, no card field, no wallet, no
+  stored balance, no escrow, no settlement, no invoicing, no fees, no refunds, no shipping,
+  no fulfilment. **No screen offers or implies any of them** (SC-67)
+- **No maximum price and no bid ceiling** — BR-21, §21.1 Q12
+- **No reserve price** — BR-35, §21.1 Q2
+- **No auction cancellation, and no `Cancelled` state** — BR-30
+- **A published auction is immutable**, but for the two narrow, argued exceptions in §24.4
+  and §24.6 — BR-31
+- **A leading bidder may bid again** — BR-24
+- **The first bid may equal the starting price** — BR-29
+- **The end time moves forward only**, through exactly the two doors in §24.6a — BR-16
+- **Bid history is public, append-only, and shows display names only** — BR-18, BR-26, BR-40
+- **Email addresses are never public** — BR-26, §14
+- **Server time decides everything** — BR-19
+- **No admin role, no moderation tooling, no dashboard** — §4.3, §19.6
+- **The interface is Arabic, right-to-left, single-locale, with Western digits** — BR-41,
+  BR-42, §21.1 Q16
+- **One money format, everywhere: `1,250.00 SAR`** — BR-43. The **only** relaxation is that a
+  compact bidding control may label the *increment step* as a whole number, as in
+  `زايد بـ 500`. **Every total, price, current price, starting price and final price uses
+  the canonical format, without exception**
+- **No native app, no second language, no second currency, no public API** — §19.7
+
+### 24.14 The amendment ledger
+
+`BR-36`'s reversal needed nine locations. This one needs more, and the count is the honest
+cost of ratification rather than an argument against it — a ratification without a ledger is
+how the next sweep finds §19 still saying categories are Future.
+
+| Amendment | Where it lands | What moved |
+|---|---|---|
+| **Categories** | §24.3 | §19.5 and §22.5 un-marked; **FR-CREATE-03** amended to admit validated optional fields; A-A1 scoped |
+| **Images 1–10** | §24.4 | §19.9 and §22.2 un-marked; **FR-CREATE-15** rewritten; **A-I1** and **A-I4** re-decided; **BR-31** narrowed for the one-way original restore |
+| **Bid increment** | §24.5 | §19.2 and §22.2 un-marked **for V2 only**; **§21.1 Q4** amended and scoped; **§21.2**'s Q4 + Q12 consequence amended; **A-B2** re-decided; **BR-32** left intact and scoped to V1 |
+| **Sessions** | §24.6 | §19.2's *Multiple quantity / lots* and *Scheduled future start times* un-marked; §19.6's *Bulk listing / seller tools* narrowed; **A-A1** and **A-A5** re-decided; **§12**'s *no manual intervention* scoped to standalone auctions; **§21.1 Q1** clarified |
+| **Pause** | §24.6a | **BR-16** amended from one exception to two doors; **§21.1 Q7** extended; **§21.2**'s Q7 consequence extended |
+| **Deposit** | §24.7 | §19.0 and §19.1 narrowed **without reopening**; a new server-side bid rejection reason |
+| **Search** | §24.8 | §19.5 and §22.5 un-marked |
+| **Notifications** | §24.9 | §19.3 narrowed to the **channel**; §22.1 rows un-marked for the in-product case only |
+| **AI surface** | §24.10 | new — this document was silent; **A-A8** amended in one respect |
+| **`اسأل البائع`** | §24.11 | §19.3's Q&A row narrowed; **§21.1 Q9** clarified; **BR-34** left intact |
+| **Vocabulary** | §24.12 | new; **A-U1** and **A-U7** explicitly **not** reopened |
+
+**Every row above is also amended in place, where it sits.** A reader who arrives at §19.2
+must not have to already know that §24 exists — which is the failure this ledger is written
+against, and the reason the older sections carry a pointer back to here rather than a
+silent contradiction.
