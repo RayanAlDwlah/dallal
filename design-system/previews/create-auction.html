@@ -1,0 +1,337 @@
+<!-- @dsCard group="Selling" name="Create an auction" subtitle="Four steps, the AI assist, and how it looks to its owner after publishing" -->
+<!doctype html>
+<html lang="ar" dir="rtl">
+<meta charset="utf-8">
+<title>إنشاء مزاد</title>
+<style>
+@import url("https://fonts.googleapis.com/css2?family=IBM+Plex+Sans+Arabic:wght@400;500;600&family=Rubik:wght@500;600;700&display=swap");
+:root{--canvas:#07090D;--surface:#0F1219;--raised:#161A23;--hair:rgba(255,255,255,.08);--ink:#E9EDF5;--ink2:#9AA4B8;--ink3:#5C6579;--gold:#F5B942;--teal:#2DD4BF;--red:#FF4D5E;--green:#34D399;--purple:#7C3AED;--f-display:"Rubik",system-ui,sans-serif;--f-body:"IBM Plex Sans Arabic",system-ui,sans-serif}
+*{box-sizing:border-box}
+body{margin:0;padding:40px;direction:rtl;background:var(--canvas);color:var(--ink);font-family:var(--f-body);line-height:1.7;-webkit-font-smoothing:antialiased}
+h1{font-family:var(--f-display);font-size:28px;font-weight:600;margin:0 0 4px}
+p.sub{color:var(--ink2);margin:0 0 6px;font-size:15px;max-width:66ch}
+h2{font-size:13px;color:var(--ink3);font-weight:500;letter-spacing:.04em;margin:40px 0 14px}
+.num{font-variant-numeric:tabular-nums}
+.sar{font-size:.64em;color:var(--ink2);font-weight:500;margin-inline-start:5px}
+code{font-family:ui-monospace,monospace;font-size:12px;color:var(--teal);direction:ltr;display:inline-block}
+.note{font-size:13px;color:var(--ink3);margin-top:12px;max-width:72ch}
+.wrap{max-width:720px}
+
+/* ---- the chooser ---- */
+.two{display:grid;grid-template-columns:1fr 1fr;gap:14px;max-width:720px}
+@media(max-width:700px){.two{grid-template-columns:1fr}}
+.choice{background:var(--surface);border-radius:20px;padding:22px;box-shadow:inset 0 0 0 1px var(--hair);cursor:pointer;transition:.15s}
+.choice:hover{transform:translateY(-2px)}
+.choice.on{box-shadow:inset 0 0 0 1.5px var(--gold),0 0 30px rgba(245,185,66,.12)}
+.choice h3{font-family:var(--f-display);font-size:19px;font-weight:600;margin:0 0 6px}
+.choice p{margin:0;font-size:14px;color:var(--ink2)}
+.choice .t{display:inline-block;font-size:11.5px;color:var(--ink3);background:rgba(255,255,255,.05);border-radius:7px;padding:2px 9px;margin-bottom:12px}
+
+/* ---- step rail ---- */
+.rail{display:flex;align-items:center;gap:0;margin-bottom:22px}
+.st{display:flex;align-items:center;gap:9px;font-size:13.5px;color:var(--ink3);white-space:nowrap}
+.st .b{width:26px;height:26px;border-radius:50%;display:grid;place-items:center;font-family:var(--f-display);font-size:13px;font-weight:600;background:var(--raised);color:var(--ink3);box-shadow:inset 0 0 0 1px var(--hair)}
+.st.done .b{background:rgba(45,212,191,.15);color:var(--teal);box-shadow:inset 0 0 0 1px rgba(45,212,191,.3)}
+.st.done{color:var(--ink2)}
+.st.now .b{background:var(--gold);color:#1A1204;box-shadow:none}
+.st.now{color:var(--ink);font-weight:600}
+.rail .ln{flex:1;height:1px;background:var(--hair);margin:0 12px;min-width:14px}
+
+/* ---- panel + fields ---- */
+.panel{background:var(--surface);border-radius:22px;padding:24px;box-shadow:inset 0 0 0 1px var(--hair)}
+.fld{margin-bottom:20px}
+.fld>label{display:block;font-size:13.5px;font-weight:600;margin-bottom:7px}
+.fld .hint{font-size:12.5px;color:var(--ink3);margin:6px 0 0}
+.in{width:100%;height:46px;border:0;border-radius:12px;background:var(--raised);color:var(--ink);font-family:var(--f-body);font-size:15px;padding-inline:14px;box-shadow:inset 0 0 0 1px var(--hair);outline:none}
+.in:focus{box-shadow:inset 0 0 0 1px var(--teal),0 0 0 3px rgba(45,212,191,.13)}
+.in::placeholder{color:var(--ink3)}
+textarea.in{height:auto;min-height:110px;padding:12px 14px;line-height:1.7;resize:vertical}
+.picked{display:flex;align-items:center;gap:10px;height:46px;border-radius:12px;background:var(--raised);padding-inline:14px;box-shadow:inset 0 0 0 1px var(--hair);cursor:pointer;font-size:15px}
+.picked .ch{color:var(--gold);font-weight:600}
+.picked .ar{margin-inline-start:auto;color:var(--ink3)}
+
+/* ---- images ---- */
+.drop{border-radius:16px;padding:26px;text-align:center;background:rgba(255,255,255,.02);box-shadow:inset 0 0 0 1.5px rgba(255,255,255,.1);outline-offset:-2px}
+.drop b{display:block;font-size:15px;margin-bottom:4px}
+.drop span{font-size:13px;color:var(--ink3)}
+.shots{display:grid;grid-template-columns:repeat(auto-fill,minmax(104px,1fr));gap:10px;margin-top:14px}
+.shot{aspect-ratio:1;border-radius:13px;position:relative;background:linear-gradient(140deg,#1D2430,#12161E);box-shadow:inset 0 0 0 1px var(--hair);overflow:hidden;cursor:grab}
+.shot::after{content:"";position:absolute;inset:0;background:radial-gradient(70% 70% at 60% 25%,rgba(255,255,255,.06),transparent)}
+.shot .tag{position:absolute;inset-block-start:7px;inset-inline-start:7px;z-index:2;font-size:10.5px;font-weight:600;background:var(--gold);color:#1A1204;border-radius:6px;padding:2px 7px}
+.shot .x{position:absolute;inset-block-start:7px;inset-inline-end:7px;z-index:2;width:20px;height:20px;border-radius:50%;background:rgba(0,0,0,.6);color:var(--ink2);display:grid;place-items:center;font-size:13px;line-height:1}
+.shot .no{position:absolute;inset-block-end:7px;inset-inline-start:7px;z-index:2;font-size:10.5px;color:var(--ink3);font-variant-numeric:tabular-nums}
+.shot.add{display:grid;place-items:center;background:transparent;box-shadow:inset 0 0 0 1.5px rgba(255,255,255,.09);color:var(--ink3);font-size:24px;font-weight:300;cursor:pointer}
+
+/* ---- AI card ---- */
+.ai{border-radius:16px;padding:16px 18px;margin-bottom:20px;background:linear-gradient(135deg,rgba(124,58,237,.14),rgba(45,212,191,.08));box-shadow:inset 0 0 0 1px rgba(124,58,237,.28)}
+.ai .hd{display:flex;align-items:center;gap:10px;margin-bottom:8px}
+.ai .sp{width:28px;height:28px;border-radius:9px;background:rgba(124,58,237,.22);display:grid;place-items:center;flex:none}
+.ai .sp svg{width:16px;height:16px;fill:none;stroke:#C4A6FF;stroke-width:1.7;stroke-linecap:round;stroke-linejoin:round}
+.ai b{font-size:14.5px;font-weight:600}
+.ai p{margin:0;font-size:13.5px;color:var(--ink2)}
+.ai .go{margin-inline-start:auto;height:34px;padding:0 15px;border:0;border-radius:10px;background:rgba(124,58,237,.85);color:#fff;font-family:var(--f-body);font-size:13.5px;font-weight:600;cursor:pointer;white-space:nowrap}
+.ai .out{margin-top:12px;background:rgba(0,0,0,.28);border-radius:11px;padding:12px 14px;font-size:13.5px}
+.ai .out .k{color:var(--ink3);font-size:12px;display:block}
+.ai .out .row{margin-bottom:9px}
+.ai .out .row:last-child{margin:0}
+.ai .acts{display:flex;gap:8px;margin-top:11px}
+.ai .acts button{height:32px;padding:0 14px;border:0;border-radius:9px;font-family:var(--f-body);font-size:13px;font-weight:600;cursor:pointer}
+.ai .acts .use{background:var(--ink);color:#0B0E14}
+.ai .acts .skip{background:transparent;color:var(--ink2);box-shadow:inset 0 0 0 1px var(--hair)}
+
+/* ---- increment ---- */
+.steps{display:flex;gap:9px;flex-wrap:wrap}
+.step{height:44px;min-width:78px;padding:0 16px;border-radius:12px;background:var(--raised);box-shadow:inset 0 0 0 1px var(--hair);color:var(--ink2);font-family:var(--f-display);font-size:15px;font-weight:600;font-variant-numeric:tabular-nums;display:grid;place-items:center;cursor:pointer;transition:.15s}
+.step:hover{color:var(--ink)}
+.step.on{background:var(--gold);color:#1A1204;box-shadow:none}
+.step.other{font-family:var(--f-body);font-size:14px;font-weight:500}
+.prev{margin-top:14px;background:rgba(245,185,66,.07);border-radius:13px;padding:13px 15px;box-shadow:inset 0 0 0 1px rgba(245,185,66,.2)}
+.prev .k{font-size:12px;color:var(--ink3);display:block;margin-bottom:5px}
+.bidbtn{display:inline-flex;align-items:center;justify-content:center;gap:10px;height:52px;padding:0 26px;border:0;border-radius:12px;background:var(--gold);color:#1A1204;font-family:var(--f-display);font-size:18px;font-weight:600;font-variant-numeric:tabular-nums;cursor:pointer}
+.bidbtn .p{font-size:14px;opacity:.7;font-weight:500}
+
+/* ---- review ---- */
+.rev{display:grid;grid-template-columns:1fr 268px;gap:20px;align-items:start}
+@media(max-width:700px){.rev{grid-template-columns:1fr}}
+.kv{border-collapse:collapse;width:100%;font-size:14px}
+.kv td{padding:10px 0;border-bottom:1px solid var(--hair);vertical-align:top}
+.kv td:first-child{color:var(--ink3);width:130px;font-size:13px}
+.card{background:var(--raised);border-radius:18px;overflow:hidden;box-shadow:inset 0 0 0 1px var(--hair)}
+.card .ph{height:132px;background:linear-gradient(135deg,#1B212C,#11151D);position:relative}
+.card .pill{position:absolute;inset-block-start:10px;inset-inline-start:10px;display:inline-flex;align-items:center;gap:6px;height:24px;padding:0 10px;border-radius:999px;font-size:11.5px;font-weight:600;background:rgba(45,212,191,.16);color:var(--teal);box-shadow:inset 0 0 0 1px rgba(45,212,191,.3)}
+.card .pill .d{width:5px;height:5px;border-radius:50%;background:var(--teal);box-shadow:0 0 8px var(--teal)}
+.card .bd{padding:14px}
+.card h4{font-size:15px;font-weight:600;margin:0 0 10px}
+.card .pl{font-size:11.5px;color:var(--ink3);display:block}
+.card .pr{font-family:var(--f-display);font-size:20px;font-weight:700;color:var(--gold);font-variant-numeric:tabular-nums}
+.eye{font-size:12px;color:var(--ink3);margin-top:9px;text-align:center}
+.warn{border-radius:13px;padding:13px 15px;background:rgba(255,77,94,.08);box-shadow:inset 0 0 0 1px rgba(255,77,94,.24);font-size:13.5px;color:#FFB3BB;margin-bottom:20px}
+.pubrow{display:flex;gap:10px;margin-top:24px}
+.pub{height:50px;padding:0 30px;border:0;border-radius:12px;background:var(--gold);color:#1A1204;font-family:var(--f-body);font-size:15px;font-weight:600;cursor:pointer}
+.back{height:50px;padding:0 22px;border:0;border-radius:12px;background:transparent;color:var(--ink2);box-shadow:inset 0 0 0 1px var(--hair);font-family:var(--f-body);font-size:15px;font-weight:500;cursor:pointer}
+
+/* ---- owner view ---- */
+.ownstrip{display:flex;align-items:center;gap:12px;background:rgba(245,185,66,.09);border-radius:14px;padding:13px 16px;box-shadow:inset 0 0 0 1px rgba(245,185,66,.22);margin-bottom:16px}
+.ownstrip b{font-size:14px;color:var(--gold)}
+.ownstrip span{font-size:13px;color:var(--ink2)}
+.stats{display:grid;grid-template-columns:repeat(4,1fr);gap:10px;margin-bottom:18px}
+@media(max-width:640px){.stats{grid-template-columns:repeat(2,1fr)}}
+.stat{background:var(--raised);border-radius:14px;padding:14px;box-shadow:inset 0 0 0 1px var(--hair)}
+.stat .v{font-family:var(--f-display);font-size:23px;font-weight:700;font-variant-numeric:tabular-nums;line-height:1.25}
+.stat .k{font-size:12px;color:var(--ink3)}
+.stat.money .v{color:var(--gold)}
+.log{list-style:none;margin:0;padding:0}
+.log li{display:flex;align-items:center;gap:11px;padding:11px 0;border-bottom:1px solid var(--hair);font-size:14px}
+.log li:last-child{border:0}
+.log .av{width:30px;height:30px;border-radius:50%;background:linear-gradient(140deg,#2A3140,#171C26);display:grid;place-items:center;font-size:12px;color:var(--ink2);box-shadow:inset 0 0 0 1px var(--hair);flex:none}
+.log .amt{margin-inline-start:auto;font-family:var(--f-display);font-weight:600;font-variant-numeric:tabular-nums}
+.log li:first-child .amt{color:var(--gold)}
+.log .t{font-size:12px;color:var(--ink3);font-variant-numeric:tabular-nums;min-width:52px;text-align:end}
+.sold{background:rgba(52,211,153,.09);border-radius:16px;padding:18px 20px;box-shadow:inset 0 0 0 1px rgba(52,211,153,.24)}
+.sold .k{font-size:13px;color:var(--ink2)}
+.sold .v{font-family:var(--f-display);font-size:28px;font-weight:700;color:var(--green);font-variant-numeric:tabular-nums;line-height:1.3}
+.sold .w{font-size:14px;margin-top:4px}
+.sold .w b{color:var(--ink)}
+</style>
+
+<h1>إنشاء مزاد</h1>
+<p class="sub">أربع خطوات. البائع ما يشوف نموذجًا طويلاً مرة وحدة — يشوف خطوة، ويعرف كم باقي، ويقدر يرجع. آخر خطوة تريه <b>نفس البطاقة</b> اللي بيشوفها المشترين، مو ملخّصًا نصيًا.</p>
+
+<h2>البداية — وش تنشئ؟</h2>
+<div class="two">
+  <div class="choice on">
+    <span class="t">الأكثر استخدامًا</span>
+    <h3>مزاد مفرد</h3>
+    <p>قطعة وحدة، وقت انتهاء محدّد، وأعلى مزايد يفوز. أي أحد يقدر ينشئه — فرد أو شركة.</p>
+  </div>
+  <div class="choice">
+    <span class="t">للكمّيات</span>
+    <h3>جلسة مزاد</h3>
+    <p>عدّة قطع بالتتابع في موعد واحد، مع عربون دخول تحدّده أنت. للمعارض واللي عنده كمية.</p>
+  </div>
+</div>
+<p class="note">هذا هو التصحيح اللي طلبته: <b>الجلسة نوع مزاد، مو نوع حساب</b>. ما فيه «حساب شركة» ولا توثيق ولا اشتراك — فهد العتيبي يقدر يفتح جلسة زي ما معرض المجد يقدر.</p>
+
+<h2>الخطوة 1 — الصور</h2>
+<div class="wrap">
+<div class="rail">
+  <div class="st now"><span class="b">1</span>الصور</div><span class="ln"></span>
+  <div class="st"><span class="b">2</span>التفاصيل</div><span class="ln"></span>
+  <div class="st"><span class="b">3</span>المزايدة</div><span class="ln"></span>
+  <div class="st"><span class="b">4</span>المراجعة</div>
+</div>
+<div class="panel">
+  <div class="fld" style="margin-bottom:0">
+    <label>صور المنتج</label>
+    <div class="drop"><b>اسحب الصور هنا أو اضغط للاختيار</b><span>حتى 10 صور · JPG أو PNG أو WebP · 5 ميجابايت للصورة</span></div>
+    <div class="shots">
+      <div class="shot"><span class="tag">الغلاف</span><span class="x">×</span><span class="no">1</span></div>
+      <div class="shot"><span class="x">×</span><span class="no">2</span></div>
+      <div class="shot"><span class="x">×</span><span class="no">3</span></div>
+      <div class="shot"><span class="x">×</span><span class="no">4</span></div>
+      <div class="shot add">+</div>
+    </div>
+    <p class="hint">اسحب الصورة لترتيبها. الأولى هي الغلاف — هي اللي تطلع في البطاقة وفي الإشعارات.</p>
+  </div>
+</div>
+<p class="note">الصور أول خطوة مو آخرها، لسببين: البائع عنده الصور جاهزة في جواله قبل ما يفكّر في الوصف، والمساعد ما يقدر يساعد قبل يشوف الشيء.</p>
+</div>
+
+<h2>الخطوة 2 — التفاصيل، ومعها المساعد</h2>
+<div class="wrap">
+<div class="rail">
+  <div class="st done"><span class="b">✓</span>الصور</div><span class="ln"></span>
+  <div class="st now"><span class="b">2</span>التفاصيل</div><span class="ln"></span>
+  <div class="st"><span class="b">3</span>المزايدة</div><span class="ln"></span>
+  <div class="st"><span class="b">4</span>المراجعة</div>
+</div>
+<div class="panel">
+
+  <div class="ai">
+    <div class="hd">
+      <span class="sp"><svg viewBox="0 0 24 24"><path d="M12 3l1.9 5.1L19 10l-5.1 1.9L12 17l-1.9-5.1L5 10l5.1-1.9z"/><path d="M18.5 15.5l.8 2.2 2.2.8-2.2.8-.8 2.2-.8-2.2-2.2-.8 2.2-.8z"/></svg></span>
+      <div><b>دلال يكتب لك</b><p>قرأ صورك الأربع. يقترح عنوانًا ووصفًا وتصنيفًا — وأنت تعدّل أو تتجاهل.</p></div>
+      <button class="go">اكتب لي</button>
+    </div>
+    <div class="out">
+      <div class="row"><span class="k">العنوان المقترح</span>ساعة رولكس ديت‑جست 41 — إطار فلوتد، سوار جوبيلي</div>
+      <div class="row"><span class="k">الوصف المقترح</span>ساعة رجالية قياس 41 مم، ستيل مع ذهب أبيض على الإطار، ميناء فضي وسوار جوبيلي. الحالة من الصور: خدوش خفيفة على السوار، الزجاج سليم. تظهر معها العلبة والأوراق.</div>
+      <div class="row"><span class="k">التصنيف المقترح</span>ساعات ومجوهرات › ساعات رجالية</div>
+    </div>
+    <div class="acts"><button class="use">استخدم المقترح</button><button class="skip">أكتب بنفسي</button></div>
+  </div>
+
+  <div class="fld">
+    <label>اسم المنتج</label>
+    <input class="in" value="ساعة رولكس ديت‑جست 41 — إطار فلوتد، سوار جوبيلي">
+    <p class="hint">من 3 إلى 120 محرفًا.</p>
+  </div>
+  <div class="fld">
+    <label>الوصف</label>
+    <textarea class="in">ساعة رجالية قياس 41 مم، ستيل مع ذهب أبيض على الإطار، ميناء فضي وسوار جوبيلي. الحالة من الصور: خدوش خفيفة على السوار، الزجاج سليم. تظهر معها العلبة والأوراق.</textarea>
+    <p class="hint">من 20 إلى 2000 محرف.</p>
+  </div>
+  <div class="fld">
+    <label>التصنيف</label>
+    <div class="picked">ساعات ومجوهرات › <span class="ch">ساعات رجالية</span><span class="ar">تغيير</span></div>
+  </div>
+  <div class="fld" style="margin-bottom:0">
+    <label>مواصفات — اختيارية</label>
+    <div style="display:grid;grid-template-columns:1fr 1fr;gap:11px">
+      <input class="in" placeholder="الماركة" value="Rolex">
+      <input class="in" placeholder="الموديل / المرجع" value="126334">
+      <input class="in" placeholder="سنة الصنع" value="2021">
+      <input class="in" placeholder="العلبة والأوراق" value="كاملة">
+    </div>
+    <p class="hint">الحقول تتغيّر حسب التصنيف. كلها اختيارية — ما تمنع النشر.</p>
+  </div>
+</div>
+</div>
+
+<h2>الخطوة 3 — المزايدة</h2>
+<div class="wrap">
+<div class="rail">
+  <div class="st done"><span class="b">✓</span>الصور</div><span class="ln"></span>
+  <div class="st done"><span class="b">✓</span>التفاصيل</div><span class="ln"></span>
+  <div class="st now"><span class="b">3</span>المزايدة</div><span class="ln"></span>
+  <div class="st"><span class="b">4</span>المراجعة</div>
+</div>
+<div class="panel">
+  <div class="fld">
+    <label>سعر البداية</label>
+    <input class="in num" value="45,000.00" style="font-family:var(--f-display);font-weight:600">
+    <p class="hint">أول مزايدة بهذا المبلغ بالضبط مقبولة. <b style="color:var(--ink2)">ما فيه حد أعلى للسعر</b> ولا سعر احتياطي.</p>
+  </div>
+
+  <div class="fld">
+    <label>مقدار الزيادة — المكتوب داخل الزر</label>
+    <div class="steps">
+      <span class="step">10</span>
+      <span class="step">50</span>
+      <span class="step">100</span>
+      <span class="step on">500</span>
+      <span class="step">1,000</span>
+      <span class="step">5,000</span>
+      <span class="step other">مبلغ آخر</span>
+    </div>
+    <div class="prev">
+      <span class="k">هذا اللي بيشوفه المزايد:</span>
+      <button class="bidbtn"><span class="p">زايد بـ</span><span class="num">500</span></button>
+    </div>
+    <p class="hint">المبلغ لازم يكون من مضاعفات العشرة. المزايد ما يكتب رقمًا — يضغط زرًا.</p>
+  </div>
+
+  <div class="fld" style="margin-bottom:0">
+    <label>وقت الانتهاء</label>
+    <input class="in" value="20/08/2026، 9:30 م" style="font-variant-numeric:tabular-nums">
+    <p class="hint">على الأقل بعد 5 دقائق من الآن. أي مزايدة <b style="color:var(--teal)">تُقبل</b> في آخر 15 ثانية تمدّد الوقت 30 ثانية، حتى 20 مرة.</p>
+  </div>
+</div>
+<p class="note"><b>ملاحظة تقنية لازم تنكتب هنا عشان ما تنقلب بعدين:</b> الزر يعرض مقدارًا واحدًا — هذا قرار واجهة. الخادم ما زال يقبل أي مبلغ أعلى من السعر الحالي؛ ما أضفنا حدًّا أدنى للزيادة ولا سعرًا احتياطيًا. اللي تغيّر هو ما تعرضه الشاشة، مو ما تقبله القاعدة.</p>
+</div>
+
+<h2>الخطوة 4 — المراجعة</h2>
+<div class="wrap">
+<div class="rail">
+  <div class="st done"><span class="b">✓</span>الصور</div><span class="ln"></span>
+  <div class="st done"><span class="b">✓</span>التفاصيل</div><span class="ln"></span>
+  <div class="st done"><span class="b">✓</span>المزايدة</div><span class="ln"></span>
+  <div class="st now"><span class="b">4</span>المراجعة</div>
+</div>
+<div class="panel">
+  <div class="warn">بعد النشر ما تقدر تعدّل المزاد ولا تلغيه، ويستمر لين وقت انتهائه. هذه آخر فرصة تصلّح فيها شي.</div>
+  <div class="rev">
+    <table class="kv">
+      <tr><td>الاسم</td><td>ساعة رولكس ديت‑جست 41 — إطار فلوتد، سوار جوبيلي</td></tr>
+      <tr><td>التصنيف</td><td>ساعات ومجوهرات › ساعات رجالية</td></tr>
+      <tr><td>الصور</td><td>4 صور · الغلاف هو الأولى</td></tr>
+      <tr><td>سعر البداية</td><td><span class="num" style="font-family:var(--f-display);font-weight:600">45,000.00</span><span class="sar">SAR</span></td></tr>
+      <tr><td>الزيادة</td><td><span class="num">500</span> — أول مزايدة تصير <span class="num">45,000.00</span><span class="sar">SAR</span></td></tr>
+      <tr><td>ينتهي</td><td><span class="num">20/08/2026، 9:30 م</span></td></tr>
+      <tr><td>الحد الأعلى</td><td style="color:var(--teal)">ما فيه</td></tr>
+    </table>
+    <div>
+      <div class="card">
+        <div class="ph"><span class="pill"><span class="d"></span>مباشر</span></div>
+        <div class="bd">
+          <h4>ساعة رولكس ديت‑جست 41</h4>
+          <span class="pl">يبدأ من</span>
+          <span class="pr num">45,000.00<span class="sar">SAR</span></span>
+        </div>
+      </div>
+      <p class="eye">كذا بيشوفه الناس</p>
+    </div>
+  </div>
+  <div class="pubrow"><button class="pub">انشر المزاد</button><button class="back">رجوع</button></div>
+</div>
+<p class="note">البطاقة على اليسار مو زينة — هي نفس المكوّن المستخدم في الرئيسية وفي نتائج البحث. البائع يوافق على شيء شافه، مو على وصف لشيء.</p>
+</div>
+
+<h2>بعد النشر — كيف يشوف صاحبه مزاده</h2>
+<div class="wrap">
+<div class="ownstrip"><b>مزادك</b><span>منشور من 4 ساعات · ما يمكن تعديله ولا إلغاؤه</span></div>
+<div class="stats">
+  <div class="stat money"><div class="v num">48,500.00</div><div class="k">السعر الحالي</div></div>
+  <div class="stat"><div class="v num">12</div><div class="k">مزايدة</div></div>
+  <div class="stat"><div class="v num">7</div><div class="k">مزايدين</div></div>
+  <div class="stat"><div class="v num" style="color:var(--teal)">02:14:09</div><div class="k">باقي على الانتهاء</div></div>
+</div>
+<div class="panel">
+  <div style="font-size:13px;color:var(--ink3);margin-bottom:6px">سجل المزايدات</div>
+  <ul class="log">
+    <li><span class="av">ف</span>فهد<span class="t">قبل ثانيتين</span><span class="amt num">48,500.00</span></li>
+    <li><span class="av">م</span>محمد<span class="t">قبل 3 د</span><span class="amt num">48,000.00</span></li>
+    <li><span class="av">ن</span>نورة<span class="t">قبل 6 د</span><span class="amt num">47,500.00</span></li>
+    <li><span class="av">س</span>سعد<span class="t">قبل 11 د</span><span class="amt num">47,000.00</span></li>
+  </ul>
+</div>
+<p class="note">البائع يشوف <b>الأسماء المعروضة فقط</b> — ما فيه بريد ولا جوال ولا معرّف داخلي، لا هنا ولا في أي حمولة realtime. هذا مو إخفاء بصري؛ البيانات نفسها ما تخرج من الخادم.</p>
+
+<div style="margin-top:20px" class="sold">
+  <span class="k">انتهى المزاد</span>
+  <div class="v num">52,000.00<span class="sar" style="color:rgba(52,211,153,.7)">SAR</span></div>
+  <div class="w">بِيع لـ <b>فهد العتيبي</b> · 19 مزايدة · مُدِّد الوقت 3 مرات</div>
+</div>
+<p class="note">صاحب المزاد يشوف اسم الفائز. الزائر يشوف «بِيع بـ» والمبلغ بدون اسم. ومزاد انتهى بلا مزايدات يقول «انتهى بدون مزايدات» — ما يقول «بِيع بـ 0.00» ولا يخفي نفسه.</p>
+</div>
+</html>

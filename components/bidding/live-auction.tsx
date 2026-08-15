@@ -183,7 +183,10 @@ export function LiveAuction({
       {isOwner && !ended ? (
         <div className="flex items-center gap-3 rounded-[14px] bg-[rgba(245,185,66,.09)] px-4 py-3 [box-shadow:inset_0_0_0_1px_rgba(245,185,66,.22)]">
           <b className="text-sm text-gold">مزادك</b>
-          <span className="text-[13px] text-ink2">ما يمكن تعديله ولا إلغاؤه — يستمر لين وقت انتهائه.</span>
+          <span className="num text-[13px] text-ink2">
+            {auction.start_time ? <>منشور {relativeTimeAr(auction.start_time)} · </> : null}
+            ما يمكن تعديله ولا إلغاؤه
+          </span>
         </div>
       ) : null}
 

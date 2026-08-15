@@ -1,0 +1,210 @@
+<!-- @dsCard group="Taxonomy" name="Categories" subtitle="13 sections derived from Haraj + 7 Gulf auction platforms" -->
+<!doctype html>
+<html lang="ar" dir="rtl">
+<meta charset="utf-8">
+<title>التصنيفات</title>
+<style>
+@import url("https://fonts.googleapis.com/css2?family=IBM+Plex+Sans+Arabic:wght@400;500;600&family=Rubik:wght@500;600;700&display=swap");
+:root{--canvas:#07090D;--surface:#0F1219;--raised:#161A23;--hair:rgba(255,255,255,.08);--ink:#E9EDF5;--ink2:#9AA4B8;--ink3:#5C6579;--gold:#F5B942;--teal:#2DD4BF;--red:#FF4D5E;--purple:#7C3AED;--f-display:"Rubik",system-ui,sans-serif;--f-body:"IBM Plex Sans Arabic",system-ui,sans-serif}
+*{box-sizing:border-box}
+body{margin:0;padding:40px;direction:rtl;background:var(--canvas);color:var(--ink);font-family:var(--f-body);line-height:1.7;-webkit-font-smoothing:antialiased}
+h1{font-family:var(--f-display);font-size:28px;font-weight:600;margin:0 0 4px}
+p.sub{color:var(--ink2);margin:0 0 6px;font-size:15px;max-width:66ch}
+h2{font-size:13px;color:var(--ink3);font-weight:500;letter-spacing:.04em;margin:38px 0 14px}
+.num{font-variant-numeric:tabular-nums}
+code{font-family:ui-monospace,monospace;font-size:12px;color:var(--teal);direction:ltr;display:inline-block}
+
+/* ---- the grid of sections ---- */
+.cats{display:grid;grid-template-columns:repeat(auto-fill,minmax(232px,1fr));gap:12px}
+.cat{background:var(--surface);border-radius:18px;padding:16px;box-shadow:inset 0 0 0 1px var(--hair);transition:.15s;cursor:pointer}
+.cat:hover{transform:translateY(-2px);box-shadow:inset 0 0 0 1px rgba(245,185,66,.32),0 0 26px rgba(245,185,66,.1)}
+.cat .top{display:flex;align-items:center;gap:11px;margin-bottom:11px}
+.ico{width:38px;height:38px;border-radius:11px;background:var(--raised);display:grid;place-items:center;color:var(--gold);flex:none;box-shadow:inset 0 0 0 1px var(--hair)}
+.ico svg{width:21px;height:21px;fill:none;stroke:currentColor;stroke-width:1.6;stroke-linecap:round;stroke-linejoin:round}
+.cat b{font-size:15px;font-weight:600;display:block;line-height:1.35}
+.cat .n{font-size:12px;color:var(--ink3);font-variant-numeric:tabular-nums}
+.subs{display:flex;flex-wrap:wrap;gap:5px}
+.subs span{font-size:11.5px;color:var(--ink2);background:rgba(255,255,255,.045);border-radius:7px;padding:3px 8px;line-height:1.5}
+.subs span.more{color:var(--ink3);background:transparent}
+
+/* ---- the filter rail ---- */
+.rail{display:flex;gap:8px;overflow-x:auto;padding-bottom:6px}
+.chip{flex:none;display:inline-flex;align-items:center;gap:8px;height:40px;padding:0 15px;border-radius:999px;background:var(--surface);box-shadow:inset 0 0 0 1px var(--hair);font-size:14px;color:var(--ink2);cursor:pointer;white-space:nowrap;transition:.15s}
+.chip:hover{color:var(--ink)}
+.chip svg{width:17px;height:17px;fill:none;stroke:currentColor;stroke-width:1.6;stroke-linecap:round;stroke-linejoin:round}
+.chip.on{background:var(--gold);color:#1A1204;box-shadow:none;font-weight:600}
+
+/* ---- the picker inside the create form ---- */
+.pick{background:var(--raised);border-radius:22px;max-width:620px;box-shadow:inset 0 0 0 1px var(--hair),0 24px 60px rgba(0,0,0,.55);overflow:hidden}
+.pick .hd{padding:16px 18px 12px;border-bottom:1px solid var(--hair)}
+.pick .hd h3{font-family:var(--f-display);font-size:17px;font-weight:600;margin:0 0 10px}
+.pick input{width:100%;height:38px;border:0;border-radius:10px;background:rgba(0,0,0,.3);color:var(--ink);font-family:var(--f-body);font-size:14px;padding-inline:12px;box-shadow:inset 0 0 0 1px var(--hair);outline:none}
+.pick input:focus{box-shadow:inset 0 0 0 1px var(--teal)}
+.pick input::placeholder{color:var(--ink3)}
+.cols{display:grid;grid-template-columns:1fr 1fr;height:262px}
+.col{overflow-y:auto;padding:8px}
+.col+.col{border-inline-start:1px solid var(--hair)}
+.col .lbl{font-size:11px;color:var(--ink3);padding:6px 10px 8px;letter-spacing:.03em}
+.opt{display:flex;align-items:center;gap:9px;padding:8px 10px;border-radius:9px;font-size:14px;color:var(--ink2);cursor:pointer}
+.opt:hover{background:rgba(255,255,255,.05);color:var(--ink)}
+.opt.on{background:rgba(245,185,66,.13);color:var(--gold);font-weight:600}
+.opt svg{width:17px;height:17px;fill:none;stroke:currentColor;stroke-width:1.6;stroke-linecap:round;stroke-linejoin:round;flex:none}
+.opt .ar{margin-inline-start:auto;color:var(--ink3);font-size:13px}
+.pick .ft{padding:12px 18px;border-top:1px solid var(--hair);display:flex;align-items:center;justify-content:space-between;gap:12px}
+.crumb{font-size:13px;color:var(--ink2)}
+.crumb b{color:var(--gold);font-weight:600}
+.pick .ft button{height:38px;padding:0 20px;border:0;border-radius:10px;background:var(--gold);color:#1A1204;font-family:var(--f-body);font-size:14px;font-weight:600;cursor:pointer}
+
+/* ---- the attribute table ---- */
+table{width:100%;border-collapse:collapse;font-size:14px}
+th{text-align:start;font-size:11.5px;color:var(--ink3);font-weight:500;padding:0 0 10px;letter-spacing:.03em}
+td{padding:11px 0;border-top:1px solid var(--hair);vertical-align:top}
+td:first-child{width:210px;color:var(--ink)}
+td:nth-child(2){width:180px}
+td:last-child{color:var(--ink2);font-size:13.5px}
+.note{font-size:13px;color:var(--ink3);margin-top:12px;max-width:70ch}
+.src{background:var(--surface);border-radius:16px;padding:16px 18px;box-shadow:inset 0 0 0 1px var(--hair);font-size:13.5px;color:var(--ink2);max-width:78ch}
+.src b{color:var(--ink);font-weight:600}
+.src .m{color:var(--teal)}
+.src .i{color:var(--gold)}
+</style>
+
+<svg style="display:none">
+<symbol id="i-car" viewBox="0 0 24 24"><path d="M3 13l1.8-5.2A2 2 0 0 1 6.7 6.5h10.6a2 2 0 0 1 1.9 1.3L21 13v4.5a1 1 0 0 1-1 1h-1.5a1 1 0 0 1-1-1V17H6.5v.5a1 1 0 0 1-1 1H4a1 1 0 0 1-1-1z"/><path d="M3.6 13h16.8"/><circle cx="7.2" cy="15.2" r=".9"/><circle cx="16.8" cy="15.2" r=".9"/></symbol>
+<symbol id="i-plate" viewBox="0 0 24 24"><path d="M9.2 4L7.6 20M16.4 4L14.8 20M4.6 9.2h14.8M3.9 14.8h14.8"/></symbol>
+<symbol id="i-estate" viewBox="0 0 24 24"><path d="M4 20V6.6a1 1 0 0 1 .72-.96l7-2.1a1 1 0 0 1 1.28.96V20"/><path d="M13 10.4h5.8a1 1 0 0 1 1 1V20"/><path d="M2.6 20h18.8"/><path d="M7 9h2M7 12.4h2M7 15.8h2M16 13.6h1.4M16 16.8h1.4"/></symbol>
+<symbol id="i-watch" viewBox="0 0 24 24"><circle cx="12" cy="12" r="4.7"/><path d="M9.2 7.7L9.6 4.1a1 1 0 0 1 1-.9h2.8a1 1 0 0 1 1 .9l.4 3.6M9.2 16.3l.4 3.6a1 1 0 0 0 1 .9h2.8a1 1 0 0 0 1-.9l.4-3.6"/><path d="M12 9.9v2.3l1.5 1"/></symbol>
+<symbol id="i-device" viewBox="0 0 24 24"><rect x="6.8" y="2.6" width="10.4" height="18.8" rx="2.3"/><path d="M10.5 5.4h3M11 18.5h2"/></symbol>
+<symbol id="i-sofa" viewBox="0 0 24 24"><path d="M5 11V8.4a2 2 0 0 1 2-2h10a2 2 0 0 1 2 2V11"/><path d="M5 11a2.1 2.1 0 0 0-2.1 2.1v3.6h18.2v-3.6A2.1 2.1 0 0 0 19 11a2.1 2.1 0 0 0-2.1 2.1v1.1H7.1v-1.1A2.1 2.1 0 0 0 5 11z"/><path d="M5.2 16.7v2.6M18.8 16.7v2.6"/></symbol>
+<symbol id="i-medal" viewBox="0 0 24 24"><circle cx="12" cy="12" r="8.4"/><path d="M12 7.4l1.42 2.88 3.18.46-2.3 2.24.54 3.17L12 14.66l-2.84 1.49.54-3.17-2.3-2.24 3.18-.46z"/></symbol>
+<symbol id="i-livestock" viewBox="0 0 24 24"><circle cx="7.6" cy="8.6" r="1.9"/><circle cx="12" cy="6.7" r="1.9"/><circle cx="16.4" cy="8.6" r="1.9"/><path d="M12 11.2c-2.7 0-4.9 2-4.9 4.4 0 1.8 1.4 3 3.1 3 .74 0 1.24-.24 1.8-.24s1.06.24 1.8.24c1.7 0 3.1-1.2 3.1-3 0-2.4-2.2-4.4-4.9-4.4z"/></symbol>
+<symbol id="i-gear" viewBox="0 0 24 24"><circle cx="12" cy="12" r="3.1"/><path d="M12 2.6v2.7M12 18.7v2.7M21.4 12h-2.7M5.3 12H2.6M18.65 5.35l-1.9 1.9M7.25 16.75l-1.9 1.9M18.65 18.65l-1.9-1.9M7.25 7.25l-1.9-1.9"/></symbol>
+<symbol id="i-art" viewBox="0 0 24 24"><path d="M12 3.2c-5 0-9 3.8-9 8.6 0 4.5 3.4 7.7 7.4 7.7 1.6 0 2.4-.9 2.4-2 0-.6-.3-1-.3-1.6 0-.9.7-1.5 1.7-1.5H16c3 0 5-2 5-5.1 0-3.9-4-6.1-9-6.1z"/><circle cx="7.6" cy="11.2" r="1.05"/><circle cx="10.6" cy="7.7" r="1.05"/><circle cx="15" cy="8.2" r="1.05"/><circle cx="17.4" cy="11.7" r="1.05"/></symbol>
+<symbol id="i-bag" viewBox="0 0 24 24"><path d="M4.6 8h14.8l1 12.4H3.6z"/><path d="M8.6 10.4V7.1a3.4 3.4 0 0 1 6.8 0v3.3"/></symbol>
+<symbol id="i-tent" viewBox="0 0 24 24"><path d="M12 4l8.6 15.6H3.4z"/><path d="M12 10.6l5 9M12 10.6l-5 9"/></symbol>
+<symbol id="i-box" viewBox="0 0 24 24"><path d="M3.5 7.6L12 3.6l8.5 4v8.8L12 20.4l-8.5-4z"/><path d="M3.5 7.6L12 11.6l8.5-4M12 11.6v8.8"/></symbol>
+<symbol id="i-all" viewBox="0 0 24 24"><path d="M4 5.5h6.5v6.5H4zM13.5 5.5H20V12h-6.5zM4 15h6.5v4.5H4zM13.5 15H20v4.5h-6.5z"/></symbol>
+</svg>
+
+<h1>التصنيفات</h1>
+<p class="sub">ثلاثة عشر قسمًا ومئة وعشر أقسام فرعية. ما اخترعناها — مأخوذة من أقسام حراج الحقيقية ومن سبع منصات مزادات خليجية، وشِلنا منها كل اللي ما ينباع بالمزاد.</p>
+
+<h2>المصدر — منين جت</h2>
+<div class="src">
+  <p style="margin:0 0 8px"><b>المقيس:</b> <span class="m">أقسام حراج من <code>haraj.com.sa/all-sections/</code></span> — تسعة عشر قسمًا رئيسيًا بفروعها، مقروءة من الصفحة نفسها مو من الذاكرة.</p>
+  <p style="margin:0 0 8px"><b>المقارنة:</b> <span class="m">Emirates Auction · Infath (إنفاذ) · Soum · Mazadak</span> — الأربعة انقرأت مباشرة. <span class="i">المزاد الحر · مزاد عُمان · السوق المفتوح</span> — رجّعت 403 أو SSL، فأُخِذ منها المذكور في نتائج البحث فقط.</p>
+  <p style="margin:0"><b>المستبعد عمدًا:</b> وظائف · خدمات · تعليم وتدريب · برمجة وتصاميم · أطعمة ومشروبات · حفلات ومناسبات · سفر وسياحة · مطلوب · مفقودات. كل واحد منها إعلان مبوّب مو مزاد — ما فيه شيء يرسو على أعلى مزايد.</p>
+</div>
+
+<h2>الأقسام الرئيسية</h2>
+<div class="cats">
+
+  <div class="cat"><div class="top"><div class="ico"><svg><use href="#i-car"/></svg></div><div><b>سيارات ومركبات</b><span class="n">1,284 مزاد · <code>vehicles</code></span></div></div>
+    <div class="subs"><span>سيارات مستعملة</span><span>كلاسيكية</span><span>دراجات نارية</span><span>شاحنات ومقطورات</span><span>قوارب وجت سكي</span><span>متضررة</span><span>قطع غيار</span><span class="more">+2</span></div></div>
+
+  <div class="cat"><div class="top"><div class="ico"><svg><use href="#i-plate"/></svg></div><div><b>لوحات وأرقام مميزة</b><span class="n">417 مزاد · <code>plates-numbers</code></span></div></div>
+    <div class="subs"><span>لوحات سيارات</span><span>أرقام جوال</span><span>لوحات نقل</span><span>لوحات دراجات</span></div></div>
+
+  <div class="cat"><div class="top"><div class="ico"><svg><use href="#i-estate"/></svg></div><div><b>عقارات</b><span class="n">903 مزاد · <code>real-estate</code></span></div></div>
+    <div class="subs"><span>أراضٍ</span><span>شقق</span><span>فلل</span><span>عمائر</span><span>محلات ومكاتب</span><span>مستودعات</span><span class="more">+2</span></div></div>
+
+  <div class="cat"><div class="top"><div class="ico"><svg><use href="#i-watch"/></svg></div><div><b>ساعات ومجوهرات</b><span class="n">652 مزاد · <code>watches-jewelry</code></span></div></div>
+    <div class="subs"><span>ساعات رجالية</span><span>ساعات نسائية</span><span>ذهب</span><span>ألماس وأحجار</span><span>أقلام فاخرة</span><span class="more">+1</span></div></div>
+
+  <div class="cat"><div class="top"><div class="ico"><svg><use href="#i-device"/></svg></div><div><b>أجهزة وإلكترونيات</b><span class="n">1,096 مزاد · <code>electronics</code></span></div></div>
+    <div class="subs"><span>جوالات</span><span>لابتوب وكمبيوتر</span><span>كاميرات</span><span>ألعاب إلكترونية</span><span>صوتيات</span><span class="more">+3</span></div></div>
+
+  <div class="cat"><div class="top"><div class="ico"><svg><use href="#i-sofa"/></svg></div><div><b>أثاث ومفروشات</b><span class="n">738 مزاد · <code>furniture</code></span></div></div>
+    <div class="subs"><span>مجالس</span><span>غرف نوم</span><span>مكاتب</span><span>سجاد وستائر</span><span>أجهزة منزلية</span><span class="more">+2</span></div></div>
+
+  <div class="cat"><div class="top"><div class="ico"><svg><use href="#i-medal"/></svg></div><div><b>نوادر ومقتنيات</b><span class="n">289 مزاد · <code>collectibles</code></span></div></div>
+    <div class="subs"><span>عملات ومسكوكات</span><span>طوابع</span><span>تراثيات</span><span>مقتنيات رياضية</span><span class="more">+2</span></div></div>
+
+  <div class="cat"><div class="top"><div class="ico"><svg><use href="#i-livestock"/></svg></div><div><b>مواشي وحيوانات</b><span class="n">561 مزاد · <code>livestock</code></span></div></div>
+    <div class="subs"><span>إبل</span><span>أغنام وماعز</span><span>خيل</span><span>صقور وطيور</span><span>أليفة</span></div></div>
+
+  <div class="cat"><div class="top"><div class="ico"><svg><use href="#i-gear"/></svg></div><div><b>معدات وآلات ثقيلة</b><span class="n">334 مزاد · <code>heavy-equipment</code></span></div></div>
+    <div class="subs"><span>معدات إنشاء</span><span>زراعية</span><span>مولدات ومضخات</span><span>معدات ورش</span><span>سكراب</span></div></div>
+
+  <div class="cat"><div class="top"><div class="ico"><svg><use href="#i-art"/></svg></div><div><b>فنون وتحف</b><span class="n">176 مزاد · <code>art</code></span></div></div>
+    <div class="subs"><span>لوحات</span><span>خط عربي</span><span>منحوتات</span><span>سجاد يدوي</span></div></div>
+
+  <div class="cat"><div class="top"><div class="ico"><svg><use href="#i-bag"/></svg></div><div><b>أزياء وحقائب</b><span class="n">482 مزاد · <code>fashion</code></span></div></div>
+    <div class="subs"><span>حقائب فاخرة</span><span>عبايات</span><span>أزياء رجالية</span><span>أحذية</span><span>عطور</span></div></div>
+
+  <div class="cat"><div class="top"><div class="ico"><svg><use href="#i-tent"/></svg></div><div><b>رياضة وصيد ورحلات</b><span class="n">213 مزاد · <code>outdoors</code></span></div></div>
+    <div class="subs"><span>معدات صيد</span><span>تخييم</span><span>دباب ومركبات ترفيهية</span><span>معدات رياضية</span></div></div>
+
+  <div class="cat"><div class="top"><div class="ico"><svg><use href="#i-box"/></svg></div><div><b>منقولات متنوعة</b><span class="n">128 مزاد · <code>misc</code></span></div></div>
+    <div class="subs"><span>كل ما لا يندرج تحت قسم</span></div></div>
+
+</div>
+<p class="note">«منقولات متنوعة» موجود في إنفاذ و Emirates Auction بنفس المعنى. ما هو كسل — هو الاعتراف بأن أي تصنيف مقفل يصد بائعًا شرعيًا.</p>
+
+<h2>شريط التصفية — أعلى صفحة التصفّح</h2>
+<div class="rail">
+  <span class="chip on"><svg><use href="#i-all"/></svg>الكل</span>
+  <span class="chip"><svg><use href="#i-car"/></svg>سيارات ومركبات</span>
+  <span class="chip"><svg><use href="#i-estate"/></svg>عقارات</span>
+  <span class="chip"><svg><use href="#i-watch"/></svg>ساعات ومجوهرات</span>
+  <span class="chip"><svg><use href="#i-plate"/></svg>لوحات وأرقام</span>
+  <span class="chip"><svg><use href="#i-livestock"/></svg>مواشي</span>
+  <span class="chip"><svg><use href="#i-device"/></svg>إلكترونيات</span>
+  <span class="chip"><svg><use href="#i-gear"/></svg>معدات</span>
+</div>
+<p class="note">الشريط يمرّر أفقيًا ويبدأ من اليمين. أول عنصر «الكل» ويظل مثبتًا — بدونه ما فيه طريقة تلغي التصفية بضغطة وحدة.</p>
+
+<h2>المنتقي — داخل نموذج إنشاء المزاد</h2>
+<div class="pick">
+  <div class="hd">
+    <h3>اختر التصنيف</h3>
+    <input placeholder="ابحث… مثلاً: لوحة، إبل، رولكس">
+  </div>
+  <div class="cols">
+    <div class="col">
+      <div class="lbl">القسم الرئيسي</div>
+      <div class="opt"><svg><use href="#i-car"/></svg>سيارات ومركبات<span class="ar">‹</span></div>
+      <div class="opt"><svg><use href="#i-plate"/></svg>لوحات وأرقام<span class="ar">‹</span></div>
+      <div class="opt"><svg><use href="#i-estate"/></svg>عقارات<span class="ar">‹</span></div>
+      <div class="opt on"><svg><use href="#i-watch"/></svg>ساعات ومجوهرات<span class="ar">‹</span></div>
+      <div class="opt"><svg><use href="#i-device"/></svg>أجهزة وإلكترونيات<span class="ar">‹</span></div>
+      <div class="opt"><svg><use href="#i-sofa"/></svg>أثاث ومفروشات<span class="ar">‹</span></div>
+      <div class="opt"><svg><use href="#i-medal"/></svg>نوادر ومقتنيات<span class="ar">‹</span></div>
+      <div class="opt"><svg><use href="#i-livestock"/></svg>مواشي وحيوانات<span class="ar">‹</span></div>
+    </div>
+    <div class="col">
+      <div class="lbl">الفرعي — ساعات ومجوهرات</div>
+      <div class="opt on">ساعات رجالية</div>
+      <div class="opt">ساعات نسائية</div>
+      <div class="opt">ذهب</div>
+      <div class="opt">ألماس وأحجار كريمة</div>
+      <div class="opt">أقلام وإكسسوارات فاخرة</div>
+      <div class="opt">فضة</div>
+    </div>
+  </div>
+  <div class="ft">
+    <span class="crumb">ساعات ومجوهرات › <b>ساعات رجالية</b></span>
+    <button>تم</button>
+  </div>
+</div>
+<p class="note">عمودان، الرئيسي على اليمين والفرعي على اليسار — لأن العين العربية تبدأ من اليمين. السهم <code>‹</code> يشاور يسار لأنه يشاور للعمود الجاي، مو لأنه «رجوع».</p>
+
+<h2>التصنيف يغيّر النموذج — الحقول الإضافية</h2>
+<table>
+  <tr><th>القسم</th><th>المعرّف</th><th>الحقول اللي يطلبها</th></tr>
+  <tr><td>سيارات ومركبات</td><td><code>vehicles</code></td><td>الماركة · الموديل · سنة الصنع · الممشى · ناقل الحركة · حالة الفحص</td></tr>
+  <tr><td>لوحات وأرقام مميزة</td><td><code>plates-numbers</code></td><td>نص اللوحة أو الرقم · عدد الخانات · نوع اللوحة · المشغّل</td></tr>
+  <tr><td>عقارات</td><td><code>real-estate</code></td><td>المدينة والحي · المساحة (م²) · الواجهة · عرض الشارع · رقم الصك</td></tr>
+  <tr><td>ساعات ومجوهرات</td><td><code>watches-jewelry</code></td><td>الماركة · الموديل/المرجع · سنة الصنع · العلبة والأوراق · الحالة</td></tr>
+  <tr><td>أجهزة وإلكترونيات</td><td><code>electronics</code></td><td>الماركة · الموديل · السعة · الحالة · الضمان</td></tr>
+  <tr><td>أثاث ومفروشات</td><td><code>furniture</code></td><td>عدد القطع · الخامة · المقاس · الحالة</td></tr>
+  <tr><td>نوادر ومقتنيات</td><td><code>collectibles</code></td><td>السنة · بلد المنشأ · شهادة توثيق · الحالة</td></tr>
+  <tr><td>مواشي وحيوانات</td><td><code>livestock</code></td><td>النوع/السلالة · العدد · العمر · الوزن التقريبي · الموقع</td></tr>
+  <tr><td>معدات وآلات ثقيلة</td><td><code>heavy-equipment</code></td><td>الماركة · الموديل · سنة الصنع · ساعات التشغيل · حالة التشغيل</td></tr>
+  <tr><td>فنون وتحف</td><td><code>art</code></td><td>الفنان · السنة · المقاس · الخامة · شهادة أصالة</td></tr>
+  <tr><td>أزياء وحقائب</td><td><code>fashion</code></td><td>الماركة · المقاس · الحالة · الأصلية والملحقات</td></tr>
+  <tr><td>رياضة وصيد ورحلات</td><td><code>outdoors</code></td><td>النوع · الماركة · الحالة</td></tr>
+  <tr><td>منقولات متنوعة</td><td><code>misc</code></td><td>ما فيه حقول إضافية — الوصف يكفي</td></tr>
+</table>
+<p class="note">كل الحقول الإضافية <b>اختيارية</b>. تصنيف يمنع النشر لأن البائع ما يعرف ساعات التشغيل هو تصنيف يخسّرنا بائعًا. تظهر في صفحة المزاد كجدول مواصفات وتدخل في البحث، وما لها أي علاقة بالسعر ولا بقبول المزايدة.</p>
+</html>

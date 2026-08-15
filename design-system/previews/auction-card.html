@@ -1,0 +1,103 @@
+<!-- @dsCard group="Auction" name="Auction card" subtitle="Live, urgent, and ended states" -->
+<!doctype html>
+<html lang="ar" dir="rtl">
+<meta charset="utf-8">
+<title>بطاقة المزاد</title>
+<style>
+@import url("https://fonts.googleapis.com/css2?family=IBM+Plex+Sans+Arabic:wght@400;500;600&family=Rubik:wght@500;600;700&display=swap");
+:root{--canvas:#07090D;--surface:#0F1219;--raised:#161A23;--hair:rgba(255,255,255,.08);--ink:#E9EDF5;--ink2:#9AA4B8;--ink3:#5C6579;--gold:#F5B942;--teal:#2DD4BF;--red:#FF4D5E;--green:#34D399;--f-display:"Rubik",system-ui,sans-serif;--f-body:"IBM Plex Sans Arabic",system-ui,sans-serif}
+*{box-sizing:border-box}
+body{margin:0;padding:40px;direction:rtl;background:var(--canvas);color:var(--ink);font-family:var(--f-body);line-height:1.7;-webkit-font-smoothing:antialiased}
+h1{font-family:var(--f-display);font-size:28px;font-weight:600;margin:0 0 4px}
+p.sub{color:var(--ink2);margin:0 0 32px;font-size:15px;max-width:62ch}
+h2{font-size:13px;color:var(--ink3);font-weight:500;letter-spacing:.04em;margin:34px 0 14px}
+.num{font-variant-numeric:tabular-nums}
+.sar{font-size:.62em;color:var(--ink2);font-weight:500;margin-inline-start:5px}
+.grid{display:grid;grid-template-columns:repeat(auto-fill,minmax(268px,1fr));gap:16px}
+
+.card{background:var(--surface);border-radius:20px;overflow:hidden;box-shadow:inset 0 0 0 1px var(--hair);transition:box-shadow .15s ease-out,transform .15s ease-out}
+.card:hover{transform:translateY(-2px);box-shadow:inset 0 0 0 1px rgba(245,185,66,.35),0 0 28px rgba(245,185,66,.14)}
+.ph{height:158px;position:relative;background:linear-gradient(135deg,#1B212C,#11151D)}
+.ph::after{content:"";position:absolute;inset:0;background:radial-gradient(60% 70% at 70% 25%,rgba(255,255,255,.05),transparent)}
+.pill{position:absolute;inset-block-start:12px;inset-inline-start:12px;display:inline-flex;align-items:center;gap:6px;height:26px;padding:0 11px;border-radius:999px;font-size:12px;font-weight:600;backdrop-filter:blur(8px)}
+.live{background:rgba(45,212,191,.16);color:var(--teal);box-shadow:inset 0 0 0 1px rgba(45,212,191,.3)}
+.live .dot{width:6px;height:6px;border-radius:50%;background:var(--teal);box-shadow:0 0 8px var(--teal)}
+.urgent{background:rgba(255,77,94,.16);color:var(--red);box-shadow:inset 0 0 0 1px rgba(255,77,94,.3)}
+.done{background:rgba(255,255,255,.07);color:var(--ink2)}
+.body{padding:16px}
+.ttl{font-size:16px;font-weight:600;margin:0 0 12px;display:-webkit-box;-webkit-line-clamp:1;-webkit-box-orient:vertical;overflow:hidden}
+.foot{display:flex;align-items:flex-end;justify-content:space-between;gap:12px}
+.pr{font-family:var(--f-display);font-size:22px;font-weight:700;color:var(--gold);font-variant-numeric:tabular-nums;line-height:1.25}
+.pl{font-size:12px;color:var(--ink3);display:block}
+.meta{text-align:end;font-size:12px;color:var(--ink2);font-variant-numeric:tabular-nums}
+.cd{font-family:var(--f-display);font-weight:600;font-variant-numeric:tabular-nums}
+.cd.hot{color:var(--red)}
+.won .pr{color:var(--green)}
+</style>
+<h1>بطاقة المزاد</h1>
+<p class="sub">نفس البطاقة في كل مكان: الرئيسية، نتائج البحث، الفئة، وشريط «ينتهي خلال ساعة». الحدّ يتوهّج عند المرور، ما يتغيّر سُمكه.</p>
+
+<h2>الحالات</h2>
+<div class="grid">
+
+  <article class="card">
+    <div class="ph"><span class="pill live"><span class="dot"></span>مباشر</span></div>
+    <div class="body">
+      <h3 class="ttl">ساعة رولكس ديت‑جست 41</h3>
+      <div class="foot">
+        <div><span class="pl">السعر الحالي</span><span class="pr num">48,500.00<span class="sar">SAR</span></span></div>
+        <div class="meta"><span class="cd">02:14:09</span><br>12 مزايدة</div>
+      </div>
+    </div>
+  </article>
+
+  <article class="card">
+    <div class="ph"><span class="pill urgent">ينتهي قريب</span></div>
+    <div class="body">
+      <h3 class="ttl">لكزس LX 600 موديل 2024</h3>
+      <div class="foot">
+        <div><span class="pl">السعر الحالي</span><span class="pr num">412,000.00<span class="sar">SAR</span></span></div>
+        <div class="meta"><span class="cd hot">00:00:47</span><br>63 مزايدة</div>
+      </div>
+    </div>
+  </article>
+
+  <article class="card won">
+    <div class="ph"><span class="pill done">منتهي</span></div>
+    <div class="body">
+      <h3 class="ttl">أرض سكنية — حي الياسمين</h3>
+      <div class="foot">
+        <div><span class="pl">بِيع بـ</span><span class="pr num">1,875,000.00<span class="sar">SAR</span></span></div>
+        <div class="meta">الفائز محمد<br>84 مزايدة</div>
+      </div>
+    </div>
+  </article>
+
+  <article class="card">
+    <div class="ph"><span class="pill live"><span class="dot"></span>مباشر</span></div>
+    <div class="body">
+      <h3 class="ttl">مكتب تنفيذي جلد — بلا مزايدات</h3>
+      <div class="foot">
+        <div><span class="pl">يبدأ من</span><span class="pr num">1,250.00<span class="sar">SAR</span></span></div>
+        <div class="meta"><span class="cd">01:02:33</span><br>أول مزايدة مقبولة</div>
+      </div>
+    </div>
+  </article>
+
+</div>
+
+<h2>الحد الأعلى — ما فيه</h2>
+<div class="grid" style="grid-template-columns:minmax(0,340px)">
+  <article class="card">
+    <div class="ph"><span class="pill live"><span class="dot"></span>مباشر</span></div>
+    <div class="body">
+      <h3 class="ttl">برج تجاري — طريق الملك فهد</h3>
+      <div class="foot">
+        <div><span class="pl">السعر الحالي</span><span class="pr num">987,654,321.00<span class="sar">SAR</span></span></div>
+        <div class="meta"><span class="cd">11:47:02</span><br>209 مزايدة</div>
+      </div>
+    </div>
+  </article>
+</div>
+<p style="font-size:13px;color:var(--ink3);margin-top:12px">تسعة أرقام تنزل صحيحة بلا اختصار ولا توسيع للبطاقة. أي تصميم يقصّ المبلغ أو يحطّ له حدًّا هو خطأ، مو تبسيط.</p>
+</html>
