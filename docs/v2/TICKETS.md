@@ -663,6 +663,143 @@ thing and worth one sentence.
 > and §20, and this document should be amended once by the steward rather than twice, the
 > second time for a word.
 
+### The board these issues would be created on has no room for V2 — five crossings, and one that blocks issue creation
+
+**This is the sweep that changes what happens next, so it goes first.** `CLAUDE.md` §2 ranks
+`TEAM.md` **third** and `GITHUB_PLAN.md` **fourth**. Neither had been read against V2. Both are
+**process** documents — they carry no ADR with a reversal condition and no owner's blockquote,
+so unlike the two sweeps above, most of what follows is neither the owner's ratification nor a
+steward's amendment but a **team** decision about how the issue tracker is configured. Two
+items are the exception and are marked as such.
+
+The citation count is the same in both directions and worse than `ARCHITECTURE.md`'s.
+`TICKETS.md` cites `GITHUB_PLAN.md` **zero** times and `TEAM.md` twice, neither by line; the
+three mentions in `EXECUTION_STATE.md` and `SPEC.md` are prose references, not pins. Going the
+other way, `TEAM.md` contains the string `v2` twice — once about a *document version*, once in
+a branch-name example — and `GITHUB_PLAN.md` six times, **all six about `TEAM.md` v2.0 the
+document**. Neither process document knows the V2 phase exists.
+
+| # | The line | What crosses it | Whose call |
+|---|---|---|---|
+| **1** | `GITHUB_PLAN.md:214` — *"no extra milestones are created"* | V2 has 40 tickets and no milestone | team |
+| **2** | `TEAM.md:1076` + `GITHUB_PLAN.md:151` — *"22 labels"* as a **total** | V2 has no `area:`, and `type:feature` means *MVP* | team |
+| **3** | `TEAM.md:1091` and `TEAM.md:1095`, `GITHUB_PLAN.md:164`, `ARCHITECTURE.md:1485` — `needs-decision` *"must not be created"* | 34 open `O` items | team, on an owner-side fact |
+| **4** | `TEAM.md` §26 — the register's *"convenience copy for daily work"* | holds **15** rows for a **16**-row register | team |
+| **5** | `TEAM.md:1334` — `bid increment` under *"Things nobody may build"* | `D-01`, `V2-A3` | **owner** (PRD SD-05) |
+
+> **1. Five milestones exist, all of them MVP, and the plan forecloses a sixth.**
+> `GITHUB_PLAN.md:214` reads *"No reason to deviate, and no extra milestones are created."*
+> M4's exit criterion is *"PRD §18.3 demonstration scenario passes in full on the Vercel
+> production deployment"* — V2 begins after that sentence is satisfied. **Measured against the
+> live repository, not the document:** `gh api …/milestones` returns exactly `M0 — Sprint 0
+> Foundation`, `M1 — MVP Authentication`, `M2 — MVP Auctions`, `M3 — MVP Bidding & Realtime`,
+> `M4 — Integration & Validation`. The plan and the tracker agree; it is V2 that has nowhere
+> to go.
+>
+> **2. The label taxonomy is closed at 22 and none of its values fits a V2 ticket.**
+> `area:` has five members — `auth`, `auction`, `bidding`, `realtime`, `shared`. V2 builds
+> **sessions**, **deposits**, **categories/AI** and **images**; none has an area, and
+> `area:shared` means Sprint 0 groundwork. `type:feature` is defined at `GITHUB_PLAN.md:144` as
+> *"MVP functionality"*, so every V2 ticket mislabels itself by definition. There is no
+> `track:` namespace for A/B/C. `gh label list` returns **22**, so again the tracker matches
+> the document exactly. The count is asserted as a **total** in two documents and a third time
+> as an *acceptance criterion* — `GITHUB_PLAN.md:248`, S0-03: *"22 labels exist … five
+> milestones exist"*. Adding one label falsifies a merged ticket's AC, which is a thing worth
+> knowing before doing it rather than after.
+>
+> **3. `needs-decision` is prohibited on a premise V2 falsifies — and this one is not cosmetic.**
+> Four lines forbid the label, each giving the same reason: `TEAM.md:1095`, *"`PRD.md` v3.0 has
+> zero open product questions, so no Issue can be blocked on one"*; `GITHUB_PLAN.md:164`,
+> *"**Does not exist.** PRD v3.0 has zero open product questions"*; `TEAM.md:1091`, *"**never
+> existed**, and must not be created"*; and `ARCHITECTURE.md:1485`, *"never `needs-decision` —
+> which no longer exists"*. The premise was true of V1. The V2 register stands at **34 open
+> `O` items**. The designated alternative explicitly refuses the job: `GITHUB_PLAN.md:145`
+> defines `type:verification` as *"**Technical** platform verification … **Never a product
+> question**"*, and `TEAM.md:1097` repeats it. So an issue for `V2-A3` — blocked on `O26`,
+> *"multiples of ten of what?"*, which is a product question and nothing else — has no label
+> that can carry its state. **`GITHUB_PLAN.md:271` (S0-14) makes preserving the prohibition an
+> acceptance criterion**, so the text is not merely lying around; a ticket defends it.
+>
+> **4. The daily-work copy of the decision register is missing a row, and it is Q16.**
+> `TEAM.md:1308` introduces §26 as *"a convenience copy for daily work"* of `PRD.md` §21.1.
+> §21.1 holds **Q1 through Q16**. §26 holds **fifteen numbered rows, 1 through 15**, and stops.
+> The absent decision is **Q16 — Arabic right-to-left, and the canonical `1,250.00 SAR`
+> format** (`BR-41`, `BR-42`, `BR-43`), which is to say the one that governs every user-facing
+> string and every amount in the product. **This is a documentation defect and not a live
+> risk**, and the distinction matters: `CLAUDE.md` §3 states Q16 in full, and four checks in
+> `tests/guards/run.sh` enforce it mechanically. Nobody is going to ship an English string
+> because §26 is short a row. But §26 is the page a contributor is pointed at for a quick
+> answer, and a quick reference that silently omits one of sixteen decisions is worse than one
+> that admits it is partial.
+>
+> **5. `bid increment` is still on the "Things nobody may build" list — this one is the owner's.**
+> `TEAM.md:1334` names it among prohibited constructs, prefaced *"Each is a deliberate product
+> decision, not an oversight to correct in code (PRD SD-05)."* `D-01` makes the bid control a
+> button carrying a seller-set increment, and `V2-A3` is the column. This is the **fourth**
+> recorded copy of that collision — after `PRD.md` SD-05 itself, the INT-08 audit named in
+> `CLAUDE.md` §9, and the `D-01` record. It is listed here rather than folded into the existing
+> item because the *precedent for amending this exact list is written into the list*:
+> **"`anti-sniping extension` was removed from this list on 2026-08-13"** (`TEAM.md:1331`),
+> recorded inline with
+> the date and the reason. Whoever ratifies `D-01` has a worked example of the edit, in place,
+> two lines above the entry.
+
+> **And the `fifteen` in `ARCHITECTURE.md:1552` is not one stale word — it is a figure copied
+> into thirteen places.** The section above left it unfixed for the steward, on the reading
+> that it was a single word in a single document. Sweeping `TEAM.md` turned up two more
+> (`:1299`, *"All fifteen product decisions are final"*; `:1308`, *"All fifteen are closed"*)
+> and a third in its opening summary (`:16`). Counted mechanically across the tree, a
+> decision-count claim of *fifteen* appears **13 times in 4 documents** — `PRD.md` ×7,
+> `TEAM.md` ×3, `ARCHITECTURE.md` ×2, `README.md` ×1 — against a register holding **sixteen**.
+> **One of the thirteen is correct and must not be "fixed":** `PRD.md:2157` reads *"Version 1.0
+> raised fifteen product questions. Version 2.0 closed seven. Version 3.0 closes the remaining
+> eight"* — that is history, it adds to fifteen, and it was true when written. The other **12
+> are stale**, and one of them is `PRD.md:2027`, **the heading of the register itself**:
+> *"### 21.1 The fifteen decisions"*, standing over sixteen rows.
+>
+> This changes who fixes it. **Seven of the thirteen are in `PRD.md`**, which no session may
+> edit and which `PRD.md:2025` forbids reinterpreting — so the correction starts as the
+> **owner's**, and the six downstream copies follow mechanically once he has moved the source.
+> It cannot be closed by the architecture steward in `ARCHITECTURE.md`, which is what the
+> section above implied.
+>
+> **The mechanism that produced it is worth naming, because V2 will run it again.** Q16 was
+> decided on 2026-08-12 and added to §21.1. Nothing downstream was renumbered — not the
+> heading above it, not `SD-03`, not the quick reference in `TEAM.md` §26, which is why that
+> table stops at 15 (item 4). **A sixteenth row landed and thirteen counts stayed put.** The
+> V2 ratification blockquote asks the owner to do the same thing to the same register, and
+> there is no check anywhere that ties a count to the thing it counts.
+>
+> **A second, smaller precedent, recorded because it is load-bearing for V2.** `PRD.md:419`
+> (`SD-03`) says the decisions may never be *"reopened"*. §21.1's **Q7 was reopened** — its
+> cell opens *"REOPENED AND REVERSED 2026-08-13"*, and `TEAM.md:1318`, §26 row 7,
+> carries the same note. So the absolute already has one recorded, dated, deliberate exception. That is not a
+> licence and nothing here reopens anything; it means the V2 ratification is the **second**
+> instance of a procedure this project has performed before, not an unprecedented request.
+
+**Three things were checked and are not findings.** `TEAM.md:1105` (*"reassign it rather than
+doing it yourself"*) and `GITHUB_PLAN.md:776` (*"The owner of the consumed functionality has
+reviewed it"*) are permanent-ownership text — but `CLAUDE.md` §1 **names both documents
+explicitly** and declares such text stale, so they are already governed and adding them here
+would inflate the count with something already decided. And the five milestones' exit criteria
+were read one by one: **none is falsified by V2.** V2 has no place in the sequence, which is a
+gap, not a contradiction — item 1 is the gap, and it is not five items.
+
+**One stale line, no argument attached.** `GITHUB_PLAN.md:11` reads *"No Issues, milestones, or
+labels created yet — awaiting the go-ahead."* The repository holds **105 issues**, 22 labels
+and 5 milestones. Nothing depends on it; it is recorded so the next person to open that file
+does not trust its status row.
+
+> **And a correction to this board's own claim about what blocks issue creation.**
+> `EXECUTION_STATE.md` has said that creating the V2 issues waits **solely** on the owner
+> approving PR #168. **That was wrong, and item 1 through item 3 are why.** The issues also
+> need a milestone that does not exist, an `area:` value that does not exist, and — for the
+> tickets blocked on an `O` — a way to say so that four documents currently forbid. None of
+> those is the owner's ratification; all three are team decisions that can be taken while he
+> sleeps but not by one session alone. **Creating the issues today would mean inventing a
+> taxonomy in the tracker**, which is `CLAUDE.md` §8's failure mode wearing a different hat.
+
+
 A previous draft of this board claimed phase 1 had *"no cross-track dependency at all"* and
 that nine tickets could run in parallel. **Both were wrong**: `V2-B4` needs the category
 contract and `V2-B5` needs the bid contract, and `V2-C1` is itself blocked on `O1`/`O2`.

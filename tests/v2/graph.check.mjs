@@ -1562,6 +1562,153 @@ if (!section) {
   );
 }
 
+
+// ---------------------------------------------------------------------------
+// And the same treatment for ranks THREE and FOUR. `CLAUDE.md` §2 orders the
+// sources of truth `PRD.md`, `ARCHITECTURE.md`, `TEAM.md`, `GITHUB_PLAN.md` —
+// the two blocks above watch the first two, and nothing watched these. That is
+// how a board configured entirely for the MVP, asserting its own finality in
+// three places, sat directly underneath a task to create forty V2 issues on it.
+//
+// THREE differences from both blocks above:
+//
+//   1. these are PROCESS documents. No ADR, no reversal condition, no owner's
+//      ratification — a crossing here is a **team** decision about tracker
+//      configuration, so like the architecture rows these do not feed the
+//      blockquote count, and unlike them they are not a steward's either.
+//   2. two assertions here DERIVE rather than pin. The register-versus-copy
+//      row count and the `fifteen` census are computed from the documents on
+//      every run, so they go red when EITHER side moves — including when
+//      somebody fixes them, which is the point: the prose explaining the gap
+//      must not outlive the gap.
+//   3. one pin is a line this repository must never edit. `PRD.md:2027` is the
+//      register's own heading and it is counted, not pinned, for exactly the
+//      reason the PRD is absent from `neg_files`.
+{
+  const TEAMD = read("TEAM.md").split("\n");
+  const PLAN = read("GITHUB_PLAN.md").split("\n");
+
+  for (const [doc, lines] of [["TEAM.md", TEAMD], ["GITHUB_PLAN.md", PLAN]]) {
+    const esc = doc.replace(".", "\\.");
+    const cites = [...TICKETS.matchAll(new RegExp("`" + esc + ":(\\d+)`", "g"))].map((m) =>
+      Number(m[1]),
+    );
+    chk(`${doc} citations were found in TICKETS.md at all`, cites.length > 0, true);
+    const dangling = [...new Set(cites)]
+      .filter((n) => !(n >= 1 && n <= lines.length) || lines[n - 1].trim() === "")
+      .sort((a, b) => a - b)
+      .map((n) => `${doc}:${n}`);
+    chk(`every ${doc} line cited by TICKETS.md exists and is not blank`, dangling, []);
+  }
+
+  // FOUR kinds, one probe each in the negative suite. A **closed taxonomy** is
+  // a total asserted as final; a **prohibition** is an instruction resting on a
+  // premise; an **acceptance criterion** is a merged ticket's AC that a later
+  // change would falsify; and a **product prohibition** is the one row here
+  // that is the owner's rather than the team's.
+  const BOARD_LINES = [
+    // crossing 1 — the closed taxonomy, milestones half. Pinned on the
+    // absolute, not on the milestone names: the finding is that a sixth is
+    // foreclosed IN WRITING, so a reword is what has to re-open the argument.
+    ["TEAM.md", 0, 0, ""],
+    ["GITHUB_PLAN.md", 214, "no extra milestones are created", "closed taxonomy"],
+    // crossing 2 — the closed taxonomy, labels half. Two documents assert the
+    // same total, and `type:feature`'s definition is what makes every V2
+    // ticket mislabel itself, so all three are pinned.
+    ["TEAM.md", 1076, "**22 labels exist**", "closed taxonomy"],
+    ["GITHUB_PLAN.md", 151, "Total after setup: 22 labels", "closed taxonomy"],
+    ["GITHUB_PLAN.md", 144, "MVP functionality", "closed taxonomy"],
+    // crossing 3 — the prohibition, all four copies plus the two lines that
+    // close the escape hatch. Four documents forbid the label and two more
+    // refuse the alternative; drop any one and the section overstates.
+    ["TEAM.md", 1091, "**never existed**, and must not be created", "prohibition"],
+    ["TEAM.md", 1095, "zero open product questions, so no Issue can be blocked on one", "prohibition"],
+    ["GITHUB_PLAN.md", 164, "**Does not exist.** PRD v3.0 has zero open product questions", "prohibition"],
+    ["GITHUB_PLAN.md", 145, "**Never a product question**", "prohibition"],
+    ["TEAM.md", 1097, "never product questions about what Dalal should do", "prohibition"],
+    // the acceptance criteria. These are the reason adding one label is not
+    // free: both are ACs of tickets that have already merged.
+    ["GITHUB_PLAN.md", 248, "22 labels exist, no existing label deleted · five milestones exist", "acceptance criterion"],
+    ["GITHUB_PLAN.md", 271, "`needs-decision` does not exist", "acceptance criterion"],
+    // crossing 4 — the convenience copy's own framing. The ROW COUNT is
+    // derived below; this pins the sentence that makes a short table a defect
+    // rather than a deliberate excerpt.
+    ["TEAM.md", 1308, "This table is a convenience copy for daily work", "closed taxonomy"],
+    // crossing 5 — the owner's row, and the precedent sitting two lines above
+    // it. The precedent is load-bearing: the section argues that whoever
+    // ratifies D-01 has a worked example of the edit already in place.
+    ["TEAM.md", 1334, "bid increment", "product prohibition"],
+    ["TEAM.md", 1331, "was removed from this list on 2026-08-13", "product prohibition"],
+    // the two already-governed results, and the stale status row. Recorded for
+    // the same reason ARCHITECTURE.md:310 is: a negative result is worth as
+    // long as the line it was read against still reads that way.
+    ["TEAM.md", 1105, "reassign it rather than doing it yourself", "already governed"],
+    ["GITHUB_PLAN.md", 776, "owner of the consumed functionality has reviewed it", "already governed"],
+    ["GITHUB_PLAN.md", 11, "No Issues, milestones, or labels created yet", "already governed"],
+    // Q7's reopening. `PRD.md` SD-03 says never; §21.1 and this row say once,
+    // with a date. Pinned in TEAM.md rather than the PRD because this file may
+    // not mutate the PRD, and the convenience copy carries the same note.
+    ["TEAM.md", 1318, "reversed 2026-08-13", "product prohibition"],
+  ].filter(([, n]) => n > 0);
+
+  const SRC = { "TEAM.md": TEAMD, "GITHUB_PLAN.md": PLAN };
+  const boardMoved = BOARD_LINES
+    .filter(([doc, n, text]) => !(SRC[doc][n - 1] ?? "").includes(text))
+    .map(([doc, n, text]) => `${doc}:${n} no longer reads "${text}"`);
+  chk("every board line the crossings section rests on still sits on the line cited", boardMoved, []);
+
+  const boardUncited = BOARD_LINES
+    .filter(([doc, n]) => !TICKETS.includes(`\`${doc}:${n}\``))
+    .map(([doc, n]) => `${doc}:${n}`);
+  chk("TICKETS.md still cites every board line its crossings section rests on", boardUncited, []);
+
+  // DERIVED, not pinned. §21.1 is the register; TEAM.md §26 calls itself a copy
+  // of it. Counting both every run means this goes red when the register grows
+  // AND when somebody finally adds the missing row — and the second case is the
+  // one that matters, because the paragraph explaining the gap must not survive
+  // the gap being closed.
+  const prdQ = read("PRD.md")
+    .split("\n")
+    .filter((l) => /^\| \*\*Q\d+\*\* \|/.test(l)).length;
+  const t26 = TEAMD.indexOf("## 26. Finalized product decisions — quick reference");
+  const t26End = TEAMD.findIndex((l, i) => i > t26 && l.startsWith("### "));
+  const teamRows = TEAMD.slice(t26, t26End).filter((l) => /^\| \d+ \| /.test(l)).length;
+  chk(
+    "TEAM.md §26's convenience copy is still one row short of PRD.md §21.1's register",
+    [prdQ, teamRows],
+    [16, 15],
+  );
+
+  // DERIVED. The census the ARCHITECTURE section under-counted: it read :1552
+  // as one stale word in one document. Counting the word across the four
+  // documents that make a decision-count claim puts it at thirteen. Seven are
+  // in a file no session may edit, which is what moves the fix to the owner.
+  const census = Object.fromEntries(
+    ["PRD.md", "TEAM.md", "ARCHITECTURE.md", "README.md"].map((f) => [
+      f,
+      (read(f).match(/fifteen/g) ?? []).length,
+    ]),
+  );
+  chk(
+    "the `fifteen` decision-count claim still stands at thirteen across four documents",
+    census,
+    { "PRD.md": 7, "TEAM.md": 3, "ARCHITECTURE.md": 2, "README.md": 1 },
+  );
+
+  // The board section states its own count, like the two above it.
+  const boardHeading = TICKETS.split("\n").find((l) =>
+    l.startsWith("### The board these issues would be created on has no room for V2"),
+  ) ?? "";
+  const boardRows = TICKETS.split("\n").filter((l) =>
+    /^\| \*\*\d+\*\* \| `(TEAM\.md|GITHUB_PLAN\.md)/.test(l),
+  ).length;
+  chk(
+    "the board section's stated count matches the rows in its table",
+    [word2num(boardHeading.match(/— (\w+) crossings/)?.[1] ?? ""), boardRows],
+    [boardRows, boardRows],
+  );
+}
+
 // ---------------------------------------------------------------------------
 // The blockquote of open questions states its own item count, and the items
 // are numbered by hand. Adding a fourth and leaving the word at "Three" is the

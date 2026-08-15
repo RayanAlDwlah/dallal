@@ -9,7 +9,7 @@
 # ---------------------------------------------------------------------------
 # WHY THIS EXISTS
 #
-# `graph.check.mjs` prints 172 PASS lines. That proves 172 comparisons ran and
+# `graph.check.mjs` prints 181 PASS lines. That proves 181 comparisons ran and
 # agreed. It does NOT prove that any of them would have disagreed had the board
 # been wrong — and this particular file is unusually
 # exposed to that, because most of its assertions are anchored by a REGEX
@@ -33,7 +33,7 @@
 # ---------------------------------------------------------------------------
 # WHAT IS PROBED, AND WHAT IS NOT — SAID PLAINLY
 #
-# 126 probes against 172 assertions. The gap is not laziness and it is not
+# 139 probes against 181 assertions. The gap is not laziness and it is not
 # coverage theatre; it is five loops that generate one assertion per row of a
 # table, or per stated reading:
 #
@@ -165,6 +165,8 @@ docs/decisions/D-04-ai-product-surface.md
 docs/decisions/D-05-deposit.md
 docs/ai/local-model.md
 ARCHITECTURE.md
+TEAM.md
+GITHUB_PLAN.md
 tests/v2/graph.check.mjs
 supabase/migrations/20260812120000_bid02_bid_acceptance.sql"
 
@@ -939,4 +941,103 @@ neg_probe "the crossings section's stated count matches the rows in its table" \
 neg_probe "the steward crossings have not been swept into the owner's blockquote" \
   'perl -pi -e '"'"'s/^> partly because Q3 was left saying/> **9. ADR-3\x27s reversal condition has already fired.**\n> partly because Q3 was left saying/'"'"' docs/v2/TICKETS.md'
 
-neg_report "V2-GRAPH-NEGATIVE" 126
+# ============================================================================
+# K. TEAM.md and GITHUB_PLAN.md — ranks three and four
+# ----------------------------------------------------------------------------
+# The two PROCESS documents. Section J's five kinds do not carry over, because
+# nothing here has a reversal condition and nothing here is prose describing an
+# architecture — these are documents that CONFIGURE something, and the thing
+# they configure is the issue tracker forty V2 issues would be created on.
+#
+# FOUR kinds, one probe each, plus the two DERIVED assertions which get their
+# own treatment below because they cannot be probed the way a pin can:
+#
+#   * a CLOSED TAXONOMY — a total asserted as final ("22 labels", "no extra
+#     milestones are created"). The mutation that breaks it is somebody
+#     RAISING the number, which is the edit V2 actually requires.
+#   * a PROHIBITION — an instruction resting on a premise ("must not be
+#     created", because "zero open product questions").
+#   * an ACCEPTANCE CRITERION — a merged ticket's AC that a later change
+#     falsifies. Probed separately from the taxonomy because the AC is what
+#     makes adding a label cost something.
+#   * a PRODUCT PROHIBITION — the one row here that is the owner's, and the
+#     dated precedent for amending it sitting two lines above.
+#
+# `already governed` is a fifth tuple group in the checker and deliberately has
+# no probe of its own: it holds recorded NEGATIVE results, and the pin group it
+# shares is already proven breakable by the four probes above. One probe per
+# kind means per kind of FAILURE, not per label in a comment.
+neg_probe "TEAM.md citations were found in TICKETS.md at all" \
+  'perl -pi -e '"'"'s/`TEAM\.md:\d+`/that document/g'"'"' docs/v2/TICKETS.md'
+neg_probe "GITHUB_PLAN.md citations were found in TICKETS.md at all" \
+  'perl -pi -e '"'"'s/`GITHUB_PLAN\.md:\d+`/the plan/g'"'"' docs/v2/TICKETS.md'
+
+# The dangling pair. Both point a real citation at a line that exists and is
+# blank — line 2 of each file — which is the shape a citation takes after
+# somebody inserts a paragraph above it and renumbers nothing.
+neg_probe "every TEAM.md line cited by TICKETS.md exists and is not blank" \
+  'perl -pi -e '"'"'s/`TEAM\.md:1076`/`TEAM.md:2`/'"'"' docs/v2/TICKETS.md'
+neg_probe "every GITHUB_PLAN.md line cited by TICKETS.md exists and is not blank" \
+  'perl -pi -e '"'"'s/`GITHUB_PLAN\.md:214`/`GITHUB_PLAN.md:2`/'"'"' docs/v2/TICKETS.md'
+
+# Kind one — CLOSED TAXONOMY. Raising 22 to 23 is not a hypothetical mutation:
+# it is precisely the edit creating an `area:` value for V2 sessions requires,
+# and the whole point of crossing 2 is that it silently falsifies a sentence in
+# a second document. The probe mutates the document, not the checker, because
+# a real relabelling is the stronger evidence.
+neg_probe "every board line the crossings section rests on still sits on the line cited" \
+  'perl -pi -e '"'"'s/\*\*22 labels exist\*\*/**23 labels exist**/'"'"' TEAM.md'
+
+# Kind two — PROHIBITION. Softening "must not be created" to "should not be"
+# is the reword somebody makes while thinking they are being less shouty. It
+# also turns an absolute this board argues against into a preference, which
+# changes what crossing 3 is claiming.
+neg_probe "every board line the crossings section rests on still sits on the line cited" \
+  'perl -pi -e '"'"'s/\*\*never existed\*\*, and must not be created/**never existed**, and should not be created/'"'"' TEAM.md'
+
+# Kind three — ACCEPTANCE CRITERION. S0-14's AC is the line that makes the
+# prohibition defended rather than merely present. Dropping the clause leaves
+# the ticket reading perfectly and removes the thing crossing 3 cites it for.
+neg_probe "every board line the crossings section rests on still sits on the line cited" \
+  'perl -pi -e '"'"'s/ · `needs-decision` does not exist//'"'"' GITHUB_PLAN.md'
+
+# Kind four — PRODUCT PROHIBITION. Removing `bid increment` from "Things
+# nobody may build" is the edit ratifying D-01 requires, and it is the one
+# mutation in this section scheduled to become a real commit. When the owner
+# makes it, crossing 5 goes red and the paragraph arguing it must be revisited
+# — which is the same double duty ARCHITECTURE.md:1552 does in section J.
+neg_probe "every board line the crossings section rests on still sits on the line cited" \
+  'perl -pi -e '"'"'s/ · bid increment · / · /'"'"' TEAM.md'
+
+# The still-cited check. Same shape as section J's: remove ONE citation from
+# the prose and leave the pin in the checker, which is what happens when a
+# paragraph is rewritten to read more smoothly.
+neg_probe "TICKETS.md still cites every board line its crossings section rests on" \
+  'perl -pi -e '"'"'s/`GITHUB_PLAN\.md:11` reads/the plan.s status row reads/'"'"' docs/v2/TICKETS.md'
+
+# ----------------------------------------------------------------------------
+# THE TWO DERIVED ASSERTIONS. Everything above pins a sentence; these two count
+# something on every run, and they fail in a direction the pins cannot: when
+# the defect is FIXED. That is not a weaker probe, it is a different one, and
+# it is the only mechanism in this repository that stops a paragraph explaining
+# a gap from outliving the gap.
+#
+# Adding the sixteenth row to TEAM.md §26 is the correct fix for crossing 4.
+# The probe performs the fix and asserts the prose notices.
+neg_probe "TEAM.md §26's convenience copy is still one row short of PRD.md §21.1's register" \
+  'perl -pi -e '"'"'s/^\| 15 \| \*\*Password reset is in the MVP\*\* \| M24 \|$/| 15 | **Password reset is in the MVP** | M24 |\n| 16 | **Arabic RTL; canonical 1,250.00 SAR** | BR-41, BR-42, BR-43 |/'"'"' TEAM.md'
+
+# And the census. Correcting ONE of the thirteen is what a careful reader does
+# after noticing the register holds sixteen — and doing it in one document out
+# of four is exactly how the figure got copied thirteen times to begin with.
+# The count is per file, so a single correction moves TEAM.md from 3 to 2 and
+# the whole census fails, which is the intended behaviour: this figure may not
+# be fixed one document at a time without the board saying so.
+neg_probe "the \`fifteen\` decision-count claim still stands at thirteen across four documents" \
+  'perl -pi -e '"'"'s/All fifteen are closed in/All sixteen are closed in/'"'"' TEAM.md'
+
+# The self-count, same reasoning as section J: delete a row, not the heading.
+neg_probe "the board section's stated count matches the rows in its table" \
+  'perl -ni -e '"'"'print unless /^\| \*\*5\*\* \| `TEAM\.md:1334`/'"'"' docs/v2/TICKETS.md'
+
+neg_report "V2-GRAPH-NEGATIVE" 139
