@@ -103,11 +103,25 @@ restore() {
   git rm --cached --quiet "$STAGED_ENV" 2>/dev/null
   rm -f "$STAGED_ENV"
 }
-trap restore EXIT
-
 # --- refuse to run on a dirty tree -----------------------------------------
 # A restore is `git checkout --`, which is destructive to uncommitted work. It
 # is only safe because these files are known clean when we start.
+#
+# ⚠️ THE TRAP IS INSTALLED *AFTER* THIS CHECK, AND THE ORDER IS THE WHOLE POINT.
+#
+# It used to be installed above, which meant `exit 1` here ran `restore` on the
+# way out — so the refusal path executed `git checkout --` over every file in
+# TOUCHED and discarded exactly the uncommitted work it had just refused to
+# touch. The message said "Commit or stash first" and then destroyed the thing
+# it was warning about.
+#
+# Measured, not imagined: it ate an unstaged fix to components/ui/money.tsx
+# during #156, on a run that printed the refusal and exited 1.
+#
+# Nothing has been mutated at this point, so there is nothing to restore and no
+# window between the two lines. Do not "tidy" the trap back to the top with the
+# other setup: this script's whole licence to run `git checkout --` is that the
+# files were verified clean FIRST.
 dirty="$(dirty_scope)"
 if [ -n "$dirty" ]; then
   echo "REFUSING TO RUN — these files have uncommitted changes and this script"
@@ -115,6 +129,8 @@ if [ -n "$dirty" ]; then
   printf '%s' "$dirty"
   exit 1
 fi
+
+trap restore EXIT
 
 pass=0
 fail=0
