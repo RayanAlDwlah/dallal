@@ -28,7 +28,7 @@ set -uo pipefail
 ROOT="$(cd "$(dirname "$0")/../.." && pwd)"
 cd "$ROOT" || exit 1
 
-EXPECTED=6
+EXPECTED=7
 pass=0
 fail=0
 
@@ -82,6 +82,21 @@ echo "==> INT-06 — the statically decidable half (NFR-USA-06, SC-49)"
 chk "every rendered amount goes through <Money>" \
     "$(code components/ui/money.tsx | grep -vE 'placeholder=|sr-only|aria-' | grep -c 'formatSar(' || true)" 0
 
+# --- 1b. Every rendered image goes through next/image ----------------------
+#
+# Same shape as the rule above, and the same reasoning. `next/image` is what
+# produces a derivative instead of shipping the stored original, which is the
+# whole of NFR-PERF-05 — "a listing thumbnail must not require downloading the
+# full-resolution original". V-4 measured what a bare <img> costs: 56 MB for
+# 100 thumbnails at the MOST compressible source tested, 566 MB at a photo-like
+# one, against NFR-PERF-01's three seconds. Two thumbnails alone exceeded it.
+#
+# image-frame.tsx is the one component allowed to name the element, exactly as
+# money.tsx is the one allowed to call formatSar. Anywhere else a bare <img>
+# means an image that skipped the optimiser.
+chk "every rendered image goes through next/image" \
+    "$(code components/ui/image-frame.tsx | grep -cE '<img[[:space:]>]' || true)" 0
+
 # --- 2. No physical direction properties ------------------------------------
 # CLAUDE.md §3. These break the RTL mirror, and a layout that mirrors wrongly is
 # the fastest way to push content off the inline-start edge at a narrow width.
@@ -90,10 +105,17 @@ chk "no physical left/right spacing or alignment" \
 
 # --- 3. Nothing is pinned wider than the viewport ---------------------------
 # 375 px is the base layer (DESIGN_SYSTEM §10), not a breakpoint, so a fixed
-# width at or above it cannot fit — and `w-screen`/`100vw` ignore the scrollbar
-# and overflow by its width on desktop.
+# width at or above it cannot fit — and `w-screen` / a `vw` width ignore the
+# scrollbar and overflow by its width on desktop.
+#
+# It matches WIDTH DECLARATIONS only, not every occurrence of `vw`. A bare
+# `100vw` is legitimate and common inside a next/image `sizes` string, where it
+# describes how wide the image will RENDER so the optimiser can pick a
+# candidate — it sets no element's width. The first version of this check
+# flagged image-frame.tsx's own `sizes` defaults, which is a false positive on
+# the file implementing the rule in check 1b.
 chk "no fixed width at or above 375 px, no viewport-width units" \
-    "$(code | grep -cE '\b(w|min-w)-\[(3[7-9][0-9]|[4-9][0-9]{2}|[0-9]{4,})px\]|\bw-screen\b|100vw' || true)" 0
+    "$(code | grep -cE '\b(w|min-w)-\[(3[7-9][0-9]|[4-9][0-9]{2}|[0-9]{4,})px\]|\bw-screen\b|\b(w|min-w)-\[[0-9]+vw\]|width:[[:space:]]*[0-9]+vw' || true)" 0
 
 # --- 4. Interactive primitives carry the 44 px target -----------------------
 # NFR-USA-08. Checked on the primitives rather than on every call site: these
