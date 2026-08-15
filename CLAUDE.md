@@ -73,6 +73,11 @@ File-level ownership statements elsewhere in the repository do not override this
 4. **`GITHUB_PLAN.md`** — the issue breakdown.
 5. **`docs/contracts/*.md`** — agreed interface contracts between two owners. **Where a
    contract and an older document disagree, the contract wins** — that is what it is for.
+6. **`docs/decisions/*.md`** — decisions the product owner has **made** but that are not
+   in `PRD.md` yet. Read `docs/decisions/README.md` before building anything that is not
+   already an issue. A record marked `OPEN` means **do not build it**; a record's "Still
+   open" section is a list of things you must **ask about, not decide**. Where a record
+   and `PRD.md` disagree, **the PRD wins and the record is stale.**
 
 **`TEAM.md` rule 16 is absolute: never invent a product decision in code.** If the PRD
 does not cover your situation, raise it with the team so it gets recorded — do not pick
@@ -227,6 +232,65 @@ English string, a `COALESCE` that hides a null. Every one of those type-checks, 
 review at a glance, and silently violates a decision someone made deliberately.
 
 An unanswered question costs a message. A wrong assumption costs a sprint.
+
+---
+
+## 9. The guard layer — CI now reads this file back to you
+
+§8 names the failure mode. This section is the machinery that catches it, because a written
+rule stops nothing on its own. Every rule above that a session could break *while the diff
+still reads as a cleanup* now has something watching it.
+
+`.github/workflows/ci.yml` runs on **every pull request** and on every push to `main`, in
+two jobs that do not depend on each other — a broken guard must not hide a broken
+migration:
+
+| job | cost | what it runs |
+|---|---|---|
+| `static` | seconds, no Docker | the three guard scripts, INT-06, INT-08, the realtime checks, `lint`, `typecheck`, `build` |
+| `database` | minutes, PostgreSQL 17 in Docker | `tests/auth/run.sh`, `tests/auction/run.sh`, `tests/bidding/run.sh` |
+
+Three things in `tests/guards/` are new and each answers a different question:
+
+- **`run.sh`** — fifteen checks over the tree, in under a second. They are the rules from
+  §3, §4, §6 and §5 that lived **only** in this file until now: no `Number()`/`parseFloat`
+  on an amount, every `*_price` read carrying `::text` (§4.7), `bid_history.amount` coming
+  from `sar_text()`, no money column declared bare `numeric`, no second formatter outside
+  `lib/money.ts`, no `ر.س`, no Arabic-Indic digit, `dir="rtl"` declared exactly once and in
+  the root layout, no physical `ml-`/`mr-`/`pl-`/`pr-`, no tracked `.env`, no
+  `NEXT_PUBLIC_*SERVICE_ROLE*`, and no `.order("created_at")` on bid history. It strips
+  comments before matching, because this repository documents its absences and a plain grep
+  reports the healthiest files as the worst offenders.
+- **`negative.sh`** — breaks all fifteen rules on purpose and asserts each one is caught. A
+  check that stays green while its rule is violated is reported as a **failure of the
+  check**. This is not ceremony: it found two real defects in `run.sh` the first time it
+  ran. **A guard that cannot fail is worse than no guard.**
+- **`ci-coverage.sh`** — asserts the workflow itself is complete. Every suite in `tests/` is
+  either named by CI or listed in its allowlist **with a reason**. Write a new test file and
+  forget to wire it up, and this goes red. Three suites are on that allowlist today; all
+  three need credentials to a real project, and this repository is public (§6).
+
+### The rule when a guard goes red and you believe the code is right
+
+**It will happen, and the answer is never an ignore list.** Some of these rules are absolute
+(money never touches a float) and some are absolute only until the team decides otherwise.
+If a check blocks work that is genuinely correct, the fix is to **change the check in a pull
+request**, where the person changing it has to say what decision moved and someone else has
+to agree.
+
+> The guard does not stop the change. It stops the **silent** change.
+
+Deleting a check, adding an ignore, or renaming an identifier to slip past a pattern all
+make the tree green while removing the only thing watching a rule. Each is a worse outcome
+than the red build.
+
+**A concrete instance is already written down**: `docs/decisions/D-01-bid-increment-button.md`
+records that the bid control becomes a button carrying a seller-set amount, and the INT-08
+audit (`tests/integration/excluded-features.check.sh`) will go red the day a `bid_increment`
+column lands — measured, not predicted. The one acceptable response is narrowing it *in the same PR*, together
+with a test asserting the server still accepts an amount that is **not** a multiple of the
+increment. `BR-32` governs what the server accepts; D-01 governs only what the screen
+offers.
 
 <!-- BEGIN:nextjs-agent-rules -->
 
