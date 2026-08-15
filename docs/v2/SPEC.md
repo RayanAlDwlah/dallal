@@ -177,7 +177,7 @@ The fix separates the two ideas, because they were never the same idea:
 | | applies to | values |
 |---|---|---|
 | **Status** | the **record** — was the decision made? | `DECIDED` · `OPEN` · `IN PRD` |
-| **Open item** | a **named gap** inside a decided record | `O1` … `O24`, each with an id, an owner-question, and the tickets it blocks |
+| **Open item** | a **named gap** inside a decided record | `O1` … `O30`, each with an id, an owner-question, and the tickets it blocks |
 
 A record can be `DECIDED` and still carry open items. That is normal and it is the whole
 purpose of the "Still open" section (`README.md` rule 2). What is **not** allowed is a gap
@@ -195,7 +195,7 @@ the register below exists so that every one of them can.
 | Q5 | What happens to a deposit when the session ends? | **DECIDED — access expires with the session; there is no refund transaction** |
 | Q6 | Is at least one image required? | **DECIDED — 1 to 10 images, required, validated server-side** |
 
-### 4.3 The open register — twenty-four real blockers
+### 4.3 The open register — thirty real blockers
 
 Every unresolved item from every decision record, given an id so a ticket can cite it.
 **None of these may be answered by whoever picks up the ticket** (`CLAUDE.md` §8). A ticket
@@ -227,6 +227,24 @@ whose *blocked on* column names an id is not startable in the part that touches 
 | **O22** | Does **reordering images after publish** exist? Arguably not editing the auction — arguably is not a decision | D-06 | V2-B7 |
 | **O23** | Does a **session lot** use the same `BR-38` 5 min–7 day bound as a standalone auction? | D-03, D-06 | V2-A10, V2-C6 |
 | **O24** | **Which image-processing provider or library**, at what cost and what latency? *This one is answered by a ticket*: **V2-A14** is a timeboxed spike that produces the options; the owner picks from them | D-04 | V2-C7, V2-A16, V2-B12 |
+| **O25** | Is the increment **required at creation, or optional with a default?** If optional: what default, and does "no increment" hide the button or give it a fallback? | D-01 | V2-C3, V2-A3, V2-B5 |
+| **O26** | **"مضاعفات العشره" — multiples of ten of what?** Ten SAR (10, 20, 30…), or any value that is itself a multiple of ten (10 and 500 legal, 15 not)? Two different `CHECK`s, and both fit the sentence | D-01 | V2-C3, V2-A3 |
+| **O27** | Is there an **upper bound on the increment**? `BR-21`/`SEC-R3` forbid a ceiling on a *price*; an increment is not a price — but a maximum has to be decided, not assumed | D-01 | V2-C3, V2-A3 |
+| **O28** | **One button, or several** (×1 / ×2 / ×5)? The prototype shows one. The extension is obvious and has not been asked for | D-01 | V2-C3, V2-B5 |
+| **O29** | The current price is **off-grid** after a crafted `+0.01` bid that D-01 §2 says must be accepted. Does the button then offer `current + increment`, or round up to the next multiple? **Round-up changes what a bidder is charged** | D-01 | V2-C3, V2-B5 |
+| **O30** | Can the seller **change the increment after publishing**? `BR-31` freezes the auction; if the increment lives on the row the answer is no *by construction* — which is not the same as by decision | D-01 | V2-C3, V2-A3 |
+
+**`O25`–`O30` are not new questions — they are old questions that finally have ids.** All
+six have been written down in [D-01 §5](../decisions/D-01-bid-increment-button.md) since the
+record was authored, under a heading that reads *"do NOT pick an answer for any of these"*.
+What they lacked was numbers. Rule 5 of `docs/decisions/README.md` says why that matters and
+D-01 §5a measures what it cost: `V2-C3`, `V2-A3` and `V2-B5` each carried `blocked on: —`,
+and all three appeared in this board's *"startable today"* set. They were startable in the
+only sense the board could compute — **nothing they cited was open, because they had nothing
+to cite.** A gap with no id does not read as a blocker. It reads as an absence of blockers,
+and on a board those are the same shape.
+
+D-01 was the last record whose gaps were unnumbered. There are now none.
 
 **`O11` blocks no ticket, and that is not an oversight.** `V2-A6` (the adapter) and `V2-A18`
 (the capability test) are both written and run against LM Studio on a laptop; neither needs
@@ -234,7 +252,7 @@ a hosted provider chosen to be built or to pass. What `O11` gates is the **produ
 deployment** — and a deployment is not a row on this board. It is listed here because it is
 genuinely unanswered and someone will otherwise answer it by typing a base URL into Vercel;
 it is kept out of the *blocked on* cells because counting it there would have made the board
-report more blocked work than exists. **23 of the 24 items block a ticket. This is the one
+report more blocked work than exists. **29 of the 30 items block a ticket. This is the one
 that does not.**
 
 **The *blocks* column above and the *blocked on* column in `TICKETS.md` are the same graph,
@@ -243,6 +261,12 @@ plan look better. They were checked against each other mechanically before this 
 committed, and four disagreements were found and fixed rather than argued about: `O20` also
 blocks `V2-C2`, `O23` also blocks `V2-C6`, `O24` also blocks `V2-C7` and `V2-B12`, and `O11`
 blocks nothing. If you edit one column, re-derive the other; do not patch it by eye.
+
+**"Mechanically" is now a file, not a claim.** [`tests/v2/graph.mjs`](../../tests/v2/graph.mjs)
+parses both tables, diffs the two copies of the graph, and recomputes every count either
+document states about itself — ticket count, dependency edges, blocking edges, register size,
+how many items block nothing, and the startable closure. The sentence above was true when it
+was written and there was no way for a reader to confirm it; run the file instead.
 
 **O4 is now the expensive one.** Q1 and Q2 were, and both are decided. O4 is what remains
 that is painful to reverse: it decides whether phase 4 is a migration on an existing table

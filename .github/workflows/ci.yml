@@ -110,6 +110,15 @@ jobs:
         run: ./tests/guards/ci-coverage.sh
 
       # --- the credential-free suites --------------------------------------
+      # The V2 dependency graph is written twice — SPEC.md §4.3's `blocks`
+      # column and TICKETS.md's `blocked on` column — and both documents state
+      # their own totals in English prose. SPEC.md says two copies of a graph
+      # drift "in the direction that makes the plan look better", then claimed
+      # they had been reconciled "mechanically": true once, by hand, with no
+      # way for the next editor to fail. This is that sentence made runnable.
+      - name: V2 — the board's two copies of the graph agree, and its counts are real
+        run: node --no-warnings tests/v2/graph.check.mjs
+
       - name: INT-08 — the excluded-features audit
         run: ./tests/integration/excluded-features.check.sh
 

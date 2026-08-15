@@ -337,7 +337,7 @@ migration:
 
 | job | cost | what it runs |
 |---|---|---|
-| `static` | seconds, no Docker | the three guard scripts, INT-06, INT-08, the realtime checks, `lint`, `typecheck`, `build` |
+| `static` | seconds, no Docker | the three guard scripts, the V2 board check, INT-06, INT-08, the realtime checks, `lint`, `typecheck`, `build` |
 | `database` | minutes, PostgreSQL 17 in Docker | `tests/auth/run.sh`, `tests/auction/run.sh`, `tests/bidding/run.sh` |
 
 Three things in `tests/guards/` are new and each answers a different question:
@@ -387,6 +387,25 @@ Three things in `tests/guards/` are new and each answers a different question:
   either named by CI or listed in its allowlist **with a reason**. Write a new test file and
   forget to wire it up, and this goes red. Three suites are on that allowlist today; all
   three need credentials to a real project, and this repository is public (§6).
+
+A fourth now runs beside them, on the planning documents rather than the tree:
+
+- **`tests/v2/graph.check.mjs`** — the V2 dependency graph is **written twice**, as
+  `SPEC.md` §4.3's *blocks* column and `TICKETS.md`'s *blocked on* column, and both
+  documents also state their own totals in English. This diffs the two copies and recomputes
+  every stated number — ticket count, dependency edges, blocking edges, register size, reach,
+  and the startable closure. `SPEC.md` already warned that two copies of a graph drift *"in
+  the direction that makes the plan look better"* and then claimed they had been reconciled
+  *"mechanically"*; that was true once, by hand, and unverifiable by the next reader.
+  **The same failure as the stale count above, one directory over: a number maintained by
+  hand in a document nobody re-reads.**
+
+  It ran clean on its first execution — all ten stated numbers correct — and the board was
+  **still wrong**, because six real blockers (`D-01` §5, now `O25`–`O30`) had no ids, and an
+  item with no id appears in neither copy. Three tickets read `blocked on: —` and were
+  counted startable; the true figure was four, not seven. **A consistency check cannot see a
+  question that was never written down as data**, which is why `README.md` rule 5 — every gap
+  carries an id — is a mechanism and not a filing convention.
 
 ### The rule when a guard goes red and you believe the code is right
 

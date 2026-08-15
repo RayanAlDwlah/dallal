@@ -45,7 +45,7 @@ in the PRD this file says so and stops being the source.
 5. **Status describes the record. Open items are tracked separately, and each has an id.**
    Those are two different things and merging them is what produced the status above. A
    record can be `DECIDED` and still list open items — that is normal, and rule 2 is why.
-   Every open item carries an `O`-id (`O1` … `O24`) so a ticket's *blocked on* column can
+   Every open item carries an `O`-id (`O1` … `O30`) so a ticket's *blocked on* column can
    name it. **A gap with no id cannot be cited as a blocker, and a gap that cannot be cited
    gets filled silently.** The full register is
    [`docs/v2/SPEC.md` §4.3](../v2/SPEC.md).
@@ -146,7 +146,7 @@ forget.
 
 | | Decision | Status | Open items | Touches |
 |---|---|---|---|---|
-| [D-01](D-01-bid-increment-button.md) | The bid control is a **button carrying a seller-set amount**, not a typed number | `DECIDED` | — | **BR-32**, BR-29, FR-BID-* |
+| [D-01](D-01-bid-increment-button.md) | The bid control is a **button carrying a seller-set amount**, not a typed number | `DECIDED` | **O25–O30** | **BR-32**, BR-29, FR-BID-* |
 | [D-02](D-02-categories.md) | **Thirteen categories**, sourced not invented — and the category changes which fields the form asks for. Values are **validated `jsonb` over normalized category and field-definition tables** | `DECIDED` | O1, O2, O3 | `auctions` schema, create form, browse |
 | [D-03](D-03-sessions.md) | **Sessions** — a room of lots opened one at a time, run live by a host. A kind of auction, **not a kind of account**. **Pause is supported** | `DECIDED` | O4–O10, O23 | new entity, **BR-36**, LC-03, BR-31 |
 | [D-04](D-04-ai-product-surface.md) | The **AI is five specific things in five places**, and **all five are in scope** — measurement decided the technology for each | `DECIDED` | O11–O14, O24 | create, browse, detail. **Never** the bidding path |
@@ -158,9 +158,17 @@ above. They were decided by the owner approving the prototype in
 `design-system/previews/*.html` on **2026-08-15**, and each record quotes the prototype or
 the owner directly.
 
-**All six records are `DECIDED`. Twenty-four open items remain**, each with an id, each
+**All six records are `DECIDED`. Thirty open items remain**, each with an id, each
 named in its record's "Still open" section, and each citable from a ticket's *blocked on*
 column. Register: [`docs/v2/SPEC.md` §4.3](../v2/SPEC.md).
+
+> **D-01's `Open items` cell read `—` until 2026-08-15, and the dash was false.** Six
+> questions were sitting in [D-01 §5](D-01-bid-increment-button.md) the whole time, under a
+> heading saying not to answer them. They had no ids, so no ticket could cite them, so three
+> tickets carried `blocked on: —` and the board counted them **startable**. Rule 5 above is
+> not a filing convention. It is the mechanism, and this is what its absence looks like: not
+> a wrong answer anywhere, just a hole in the numbering that renders as good news. The six
+> are now `O25`–`O30`; the startable set went **7 → 4**; D-01 §5a has the measurement.
 
 **None of the six is `IN PRD`, and three of them contradict it** — `R1`, `R2`, `R3` in the
 ratification gate above. That is an owner action, not a contributor judgement, and it is
@@ -196,4 +204,4 @@ correct implementation of it contains no language model.
 
 `docs/v2/SPEC.md` and `docs/v2/TICKETS.md` — **39 tickets plus the unblock step**, in three
 lanes that **nobody owns** (`CLAUDE.md` §1 — any available contributor may claim any ready
-ticket), and the twenty-four open items the board is actually waiting on.
+ticket), and the thirty open items the board is actually waiting on.

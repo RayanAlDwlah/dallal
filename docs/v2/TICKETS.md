@@ -4,7 +4,7 @@ Read [`SPEC.md`](SPEC.md) first. Every ticket below is sized for **one Claude se
 has a single deliverable, a named proof, and it does not require answering a product
 question. **A ticket that turns out to need a product decision stops and asks** — that is
 the whole point of the "blocked on" column, and every id in that column resolves to a real
-entry in [`SPEC.md` §4.3](SPEC.md#43-the-open-register--twenty-four-real-blockers).
+entry in [`SPEC.md` §4.3](SPEC.md#43-the-open-register--thirty-real-blockers).
 
 **Nothing here is a GitHub issue yet.** The repository is public and forty issues are hard
 to undo. Opening them is a separate, explicit decision, and it happens **only after the
@@ -43,10 +43,15 @@ still open.
 
 ## The board
 
-**39 tickets, plus `V2-00`.** 67 dependency edges between tickets; 33 blocking edges onto
-**23** of the 24 open owner questions.
+**39 tickets, plus `V2-00`.** 68 dependency edges between tickets; 46 blocking edges onto
+**29** of the 30 open owner questions.
 
-The twenty-fourth is `O11` — *which* hosted provider — and it deliberately appears in no
+Every number in this document — including that one — is recomputed from these two tables by
+[`tests/v2/graph.mjs`](../../tests/v2/graph.mjs). Run it before you believe a count here,
+and run it again after you edit a cell. A board that states its own totals in prose is a
+board that will state them wrongly.
+
+The thirtieth is `O11` — *which* hosted provider — and it deliberately appears in no
 *blocked on* cell, because it blocks no ticket. `V2-A6` and `V2-A18` are both written and
 run against LM Studio locally; what `O11` gates is the **production deployment**, and a
 deployment is not a ticket on this board. Counting it as one would have made the board look
@@ -57,15 +62,15 @@ more blocked than it is. Its register entry (§4.3, `SPEC.md`) says so in the sa
 | **V2-00** | — | Land #155, get `main` green, then merge #167 | — | — |
 | **V2-C1** | C | Contract: category + category-specific fields → `docs/contracts/V2-C1-category-fields.md` | V2-00 | **O1, O2** |
 | **V2-C2** | C | Contract: auction images → `docs/contracts/V2-C2-auction-images.md` | V2-00 | **O20** |
-| **V2-C3** | C | Contract: the bid button → `docs/contracts/V2-C3-bid-button.md` | V2-00 | — |
-| **V2-C4** | C | Contract: create-auction payload → `docs/contracts/V2-C4-create-auction.md` | V2-C1, V2-C2 | — |
+| **V2-C3** | C | Contract: the bid button → `docs/contracts/V2-C3-bid-button.md` | V2-00 | **O25, O26, O27, O28, O29, O30** |
+| **V2-C4** | C | Contract: create-auction payload → `docs/contracts/V2-C4-create-auction.md` | V2-C1, V2-C2, V2-C3 | — |
 | **V2-C5** | C | Contract: AI task I/O → `docs/contracts/V2-C5-ai-tasks.md` | V2-C1 | — |
 | **V2-C6** | C | Contract: session + lot → `docs/contracts/V2-C6-session-lot.md` | V2-C4 | **O4, O23** |
 | **V2-C7** | C | Contract: image enhancement → `docs/contracts/V2-C7-image-enhancement.md` | V2-C2 | **O24** |
 | **V2-C8** | C | Contract: search filters → `docs/contracts/V2-C8-search-filters.md` | V2-C1 | — |
 | **V2-A1** | A | Categories: normalized tables, field definitions, validated `jsonb`, label→slug | V2-00, V2-C1 | **O1, O2** |
 | **V2-A2** | A | Auction images: bucket, ordered 1–10, cover at position 0, server-side count | V2-00, V2-C2 | **O20, O21** |
-| **V2-A3** | A | `bid_increment` + INT-08 narrowing + the BR-32 survival test | V2-00, V2-C3 | — |
+| **V2-A3** | A | `bid_increment` + INT-08 narrowing + the BR-32 survival test | V2-00, V2-C3 | **O25, O26, O27, O30** |
 | **V2-A4** | A | Starting-price suggestion — SQL, a **range**, a comparable count | V2-A1 | **O14** |
 | **V2-A5** | A | Create-auction server action — incl. **BR-38's 5 min–7 days** | V2-A1, V2-A2, V2-A3, V2-C4 | — |
 | **V2-A6** | A | `lib/ai/` — adapter, schemas, `AI_ENABLED`, `server-only`, the guard | V2-00, V2-C5 | **O12** |
@@ -86,7 +91,7 @@ more blocked than it is. Its register entry (§4.3, `SPEC.md`) says so in the sa
 | **V2-B2** | B | The auction card — one component, everywhere | V2-B1 | — |
 | **V2-B3** | B | The top bar | V2-B1 | — |
 | **V2-B4** | B | Category picker + filter bar | V2-B1, V2-C1 | **O3** |
-| **V2-B5** | B | The bid button | V2-B1, V2-C3 | — |
+| **V2-B5** | B | The bid button | V2-B1, V2-C3 | **O25, O28, O29** |
 | **V2-B6** | B | The four-step create wizard | V2-B2, V2-B4, V2-C4 | — |
 | **V2-B7** | B | Image uploader — drag-reorder, cover, 1–10, limits | V2-B6, V2-C2 | **O22** |
 | **V2-B8** | B | AI surfaces: suggestion card, editable chips, Q&A box | V2-B6, V2-C5 | **O13** |
@@ -97,12 +102,34 @@ more blocked than it is. Its register entry (§4.3, `SPEC.md`) says so in the sa
 
 ### What is actually startable today
 
-**Seven tickets**, once `V2-00` lands: **V2-C3, V2-A3, V2-A14, V2-B1, V2-B2, V2-B3,
-V2-B5.** Those are the only ones with no open question anywhere in their dependency chain.
+**Four tickets**, once `V2-00` lands: **V2-A14, V2-B1, V2-B2, V2-B3.** Those are the only
+ones with no open question anywhere in their dependency chain.
+
+> **It said seven until 2026-08-15, and the three it lost are the interesting part.**
+> `V2-C3`, `V2-A3` and `V2-B5` — the bid-button contract, the `bid_increment` column and
+> the button itself — were all listed as startable while every one of them was waiting on
+> [D-01 §5](../decisions/D-01-bid-increment-button.md), whose heading is *"do NOT pick an
+> answer for any of these."* Those six questions were written down. They had no ids. A
+> *blocked on* cell can only name an id, so all three cells read `—`, and `—` is
+> indistinguishable from ready.
+>
+> **This is the board's own failure mode, caught on the board.** Not a stale document and
+> not an oversight in a cell — the numbering scheme had a hole in it, and the hole was
+> shaped exactly like good news. The six are now `O25`–`O30` (`SPEC.md` §4.3), and D-01 §5a
+> records the measurement.
 
 A previous draft of this board claimed phase 1 had *"no cross-track dependency at all"* and
 that nine tickets could run in parallel. **Both were wrong**: `V2-B4` needs the category
 contract and `V2-B5` needs the bid contract, and `V2-C1` is itself blocked on `O1`/`O2`.
+
+**`V2-C4` now depends on `V2-C3`**, which it did not before, and that gap was the same kind
+of thing. D-01 §1 puts the increment on the **create** form — the seller sets it when
+creating the auction — so the create-auction payload contract cannot be complete without it.
+The asymmetry was visible: `V2-A5`, the create-auction *server action*, already depended on
+`V2-A3`, the column. The implementation side knew the increment was part of creation and the
+contract side did not. Adding the edge changes no ticket's startability — `V2-C4` was already
+blocked through `V2-C1` — but it changes what unblocking `O1`, `O2` and `O20` actually buys,
+and that number is below.
 
 **And that is the finding worth reading twice.** `O1` (*is a category required?*) and `O2`
 (*is a sub-category stored?*) look like schema trivia. They gate `V2-C1`, which gates
@@ -112,14 +139,17 @@ tickets**.
 
 > **But do not read that as "27 tickets become startable."** They do not, and the difference
 > is worth stating because it is the mistake this board is designed to prevent. Answering
-> `O1` and `O2` moves the startable set from **7 to 12** — measured by re-running the same
-> closure with those two removed, not estimated. The other fifteen carry a *second* blocker
-> further up their chain: `V2-A2` still waits on `O20`, everything in phase 4 still waits on
-> `O4`.
+> `O1` and `O2` moves the startable set from **4 to 9** — `V2-C1`, `V2-C5`, `V2-C8`,
+> `V2-A1`, `V2-A17` — measured by re-running the same closure with those two removed, not
+> estimated. The other eighteen carry a *second* blocker further up their chain: `V2-A2`
+> still waits on `O20`, everything in phase 4 still waits on `O4`, and the whole bid-button
+> chain now waits on `O25`–`O30`.
 >
 > **Reach counts what an item sits upstream of. Startability needs every blocker on the
-> chain cleared, not the biggest one.** Add `O20` and the set goes 12 → 14. The board opens
-> up by *clearing chains*, not by answering the highest-reach question first.
+> chain cleared, not the biggest one.** Add `O20` and the set goes 9 → 10 — `V2-C2` alone.
+> It used to say 12 → 14, and the second of those two was `V2-C4`, which is now held by the
+> bid-button contract as well. The board opens up by *clearing chains*, not by answering the
+> highest-reach question first.
 
 ---
 
@@ -175,10 +205,22 @@ is the thing most likely to be "simplified" later:
 > (`BR-29`/`SC-55`). D-01 governs what the screen offers; BR-32 governs what the database
 > accepts. They are different questions with different answers.
 
+**Blocked on all six of `O25`–`O30`**, which is every open item in D-01 §5. This contract
+cannot publish a shape without knowing whether the increment is nullable (`O25`), what
+"multiple of ten" constrains (`O26`), whether it has a maximum (`O27`), how many buttons
+there are (`O28`), what a button offers when the price is off-grid (`O29`), and whether the
+value can change after publish (`O30`). It is the most-blocked ticket on the board, and it
+read `—` until 2026-08-15.
+
 ### V2-C4 — the create-auction payload
 The four steps collapsed into one atomic create. Names every server-side rule so V2-B6 does
 not reimplement them as form attributes: title 3–120, description 20–2000, **duration 5
 minutes to 7 days inclusive (`BR-38`)**, valid category, **1–10 images**.
+
+**Depends on V2-C3.** D-01 §1 puts the increment on the create form — *"an increment the
+seller sets when creating the auction"* — so the increment is part of this payload and its
+shape is V2-C3's to publish. The edge was missing while `V2-A5`, the server action, already
+depended on `V2-A3`, the column: the implementation side knew, the contract side did not.
 
 ### V2-C5 — AI task I/O
 Three schemas — listing text, search intent, grounded answer — with **Arabic enum values**,
@@ -571,24 +613,31 @@ still undecided is who can see the entrant list (**O19**), what the attendance c
 
 ## The register this board is waiting on
 
-Twenty-four open items, listed in full with their sources in
-[`SPEC.md` §4.3](SPEC.md#43-the-open-register--twenty-four-real-blockers). The two that
+Thirty open items, listed in full with their sources in
+[`SPEC.md` §4.3](SPEC.md#43-the-open-register--thirty-real-blockers). The two that
 unblock the most work are not the ones that look important.
 
 The **reach** column is the count of tickets that cannot start until the item is answered —
 computed over the *transitive* closure of the *depends on* column above, not counted by eye
 from the *blocked on* cells. A ticket is reached if the item blocks it **or** blocks
-anything it waits on:
+anything it waits on. Every figure below is printed by
+[`tests/v2/graph.mjs`](../../tests/v2/graph.mjs):
 
 | | | reach |
 |---|---|---|
 | **O1** | Is a category required on every auction? | **27 of 39** — V2-C1 → A1, C4, C5, C8 → the create flow, the assistant, and phase 4 |
 | **O2** | Is a sub-category stored, or presentation only? | **27 of 39** — the same chain |
 | **O20** | Where do images live? | **21 of 39** — V2-C2 → A2, A15, B7, B12, and the create wizard behind them |
+| **O25**–**O30** | The six bid-button questions in D-01 §5 | **19 of 39 each** — V2-C3 → A3, B5, C4 → A5, A10, and everything downstream of the create payload |
 | **O21** | What happens to abandoned uploads? | **10 of 39** |
 | **O4** | Is a lot an `auctions` row, or a separate entity? | **9 of 39** — and it is by far the expensive one to *reverse*, which reach does not measure |
 | **O23** | Does a lot use the same `BR-38` bound? | **9 of 39** |
 | **O24** | Which image-processing provider? | **4 of 39** — and V2-A14 exists to produce the options |
+
+**The D-01 row is new, and its position in this table is the point.** Those six questions
+rank **third**, above `O21` and `O4` — and until 2026-08-15 they appeared in no *blocked on*
+cell, in no register, and in no reach table, because they had no ids to appear as. The board
+was not wrong about them. The board could not see them.
 
 **Reach is not importance, and the table above is the proof.** `O4` reaches nine tickets
 and `O21` reaches ten, yet `O4` is the one that rewrites every existing query, RLS policy

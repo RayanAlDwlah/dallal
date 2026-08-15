@@ -1,0 +1,354 @@
+#!/usr/bin/env node
+// ============================================================================
+// The V2 board states its own totals in prose. This recomputes every one.
+//
+//   node tests/v2/graph.check.mjs
+//
+// Needs nothing: no Docker, no network, no database. Reads three markdown files.
+//
+// ---------------------------------------------------------------------------
+// WHY THIS EXISTS
+//
+// docs/v2/SPEC.md §4.3 has a `blocks` column. docs/v2/TICKETS.md has a
+// `blocked on` column. They are THE SAME GRAPH, WRITTEN TWICE — SPEC.md says
+// so itself, and says two copies of a graph drift "in the direction that makes
+// the plan look better." It then claims they "were checked against each other
+// mechanically." That was true when it was written, by a session, once, by
+// hand. There was no way for the next reader to confirm it and no way for the
+// next editor to fail. This file is that sentence, made runnable.
+//
+// The counts are the same problem one level up. Both documents state totals in
+// English — "39 tickets", "67 dependency edges", "Seven tickets startable" —
+// and every one of those goes stale the moment a cell changes. CLAUDE.md §9
+// records the same failure in the guard suite: its stated check count went
+// wrong twice in two commits before a check started parsing it. So the numbers
+// below are not recomputed and reported. They are recomputed and ASSERTED
+// against what the prose claims, and a disagreement is a failure.
+//
+// ---------------------------------------------------------------------------
+// WHAT IT FOUND THE FIRST TIME IT RAN
+//
+// Nothing — and that is worth writing down, because it is the finding. Every
+// stated number was correct: 39, 67, 33, 24, 23, O11, 7, 12, 14, 27-of-39, all
+// ten reproduced exactly. The board was internally consistent and it was still
+// wrong, because six real blockers (D-01 §5, now O25–O30) had no ids, and an
+// item with no id cannot appear in either copy of a graph. A consistency check
+// cannot see a question that was never written as data. That is what the
+// "every O-id is contiguous" and "every cited id exists" assertions below are
+// for, and it is why they are not enough on their own.
+// ============================================================================
+import { readFileSync } from "node:fs";
+import { fileURLToPath } from "node:url";
+import { dirname, join } from "node:path";
+
+const ROOT = join(dirname(fileURLToPath(import.meta.url)), "..", "..");
+const read = (p) => readFileSync(join(ROOT, p), "utf8");
+
+const TICKETS = read("docs/v2/TICKETS.md");
+const SPEC = read("docs/v2/SPEC.md");
+const DEC_README = read("docs/decisions/README.md");
+
+let pass = 0;
+let fail = 0;
+const chk = (name, got, want) => {
+  const g = JSON.stringify(got);
+  const w = JSON.stringify(want);
+  if (g === w) {
+    pass++;
+    console.log(`PASS  ${name}  (${g})`);
+  } else {
+    fail++;
+    console.log(`FAIL  ${name}\n        got  ${g}\n        want ${w}`);
+  }
+};
+
+// Prose writes small totals as words. A word is exactly as capable of going
+// stale as a digit, so it has to be parsed, not exempted.
+const WORDS = ["zero", "one", "two", "three", "four", "five", "six", "seven",
+  "eight", "nine", "ten", "eleven", "twelve", "thirteen", "fourteen", "fifteen",
+  "sixteen", "seventeen", "eighteen", "nineteen", "twenty"];
+const TENS = { twenty: 20, thirty: 30, forty: 40, fifty: 50 };
+const word2num = (s) => {
+  const w = String(s).toLowerCase().trim();
+  const i = WORDS.indexOf(w);
+  if (i >= 0) return i;
+  if (TENS[w] !== undefined) return TENS[w];
+  const m = w.match(/^(twenty|thirty|forty|fifty)-(\w+)$/);
+  if (m && WORDS.indexOf(m[2]) > 0) return TENS[m[1]] + WORDS.indexOf(m[2]);
+  return NaN;
+};
+
+// A cell may say "**O1, O2**" or "V2-A1, V2-C1" or "**no ticket** — see below".
+const idsIn = (cell) => cell.match(/\bV2-(?:00|[A-C]\d+)\b|\bO\d+\b/g) ?? [];
+
+// ---------------------------------------------------------------------------
+// Parse the two tables
+// ---------------------------------------------------------------------------
+const board = new Map(); // V2-xx -> {deps, blocked}
+for (const line of TICKETS.split("\n")) {
+  const m = line.match(
+    /^\|\s*\*\*(V2-[^*]+)\*\*\s*\|([^|]*)\|([^|]*)\|([^|]*)\|([^|]*)\|/,
+  );
+  if (m) board.set(m[1].trim(), { deps: idsIn(m[4]), blocked: idsIn(m[5]) });
+}
+
+const register = new Map(); // O-n -> tickets the register says it blocks
+for (const line of SPEC.split("\n")) {
+  const m = line.match(/^\|\s*\*\*(O\d+)\*\*\s*\|([^|]*)\|([^|]*)\|([^|]*)\|/);
+  if (m) register.set(m[1], idsIn(m[4]));
+}
+
+if (board.size === 0 || register.size === 0) {
+  console.log(
+    `FAIL  parsed ${board.size} tickets and ${register.size} register rows — ` +
+      `a table shape changed and every assertion below would pass vacuously`,
+  );
+  process.exit(1);
+}
+
+// ---------------------------------------------------------------------------
+// The closure. `answered` lets a caller ask "what opens up if these are decided?"
+// ---------------------------------------------------------------------------
+const startableWith = (answered = new Set()) => {
+  const memo = new Map();
+  const walk = (id, seen) => {
+    if (memo.has(id)) return memo.get(id);
+    if (seen.has(id)) return false; // a cycle is never startable
+    seen.add(id);
+    const n = board.get(id);
+    if (!n) return false;
+    const ok = n.blocked.every((o) => answered.has(o)) &&
+      n.deps.every((d) => walk(d, new Set(seen)));
+    memo.set(id, ok);
+    return ok;
+  };
+  return [...board.keys()].filter((id) => id !== "V2-00" && walk(id, new Set()));
+};
+
+// A ticket is "reached" by an item if the item blocks it, or blocks anything
+// it transitively waits on. Reach is not startability — SPEC.md §4.3 and
+// TICKETS.md both say so, in the paragraph this function backs.
+const reachOf = (os) => {
+  const hit = new Set();
+  const walk = (id, seen) => {
+    if (seen.has(id)) return false;
+    seen.add(id);
+    const n = board.get(id);
+    if (!n) return false;
+    return n.blocked.some((o) => os.includes(o)) ||
+      n.deps.some((d) => walk(d, new Set(seen)));
+  };
+  for (const id of board.keys()) if (id !== "V2-00" && walk(id, new Set())) hit.add(id);
+  return hit;
+};
+
+const tickets = board.size - 1; // V2-00 is the unblock step, not a ticket
+const depEdges = [...board.values()].reduce((n, v) => n + v.deps.length, 0);
+const blkEdges = [...board.values()].reduce((n, v) => n + v.blocked.length, 0);
+const blocking = new Set([...board.values()].flatMap((v) => v.blocked));
+const startable = startableWith();
+
+console.log("==> V2 board — the graph is written twice; both copies must agree");
+console.log();
+console.log("--- the two copies of the graph");
+
+// ---------------------------------------------------------------------------
+// 1. SPEC's `blocks` column and TICKETS' `blocked on` column are one graph
+// ---------------------------------------------------------------------------
+const fromBoard = new Set();
+for (const [t, { blocked }] of board) for (const o of blocked) fromBoard.add(`${o} -> ${t}`);
+const fromRegister = new Set();
+for (const [o, ts] of register) for (const t of ts) fromRegister.add(`${o} -> ${t}`);
+
+chk(
+  "edges in TICKETS.md 'blocked on' that SPEC.md §4.3 'blocks' omits",
+  [...fromBoard].filter((e) => !fromRegister.has(e)).sort(),
+  [],
+);
+chk(
+  "edges in SPEC.md §4.3 'blocks' that TICKETS.md 'blocked on' omits",
+  [...fromRegister].filter((e) => !fromBoard.has(e)).sort(),
+  [],
+);
+
+console.log();
+console.log("--- the register is whole");
+
+// ---------------------------------------------------------------------------
+// 2. Ids are contiguous, cited ids exist, and nothing dangles.
+//    A gap in the numbering is how six real blockers stayed invisible.
+// ---------------------------------------------------------------------------
+const nums = [...register.keys()].map((o) => Number(o.slice(1))).sort((a, b) => a - b);
+chk(
+  "O-ids run 1..N with no gap and no duplicate",
+  nums,
+  Array.from({ length: register.size }, (_, i) => i + 1),
+);
+
+const citedAnywhere = new Set();
+for (const src of [TICKETS, SPEC, DEC_README]) {
+  for (const m of src.matchAll(/\bO(\d+)\b/g)) citedAnywhere.add(`O${m[1]}`);
+}
+chk(
+  "every O-id cited in the V2 docs or the decisions index exists in the register",
+  [...citedAnywhere].filter((o) => !register.has(o)).sort(),
+  [],
+);
+chk(
+  "every ticket named in a 'depends on' cell is a real ticket",
+  [...new Set([...board.values()].flatMap((v) => v.deps))]
+    .filter((d) => !board.has(d)).sort(),
+  [],
+);
+chk(
+  "every ticket named in the register's 'blocks' column is a real ticket",
+  [...new Set([...register.values()].flat())].filter((t) => !board.has(t)).sort(),
+  [],
+);
+
+console.log();
+console.log("--- the totals both documents state about themselves");
+
+// ---------------------------------------------------------------------------
+// 3. Every number written in prose, checked against the graph it describes
+// ---------------------------------------------------------------------------
+const grab = (src, re, label) => {
+  const m = src.match(re);
+  if (!m) {
+    fail++;
+    console.log(`FAIL  ${label}\n        the sentence this reads is gone — reword the check, not the board`);
+    return null;
+  }
+  return m;
+};
+
+const hdr = grab(
+  TICKETS,
+  /\*\*(\d+) tickets, plus `V2-00`\.\*\*\s*(\d+) dependency edges between tickets;\s*(\d+) blocking edges onto\s*\*\*(\d+)\*\* of the (\d+) open owner questions/,
+  "TICKETS.md board header states its own totals",
+);
+if (hdr) {
+  chk("TICKETS.md header: ticket count", Number(hdr[1]), tickets);
+  chk("TICKETS.md header: dependency edges", Number(hdr[2]), depEdges);
+  chk("TICKETS.md header: blocking edges", Number(hdr[3]), blkEdges);
+  chk("TICKETS.md header: items that block a ticket", Number(hdr[4]), blocking.size);
+  chk("TICKETS.md header: register size", Number(hdr[5]), register.size);
+}
+
+const spec43 = grab(
+  SPEC,
+  /### 4\.3 The open register — ([a-z-]+) real blockers/,
+  "SPEC.md §4.3 heading states the register size",
+);
+if (spec43) chk("SPEC.md §4.3 heading: register size", word2num(spec43[1]), register.size);
+
+const specBlk = grab(
+  SPEC,
+  /\*\*(\d+) of the (\d+) items block a ticket\./,
+  "SPEC.md §4.3 states how many items block a ticket",
+);
+if (specBlk) {
+  chk("SPEC.md §4.3: items that block a ticket", Number(specBlk[1]), blocking.size);
+  chk("SPEC.md §4.3: register size", Number(specBlk[2]), register.size);
+}
+
+// The startable set is the number most worth being wrong about: it is the one
+// a reader acts on. It is stated twice — as a word and as a list — and both
+// are checked, because a correct count next to a stale list is still a lie.
+const start = grab(
+  TICKETS,
+  /\*\*([A-Za-z-]+) tickets\*\*, once `V2-00` lands: ([^.]+)\./,
+  "TICKETS.md states what is startable today",
+);
+if (start) {
+  chk("TICKETS.md: startable count", word2num(start[1]), startable.length);
+  chk(
+    "TICKETS.md: the startable list matches the closure",
+    idsIn(start[2]).sort(),
+    [...startable].sort(),
+  );
+}
+
+const opens = grab(
+  TICKETS,
+  /moves the startable set from \*\*(\d+) to (\d+)\*\* — ([^—]+) —/,
+  "TICKETS.md states what answering O1 and O2 opens up",
+);
+if (opens) {
+  const after = startableWith(new Set(["O1", "O2"]));
+  chk("TICKETS.md: startable before O1/O2", Number(opens[1]), startable.length);
+  chk("TICKETS.md: startable after O1/O2", Number(opens[2]), after.length);
+  chk(
+    "TICKETS.md: which tickets O1/O2 release",
+    idsIn(opens[3]).sort(),
+    after.filter((t) => !startable.includes(t)).sort(),
+  );
+}
+
+const plus20 = grab(
+  TICKETS,
+  /Add `O20` and the set goes (\d+) → (\d+)/,
+  "TICKETS.md states what O20 adds on top",
+);
+if (plus20) {
+  chk("TICKETS.md: startable after O1/O2", Number(plus20[1]), startableWith(new Set(["O1", "O2"])).length);
+  chk("TICKETS.md: startable after O1/O2/O20", Number(plus20[2]), startableWith(new Set(["O1", "O2", "O20"])).length);
+}
+
+const reachRow = grab(
+  TICKETS,
+  /Two sentences from the owner sit upstream of \*\*(\d+) of the (\d+)\n?tickets\*\*/,
+  "TICKETS.md states O1+O2's reach",
+);
+if (reachRow) {
+  chk("TICKETS.md: reach of O1+O2", Number(reachRow[1]), reachOf(["O1", "O2"]).size);
+  chk("TICKETS.md: reach denominator", Number(reachRow[2]), tickets);
+}
+
+// Every reach figure in the closing table, not just the headline one.
+//
+// The row count is asserted against the rows that EXIST, not against zero.
+// The first version of this block ended with `reachRows > 0` and went green
+// while silently skipping the newest row — its cell reads "**19 of 39 each**"
+// and the regex required `**` immediately after the denominator. Seven of
+// eight rows checked, one unchecked, PASS printed. That is the vacuous pass
+// #121 was filed for: a check whose coverage can shrink to almost nothing
+// without its result changing. Count the rows, then require that many.
+console.log();
+console.log("--- the reach table");
+const reachTable = TICKETS.split("\n").filter((l) => /^\| \*\*O\d+\*\*/.test(l));
+let reachRows = 0;
+for (const line of reachTable) {
+  const m = line.match(
+    /^\| \*\*(O\d+)\*\*(?:–\*\*(O\d+)\*\*)? \| [^|]+ \| \*\*(\d+) of (\d+)[^*|]*\*\*/,
+  );
+  if (!m) continue;
+  reachRows++;
+  const [, from, to, n, denom] = m;
+  const span = to
+    ? Array.from(
+      { length: Number(to.slice(1)) - Number(from.slice(1)) + 1 },
+      (_, i) => `O${Number(from.slice(1)) + i}`,
+    )
+    : [from];
+  // A span row states one figure that must hold for each member individually.
+  for (const o of span) chk(`reach of ${o}`, Number(n), reachOf([o]).size);
+  chk(`reach denominator on the ${from}${to ? `–${to}` : ""} row`, Number(denom), tickets);
+}
+chk("every row of the reach table was parsed", reachRows, reachTable.length);
+
+// ---------------------------------------------------------------------------
+console.log();
+console.log(`${pass} passed, ${fail} failed`);
+if (fail === 0) {
+  console.log("V2-GRAPH: PASS");
+  process.exit(0);
+}
+console.log("V2-GRAPH: FAIL");
+console.log();
+console.log("If the board changed and these numbers did not, fix the prose.");
+console.log("If a sentence was reworded, fix the regex — in the same PR, and say");
+console.log("which number moved. Do not delete an assertion to go green: SPEC.md");
+console.log("§4.3 already explains what two silently-drifting copies of this graph");
+console.log("cost, and this file is the only thing that reads both of them.");
+process.exit(1);
