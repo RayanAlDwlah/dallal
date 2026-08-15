@@ -15,11 +15,11 @@ restating the dependency graph, delete that part and link instead.
 | | |
 |---|---|
 | **Run id** | `e33684e-20260815T0250` |
-| **Last updated** | 2026-08-15, after reading `PRD.md` §21 — the **Product Decision Register** — inward against the board. Item 8 is the largest finding of the three sweeps and the only one whose tickets carry no `R` at all; two more register lines (`:2032`, `:2035`) were found on a second pass that only happened because the "crosses nothing" sentence was re-read before being written. Nothing decided (`81578ae` + this commit) |
+| **Last updated** | 2026-08-15, after reading `PRD.md` §21 — the **Product Decision Register** — inward against the board. Item 8 is the largest finding of the three sweeps and the only one whose tickets carry no `R` at all; two more register lines (`:2032`, `:2035`) were found on a second pass that only happened because the "crosses nothing" sentence was re-read before being written. Nothing decided. Both figures now confirmed on Linux (`61e102f` + this commit) |
 | **Branch** | `feature/rayan-v2-spec` |
-| **HEAD** | `81578ae` + this commit |
-| **Base** | **40 commits ahead of `origin/main`** at `81578ae`, and it contains `.github/workflows/ci.yml`, which `main` does not. Everything through `81578ae` **is pushed**; this commit may not be. Push, never force-push — #168 is open and others may be reading it |
-| **CI status** | **macOS GREEN at `81578ae`** on a clean tree: `164 passed, 0 failed` and `115 caught, 0 not caught (0 no-op), 115 of 115 reached`. **Linux not yet confirmed for these two figures** — the last `ubuntu-latest` run is [31870785163](https://github.com/RayanAlDwlah/dallal/actions/runs/31870785163) at `db8f777`, which matched macOS exactly at `164 / 113`; the run for `81578ae` was pushed and had not reported when this was written. **Check it before quoting `115` as a cross-platform figure** — this file already records a `grep`-dialect divergence that made a suite pass locally and go red in CI, and a probe count is exactly the quantity such a divergence moves. **`database` still RED** on the pre-existing #147 (`auth` and `bidding` both pass; `auction` does not), which **PR #155 fixes and only a human can merge**. See the correction under the measurement tables before trusting any green row |
+| **HEAD** | `61e102f` + this commit |
+| **Base** | **41 commits ahead of `origin/main`** at `61e102f`, and it contains `.github/workflows/ci.yml`, which `main` does not. Everything through `61e102f` **is pushed**; this commit may not be. Push, never force-push — #168 is open and others may be reading it |
+| **CI status** | **`static` GREEN on `ubuntu-latest` at `61e102f`** ([run 31871898634](https://github.com/RayanAlDwlah/dallal/actions/runs/31871898634)), reporting `164 passed, 0 failed` and `115 caught, 0 not caught (0 no-op), 115 of 115 probes reached` — **identical to the macOS clean-tree figures**, and confirmed at `81578ae` too ([31871628931](https://github.com/RayanAlDwlah/dallal/actions/runs/31871628931)). **No figure on this page is macOS-only.** That is worth stating rather than assuming: this file records a `grep`-dialect divergence that made a suite pass locally and go red in CI, and a probe count is exactly the quantity such a divergence moves. **`database` still RED** on the pre-existing #147 (`auth` and `bidding` both pass; `auction` does not), which **PR #155 fixes and only a human can merge** — so the *run* conclusion reads `failure` while `static` is green. Read the job, not the run. See the correction under the measurement tables before trusting any green row |
 | **Operator** | unattended Claude session, owner asleep, reviewing later |
 
 ---
@@ -351,9 +351,10 @@ declaring it out of scope.
    found on the way and both are written up below: a pin aimed at the wrong half of `:798`,
    found by a MISSED probe, and a "crosses nothing" sentence that was one commit from being
    false. Nothing reclassified, nothing decided. Posted on #168 as
-   [`#issuecomment-5301121679`](https://github.com/RayanAlDwlah/dallal/pull/168#issuecomment-5301121679);
-   `:2032` and `:2035` arrived after that comment and need a short addendum. See the §21
-   section below.
+   [`#issuecomment-5301121679`](https://github.com/RayanAlDwlah/dallal/pull/168#issuecomment-5301121679),
+   with the addendum naming `:2032` and `:2035` at
+   [`#issuecomment-5301143245`](https://github.com/RayanAlDwlah/dallal/pull/168#issuecomment-5301143245).
+   See the §21 section below.
 9. Only then create the V2 issues.
 
 **Blocked, with the reason:**
@@ -773,6 +774,14 @@ saying `end_time` is immutable while Q7 was amended to move it.**
 V2 — graph.check.mjs   164 passed, 0 failed                                    (unchanged again)
 V2 — graph-negative    115 caught, 0 not caught (0 no-op), 115 of 115 reached  (113)
 ```
+
+**Both figures confirmed on `ubuntu-latest`**, at `81578ae`
+([31871628931](https://github.com/RayanAlDwlah/dallal/actions/runs/31871628931)) and again at
+`61e102f` ([31871898634](https://github.com/RayanAlDwlah/dallal/actions/runs/31871898634)), byte
+for byte identical to the macOS clean-tree run. `EXCLUSIONS` grew 30 → 32 in the second of those
+two commits without moving either number — which is correct and is the point of stating it: the
+tuples are data for one existing assertion, not new assertions, and the probe added per *kind*
+rather than per row means the probe count holds too.
 
 #### The MISSED, and the defect it found — read this before adding a probe to that label
 
