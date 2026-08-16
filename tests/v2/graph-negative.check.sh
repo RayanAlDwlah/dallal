@@ -925,19 +925,37 @@ neg_probe "every ARCHITECTURE.md line the crossings section rests on still sits 
 neg_probe "TICKETS.md still cites every ARCHITECTURE.md line its crossings section rests on" \
   'perl -pi -e '"'"'s/`ARCHITECTURE\.md:1552`/that line/g'"'"' docs/v2/TICKETS.md'
 
-# Kind five, twice: the SHIPPED CONSTRAINT. These two are the only probes in the
-# file whose real-world trigger is somebody changing the database rather than
-# somebody rewording a paragraph, and both mutations are edits a reviewer would
-# wave through. Tightening `>=` to `>` reads as hardening a bound. It also means
+# Kind five, twice: the ARCHIVED CONSTRAINT. These two are the only probes in the
+# file whose real-world trigger is somebody changing SQL rather than somebody
+# rewording a paragraph, and both mutations are edits a reviewer would wave
+# through. Tightening `>=` to `>` reads as hardening a bound. It also means
 # crossing 6 — "a lot cannot be inserted under the policy on `main` today" — is
 # arguing about a `WITH CHECK` that no longer says what it is quoted as saying.
-neg_probe "the shipped auctions insert policy still demands a future end_time at insert time" \
+#
+# THE LABELS CHANGED ON 2026-08-16 AND THE FIRST RUN OF THIS SUITE IS WHY.
+#
+# They read "the SHIPPED auctions insert policy" until the assertions upstream
+# were renamed to say `archived V1` — which they are: the file lives in
+# supabase/archive-v1/ and V2's `place_bid` is a different function in a
+# different migration. The probe kept the old wording, `neg_probe` matches its
+# label against the labels the check actually prints, found none, and reported
+# BROKEN — "no check prints this label". Worth noting exactly what that means,
+# because it is the good outcome: a probe pointed at a renamed assertion did not
+# quietly pass. It refused. That is the difference between this file and a
+# grep-for-a-string, and it is the reason a negative suite has to be RUN and not
+# merely written — this pair had never once executed before today.
+#
+# What they defend, stated narrowly enough to stay true: supabase/archive-v1/ is
+# frozen, so these no longer guard a live code path. They guard the ARCHIVE
+# ITSELF against being edited — and an edit to a frozen directory is precisely
+# the silent change nobody would think to look for.
+neg_probe "the archived V1 insert policy demanded a future end_time at insert time" \
   'perl -pi -e '"'"'s/end_time >= now\(\)/end_time > now()/'"'"' supabase/archive-v1/20260812120000_bid02_bid_acceptance.sql'
 
 # And the comment half. De-shouting a SQL comment is the most innocent edit in
 # this suite; the sentence it flattens is the one recording that auction
 # immutability is the ABSENCE of a policy, which is half of crossings 5 and 6.
-neg_probe "the shipped auctions policy block still records that no update or delete path exists" \
+neg_probe "the archived V1 policy block recorded that no update or delete path existed" \
   'perl -pi -e '"'"'s/There is NO update and NO delete policy/There is no update and no delete policy/'"'"' supabase/archive-v1/20260812120000_bid02_bid_acceptance.sql'
 
 # The self-count. Deleting the row rather than editing the heading, because a
