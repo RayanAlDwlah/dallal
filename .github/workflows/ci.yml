@@ -173,6 +173,16 @@ jobs:
       - name: INT-06 — the statically decidable half of 375 px
         run: ./tests/integration/responsive-375.check.sh
 
+      # #156 — the rendered text of a price is the canonical `1,250.00 SAR`.
+      # Arrived from `main` in the 2026-08-16 merge written against V1's `Money`
+      # and re-aimed at V2's in the same commit. Its V1 region lookup degraded
+      # silently on V2 — three of seven checks passed because the probe found
+      # nothing — so it now REFUSES with BROKEN when it cannot locate the
+      # component, and carries a third control proving the isolate assertion can
+      # fail. It compiles the component; it needs no browser and no database.
+      - name: UI — a price's rendered text is the canonical string (#156)
+        run: node --no-warnings tests/ui/money-canonical-text.check.mjs
+
       # #147 — every *.check.mjs must actually LOAD, and no `@/` value import
       # appears anywhere in the check graph. On `main` this step carried a guard
       # against being merged before #155; #155 is merged and the file is here,

@@ -31,7 +31,7 @@
 >
 > **None of this is a security defect.** The writes happen under `place_bid`, which is
 > `SECURITY DEFINER`, and `authenticated` is revoked from `UPDATE` on `auctions`
-> (`20260812120000:512`). The defect is one of **disclosure**: §4 is an inventory you read
+> (`20260812120000:536`). The defect is one of **disclosure**: §4 is an inventory you read
 > to know what moves under your hands, and it had gone stale.
 >
 > **Two new boxes in §8 cover the amendment.** Nothing in it is agreed until you tick them.
@@ -88,6 +88,34 @@ enforced by `auctions_guard_update()` (`20260814000000:113`); or (2) inside the
 pause/resume operation (`resume_session()`), which moves `end_time` forward by the
 exact wall-clock interval the session was paused, and never touches `extension_count`.
 Every other shape still raises. `CLAUDE.md` §5 records both doors as the governing rule.
+
+> **⚠️ Superseded in part on 2026-08-15 — the word to distrust in the paragraph above is
+> "only".** The owner decided that **pause is supported**: a host-only atomic operation
+> moves `end_time` **forward by the paused duration**. `CLAUDE.md` §5 records it and
+> governs — *"the sentence «only inside `place_bid`» is now «inside `place_bid`, **or**
+> inside the pause/resume operation»"*. There are **two doors**, not one.
+>
+> **What did not move:** `end_time` is still **forward only**, under any mechanism, by any
+> caller, ever. `place_bid` still owns extension — the 30-second quantum, the
+> `extension_count + 1` lockstep and the `CHECK`-constrained cap of 20 are untouched, pause
+> never increments `extension_count`, and an extension never records paused time. So of the
+> four conditions above, **all four still describe the `place_bid` door exactly**; what is
+> wrong is the claim that it is the only door.
+>
+> **This clause is deliberately not rewritten into its final form, and that is a statement
+> about what is decided rather than about effort.** Pause is V2 work
+> ([`D-03`](../decisions/D-03-sessions.md)), and two questions it depends on are open:
+> **`O4`** — is a lot an `auctions` row with a nullable `session_id`, or a separate entity?
+> — and **`O33`** — does pause take a *lot* or the *session*? Until those are answered this
+> contract cannot honestly say which table, which column or which id the second door writes
+> to, and a plausible guess here would be exactly the invented product decision `TEAM.md`
+> rule 16 forbids. **Whoever answers `O4` and `O33` amends this paragraph in the same PR**,
+> following `§10.3`'s precedent.
+>
+> Read this the way `§7`'s blockquote asks you to read the row that left it: a document
+> still saying `end_time` moves through one door predates 2026-08-15, and `CLAUDE.md` §5
+> governs over it. **Do not "restore" the single-door wording on the strength of an older
+> copy** — including on the strength of the unamended paragraph directly above.
 
 > **What this costs you.** Any surface that treats `end_time` as fixed after render — a
 > countdown seeded once at mount, a cached "ends at" string, a `revalidate` window derived
@@ -196,6 +224,25 @@ I write nothing else to `auctions`, ever.
 not exist when this document was written; `BR-36` had not yet been reversed, and this
 section said in so many words that there were two. If you are reading a copy of this
 contract that lists two, it predates the reversal and `CLAUDE.md` §5 governs over it.
+
+> **⚠️ And it is about to change again — a fourth occasion is decided but not yet
+> writable.** The pause decision of 2026-08-15 (`CLAUDE.md` §5, [`D-03`](../decisions/D-03-sessions.md))
+> puts a **second writer on `end_time`**: a host-only atomic pause/resume moving it forward
+> by the paused duration. That falsifies the sentence *"I write nothing else to `auctions`,
+> ever"* above — **not because my write set grew, but because the set of writers did.**
+>
+> The distinction matters for what you are being asked to sign. Everything §4 promises about
+> **my** three occasions still holds exactly: I still write `current_price` per accepted bid,
+> `end_time`+`extension_count` on an in-window accepted bid, and the four close fields, and
+> nothing else. What is no longer true is the *implied exclusivity* — that the three rows in
+> that table are the only ways `end_time` ever moves. **A surface of yours that treats the
+> table as exhaustive over writers, rather than exhaustive over mine, will be wrong.**
+>
+> As in `§2`, the concrete row is not written yet because **`O4`** (is a lot an `auctions`
+> row?) and **`O33`** (does pause take a lot or the session?) are open — and if `O4` resolves
+> to *separate entity*, the fourth occasion may not touch `auctions` at all and this table
+> stays literally correct with only its exclusivity claim narrowed. Deciding that here would
+> be deciding `O4` in a contract, which is not where it gets decided.
 
 Two properties of the middle row are worth stating here rather than leaving in the
 migration, because they are what make it safe for you to sign:
@@ -333,6 +380,65 @@ Also out of scope for the record, from `PRD` v3.0: no cancel, no edit, no draft 
 > are unaffected — none of them has ever been reversed, and adding any of them is still a
 > bug. Do not restore the fifth row on the strength of an older document.
 
+> **⚠️ Row 1 is on notice — and the notice is here because nothing else names it.**
+> [`D-01`](../decisions/D-01-bid-increment-button.md) is a **made owner decision**: the bid
+> control becomes a button carrying a **seller-set increment**, and `V2-A3` adds a
+> `bid_increment` column. The day it lands, **row 1 above is false as written.**
+>
+> Three artefacts prohibit that column today, and **only one of them is named in the work
+> that will break it.** `D-01` §6 and `CLAUDE.md` §9 both name `INT-08`
+> (`tests/integration/excluded-features.check.sh`) and prescribe narrowing it *in the same
+> PR*. Neither names **this row**, and neither names **`S0-12` §9.5** — both of which are
+> rank-5 contract clauses that, per `CLAUDE.md` §2, *win* against an older document. Worse,
+> `§10.1` of this contract records a **verification against merged `main`** that this row
+> holds (*"No `bid_increment` … ✅ holds"*), so landing the column falsifies a countersigned
+> finding, not merely a test. `V2-A3`'s ticket line says *"`bid_increment` + INT-08 narrowing
+> + the BR-32 survival test"* — **that scope is incomplete by two documents.**
+>
+> **What must NOT be read into this.** Row 1 is *not* hereby amended, and nothing here
+> approves the column. `O25`–`O30` are open — whether the increment is required, what the
+> `CHECK` may say, whether there is an upper bound, whether it is mutable after publish — and
+> `D-01` §5's own heading is *"do NOT pick an answer"*. **The prohibition stands until `V2-A3`
+> amends it explicitly, in the PR that adds the column, alongside `S0-12` §9.5.**
+>
+> **The one thing that never moves, whatever `O25`–`O30` say:** `BR-32` governs what the
+> *server accepts*, and `D-01` governs only what the *screen offers*. A `CHECK` constraining
+> `amount` to a multiple of the increment is the bug this whole row exists to prevent, and
+> `D-01` §4 requires the test asserting the server still accepts a non-multiple to land **in
+> the same PR as the column** — not after it.
+
+> **🔴 The day the notice above predicted arrived on 2026-08-15, and none of the four things
+> the notice required happened. This paragraph is the record, not the resolution.**
+>
+> V2 shipped. `bid_increment public.sar_increment not null` is a column on `auctions`
+> (`supabase/migrations/20260815100000_core_schema.sql:119`), and `place_bid` does not merely
+> *offer* it on the screen — it **enforces** it, inside the row lock: `v_min :=
+> v_a.current_price + v_a.bid_increment` (`:256`), then `if v_amount < v_min then … 'error',
+> 'too_low'` (`:259`, `:261`). That is a **minimum-raise rejection on the server**, which is
+> the exact thing the paragraph above says never moves — `BR-32` governs what the server
+> accepts, and this rejects.
+>
+> Measure the four requirements against what shipped:
+>
+> | The notice required | What happened |
+> |---|---|
+> | row 1 amended **explicitly**, in the PR adding the column | not amended — row 1 above still reads as it always has |
+> | `S0-12` §9.5 amended alongside it | not amended |
+> | `INT-08` narrowed **in the same PR** | narrowed later, on `delivery/v2-app`, in a separate change — it now pins the increment *inside* `place_bid`'s lock instead of prohibiting it |
+> | `D-01` §4's non-multiple survival test, in the same PR as the column | **does not exist.** V2 has no database suite at all (see `.github/workflows/ci.yml`) |
+>
+> **Row 1 is still not hereby amended.** Nothing here approves the column and nothing here
+> retracts `BR-32`; a contract clause is not amended by the code disagreeing with it, which is
+> the whole reason `CLAUDE.md` §2 ranks contracts where it does. What is recorded is that the
+> code and the contract now **contradict** each other in production, that the contradiction is
+> written up in full in `CLAUDE.md` §0, and that closing it is the **owner's** call — either
+> `BR-32`/`PRD` §21.1 Q4 is amended, or `place_bid` stops rejecting below `v_min`. Until he
+> answers, both sides stay exactly as they are, and this notice is what stops the disagreement
+> from being discovered by someone reading only one of them.
+>
+> `tests/v2/graph.check.mjs` measures both sides of this every run, so neither can be quietly
+> moved to make the other look right.
+
 And two more, from `S0-12` (FINAL): **no money column that is not the `sar_amount`
 domain**, and **no floating point anywhere on an amount** — including in a sort, an index
 expression, or a test assertion.
@@ -347,6 +453,7 @@ I will build to it.
 - [ ] **§2** — the seven read fields are as listed, and `current_price` **is** in the set (not "existence")
 - [ ] **§2** — none of the seven is renamed or removed without telling me first
 - [ ] **§2** — ⚠️ *new* — you have read that **`end_time` is no longer fixed after render**, and no surface of yours assumes it is
+- [ ] **§2 / §4** — ⚠️ *new `2026-08-15`* — you have read that **`end_time` now has two doors, not one** (`place_bid` *and* pause/resume), and that §4's table is exhaustive over **my** writes, not over **all** writers. Ticking this is **not** agreement to a pause design — there is none to agree to yet; `O4` and `O33` are open, and whoever answers them amends §2 and §4 and brings you a concrete box then
 - [ ] **§3.2** — your read path exposes a **derived** has-bids / bid-count; no stored column on `auctions`
 - [ ] **§3.2** — *or*: you would rather I expose a counting view over `bids` for you to join → tell me
 - [ ] **§4** — my writes are exactly: `current_price` per accepted bid, `end_time` + `extension_count` on an accepted bid inside the final 15 s, and the four close fields. The writes reach the table through `SECURITY DEFINER`; no `UPDATE` grant exists and none must be added
@@ -400,16 +507,28 @@ boxes. Mapped honestly:
 | §9 | the three items go to the whole team | ⬜ **open** |
 | §2 | ⚠️ `end_time` is no longer fixed after render | ⬜ **open — did not exist on 2026-08-13** |
 | §4.2 | ⚠️ `extension_count` + its CHECK stay in `auctions` | ⬜ **open — did not exist on 2026-08-13** |
+| §2 / §4 | ⚠️ `end_time` has **two doors**; §4 is exhaustive over my writes, not all writers | ⬜ **open — did not exist on 2026-08-13, or on 2026-08-14** |
 
-Nine boxes are untouched, and four of them (`§4.1`, `§5`, `§6`, `§7`) are the ones that
+Ten boxes are untouched, and four of them (`§4.1`, `§5`, `§6`, `§7`) are the ones that
 break bidding silently if he assumes otherwise. **`BID-02`, `BID-13`, `BID-15` and `BID-16`
 are still building against a draft.**
 
-**The last two are new, and they are new for a reason worth naming.** `5adaad2` was written
+**The last three are new, and they are new for a reason worth naming.** `5adaad2` was written
 on 2026-08-13 against a document that said `end_time` never moves and said nothing about
 `extension_count`. Even a full tick that day would not have covered them. So an endorsement
 does not age into coverage of a change made after it — **a signature covers the version it
 was given on, and this version is not that one.**
+
+**The third one proves the rule twice over, because it post-dates the other two.** The
+`§2 ⚠️` box was added on 2026-08-14 and says *"`end_time` is no longer fixed after render."*
+A reader could reasonably think that box already covers pause — the end time moves, he has
+been told the end time moves, what more is there? But that box was written when the only
+mover was `place_bid`'s 30-second quantum, which is **bounded by a `CHECK` at 20 extensions**.
+Pause is unbounded (`O31` is open precisely because it has no cap), it is driven by a **human
+decision rather than by bidding**, and it can move the clock on a lot **nobody is bidding on**.
+A surface built to survive *"up to 20 × 30 s of drift while bids land"* is not thereby built
+to survive *"the host went to lunch."* **Same field, same direction, different failure** — so
+it is a different box.
 
 > **Recording mechanism — a problem worth naming.** `GITHUB_PLAN.md` §12.1 says agreement is
 > recorded in the issue thread. **There are no issues.** `gh issue list --state all` returns
@@ -557,6 +676,36 @@ These stay ⬜ in §8 and nothing below substitutes for them:
 amended the contract himself in `#133`**, which is the right hand: he authored the sections
 and he owns the behaviour they describe. Nothing in this section amends the contract; the
 body above already carries his amendments, and the two new boxes in §8 come from them.
+
+#### 10.3a A third amendment, `2026-08-15` — and it is a different *kind*
+
+§2 and §4 went stale a second time, on the **pause** decision (`CLAUDE.md` §5,
+[`D-03`](../decisions/D-03-sessions.md)), and for the same structural reason: both sections
+assert that `end_time` moves through exactly one door, and as of 2026-08-15 it moves through
+two. It was amended the same way and by the same hand, on the §10.3 precedent.
+
+**What makes this one different is that it stops short on purpose.** The `BR-36` amendment
+could state its rule completely — the quantum, the counter, the cap were all decided. The
+pause amendment cannot: `O4` (is a lot an `auctions` row?) and `O33` (does pause take a lot
+or the session?) are open, so the fourth write occasion has no table, no column and no id
+yet. So §2 and §4 now record a **supersession plus a named gap**, not a rule.
+
+That is deliberate, and the alternative was worse in a specific way. A contract that quietly
+kept saying *"only inside `place_bid`"* would not merely be out of date — it would be a
+**rank-5 document actively contradicting a made owner decision**, and `CLAUDE.md` §2 says a
+contract *wins* against an older document. A session obeying the authority order correctly
+would have concluded that a conforming pause implementation was a violation. **The stale
+copy would have been armed, not merely wrong**, which is why this could not wait for `O4`.
+
+§7 also gained a notice in the same pass, and it is **not** an amendment: row 1 (`bid_increment`)
+is still prohibited and still in force. What the notice records is that `D-01` will falsify it,
+that `§10.1` countersigned it as holding, and that `V2-A3`'s stated scope names `INT-08` but
+neither this row nor `S0-12` §9.5.
+
+**Nothing in §8 is ticked by any of this, and one box was added rather than reworded** —
+§8.1's finding applies with full force here: *"a signature covers the version it was given
+on."* A tick given before 2026-08-15 would not have covered a second door, so the second door
+gets its own box instead of being folded into an existing one.
 
 ### 10.4 How the signature gets recorded — @RayanAlDwlah's answer, adopted
 

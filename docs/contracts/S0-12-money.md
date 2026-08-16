@@ -349,13 +349,94 @@ Pinned verbatim into the shared `CLAUDE.md` so every AI-assisted session for all
 2. **No ceiling of any kind.** No `numeric(P,2)` typmod on any money column — "tightening" `numeric` to `numeric(12,2)` is the single most likely hygiene refactor and it is a BR-21/SEC-R3/SD-05 violation, not hygiene. No length cap on the amount input. No `to_char` format picture. (ARCHITECTURE Risk 10)
 3. **No bare `numeric` money column.** Every money column is `sar_amount` — omission is greppable: `grep -rn 'price\|amount' migrations/ | grep -v sar_amount`.
 4. **No second write path.** Only `place_bid` inserts bids and writes `current_price`, in one transaction. Direct INSERT on `bids` is denied to every role including the bidder. (ADR-2, SEC-Z4–Z7, BR-07/BR-13/SC-40)
-5. **No re-added checks.** No increment, no maximum, no leading-bidder rejection, no reserve — each is a finalized product decision whose *absence* is the requirement. (ARCHITECTURE §13.2a, BR-32, BR-21, BR-24, BR-35, SD-05)
+5. **No re-added checks.** No increment, no maximum, no leading-bidder rejection, no reserve — each is a finalized product decision whose *absence* is the requirement. (ARCHITECTURE §13.2a, BR-32, BR-21, BR-24, BR-35, SD-05) — **but read §9.5a before citing this against `D-01`.**
 6. **No rounding of user input.** More than two decimals is **rejected** (`malformed_amount`), never rounded and accepted. The one `round(v,2)` in §5.2 is a verified value no-op. (FR-BID-07, EC-06)
 7. **No amounts as JSON numbers.** Strings in, text out, on every path — including treating Realtime payload numerics as untrusted triggers. Typegen overridden to `string`. (NFR-DAT-05 at the display tier, SEC-R3)
 8. **No second formatter, no raw `::text` on a display surface.** Every rendered amount goes through `format_sar` / `formatSAR`. Same amount, same string, everywhere. (NFR-DAT-08)
 9. **No epsilon, no tolerance, no client-side authority.** Comparisons happen in SQL, in the bid function, under the lock; the client pre-check is Tier 1 UX only and uses the shared module. (BR-08, ARCHITECTURE §13.6)
 10. **No "Demo Points", no currency other than SAR.** (BR-33)
 11. **No removal of the `VALUE < 'Infinity'` clause** from `sar_amount`, ever, for any reason. (§8.1)
+
+### 9.5a The word "increment" in rule 5 means a *check*, not a *column* — recorded `2026-08-15`
+
+[`D-01`](../decisions/D-01-bid-increment-button.md) is a made owner decision: the bid control
+becomes a **button carrying a seller-set increment**, and `V2-A3` adds a `bid_increment`
+column. Rule 5's first two words are "No increment", so this note exists to say exactly what
+rule 5 does and does not forbid, before someone greps it and blocks a decided feature — or,
+worse, cites it to justify the constraint it was written to prevent.
+
+**Rule 5 forbids a *rejection*.** It is a list of checks — increment, maximum,
+leading-bidder, reserve — each one a reason the server might refuse a bid. Its subject is
+what `place_bid` **accepts**. A column recording what the *screen offers* rejects nothing and
+is not within its scope. `BR-32` governs the server; `D-01` governs the screen; a `+0.01`
+raise from a crafted request stays valid at every increment setting, and `D-01` §4 requires
+the test proving it to land in the same PR as the column.
+
+**So the column does not violate rule 5 — and rule 5 becomes *more* load-bearing once it
+exists, not less.** `D-01` §3 predicts the exact failure: a session sees a `bid_increment`
+column, concludes the schema is missing a constraint, and adds
+`check (amount = current_price + bid_increment)`. **That** is rule 5, squarely, and the
+column is what makes it look like hygiene. **Rule 5 is not weakened by this note. Its blast
+radius is narrowed to the thing it was always about, so that it still fires when it matters.**
+
+Rule 5's wording is **not** amended here, because `O25`–`O30` are open and the honest edit
+cannot be written yet. What `V2-A3` must do, in the PR that adds the column: amend this rule,
+amend [`S0-11` §7](S0-11-auction-record.md) row 1, and narrow `INT-08` — **three artefacts,
+of which only `INT-08` is named in `V2-A3`'s stated scope or in `CLAUDE.md` §9.**
+
+### 9.6 The gap rule 1 left open — **closed 2026-08-15 by V2, which took option (b)**
+
+**Read this section knowing it has already been answered.** It used to be a question, and it
+is preserved as one below because the reasoning is what makes the answer checkable. What
+changed is that `V2` shipped a rewritten `lib/money.ts` and the primitive now exists.
+
+Rule 1 forbids "arithmetic on amounts" in JavaScript, and it is right to. But `D-01`'s button
+must display and submit **`current_price + increment`**, which is an addition, on two amounts,
+on the client. The two ways out this section recorded were: **(a)** the server returns the
+button's amount as text, already computed, so the client never does arithmetic at all; or
+**(b)** an addition primitive in `lib/money.ts` doing pure string arithmetic in `formatSar`'s
+style. This section judged **(a)** "the smaller change and the one that keeps rule 1 absolute
+rather than carved out", at the cost of a round trip per price change.
+
+**V2 built (b).** The bid button computes the amount on the client —
+`addMoney(auction.current_price, auction.bid_increment)`
+(`components/bidding/live-auction.tsx:138`, `components/sessions/hall.tsx:227`) — which is
+exactly the call site this section was written about.
+
+- **`lib/money.ts` now has addition, and it is not a carve-out from rule 1.**
+  Its exported values are exactly, and exhaustively:
+  `addMoney`, `compareMoney`, `formatIncrement`, `formatMoney`, `isMoneyString`,
+  `parseIncrementInput`, `parseMoneyInput` — **seven, of which seven are
+  functions.** Every one of them routes through one private pair, `toCents` / `fromCents`,
+  which converts the decimal string to **`BigInt` integer cents** and back. `addMoney` is
+  therefore `toCents(a) + toCents(b)` — addition on arbitrary-precision integers, never on a
+  binary float, and `BigInt` has no 2⁵³ and no ceiling, so `BR-21` survives it. *(That list is
+  machine-checked against the module, so it is an inventory rather than a recollection. The
+  check now asserts the primitive is **present** and BigInt-backed; the day someone
+  reimplements it on `Number`, it goes red.)*
+- **The obvious implementation is still banned on sight** by rule 1, and correctly: `Number(a)
+  + Number(b)` corrupts above 2⁵³ and misrepresents decimal fractions below it. **What rule 1
+  forbids is float arithmetic on an amount, not the concept of addition** — and that
+  distinction is the entire load-bearing content of this section. `parseFloat`, `Number()` and
+  `+` on a decimal string remain forbidden everywhere, `lib/money.ts` included.
+- **What (b) costs, now that it is the answer.** The client holds an amount the server did not
+  compute, so the two can disagree — and the server is the authority (§9.9). V2's shape keeps
+  that safe by never letting the client's number be the decision: the button submits an
+  amount, and `place_bid` re-derives its own `v_min` inside the row lock and rejects a
+  disagreement. The client-side sum is a **display and a submission**, never an authorisation.
+  That is the property to protect if this is ever refactored.
+- **`O29` is still open and this does not close it.** It asks whether an off-grid price (after
+  a crafted `+0.01`) means the button offers `current + increment` or **rounds up to the next
+  multiple**. Round-up needs division and modulo on decimal strings — a strictly larger
+  primitive than `addMoney`. V2 shipped plain addition, which is `O29`'s first branch, **by
+  building rather than by deciding**. If the owner answers `O29` the other way, `lib/money.ts`
+  needs the larger primitive.
+
+**One thing this section asked for did not ship: the fixture.** It called for "the same 40-digit
+golden fixture" that §7 requires of the formatter. V2 has no test over `lib/money.ts` at all —
+not for `addMoney`, not for `formatMoney`. The technique is right and unverified, which is a
+weaker claim than this section is written to support, and it is stated here rather than left
+for someone to assume the machine-checked inventory covers behaviour. It covers **names**.
 
 ---
 

@@ -41,9 +41,22 @@ body {
   -webkit-font-smoothing: antialiased;
 }
 
-/* Tabular numerals — every price, counter and count. Western digits only. */
+/* Tabular numerals — every price, counter and count. Western digits only.
+ *
+ * `direction: ltr` restored from main in the 2026-08-16 merge, and it is not
+ * cosmetic. <Money> makes this element a scroll island, so that an amount with
+ * no ceiling (BR-21) scrolls inside itself instead of widening the document.
+ * A scroll container opens at its START edge — so in an RTL context the island
+ * would rest at the END of the digits, showing "…,890.99" and hiding the
+ * magnitude, which is the one part of a price nobody may have to scroll to
+ * find. LTR makes the start edge the MOST significant digit.
+ *
+ * `<bdi>` already supplies `unicode-bidi: isolate`, which is why that half of
+ * main's rule is not repeated here. Every consumer of `.num` in this tree is a
+ * `<bdi>`; if that ever stops being true, this needs the isolate back. */
 .num {
   font-variant-numeric: tabular-nums;
+  direction: ltr;
 }
 
 /* The SAR indicator — always OUTSIDE the number's bidi isolate. */

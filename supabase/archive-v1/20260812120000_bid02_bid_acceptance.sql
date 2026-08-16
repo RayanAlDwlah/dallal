@@ -110,6 +110,30 @@ create trigger bids_no_update_or_delete
 -- postgres (which bypass RLS): a bid row can only be born inside place_bid.
 -- The flag is transaction-local and set only by place_bid immediately before
 -- its INSERT; any second code path setting it fails review (S0-12 §9.4).
+--
+-- 2026-08-15 — READ THIS BEFORE IMPLEMENTING PAUSE. The sentence above is not
+-- style; it is the pause ticket's first trap, and the trap is invisible from
+-- the pause side. This one flag gates TWO doors:
+--     bids_only_via_place_bid()  -- may a bid row be inserted?
+--     auctions_guard_update()    -- may end_time move?  (20260814000000:123)
+-- The coupling is deliberate FOR EXTENSION -- 20260814000000:120 calls it
+-- "the same transaction-local flag that gates the bids insert. A bid and its
+-- extension are therefore inseparable: both commit or neither does."
+--
+-- Pause needs the second door WITHOUT the first: it moves end_time and inserts
+-- no bid. So a pause that reaches for this flag to satisfy the end_time guard
+-- ALSO holds the bids insert gate open for the whole transaction, and ADR-2 /
+-- SEC-Z4 -- "structural for EVERY role, including service_role and postgres"
+-- -- is not structural for the duration. The flag is transaction-local, so the
+-- window is one transaction; ADR-2's guarantee is that the window is zero.
+--
+-- This is not a new rule. "Any second code path setting it fails review" was
+-- written before pause existed and already forbids it. CLAUDE.md 5 independently
+-- says "a second gate for the pause path is the obvious shape" -- correct, and
+-- it is now also the ONLY safe shape, for a reason stated in neither file:
+-- a distinct flag, so opening the end_time door never opens the bids door.
+-- CLAUDE.md 5's "the guard must still refuse an unflagged update" is the half
+-- that is easy to satisfy. This is the half that is easy to miss.
 create or replace function public.bids_only_via_place_bid()
 returns trigger language plpgsql as $$
 begin
