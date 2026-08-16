@@ -377,9 +377,24 @@ chk "no physical ml-/mr-/pl-/pr- utility in JSX" \
 #
 # Part 2 is tree-wide on purpose. money.tsx is where the pattern is defined;
 # any component is where it gets copied wrong.
+#
+# PART 1 WAS LINE-ANCHORED AND WENT BLIND IN THE SAME COMMIT THAT RE-AIMED IT.
+# It read `grep -oE '<bdi[^>]*>[{][a-zA-Z_]+'`, which requires the `{` to sit
+# IMMEDIATELY after the `>`. The 2026-08-16 merge restored the literal space
+# between the digits and `SAR`, which reflowed `Money`'s JSX across three lines —
+# and from that moment part 1 matched only `IncrementAmount`, the single-line
+# one. The PRIMARY money rendering, the whole reason the check exists, was
+# unwatched and the suite still printed PASS.
+#
+# Found by `tests/guards/negative.sh` reporting MISSED, not by reading: the
+# probe replaces `{formatMoney(amount)}` with `{amount}` and the guard stayed
+# green. That is the third time on this project that a pattern which silently
+# stopped matching reported nothing — a formatter is not a line, and a check
+# about JSX must be written over the file, not over its lines.
 chk "money renders through a formatter inside <bdi>, with SAR outside the isolate" \
-    "$(( $(perl -0777 -pe 's{/\*.*?\*/}{}gs; s{^\s*//[^\n]*$}{}gm' components/ui/money.tsx \
-            | grep -oE '<bdi[^>]*>[{][a-zA-Z_]+' | grep -vc 'format') \
+    "$(( $(perl -0777 -ne 's{/\*.*?\*/}{}gs; s{^\s*//[^\n]*$}{}gm;
+                           while(/<bdi\b[^>]*>\s*\{\s*([A-Za-z_]\w*)/gs){ print "$1\n" }' \
+              components/ui/money.tsx | grep -vc 'format') \
        + $(code_ts | perl -0777 -ne 'while(/<bdi\b.*?<\/bdi>/gs){ print "$&\n" }' \
             | grep -c 'SAR') ))" 0
 
