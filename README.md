@@ -36,3 +36,5 @@ npm run dev
    أقصى 20 (قيد `CHECK`). المرفوضة لا تمدّد، والعدّاد في المتصفح عرض فقط.
 
 التفصيل الكامل في `supabase/migrations/20260815100000_core_schema.sql` — المخطط يوثّق نفسه.
+
+جميع القرارات المنتجية النهائية في `PRD.md` §21.1 — all fifteen product decisions closed, zero unresolved questions.

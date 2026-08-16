@@ -82,9 +82,12 @@ already holds. So it is in the read set for the same reason the other six are.
 **Field 3 needs one sentence of its own, because its character changed.** Before
 2026-08-13, `end_time` sat with `owner_id`, `starting_price` and `created_at` in the
 immutable-creation-terms list, and any update to it raised. It is now **conditionally
-mutable**: forward only, in 30-second quanta, only inside `place_bid`, and only together
-with `extension_count + 1` — four conditions, all required, enforced by
-`auctions_guard_update()` (`20260814000000:113`). Every other shape still raises.
+mutable** through exactly two doors: (1) inside `place_bid`, forward only, in 30-second
+quanta, and only together with `extension_count + 1` — four conditions, all required,
+enforced by `auctions_guard_update()` (`20260814000000:113`); or (2) inside the
+pause/resume operation (`resume_session()`), which moves `end_time` forward by the
+exact wall-clock interval the session was paused, and never touches `extension_count`.
+Every other shape still raises. `CLAUDE.md` §5 records both doors as the governing rule.
 
 > **What this costs you.** Any surface that treats `end_time` as fixed after render — a
 > countdown seeded once at mount, a cached "ends at" string, a `revalidate` window derived

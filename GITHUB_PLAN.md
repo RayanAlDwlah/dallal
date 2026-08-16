@@ -49,11 +49,16 @@ The repository ID is unchanged, confirming this was a rename of the existing rep
 
 ### 1.2 ✅ Resolved — GitHub usernames are confirmed
 
-| Developer | GitHub username | Ownership (TEAM.md — unchanged) |
+| Contributor | GitHub username | Steward of (review interest, not permission) |
 |---|---|---|
-| **Abdulrahman** | **`Dem4t`** | Authentication & User Management |
-| **Mohammed** | **`m7ya505`** | Auction Management |
-| **Rayan** | **`RayanAlDwlah`** | Bidding & Realtime · repository owner |
+| **Abdulrahman** | **`Dem4t`** | Authentication, session, authorization, identity data |
+| **Mohammed** | **`m7ya505`** | Design system and presentation consistency |
+| **Rayan** | **`RayanAlDwlah`** | Bidding, concurrency, closing, current-price correctness · repository owner |
+
+> **Amended 2026-08-15.** This column used to read *"Ownership"*. **Nobody owns an area**:
+> any available contributor may claim any **ready** ticket, and **a steward's absence must
+> not block one** (`CLAUDE.md` §1). Every "Owner" column below should be read as *who to tag
+> for review* — and every one of them is empty until somebody claims the issue.
 
 **Issue S0-00b is removed from the plan** — it existed only to obtain these. This resolves v1.0 risk 2.
 
@@ -228,7 +233,7 @@ Sprint 0 is **shared foundation work, not a fourth workstream.** Every Issue has
 
 ### 3.1 Prerequisite — already complete
 
-| ID | Title | Owner | Status | Outcome |
+| ID | Title | Steward | Status | Outcome |
 |---|---|---|---|---|
 | **S0-00** | Rename repository `dllal` → `dallal` | **Rayan** (`RayanAlDwlah`) | ✅ **COMPLETE** | Done before this plan revision. Canonical name is now `RayanAlDwlah/dallal`, same repository ID 1331850595 — a rename, not a new repository (§1.1). **No GitHub Issue needed; close as done or do not create it** |
 
@@ -236,18 +241,18 @@ Sprint 0 is **shared foundation work, not a fourth workstream.** Every Issue has
 
 ### 3.2 Repository and platform baseline
 
-| ID | Title | Owner | Labels | Depends on | Description & Acceptance Criteria |
+| ID | Title | Steward | Labels | Depends on | Description & Acceptance Criteria |
 |---|---|---|---|---|---|
 | **S0-01** | **Commit the approved source documents to `main`** | **Rayan** — `RayanAlDwlah` | `type:foundation` `area:shared` `priority:critical` | None *(S0-00 complete)* | **Rescoped in v1.1: the repository is already initialized.** Commit `9326623c` created `main` with a `.gitignore`, and its message states documentation is "to be added once the updated PRD lands." It has landed.<br>**Description:** Add on top of the existing commit — do **not** overwrite it. Commit `PRD.md` v3.0, `TEAM.md` v2.0, `ARCHITECTURE.md` v1.1, `GITHUB_PLAN.md` v1.1; add `README.md`; add `.env.example` with **placeholder values only**; apply the three-line `.gitignore` fix from §1.4.<br>**AC:** all four documents are on `main` at their current versions · `README.md` states Dalal is a **responsive web application** on Vercel with Supabase, and links to all four documents · `.env.example` contains **names and placeholders only — no real values** · `.gitignore` ignores every `.env` variant while allowing `.env.example` · **the existing `.gitignore` content is preserved, not replaced** · **no secret, key, token, or connection string is committed** · all three developers can clone and read the documents |
 | **S0-02** | **Protect `main` and create the three feature branches** | **Rayan** — `RayanAlDwlah` | `type:foundation` `area:shared` `priority:critical` | **S0-01** | **Description:** Configure branch protection on `main` per TEAM.md §8 and §15, then create the three permanent feature branches from `main`. **`main` now exists, so protection can be applied** (§1.5).<br>**AC:** direct pushes to `main` are blocked for **all** collaborators, owner included · merges require a Pull Request · a PR requires **at least one** approving review · `feature/abdulrahman-auth`, `feature/mohammed-auctions`, `feature/rayan-bidding` all exist and **all branch from the same `main` commit** · **branch names exactly as specified — none renamed, no fourth permanent branch** · a test direct push to `main` is rejected |
 | **S0-03** | **Create labels, milestones, and Issue/PR templates** | **Rayan** — `RayanAlDwlah` | `type:foundation` `area:shared` `priority:high` | S0-01 | **Description:** Add the 13 project labels (§1.5), preserving all 9 existing defaults. Create milestones M0 → M4. Add the Pull Request template from TEAM.md §20 and an Issue template matching the Phase 6 structure.<br>**AC:** 22 labels exist, no existing label deleted · five milestones exist · `.github/pull_request_template.md` matches TEAM.md §20 verbatim · opening a PR pre-fills the template · **no GitHub Actions workflow is created** |
-| **S0-04** | **Connect Supabase projects (production + non-production)** | **Abdulrahman** — `Dem4t` | `type:foundation` `area:shared` `priority:critical` | S0-01 | **Description:** Create the two Supabase projects the deployment model requires (ARCHITECTURE §18.1, §18.4). Record connection details for the team. Assigned to Abdulrahman because Supabase Auth is the first service consumed and he owns it — and to keep Sprint 0 load off Rayan (TEAM.md §25 risk 1).<br>**AC:** a production Supabase project exists · a non-production project exists for previews and local work · both are reachable by all three developers · connection values are distributed **out of band, never committed** · which project each environment targets is written down |
+| **S0-04** | **Connect Supabase projects (production + non-production)** | **Abdulrahman** — `Dem4t` | `type:foundation` `area:shared` `priority:critical` | S0-01 | **Description:** Create the two Supabase projects the deployment model requires (ARCHITECTURE §18.1, §18.4). Record connection details for the team. Abdulrahman is the natural steward here because Supabase Auth is the first service consumed — but the ticket is claimable by anyone (`CLAUDE.md` §1).<br>**AC:** a production Supabase project exists · a non-production project exists for previews and local work · both are reachable by all three developers · connection values are distributed **out of band, never committed** · which project each environment targets is written down |
 | **S0-05** | **Connect the Vercel project and verify preview deployments** | **Abdulrahman** — `Dem4t` | `type:foundation` `area:shared` `priority:high` | S0-01, S0-04 | **Description:** Link the GitHub repository to Vercel per ARCHITECTURE §18. Confirm `main` → production and PR branches → preview.<br>**AC:** merging to `main` deploys to production · opening a PR produces a preview deployment with a unique URL · production points at the production Supabase project and previews at the non-production one (per V-3) · a failed build leaves the previous deployment live · **no GitHub Actions workflow is added — Vercel's own integration is used** |
 | **S0-06** | **Agree the environment variable strategy** | **Abdulrahman** — `Dem4t` | `type:foundation` `area:shared` `priority:high` | S0-04 | **Description:** Define variable names and where values live, per ARCHITECTURE §17. Distinguish public configuration from server-only secrets **by name**, so a mistake is visible in review.<br>**AC:** an example file listing **names only, no values**, is committed · public and server-only variables are distinguishable by naming convention · values are set in Vercel per environment, never in the repository · TEAM.md rules 9 and 10 restated in the example file's comments · **confirmed that the application holds no elevated Supabase credential** (ARCHITECTURE §17.3); if one appears, raise it |
 
 ### 3.3 Web application scaffold
 
-| ID | Title | Owner | Labels | Depends on | Description & Acceptance Criteria |
+| ID | Title | Steward | Labels | Depends on | Description & Acceptance Criteria |
 |---|---|---|---|---|---|
 | **S0-07** | **Create the responsive web application scaffold** | **Mohammed** — `m7ya505` | `type:foundation` `area:shared` `priority:critical` | S0-01 | **Description:** A web application that builds and runs, deployable to Vercel. Compatible with Vercel's stateless execution model (ARCHITECTURE §18.5) — no long-running process, no in-memory state. TEAM.md §12 S0-2/S0-3.<br>**AC:** the app builds and runs locally with one documented command · it deploys successfully to Vercel · an empty page renders in a desktop browser **and** a 375 px-wide mobile browser without horizontal scrolling · the entry point and provider setup are established once, so all three developers register into it rather than each inventing their own · **framework choice is the team's, constrained only by ARCHITECTURE §18.5** |
 | **S0-08** | **Establish routing and page placeholders** | **Mohammed** — `m7ya505` | `type:foundation` `area:shared` `priority:critical` | S0-07 | **Description:** One routing structure with empty placeholders for every MVP page, so three developers do not invent three routing approaches. TEAM.md §12 S0-4.<br>**AC:** placeholder routes exist for: auction listing, auction detail, register, login, **password reset**, profile · each is reachable and renders an empty page · adding a route is a small additive edit, not a restructure · the convention is documented in the README |
@@ -257,11 +262,11 @@ Sprint 0 is **shared foundation work, not a fourth workstream.** Every Issue has
 
 > These three are the highest-leverage Issues in the entire plan. TEAM.md §14 identifies them as the items that unblock all parallel work.
 
-| ID | Title | Owner | Labels | Depends on | Description & Acceptance Criteria |
+| ID | Title | Steward | Labels | Depends on | Description & Acceptance Criteria |
 |---|---|---|---|---|---|
 | **S0-10** | **Publish the identity contract** | **Abdulrahman** — `Dem4t` | `type:foundation` `area:auth` `priority:critical` | S0-04 | **Description:** TEAM.md task **A-02**, ARCHITECTURE §10.4 — **the single highest-priority task on the team.** Define how any part of the app obtains "the current user", and publish it to Mohammed and Rayan. Must define **two distinct things** and mark clearly which is which.<br>**AC:** **(1) client-side session state** — is someone signed in, and their display name — documented and marked **UX only, never an authorization decision** · **(2) server-side verified identity** — the authenticated user identifier as the database sees it — documented and marked **authoritative** · it is unambiguous which to use for auction ownership (FR-CREATE-02) and bid attribution (FR-BID-01) · both Mohammed and Rayan confirm in writing they can build against it · **this is a contract, not an implementation — it can be agreed and published before the auth code is finished** |
 | **S0-11** | **Agree the auction record contract** | **Mohammed** — `m7ya505` | `type:foundation` `area:auction` `priority:critical` | S0-07 | **Description:** TEAM.md task **M-01**, TEAM.md §10.3 and ARCHITECTURE §9.3–§9.4 — agree the auction fields Rayan's bid validation reads and the fields Rayan writes at close. Agreed jointly with Rayan; **Mohammed owns the auction record** (TEAM.md §4).<br>**AC:** the six read fields are defined and frozen: auction id, owner, status, end time, starting price, current price · the four fields Rayan writes at close are agreed: status, final price, winner, close time · it is explicit that **Rayan writes current price on each accepted bid and nothing else** (ARCHITECTURE §9.3–§9.4) · Rayan confirms bid validation can be built against it · renaming or removing any of the six requires telling Rayan first |
-| **S0-12** | **Agree the SAR money representation** | **Rayan** — `RayanAlDwlah` | `type:foundation` `area:shared` `priority:critical` | None | **Description:** TEAM.md §11 "The money representation rule (SAR)" and §12 **S0-12**. One representation for storing, comparing, and formatting prices. **Assigned to Rayan as primary because the correctness-critical half — exact comparison in the bid operation — is his**; Mohammed is a required reviewer because he owns creation input and display. Neither may proceed with a different representation.<br>**AC:** storage/comparison representation agreed — **exact decimal, two places, never floating point** (NFR-DAT-05) · **no maximum** — large values handled correctly, never rejected for size (BR-21, SEC-R3) · one display format agreed for listing, detail, bid input, history, and results (NFR-DAT-08) · currency is **SAR** and values are **simulated** (BR-33) · the term **"Demo Points" is prohibited** · Mohammed has reviewed and confirmed · recorded where both can find it |
+| **S0-12** | **Agree the SAR money representation** | **Rayan** — `RayanAlDwlah` | `type:foundation` `area:shared` `priority:critical` | None | **Description:** TEAM.md §11 "The money representation rule (SAR)" and §12 **S0-12**. One representation for storing, comparing, and formatting prices. **Rayan is the steward because the correctness-critical half is the exact comparison inside the bid operation**; Mohammed reviews the display half. **Either may claim it, and neither may proceed with a different representation.**<br>**AC:** storage/comparison representation agreed — **exact decimal, two places, never floating point** (NFR-DAT-05) · **no maximum** — large values handled correctly, never rejected for size (BR-21, SEC-R3) · one display format agreed for listing, detail, bid input, history, and results (NFR-DAT-08) · currency is **SAR** and values are **simulated** (BR-33) · the term **"Demo Points" is prohibited** · Mohammed has reviewed and confirmed · recorded where both can find it |
 | **S0-13** | **Split the auction detail page into owned components** | **Mohammed** — `m7ya505` | `type:foundation` `area:shared` `priority:critical` | S0-08 | **Description:** TEAM.md §11 and §12 **S0-8** — the project's worst recurring merge-conflict risk. Create the **empty component files** now, per the ownership split, so both developers have a file of their own from their first commit. Agreed jointly with Rayan.<br>**AC:** **Mohammed's** files exist and are empty: page shell + data loading, product content, status label + countdown, current-price **display region** · **Rayan's** files exist and are empty: bid input + submit + feedback, bid history list, outcome/winner banner · the page mounts Rayan's components and passes the auction id · **the split is by responsibility, not by file** (CLAUDE.md §1) — the empty files are still created per this list, but Mohammed may change presentation in any of them provided behaviour and contracts are unchanged · the split is recorded in the README or a code comment so it survives the sprint |
 | **S0-14** | **Update TEAM.md §19 label list to the namespaced scheme** | **Rayan** — `RayanAlDwlah` | `type:foundation` `documentation` `priority:medium` | S0-03 | **Description:** TEAM.md §19 lists flat labels (`auth`, `verify`, …); this plan uses `area:*` / `type:*` (§1.5). Align the document with reality rather than leaving a discrepancy.<br>**AC:** TEAM.md §19 lists the actual labels · the `verify` → `type:verification` mapping is preserved, including the note that it is for **technical** items only and that `needs-decision` does not exist · no product decision is altered |
 
@@ -294,7 +299,7 @@ Sprint 0 is complete when **all** of these are true:
 >
 > All five carry `type:verification`. **None may be labelled or discussed as a product question.**
 
-| ID | Title | Owner | Labels | Depends on | Blocks | Description & Acceptance Criteria |
+| ID | Title | Steward | Labels | Depends on | Blocks | Description & Acceptance Criteria |
 |---|---|---|---|---|---|---|
 | **V-1** | **Verify database transaction and row-locking semantics** | **Rayan** — `RayanAlDwlah` | `type:verification` `area:bidding` `priority:critical` | S0-04 | **BID-02, BID-03** — the entire bidding design | **Description:** ARCHITECTURE §22 V-1, §13. Confirm the platform database supports the row-level locking and transactional semantics the bid-acceptance design assumes, and measure behavior under genuinely concurrent bids. **This is the architecture's foundation** — ADR-2 depends on it.<br>**AC:** an exclusive row lock on a single auction row serializes concurrent operations as designed · concurrent bids against the same auction resolve to **exactly one acceptance** per price level · bids on **different** auctions do **not** block one another (ARCHITECTURE §13.3) · results are written up in the Issue · **if the semantics do not hold, escalate immediately — do not design around it silently** |
 | **V-2** | **Verify scheduling granularity for auction closing** | **Rayan** — `RayanAlDwlah` | `type:verification` `area:bidding` `priority:critical` | S0-04 | **BID-15** — automatic closing | **Description:** ARCHITECTURE §22 V-2, §15.6. Determine the minimum scheduling frequency available in Supabase. Can a sweep run every ~30 seconds — directly, or via two sweeps offset by 30 seconds?<br>**AC:** the minimum achievable frequency is measured and documented · whether **FR-END-03's 30 seconds** is achievable directly is answered yes/no · if there is a one-minute floor, whether **two offset sweeps** achieve 30-second effective granularity is answered · findings recorded in the Issue.<br>**Critical framing:** **FR-END-03 stands as written.** Correctness is never at stake — bid rejection is driven by the actual end timestamp against the database clock, never by the status flag (PRD LC-03, ARCHITECTURE §13 step 4). Only *presentation latency* is affected. A product conversation arises **only** if every technical mitigation fails, and then it is the product owner's call — never a developer's |
@@ -327,7 +332,7 @@ V-5 ──blocks──► nothing formally, but slows EVERY developer's loop
 
 ## 5. Abdulrahman — Milestone M1, Authentication & User Management
 
-**Assignee:** Abdulrahman — GitHub **`Dem4t`** · **Branch:** `feature/abdulrahman-auth` · **Ownership:** TEAM.md §3, unchanged · **14 Issues**
+**Steward:** Abdulrahman — GitHub **`Dem4t`** · **Branches:** one per ticket, `feature/<ticket-id>-<short-name>` · **Claimable by anyone** (`CLAUDE.md` §1) · **14 Issues**
 
 *All 14 Issues in this section are assigned in GitHub to **`Dem4t`**.*
 
@@ -338,8 +343,11 @@ V-5 ──blocks──► nothing formally, but slows EVERY developer's loop
 > profile view, including their loading, empty and error states.
 >
 > This affects `AUTH-02`→`AUTH-05` and `AUTH-08` most directly. **Tag Mohammed on the
-> presentation half** rather than building it alone. Abdulrahman's behaviour ownership is
-> unchanged, and Mohammed must not alter it.
+> presentation half** rather than building it alone. **Abdulrahman is the steward of the
+> authentication behaviour** — request his review before changing it, and if he is
+> unavailable, say in the PR that you requested it and proceed (`CLAUDE.md` §1). This line
+> used to name a person and forbid him from altering it; that was a permission boundary,
+> and it is gone.
 
 Every Issue carries `area:auth`. Shared traceability: TEAM.md §3, §13.1 · ARCHITECTURE §10, §11.2.
 
@@ -368,7 +376,7 @@ Every Issue carries `area:auth`. Shared traceability: TEAM.md §3, §13.1 · ARC
 
 ## 6. Mohammed — Milestone M2, Auction Management
 
-**Assignee:** Mohammed — GitHub **`m7ya505`** · **Branch:** `feature/mohammed-auctions` · **Ownership:** TEAM.md §4, unchanged · **19 Issues**
+**Steward:** Mohammed — GitHub **`m7ya505`** · **Branches:** one per ticket, `feature/<ticket-id>-<short-name>` · **Claimable by anyone** (`CLAUDE.md` §1) · **19 Issues**
 
 *All 19 Issues in this section are assigned in GitHub to **`m7ya505`**.*
 
@@ -414,7 +422,7 @@ Every Issue carries `area:auction`. Shared traceability: TEAM.md §4, §13.2 · 
 
 ## 7. Rayan — Milestone M3, Bidding & Realtime
 
-**Assignee:** Rayan — GitHub **`RayanAlDwlah`** · **Branch:** `feature/rayan-bidding` · **Ownership:** TEAM.md §5, unchanged · **21 Issues**
+**Steward:** Rayan — GitHub **`RayanAlDwlah`** · **Branches:** one per ticket, `feature/<ticket-id>-<short-name>` · **Claimable by anyone** (`CLAUDE.md` §1) · **21 Issues**
 
 *All 21 Issues in this section are assigned in GitHub to **`RayanAlDwlah`**. **Rayan is and remains the primary owner of the entire bidding and realtime domain** — see §7.1 on the support model, which transfers no ownership.*
 
@@ -437,42 +445,48 @@ Shared traceability: TEAM.md §5, §13.3 · ARCHITECTURE §13, §14, §15, ADR-2
 
 > **This is the largest and hardest workstream, and it carries almost all of the architectural risk** (TEAM.md §25 risk 1, ARCHITECTURE §23 risks 2 and 4). BID-02, BID-03, BID-15, and BID-20 deserve the majority of the team's review attention.
 
-### 7.1 Support model — Rayan retains full ownership of the bidding domain
+### 7.1 The bidding domain — claimable, with a review tier
 
-> **Rayan is and remains the primary owner of the entire bidding and realtime domain. Nothing below transfers ownership.**
+> **Rewritten 2026-08-15.** This section used to read *"Rayan retains full ownership of the
+> bidding domain… Rayan owns, exclusively and permanently"*, and it listed issues that were
+> *"never eligible for support"*. **That is void.** Every issue below is claimable by any
+> available contributor, and **Rayan's absence does not block one** (`CLAUDE.md` §1).
+>
+> What replaces it is not a permission tier but a **review tier**: some of these issues can be
+> got wrong in ways a test only catches under contention, so they carry a heavier review bar
+> — for whoever writes them, Rayan included.
 
-**Rayan owns, exclusively and permanently:**
+**Tier 1 — correctness-critical. Claim freely; expect a hard review.**
 
-| Domain | Issues |
-|---|---|
-| **Bid validation** | BID-02, BID-04, BID-13 |
-| **The atomic bid operation** | **BID-02** — the trust boundary |
-| **Concurrency** | **BID-03**, BID-20 |
-| **Current-price correctness** | **BID-05** |
-| **Bid history logic** | BID-01 |
-| **Realtime bidding updates** | BID-08, BID-09, BID-10, BID-11, BID-12, BID-17 |
-| **Auction closing** | **BID-15**, BID-19 |
-| **Winner determination** | **BID-16** |
-
-**The planned support, if and when capacity allows.** Abdulrahman's workstream is the smallest and least blocked (§10.1); Rayan's is the largest and carries the correctness-critical work. TEAM.md §25 risk 1 and ARCHITECTURE §23 risk 4 both flag this imbalance. **After Abdulrahman completes his critical authentication work** (AUTH-01 → AUTH-11 and the password-reset Issues AUTH-12 → AUTH-14), he may support Rayan with **lower-risk** work only:
-
-| Eligible for support | Issue | Why it is low-risk |
+| Domain | Issues | Why the bar is high |
 |---|---|---|
-| **Bid history UI** | BID-07 | Presentation of already-committed data. No validation, no state change |
-| **Winner / result UI** | BID-18 | Renders a recorded outcome. Computes nothing |
-| **Bid rejection messaging** | BID-04 | Wording and presentation of reasons the operation already returns |
-| **Integration testing** | INT-02, INT-05 | Verification, not implementation |
-| **UI verification** | INT-06 | Responsive checking at 375 px |
+| **The atomic bid operation** | **BID-02** | the trust boundary; ADR-2 says it is the *only* insert path |
+| **Concurrency** | **BID-03**, BID-20 | wrong here is invisible until two people bid in the same millisecond |
+| **Current-price correctness** | **BID-05** | one wrong derivation and every screen lies |
+| **End-time boundary / authorization** | BID-13, BID-14 | `LC-03`: eligibility is the clock, never the `status` flag |
+| **Auction closing** | **BID-15**, BID-19 | an auction that never finalizes has no winner |
+| **Winner determination** | **BID-16** | must be recomputable from history at any time (NFR-DAT-04) |
 
-**Rules governing this support — non-negotiable:**
+**What a Tier-1 PR must carry** — this is the requirement, and it does not depend on who wrote
+it:
 
-| Rule | |
-|---|---|
-| **Ownership does not move.** Rayan stays the primary owner of every Issue above, including any he receives help on | TEAM.md §7 |
-| **Rayan reviews and approves** every PR arising from this support | §11.3 |
-| **Never eligible for support:** BID-02 (bid operation), BID-03 (concurrency), BID-05 (current price), BID-13 (end-time boundary), BID-14 (authorization), BID-15 (closing), BID-16 (winner determination), BID-20 (concurrency test) | These are the correctness-critical core |
-| Support is **offered when capacity exists**, not scheduled as a dependency. No Issue is planned assuming it happens | |
-| If support occurs, it is noted in the Issue thread so ownership stays unambiguous | TEAM.md §7 |
+- a test that **fails without the change**, exercised under **concurrency** where the issue is
+  concurrent (SC-16, SC-17, SC-19), not just sequentially;
+- explicit evidence in the PR body, per `CLAUDE.md` §1 step 6 — changed files, verification
+  output, remaining risks, handoff notes;
+- **Rayan tagged as reviewer.** Tag him and proceed; if he is unavailable, another approval
+  merges it and his review can land after. **A steward's absence must not block a ready,
+  well-specified ticket.**
+
+**Tier 2 — the rest of the domain.** BID-01, BID-04, BID-07, BID-08 → BID-12, BID-17, BID-18,
+INT-02, INT-05, INT-06 and the remaining bidding issues carry the normal bar: one approval,
+tests, the guards green.
+
+**On capacity.** Abdulrahman's queue is the smallest and least blocked (§10.1); the bidding
+queue is the largest and carries the correctness-critical work (TEAM.md §25 risk 1,
+ARCHITECTURE §23 risk 4). Under the claim model the fix is mechanical and needs no
+negotiation: **whoever runs out of ready tickets claims from the deepest queue**, Tier 1
+included.
 
 | ID | Title | Labels | Depends on | Traceability | Acceptance Criteria |
 |---|---|---|---|---|---|
@@ -497,7 +511,7 @@ Shared traceability: TEAM.md §5, §13.3 · ARCHITECTURE §13, §14, §15, ADR-2
 | **BID-18** | Winner display | `type:feature` `area:bidding` `priority:high` | BID-16, S0-13 | FR-END-14, 16 · FR-DETAIL-18→21a · US-17 · **SC-66, SC-67** · TEAM R-22 | Winner sees `🎉 You won this auction!` / `Final Bid: <amount> SAR` / `Status: Ended` · any viewer sees the winner and final price · non-winning bidders see the outcome · **no screen offers or implies payment, contact, messaging, or shipping** (SC-67, BR-34) · responsive at 375 px |
 | **BID-19** | Terminal-state enforcement | `type:feature` `area:bidding` `priority:high` | BID-15 | **BR-15** · FR-END-18 · **SC-34** · TEAM R-23 | **No route exists to reopen, extend, or re-run an ended auction** (SC-34) · outcome fields are not user-writable · Ended is terminal |
 | **BID-20** | **Concurrency testing — required, not optional** | `type:testing` `area:bidding` `priority:critical` | BID-03 | **NFR-MNT-02** · SC-16→19 · TEAM R-25 | **An automated test submits genuinely simultaneous bids and asserts exactly one acceptance** (NFR-MNT-02) · a stress run shows every accepted bid exactly once with strictly increasing amounts · run repeatedly, not once · **this is the single most important test in the project** (ARCH §23 risk 2) |
-| **BID-21** | Bidding and realtime testing | `type:testing` `area:bidding` `priority:high` | BID-02 → BID-19 | SC-08→28, SC-55→57, SC-72→75 | Every rejection path · **boundary bids at the end time** (SC-27, SC-28) · **first bid equal to starting price accepted; second equal rejected; +0.01 accepted** (SC-55, SC-56) · **a bid never rejected for being too large or too small an increase** (SC-57) · **a leading bidder can bid again** (SC-72) · **no reserve outcome exists** (SC-73) · **a late bid does not extend the end time** (SC-74) · two-browser realtime verification · connection loss and recovery (SC-24) |
+| **BID-21** | Bidding and realtime testing | `type:testing` `area:bidding` `priority:high` | BID-02 → BID-19 | SC-08→28, SC-55→57, SC-72→75 | Every rejection path · **boundary bids at the end time** (SC-27, SC-28) · **first bid equal to starting price accepted; second equal rejected; +0.01 accepted** (SC-55, SC-56) · **a bid never rejected for being too large or too small an increase** (SC-57) · **a leading bidder can bid again** (SC-72) · **no reserve outcome exists** (SC-73) · **an accepted bid in the final 15 seconds moves the end time forward by exactly 30 seconds, repeating, to a hard cap of 20 — and a rejected bid never extends** (**BR-36 as amended 2026-08-13**; SC-74, SC-74a, SC-74b, SC-74c — this clause used to read "a late bid does not extend the end time") · two-browser realtime verification · connection loss and recovery (SC-24) |
 
 **Nothing in this workstream waits on a product answer.**
 
@@ -509,7 +523,7 @@ Shared traceability: TEAM.md §5, §13.3 · ARCHITECTURE §13, §14, §15, ADR-2
 
 These belong to no single workstream. Each still names **one** primary owner, with the other two as required reviewers.
 
-| ID | Title | Owner | Labels | Depends on | Traceability | Acceptance Criteria |
+| ID | Title | Steward | Labels | Depends on | Traceability | Acceptance Criteria |
 |---|---|---|---|---|---|---|
 | **INT-01** | **Checkpoint CP-1 — identity flows end to end** | **Abdulrahman** — `Dem4t` | `type:integration` `area:shared` `priority:high` | AUTH-04, AUC-07 | TEAM §14 CP-1 · SC-01, SC-39 | Everyone merges `main` into their branch first · a user registers, signs in, and creates an auction **correctly attributed to them** · a crafted request naming a different owner is attributed to the caller (SC-39) · verified jointly by Abdulrahman and Mohammed |
 | **INT-02** | **Checkpoint CP-2 — the live loop, two browsers** | **Rayan** — `RayanAlDwlah` | `type:integration` `area:realtime` `priority:critical` | AUC-11, BID-02, BID-05, BID-09 | TEAM §14 CP-2 · **SC-20→22** | Two browsers open the same auction · a bid in one updates the other's price **and** history **within 2 seconds with no refresh** · the update does not clear a typed amount, steal focus, or scroll · **this is the product's defining characteristic and cannot be verified from a diff — it needs a running preview** |
