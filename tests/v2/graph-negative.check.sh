@@ -33,7 +33,7 @@
 # ---------------------------------------------------------------------------
 # WHAT IS PROBED, AND WHAT IS NOT — SAID PLAINLY
 #
-# 157 probes against 199 assertions. The gap is not laziness and it is not
+# 162 probes against 199 assertions. The gap is not laziness and it is not
 # coverage theatre; it is five loops that generate one assertion per row of a
 # table, or per stated reading:
 #
@@ -169,6 +169,20 @@ cd "$(dirname "$0")/../.." || exit 1
 # argument is unchanged and it is still the harness's: refuse on dirty, arm the
 # trap after the refusal, `git checkout --` before reading the verdict. Nothing
 # below runs SQL or imports TypeScript — both are read as text.
+#
+# TWO MORE ON 2026-08-16, AND THEY ARE THE UNCOMFORTABLE ONES: `CLAUDE.md` and
+# the LIVE V2 migration, `supabase/migrations/20260815100000_core_schema.sql`.
+# The re-aimed `bid_increment` assertion pins ten facts across five files, and
+# four of those ten live in these two — the two halves of the contradiction that
+# are not documents-about-documents: the server that enforces the increment, and
+# the section of CLAUDE.md that records the whole thing as unresolved. Leaving
+# them undeclared would have left the loudest half of that assertion unprobed,
+# which is exactly the shape the paragraph above refuses. `CLAUDE.md` is the
+# file every session reads first, so it deserves the explicit sentence: it is
+# mutated for milliseconds, restored by `git checkout --` before the verdict is
+# read, and the trap restores it on any exit including an interrupt. The
+# dirty-tree refusal runs before the trap is armed, so a session that has
+# uncommitted CLAUDE.md edits gets a refusal rather than a lost edit.
 neg_files "docs/v2/TICKETS.md
 docs/v2/SPEC.md
 docs/decisions/README.md
@@ -180,13 +194,15 @@ TEAM.md
 GITHUB_PLAN.md
 docs/v2/TRACKER_PROPOSAL.md
 tests/v2/graph.check.mjs
-supabase/migrations/20260812120000_bid02_bid_acceptance.sql
+supabase/archive-v1/20260812120000_bid02_bid_acceptance.sql
 docs/contracts/S0-11-auction-record.md
 docs/contracts/S0-12-money.md
 docs/contracts/BID-02-bid-operation.md
 lib/money.ts
 tests/integration/excluded-features.check.sh
-supabase/migrations/20260814000000_bid15_closing_and_extension.sql"
+supabase/archive-v1/20260814000000_bid15_closing_and_extension.sql
+CLAUDE.md
+supabase/migrations/20260815100000_core_schema.sql"
 
 neg_run "node --no-warnings tests/v2/graph.check.mjs"
 
@@ -628,8 +644,15 @@ neg_probe "wider reading #1 — the hypothetical was discarded" \
 # by breaking the checker's own expectation. Same assertion, same catch, and
 # the file the owner owns is never touched.
 # ---------------------------------------------------------------------------
-neg_probe "every PRD.md line cited by the V2 docs exists and is not blank" \
+neg_probe "every line the V2 docs cite exists and is not blank" \
   'perl -pi -e '"'"'s/`PRD\.md:411`/`PRD.md:99411`/'"'"' docs/v2/SPEC.md'
+
+# The scanner stopped being PRD-only on 2026-08-16 — it resolves each citation
+# to the file its prose names — so this second probe covers the half that used
+# to go unwatched entirely. A citation into a SQL migration rots exactly as
+# quietly as one into the PRD, and until the merge nothing measured it.
+neg_probe "every line the V2 docs cite exists and is not blank" \
+  'perl -pi -e '"'"'s/bid_acceptance\.sql:524/bid_acceptance.sql:99524/'"'"' docs/v2/TICKETS.md'
 
 # Blunt on purpose, like probes 50 and 52: what it targets is the vacuity guard
 # itself, and nothing subtle makes a "did we find any at all" check go quiet.
@@ -925,28 +948,52 @@ neg_probe "every ARCHITECTURE.md line the crossings section rests on still sits 
 neg_probe "TICKETS.md still cites every ARCHITECTURE.md line its crossings section rests on" \
   'perl -pi -e '"'"'s/`ARCHITECTURE\.md:1552`/that line/g'"'"' docs/v2/TICKETS.md'
 
-# Kind five, twice: the SHIPPED CONSTRAINT. These two are the only probes in the
-# file whose real-world trigger is somebody changing the database rather than
-# somebody rewording a paragraph, and both mutations are edits a reviewer would
-# wave through. Tightening `>=` to `>` reads as hardening a bound. It also means
+# Kind five, twice: the ARCHIVED CONSTRAINT. These two are the only probes in the
+# file whose real-world trigger is somebody changing SQL rather than somebody
+# rewording a paragraph, and both mutations are edits a reviewer would wave
+# through. Tightening `>=` to `>` reads as hardening a bound. It also means
 # crossing 6 — "a lot cannot be inserted under the policy on `main` today" — is
 # arguing about a `WITH CHECK` that no longer says what it is quoted as saying.
-neg_probe "the shipped auctions insert policy still demands a future end_time at insert time" \
-  'perl -pi -e '"'"'s/end_time >= now\(\)/end_time > now()/'"'"' supabase/migrations/20260812120000_bid02_bid_acceptance.sql'
+#
+# THE LABELS CHANGED ON 2026-08-16 AND THE FIRST RUN OF THIS SUITE IS WHY.
+#
+# They read "the SHIPPED auctions insert policy" until the assertions upstream
+# were renamed to say `archived V1` — which they are: the file lives in
+# supabase/archive-v1/ and V2's `place_bid` is a different function in a
+# different migration. The probe kept the old wording, `neg_probe` matches its
+# label against the labels the check actually prints, found none, and reported
+# BROKEN — "no check prints this label". Worth noting exactly what that means,
+# because it is the good outcome: a probe pointed at a renamed assertion did not
+# quietly pass. It refused. That is the difference between this file and a
+# grep-for-a-string, and it is the reason a negative suite has to be RUN and not
+# merely written — this pair had never once executed before today.
+#
+# What they defend, stated narrowly enough to stay true: supabase/archive-v1/ is
+# frozen, so these no longer guard a live code path. They guard the ARCHIVE
+# ITSELF against being edited — and an edit to a frozen directory is precisely
+# the silent change nobody would think to look for.
+neg_probe "the archived V1 insert policy demanded a future end_time at insert time" \
+  'perl -pi -e '"'"'s/end_time >= now\(\)/end_time > now()/'"'"' supabase/archive-v1/20260812120000_bid02_bid_acceptance.sql'
 
 # And the comment half. De-shouting a SQL comment is the most innocent edit in
 # this suite; the sentence it flattens is the one recording that auction
 # immutability is the ABSENCE of a policy, which is half of crossings 5 and 6.
-neg_probe "the shipped auctions policy block still records that no update or delete path exists" \
-  'perl -pi -e '"'"'s/There is NO update and NO delete policy/There is no update and no delete policy/'"'"' supabase/migrations/20260812120000_bid02_bid_acceptance.sql'
+neg_probe "the archived V1 policy block recorded that no update or delete path existed" \
+  'perl -pi -e '"'"'s/There is NO update and NO delete policy/There is no update and no delete policy/'"'"' supabase/archive-v1/20260812120000_bid02_bid_acceptance.sql'
 
 # The self-count. Deleting the row rather than editing the heading, because a
 # dropped row is the mutation that got the reach table twice — there the row and
 # its denominator fell together and nothing noticed. Here the heading holds the
 # figure and the table holds the rows, so they cannot fall together, and this
 # probe is what proves that separation is real rather than asserted.
+#
+# The `archive-v1/` prefix is optional here because row 6's citation gained one
+# in the 2026-08-16 merge, when the file it names moved to supabase/archive-v1/.
+# Without it this probe deleted nothing and reported NO-OP — which is the
+# harness working: a probe that silently stops mutating would otherwise leave
+# the assertion above unproven while the suite still said 157/157.
 neg_probe "the crossings section's stated count matches the rows in its table" \
-  'perl -ni -e '"'"'print unless /^\| \*\*6\*\* \| `20260812120000_/'"'"' docs/v2/TICKETS.md'
+  'perl -ni -e '"'"'print unless /^\| \*\*6\*\* \| `(archive-v1\/)?20260812120000_/'"'"' docs/v2/TICKETS.md'
 
 # THE SEPARATION. Six `> **n.` items now sit below the owner's eight, numbered
 # 1..6 like his are, and the only thing keeping them apart is that the capture
@@ -1170,26 +1217,69 @@ neg_probe "TRACKER_PROPOSAL.md's tracking table still overshoots the register by
 neg_probe "every contract stating the end_time door rule names BOTH doors, not just place_bid" \
   'perl -pi -e '"'"'s{^}{"`end_time` may only be moved by `place_bid`.\n\n"}e if $. == 1'"'"' docs/contracts/S0-12-money.md'
 
-# S0-11 §7 counts three artefacts. These narrow one of them — and narrowing
-# INT-08 is not a hypothetical: `D-01` records it as the expected response the
-# day a `bid_increment` column lands, and CLAUDE.md §9 says the ONE acceptable
-# form is narrowing it in the same PR as a test proving the server still takes
-# a non-multiple. Do it without that, and three artefacts quietly become two.
+# ── The probes these replaced, and why there are now five of them ──────────
 #
-# TWO PROBES, BECAUSE THE FIRST ONE MISSED AND THAT IS THE FINDING. INT-08
-# counts twice on one line — `count_ts` over TypeScript, `count_sql` over SQL —
-# and each carries its own copy of the alternation. The assertion originally
-# asked whether the pattern appeared ANYWHERE IN THE FILE, so deleting the TS
-# half left the SQL half matching and the check stayed green. Which half is
-# deleted is not a coin flip either: a `bid_increment` COLUMN is SQL and the
-# BUTTON carrying it is TypeScript, so D-01's own change lands on the TS half
-# alone — the exact half the file-wide check could not see. Both are probed
-# now, because each hides a different thing and neither implies the other.
-neg_probe "all three artefacts S0-11 §7 says prohibit bid_increment still do" \
-  'perl -pi -e '"'"'s/bid_\?increment\|//'"'"' tests/integration/excluded-features.check.sh'
+# Two probes used to live here, both labelled "all three artefacts S0-11 §7 says
+# prohibit bid_increment still do", and both mutated the same file: they deleted
+# one half of INT-08's alternation, because INT-08 counts twice on one line —
+# `count_ts` over TypeScript, `count_sql` over SQL — and the assertion had once
+# asked whether the pattern appeared ANYWHERE IN THE FILE, so killing the TS
+# half left the SQL half matching and the check stayed green.
+#
+# On 2026-08-15 the thing those probes were rehearsing HAPPENED. `bid_increment`
+# shipped, and it did not amend three artefacts — it amended one, INT-08, and
+# left the two contract clauses standing. The assertion was re-aimed at the
+# contradiction itself (see graph.check.mjs, above `chk("the bid_increment
+# contradiction is intact on BOTH sides and recorded as open")`), and the two
+# probes went BROKEN — no check prints that label any more. That verdict is the
+# harness working: a probe whose assertion was renamed does not quietly stop
+# testing, it says so.
+#
+# FIVE PROBES NOW, ONE PER FILE, BECAUSE THE ASSERTION NOW SPANS FIVE FILES.
+# Ten pinned facts live in S0-11, S0-12, INT-08, `core_schema.sql` and
+# CLAUDE.md, and the failure this shape defends against is the realistic one:
+# somebody resolves the contradiction in ONE place. Amend the contract and
+# forget the code, drop the server check and forget the contract, or — the
+# quietest of the three — delete the paragraph in CLAUDE.md that records it as
+# open, leaving a tree where the prohibition and the enforcement both stand and
+# nothing says they disagree. Each probe below is one of those edits.
+#
+# The old TS/SQL split is not lost: probe 3 removes INT-08's re-aimed pin, which
+# is that same line's replacement.
 
-neg_probe "all three artefacts S0-11 §7 says prohibit bid_increment still do" \
-  'perl -pi -e '"'"'s/\(bid_\?increment\|min_\?raise\)/(min_?raise)/'"'"' tests/integration/excluded-features.check.sh'
+# 1. THE PROHIBITION SIDE — the contract row that still says the column may not
+#    exist. This is the edit `V2-A3` was supposed to make and did not.
+neg_probe "the bid_increment contradiction is intact on BOTH sides and recorded as open" \
+  'perl -ni -e '"'"'print unless /^\| ❌ `bid_increment` \/ minimum raise \|/'"'"' docs/contracts/S0-11-auction-record.md'
+
+# 2. THE ENFORCEMENT SIDE — the server. Not a document: `place_bid` on the live
+#    V2 schema, computing the floor the button raises to. Way (a) out of the
+#    contradiction is exactly this deletion, so the probe IS the resolution.
+neg_probe "the bid_increment contradiction is intact on BOTH sides and recorded as open" \
+  'perl -pi -e '"'"'s/v_min := v_a\.current_price \+ v_a\.bid_increment;/v_min := v_a.current_price;/'"'"' supabase/migrations/20260815100000_core_schema.sql'
+
+# 3. THE AUDIT — INT-08, the third artefact S0-11 §7 counts. Its prohibition was
+#    replaced by a pin on the increment inside the row lock; remove the pin and
+#    the audit stops watching either the old rule or the new one.
+neg_probe "the bid_increment contradiction is intact on BOTH sides and recorded as open" \
+  'perl -pi -e '"'"'s/v_a\.current_price \+ v_a\.bid_increment/v_a.current_price/g'"'"' tests/integration/excluded-features.check.sh'
+
+# 4. …and the other direction on the same file: the prohibition COMES BACK. A
+#    session reading S0-11 §7 and obeying it — which is the correct thing to do
+#    with a contract — restores the block INT-08 dropped, and the audit then
+#    fails the shipped server for doing what the owner shipped. The assertion
+#    has to notice that too, or "no longer carries the prohibition" is a fact
+#    only true in one direction.
+neg_probe "the bid_increment contradiction is intact on BOTH sides and recorded as open" \
+  'perl -pi -e '"'"'unless ($d) { $d = s{^chk }{chk "no bid increment \/ minimum raise" 0 0\n\nchk } }'"'"' tests/integration/excluded-features.check.sh'
+
+# 5. THE RECORD — CLAUDE.md §0. The quietest edit of the five and the only one
+#    that changes no behaviour and no contract: delete the paragraph naming the
+#    two ways out, and the tree still holds both sides of the contradiction with
+#    nothing left saying a decision is owed. That is the state this assertion
+#    exists to make impossible.
+neg_probe "the bid_increment contradiction is intact on BOTH sides and recorded as open" \
+  'perl -pi -e '"'"'s/Two ways out/One way out/'"'"' CLAUDE.md'
 
 # The count beside the list. Counted as a word, like every other total here.
 neg_probe "S0-11 §7's notice states the artefact count it actually lists" \
@@ -1214,16 +1304,37 @@ neg_probe "S0-11 §8.1's stated untouched-box count is the one its own table pro
 # partial grep listing six of the ten, and an incomplete enumeration presented
 # as exhaustive is a lie the check would then have frozen in place.
 neg_probe "S0-12 §9.6's inventory of lib/money.ts is exactly the module's exported values" \
-  'perl -pi -e '"'"'s/`isSar`, //'"'"' docs/contracts/S0-12-money.md'
+  'perl -pi -e '"'"'s/, `isMoneyString`//'"'"' docs/contracts/S0-12-money.md'
 
 neg_probe "S0-12 §9.6's stated export counts match the module" \
-  'perl -pi -e '"'"'s/\*\*ten, of which nine are$/**eleven, of which nine are/'"'"' docs/contracts/S0-12-money.md'
+  'perl -pi -e '"'"'s/\*\*seven, of which seven are$/**eight, of which seven are/'"'"' docs/contracts/S0-12-money.md'
 
-# …and from the CODE side. `addSar` is not an arbitrary name: it is one of the
-# two candidate answers §9.6 states for the gap rule 1 leaves open, so this is
-# the exact line a future session writes. Read as text; nothing imports it.
-neg_probe "no addition primitive has appeared in lib/money.ts while §9.6 still says none exists" \
-  'perl -pi -e '"'"'s{^}{"export function addSar(a: string, b: string): string { return a + b; }\n"}e if $. == 1'"'"' lib/money.ts'
+# ── …and from the CODE side, at a fact that is no longer the same fact ──────
+#
+# One probe used to sit here, labelled "no addition primitive has appeared in
+# lib/money.ts while §9.6 still says none exists". It inserted an `addSar` —
+# not an arbitrary name, but one of the two candidate answers §9.6 itself named
+# for the gap rule 1 leaves open — because §9.6 promised that "the day an
+# `addSar` appears, the check goes red and this section is what has to be
+# rewritten".
+#
+# THAT DAY WAS 2026-08-15. V2 shipped `addMoney`, the check went red on the
+# first run against the shipped tree, and §9.6 was rewritten rather than
+# relaxed: option (b), the sanctioned primitive. So the old probe went BROKEN,
+# correctly — it was rehearsing an event that has now actually happened, and
+# there is nothing left for it to rehearse.
+#
+# The assertion it belonged to was re-aimed at the property that outlives the
+# decision: the addition is INTEGER-CENT arithmetic on `BigInt`. Rule 1 forbids
+# floats on an amount, not addition — so the probes below break the two halves
+# that matter, and neither is hypothetical. A session "simplifying" `toCents`
+# away, or reaching for `Number()` to parse the decimal, writes exactly one of
+# these two lines and passes every other check in this repository.
+neg_probe "lib/money.ts's arithmetic is BigInt integer cents — never Number, never a float" \
+  'perl -pi -e '"'"'s/fromCents\(toCents\(a\) \+ toCents\(b\)\)/String(Number(a) + Number(b))/'"'"' lib/money.ts'
+
+neg_probe "lib/money.ts's arithmetic is BigInt integer cents — never Number, never a float" \
+  'perl -pi -e '"'"'s{^}{"const _probe = Number(\"1\");\n"}e if $. == 1'"'"' lib/money.ts'
 
 # The pause note in BID-02. Its argument rests on a measured fact — one session
 # flag gating two doors — and the note is long, which is what makes deleting it
@@ -1234,4 +1345,4 @@ neg_probe "no addition primitive has appeared in lib/money.ts while §9.6 still 
 neg_probe "BID-02's pause note still describes a real overload — one flag, both gates" \
   'perl -pi -e '"'"'s/READ THIS BEFORE IMPLEMENTING PAUSE/Historical note/'"'"' docs/contracts/BID-02-bid-operation.md'
 
-neg_report "V2-GRAPH-NEGATIVE" 157
+neg_report "V2-GRAPH-NEGATIVE" 162

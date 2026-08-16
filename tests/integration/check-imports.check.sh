@@ -87,12 +87,52 @@ fi
 # #155 proved it cannot certify the thing above it.
 # ---------------------------------------------------------------------------
 # No 2>/dev/null here either, and for the same reason one line down: if this
-# discovery grep fails, REACHABLE is empty, the else-branch below reports 0
+# discovery grep fails, the module set is empty, the branch below reports 0
 # against 0, and the whole hint PASSES having measured nothing. Same vacuous
 # shape as the -P bug, one step earlier in the pipeline.
-REACHABLE=$(grep -rh 'from "\.\./\.\./lib/' tests/*/*.check.mjs \
-  | sed 's/.*from "\.\.\/\.\.\///; s/".*//' | sort -u \
-  | while read -r f; do [ -f "$f" ] && printf '%s ' "$f"; done)
+#
+# THE SUBJECT MOVED ON 2026-08-16, AND THE OLD ONE HAD ALREADY GONE VACUOUS.
+#
+# The set used to be "lib modules a check.mjs imports", discovered by grepping
+# for `from "../../lib/`. On the V2 tree that set is EMPTY — measured, not
+# assumed: the two surviving checks (tests/v2/graph.check.mjs and
+# tests/governance/workflow.check.mjs) import `node:fs`, `node:url`,
+# `node:path` and `node:child_process` and nothing else. They read source as
+# TEXT rather than importing it, which is why they survived the V1 deletion at
+# all. So the file's own else-branch was firing — "NO-FILES-DISCOVERED" — and
+# its stated reason ("the harness demonstrably imports lib modules") was no
+# longer true of this tree.
+#
+# Two wrong ways out, both of which this file was written to forbid. Deleting
+# the branch and letting an empty set report PASS is the vacuous shape it
+# names. Deleting the hint altogether throws away the one measure that needs no
+# toolchain, on a tree where node <22 makes the load check unrunnable.
+#
+# So the subject is widened to what it should always have been: EVERY LOCAL
+# MODULE IN THE CHECK GRAPH — the check files themselves, plus any local module
+# they import. The check files are in it by construction, so the set is never
+# empty (check 1 already proved COUNT > 0) and there is no branch left that can
+# measure nothing. And it is aimed at the real #147 defect one hop earlier: an
+# `@/` value import written INTO a check is exactly as unresolvable as one in a
+# module the check pulls in, and it is the likelier of the two to be written,
+# because `@/` is what every other file in this repository uses.
+#
+# A local module is resolved against the directory of the check that imports
+# it, and only counted if it is a file on disk — a path that does not resolve
+# is the LOAD check's finding, not this one's, and double-reporting it here
+# would make one defect look like two.
+LOCAL_MODULES=$(
+  for f in $CHECKS; do
+    d=$(dirname "$f")
+    grep -hE '^[[:space:]]*import[[:space:]].*from[[:space:]]*"\.\.?/' "$f" \
+      | sed 's/.*from[[:space:]]*"//; s/".*//' \
+      | while read -r rel; do
+          m="$d/$rel"
+          [ -f "$m" ] && printf '%s\n' "$m"
+        done
+  done
+)
+REACHABLE=$(printf '%s\n%s\n' "$CHECKS" "$LOCAL_MODULES" | grep -v '^$' | sort -u | tr '\n' ' ')
 
 # POSIX only. This used `grep -P` for a `(?!type\s)` lookahead, and -P is
 # GNU-only: BSD grep answers `invalid option -- P`, the pipeline yields nothing,
@@ -122,13 +162,19 @@ if [ -n "$REACHABLE" ]; then
     # shellcheck disable=SC2086
     value_aliases $REACHABLE | sed 's/^/      hint: /'
   fi
-  chk "hint — no VALUE @/ import in a reachable module" "$aliased" 0
+  chk "hint — no VALUE @/ import anywhere in the check graph" "$aliased" 0
 else
-  # Not a pass. The harness demonstrably imports lib modules — check 1 already
-  # counted the files — so an empty set here means discovery broke, and
-  # reporting that as "no violations found" is the failure this file is about.
-  chk "hint — no VALUE @/ import in a reachable module" "NO-FILES-DISCOVERED" 0
+  # Still not a pass, and now it cannot be reached by a tree that merely has no
+  # lib imports: REACHABLE contains $CHECKS itself, and check 1 above has
+  # already asserted that $CHECKS is non-empty. Getting here means the file list
+  # was lost between the two, which is a broken harness, not a clean tree.
+  chk "hint — no VALUE @/ import anywhere in the check graph" "NO-FILES-DISCOVERED" 0
 fi
+
+# How many modules the hint actually read. A number nobody looks at until the
+# day it drops — which is the day someone deletes the last check that imports
+# anything and the hint quietly narrows to the check files alone.
+printf '      scanned %s module(s) in the check graph\n' "$(printf '%s' "$REACHABLE" | tr ' ' '\n' | grep -c . || true)"
 
 ran=$((pass + fail))
 echo

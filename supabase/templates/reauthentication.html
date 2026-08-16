@@ -1,0 +1,121 @@
+<!doctype html>
+<!--
+  دلال — رمز إعادة التحقق.  Supabase: Authentication → Emails → Reauthentication
+  Subject:  رمز التحقق: {{ .Token }}
+
+  Variables:  {{ .Token }}  — a 6-digit code, NOT a link. otp_length = 6 and
+  otp_expiry = 3600 in supabase/config.toml.
+
+  Sent when secure_password_change is on. It is OFF today
+  (supabase/config.toml:228), so nothing triggers this yet — the template is
+  here so that turning the flag on is a one-line change and not a surprise
+  English email.
+
+  THE CODE IS dir="ltr" AND letter-spaced (CLAUDE.md §3). Digits stay Western
+  (0–9). An RTL container renders a 6-digit run correctly on its own, but the
+  moment a client adds punctuation or a zero-width mark around it the run can
+  reorder — and a reordered code is one the user types wrong with no idea why.
+  The isolate costs nothing and removes the class of bug.
+-->
+<html dir="rtl" lang="ar" xmlns="http://www.w3.org/1999/xhtml">
+  <head>
+    <meta charset="utf-8" />
+    <meta name="viewport" content="width=device-width, initial-scale=1" />
+    <meta name="color-scheme" content="dark" />
+    <meta name="supported-color-schemes" content="dark" />
+    <title>رمز التحقق — دلال</title>
+    <!--[if mso]>
+      <style>body, table, td, a { font-family: Tahoma, Arial, sans-serif !important; }</style>
+    <![endif]-->
+    <style>
+      @media only screen and (max-width: 600px) {
+        .dl-card { padding: 28px 22px !important; }
+        .dl-title { font-size: 22px !important; }
+        .dl-code { font-size: 30px !important; letter-spacing: 8px !important; }
+      }
+    </style>
+  </head>
+
+  <body
+    dir="rtl"
+    style="margin:0; padding:0; background-color:#07090d; color:#e9edf5;
+           font-family:'IBM Plex Sans Arabic','Segoe UI',Tahoma,Arial,sans-serif;
+           -webkit-text-size-adjust:100%;"
+  >
+    <div style="display:none; max-height:0; overflow:hidden; opacity:0; color:transparent;">
+      رمز مكوّن من 6 أرقام، صالح لمدة ساعة.
+    </div>
+
+    <table role="presentation" dir="rtl" width="100%" cellpadding="0" cellspacing="0" border="0"
+           bgcolor="#07090d" style="background-color:#07090d; margin:0; padding:0;">
+      <tr>
+        <td align="center" style="padding:32px 16px;">
+          <table role="presentation" dir="rtl" width="600" cellpadding="0" cellspacing="0" border="0"
+                 style="width:100%; max-width:600px;">
+
+            <tr>
+              <td align="center" style="padding:0 0 22px;">
+                <span style="font-family:Rubik,'Segoe UI',Tahoma,Arial,sans-serif;
+                             font-size:27px; font-weight:700; color:#f5b942;
+                             letter-spacing:-0.5px;">دلال</span>
+              </td>
+            </tr>
+
+            <tr>
+              <td class="dl-card" bgcolor="#0f1219"
+                  style="background-color:#0f1219; border:1px solid rgba(255,255,255,0.08);
+                         border-radius:16px; padding:38px 34px;">
+
+                <h1 class="dl-title" style="margin:0 0 14px; font-size:25px; line-height:1.4;
+                                            font-weight:700; color:#e9edf5; text-align:right;">
+                  رمز التحقق
+                </h1>
+
+                <p style="margin:0 0 24px; font-size:15.5px; line-height:1.9;
+                          color:#9aa4b8; text-align:right;">
+                  اكتب الرمز هذا في الصفحة عشان نتأكد إنك أنت.
+                </p>
+
+                <table role="presentation" dir="rtl" width="100%" cellpadding="0" cellspacing="0"
+                       border="0" bgcolor="#161a23"
+                       style="background-color:#161a23; border-radius:12px;
+                              border:1px solid rgba(255,255,255,0.08);">
+                  <tr>
+                    <td align="center" style="padding:22px 12px;">
+                      <div class="dl-code" dir="ltr"
+                           style="font-family:Consolas,Menlo,'Courier New',monospace;
+                                  font-size:36px; font-weight:700; color:#f5b942;
+                                  letter-spacing:11px; text-align:center; direction:ltr;
+                                  unicode-bidi:isolate;">{{ .Token }}</div>
+                    </td>
+                  </tr>
+                </table>
+
+                <p style="margin:22px 0 0; font-size:13px; line-height:1.8;
+                          color:#5c6579; text-align:right;">
+                  الرمز صالح لمدة ساعة واحدة. لا ترسله لأي أحد — ولا نطلبه منك أبدًا.
+                </p>
+
+                <hr style="border:0; border-top:1px solid rgba(255,255,255,0.08); margin:26px 0 0;" />
+
+                <p style="margin:20px 0 0; font-size:13px; line-height:1.8;
+                          color:#5c6579; text-align:right;">
+                  ما طلبت رمز تحقق؟ تجاهل الرسالة — الرمز وحده ما يسوي شي بدون جلستك.
+                </p>
+              </td>
+            </tr>
+
+            <tr>
+              <td align="center" style="padding:24px 12px 0;">
+                <p style="margin:0; font-size:12px; line-height:1.8; color:#5c6579;">
+                  دلال منصة عرض توضيحية — المبالغ بالريال محاكاة، ولا تنتقل أي أموال.
+                </p>
+              </td>
+            </tr>
+
+          </table>
+        </td>
+      </tr>
+    </table>
+  </body>
+</html>

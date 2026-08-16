@@ -1,4 +1,48 @@
-# Dalal — Live Auction Web Platform
+# دلال — Dalal, live auction web platform
+
+> **قراءة أولى / READ FIRST.** هذا الملف يبدأ بحالة المنتج الحالية (V2، عربي)، ثم يكمل
+> بالوثائق الحاكمة بالإنجليزية — وكلها ما زالت سارية. The Arabic block below is the
+> current product; the English sections after it are the governing documents, unchanged.
+> Where the two describe the same thing, **V2 as shipped governs** (`CLAUDE.md` §0).
+
+منصة مزادات مباشرة بالعربية (RTL). Next.js + Supabase (PostgreSQL · Auth · Realtime · Storage)
+على Vercel. **المبالغ محاكاة — ما فيه دفع حقيقي ولا حقل بطاقة في أي مكان في المنتج.**
+
+- **الإنتاج:** https://dallal-rust.vercel.app — من فرع `delivery/v2-app` على مشروع Vercel `dallal`
+- **Supabase:** مشروع `dallal-prod` (`yfszokbunbqesigdfuwk`) في Dem4t' Org — سكيمة V2 مركّبة 2026-08-15
+- **المواصفة المرئية:** `design-system/previews/*.html` — عشرة ملفات هي مرجع كل شاشة
+- **تاريخ V1:** المخطط القديم في `supabase/archive-v1/`، والوثائق في `docs/` — للقراءة، مو للبناء
+
+## التشغيل محليًا
+
+```bash
+npm install
+cp .env.example .env.local   # عبّي قيم Supabase
+npm run dev
+```
+
+## الطبقة المساعدة (اختيارية)
+
+خمس نقاط ذكاء اصطناعي (`design-system/previews/ai.html`): كتابة الإعلان من الصور، فهم البحث
+بالكلام العادي، الإجابة عن القطعة من وصف البائع فقط، واقتراح سعر البداية (من SQL — النموذج
+لا يُنتج مبلغًا أبدًا). تتفعّل بمتغيّرات `AI_*` في `.env.local` (انظر `.env.example`) على أي
+خادم متوافق مع OpenAI (مثل LM Studio محليًا) أو Anthropic API. **بدون إعداد، المساعدة تختفي
+والمنتج يشتغل كاملًا** — ولا قيمة منها تبدأ بـ `NEXT_PUBLIC_`.
+
+## القرارات الثلاثة التي تشكّل الكود
+
+1. **المزايدة معاملة واحدة في قاعدة البيانات.** `place_bid()` بقفل صف، والعملاء ما لهم
+   `insert` على `bids` إطلاقًا — الباب الوحيد هو الدالة. الأهلية بساعة الخادم ضد
+   `end_time`، مو بعلم الحالة.
+2. **المال ليس float وما له سقف.** نطاق `sar_amount` بلا typmod، والمبالغ تعبر إلى
+   JavaScript نصوصًا (`::text` في كل select) وتُجمع كسنتات BigInt في `lib/money.ts`.
+   صيغة واحدة في كل مكان: `1,250.00 SAR`.
+3. **مانع القنص جزء من القبول.** مزايدة **مقبولة** في آخر 15 ثانية تمدّد 30 ثانية، بحد
+   أقصى 20 (قيد `CHECK`). المرفوضة لا تمدّد، والعدّاد في المتصفح عرض فقط.
+
+التفصيل الكامل في `supabase/migrations/20260815100000_core_schema.sql` — المخطط يوثّق نفسه.
+
+---
 
 **A responsive, browser-based real-time auction platform.**
 
@@ -159,13 +203,29 @@ The web application scaffold does not exist yet — it is Sprint 0 Issue **S0-07
 
 ## Project status
 
-**Planning complete. Implementation has not started.**
+**V2 is in production.** This section read *"Planning complete. Implementation has not
+started."* until 2026-08-16 — written when it was true, and left standing through the whole
+of V1 and the whole of V2. Corrected in the merge that brought these documents onto the
+shipped branch.
 
 | Phase | Status |
 |---|---|
-| Product requirements (`PRD.md` v3.0) | ✅ Final — zero open product questions |
-| Team structure (`TEAM.md` v2.0) | ✅ Final |
+| Product requirements (`PRD.md` v3.0) | ✅ Final — but see the open item below |
+| Team structure (`TEAM.md` v2.0) | ✅ Final — ownership matrix superseded by `CLAUDE.md` §1 |
 | Architecture (`ARCHITECTURE.md` v1.1) | ✅ Final |
-| GitHub plan (`GITHUB_PLAN.md` v1.1) | ✅ Final — 84 Issues across 5 milestones |
-| Sprint 0 | ⏳ Not started |
-| Implementation | ⏳ Not started |
+| GitHub plan (`GITHUB_PLAN.md` v1.1) | ✅ Final — 84 Issues across 5 milestones, V1 scope |
+| V1 | 🗄 Archived — schema in `supabase/archive-v1/`, records in `docs/` |
+| **V2** | ✅ **Shipped 2026-08-15 · https://dallal-rust.vercel.app** |
+
+**What is NOT covered, stated here because a status table is where somebody looks for it:**
+V1's database suite proved the bid operation — the anti-snipe extension, the 20-extension
+cap, the lock ordering, the money domain — and it was deleted along with V1. **V2 has no
+database suite.** Those properties are currently held up by the text of
+`supabase/migrations/20260815100000_core_schema.sql` and by nothing else. What closing that
+needs is written in the header of [`.github/workflows/ci.yml`](.github/workflows/ci.yml).
+
+**One product question is open, and it belongs to the owner** — not to a contributor and
+not to a session. The shipped `place_bid` enforces a minimum raise of `current_price +
+bid_increment`, which `PRD.md` §21.1 Q4, `BR-32` and `SD-05` each say must not exist. It is
+written up in full in `CLAUDE.md` §0. Until it is answered, neither the code nor the PRD
+moves.

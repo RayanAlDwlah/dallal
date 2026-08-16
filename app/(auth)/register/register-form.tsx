@@ -3,90 +3,73 @@
 import Link from "next/link";
 import { useActionState } from "react";
 
-import { Alert } from "@/components/ui/alert";
-import { Button } from "@/components/ui/button";
-import { Field } from "@/components/ui/field";
-import { Input } from "@/components/ui/input";
-import {
-  DISPLAY_NAME_MAX_LENGTH,
-  DISPLAY_NAME_MIN_LENGTH,
-  PASSWORD_MIN_LENGTH,
-} from "@/lib/auth/validation";
-import { registerAction, type AuthFormState } from "../actions";
+import { signUp, type AuthFormState } from "@/app/(auth)/actions";
 
-/** AUTH-02, AUTH-03 — FR-AUTH-01 → FR-AUTH-07, FR-PROF-02, FR-PROF-03. */
+const initial: AuthFormState = { error: null };
+
 export function RegisterForm() {
-  const [state, formAction, pending] = useActionState<AuthFormState, FormData>(
-    registerAction,
-    {},
-  );
+  const [state, action, pending] = useActionState(signUp, initial);
 
   return (
-    <form action={formAction} className="flex flex-col gap-5">
-      {state.error ? <Alert tone="error">{state.error}</Alert> : null}
-
-      <Field label="البريد الإلكتروني" error={state.fieldErrors?.email} required>
-        {(props) => (
-          <Input
-            {...props}
-            name="email"
-            type="email"
-            inputMode="email"
-            autoComplete="email"
-            dir="ltr"
-            className="text-start"
-            placeholder="you@example.com"
-          />
-        )}
-      </Field>
-
-      <Field
-        label="الاسم الظاهر"
-        /*
-         * FR-PROF-03a — saying *why* it is public matters more than saying it
-         * must be unique: this is the name that names the winner.
-         */
-        hint={`يظهر للجميع في سجل المزايدات وكاسم البائع والفائز. من ${DISPLAY_NAME_MIN_LENGTH} إلى ${DISPLAY_NAME_MAX_LENGTH} محرفًا، ولا يتكرر بين الحسابات.`}
-        error={state.fieldErrors?.displayName}
+    <form action={action} className="hairline rounded-[22px] bg-surface p-6">
+      <label className="mb-1.5 block text-[13.5px] font-semibold" htmlFor="displayName">
+        الاسم المعروض
+      </label>
+      <input
+        id="displayName"
+        name="displayName"
+        type="text"
         required
-      >
-        {(props) => (
-          <Input
-            {...props}
-            name="displayName"
-            type="text"
-            autoComplete="nickname"
-            maxLength={DISPLAY_NAME_MAX_LENGTH}
-          />
-        )}
-      </Field>
+        minLength={2}
+        maxLength={40}
+        autoComplete="nickname"
+        className="field mb-1.5"
+        placeholder="مثال: أبو فهد"
+      />
+      <p className="mb-5 text-[12.5px] text-ink3">من محرفين إلى 40 محرفًا. يظهر في مزايداتك ومزاداتك.</p>
 
-      <Field
-        label="كلمة المرور"
-        /* FR-AUTH-04 — the rule is stated before submission, not only on failure. */
-        hint={`${PASSWORD_MIN_LENGTH} أحرف على الأقل.`}
-        error={state.fieldErrors?.password}
+      <label className="mb-1.5 block text-[13.5px] font-semibold" htmlFor="email">
+        البريد الإلكتروني
+      </label>
+      <input
+        id="email"
+        name="email"
+        type="email"
         required
-      >
-        {(props) => (
-          <Input
-            {...props}
-            name="password"
-            type="password"
-            autoComplete="new-password"
-            dir="ltr"
-            className="text-start"
-          />
-        )}
-      </Field>
+        autoComplete="email"
+        dir="ltr"
+        className="field mb-5 text-start"
+        placeholder="you@example.com"
+      />
 
-      <Button type="submit" loading={pending}>
-        أنشئ الحساب
-      </Button>
+      <label className="mb-1.5 block text-[13.5px] font-semibold" htmlFor="password">
+        كلمة المرور
+      </label>
+      <input
+        id="password"
+        name="password"
+        type="password"
+        required
+        minLength={8}
+        autoComplete="new-password"
+        dir="ltr"
+        className="field mb-1.5 text-start"
+      />
+      <p className="text-[12.5px] text-ink3">8 محارف على الأقل.</p>
 
-      <p className="text-ink-2 text-sm">
-        لديك حساب؟{" "}
-        <Link href="/login" className="text-brand-text font-semibold">
+      {state.error ? (
+        <p className="mt-4 rounded-[13px] bg-[rgba(255,77,94,.08)] px-4 py-3 text-[13.5px] text-[#FFB3BB] [box-shadow:inset_0_0_0_1px_rgba(255,77,94,.24)]">
+          {state.error}
+        </p>
+      ) : null}
+
+      <button type="submit" disabled={pending} className="btn-gold mt-6 h-12 w-full text-[15px]">
+        {pending ? "جارٍ إنشاء الحساب…" : "إنشاء حساب"}
+      </button>
+
+      <p className="mt-5 text-center text-sm text-ink2">
+        عندك حساب؟{" "}
+        <Link href="/login" className="font-semibold text-gold">
           سجّل الدخول
         </Link>
       </p>

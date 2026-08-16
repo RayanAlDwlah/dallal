@@ -54,13 +54,70 @@ WORKFLOW=".github/workflows/ci.yml"
 # decision or an oversight. Adding a line here is allowed. Adding one WITHOUT
 # a reason is not, and the parse below enforces that.
 #
-# All three below fail for one root cause: they need credentials to a real
-# Supabase project, and this repository is public (CLAUDE.md §6).
+# It was empty between 2026-08-15 and 2026-08-16. It held three entries before
+# that, all excused for one root cause: they needed credentials to a real
+# Supabase project, and this repository is public (CLAUDE.md §6). All three —
+# tests/auth/identity-e2e.check.mjs, tests/auth/session.check.mjs,
+# tests/realtime/reconnect.check.mjs — were deleted with the V1 product on this
+# branch, and this script reported all three as STALE, which is the stale-entry
+# check doing exactly its job.
+#
+# ── The three entries below are a DIFFERENT excuse, and it is a weaker one ──
+#
+# They arrived in the 2026-08-16 merge with `main`, from PR #175. Each compiles
+# a V1 component and asserts a property that had been MEASURED as broken and
+# then fixed — they are not speculative checks. Each names a file V2 does not
+# have, because V2 rebuilt that screen from the approved previews:
+#
+#   V1 file the check compiles          the V2 file that replaced it
+#   ----------------------------------  ---------------------------------------
+#   app/auctions/new/                   components/auction/create-wizard.tsx
+#     create-auction-form.tsx
+#   components/bidding/                 components/bidding/live-auction.tsx
+#     outcome-banner.tsx                  (outcome is rendered inline there)
+#   components/bidding/                 components/bidding/live-auction.tsx
+#     live-status-countdown.tsx
+#
+# They are NOT excused because they are unimportant. They are excused because
+# re-aiming each one is a real piece of work — the assertions are AST facts
+# about a specific component's shape, not greps — and doing three of them badly
+# inside a merge is how a suite turns into decoration. They fail loudly today
+# ("cannot read <path> — the file moved, which is itself the failure"), so
+# nothing about them can be mistaken for a pass.
+#
+# WHAT EACH ONE IS STILL PROTECTING, so whoever re-aims it knows what to keep:
+#   * create-form-recovery — a server rejection must not discard the seller's
+#     chosen File or reset the form. V2's wizard holds images in state across
+#     steps; the property transfers, the anchors do not.
+#   * winner-statement — FR-END-14: the winner is addressed in the second
+#     person, with the amount, through <Money>, compared against the LIVE
+#     snapshot rather than a frozen boolean.
+#   * live-status-mount — the page must mount the SUBSCRIBING wrapper, never
+#     the bare countdown. V2's equivalent trap is rendering a countdown without
+#     useLiveAuction, which is the same defect one component name over.
+#
+# The fourth suite from that PR, tests/ui/money-canonical-text.check.mjs, WAS
+# re-aimed at V2 in the same merge and runs in CI. It is the proof that these
+# three are deferred work rather than dead weight.
+#
+# Do not read an allowlist entry as "nothing is missing." Suites that do not
+# exist at all are a different question again, and an allowlist can only name
+# files it can stat. The largest of those was a V2 database suite for
+# `place_bid`; the next was one for `place_lot_bid`, live-session bidding, which
+# shipped in V2.1 with its own lock, its own anti-snipe window and no assertions
+# at all. Both were written on 2026-08-16 as tests/bidding-v2/ and both are
+# wired into the `database` job, so this script now sees them as files rather
+# than as paragraphs.
+#
+# THE POINT IS NOT THAT THE LIST IS EMPTY. It is that the list lived in the
+# header of .github/workflows/ci.yml for as long as it did, in prose, because
+# there was no path to allow — which is the one thing this script structurally
+# cannot check. When you find the next such hole, write it there.
 # ---------------------------------------------------------------------------
 ALLOWLIST="
-tests/auth/identity-e2e.check.mjs — writes real rows to a real project, and nothing in this product can delete an auction (BR-30, BR-31); CI would accumulate junk forever
-tests/auth/session.check.mjs — needs a running server (npm run dev) plus credentials
-tests/realtime/reconnect.check.mjs — needs project credentials and 35 s against a live realtime socket
+tests/auction/create-form-recovery.check.mjs — compiles V1's app/auctions/new/create-auction-form.tsx, which V2 replaced with components/auction/create-wizard.tsx; the File-retention property still applies and the AST anchors do not
+tests/auction/winner-statement.check.mjs — compiles V1's components/bidding/outcome-banner.tsx, which V2 folded into components/bidding/live-auction.tsx; FR-END-14 still applies and the AST anchors do not
+tests/realtime/live-status-mount.check.mjs — compiles V1's components/bidding/live-status-countdown.tsx, removed on this branch as an orphan importing deleted V2 modules; the mount-the-subscriber property still applies to components/bidding/live-auction.tsx
 "
 
 pass=0
@@ -161,7 +218,10 @@ EOF
 
 # A workflow that names no suite at all would pass every check above by having
 # nothing to compare against. This is the floor: CI must run something.
-named=$(grep -cE '^\s+run:.*tests/' "$WORKFLOW")
+# `[[:space:]]`, not `\s`. `\s` is a GNU extension: BSD grep on macOS does not
+# honour it, so this returned 0 on half the team's machines and tripped the
+# floor below for a reason that had nothing to do with the workflow.
+named=$(grep -cE '^[[:space:]]+run:.*tests/' "$WORKFLOW")
 
 echo
 echo "$total suite(s) found · $unwired unwired · $stale stale allowlist entr(y|ies) · $named workflow step(s) naming tests/"

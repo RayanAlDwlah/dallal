@@ -82,9 +82,12 @@ already holds. So it is in the read set for the same reason the other six are.
 **Field 3 needs one sentence of its own, because its character changed.** Before
 2026-08-13, `end_time` sat with `owner_id`, `starting_price` and `created_at` in the
 immutable-creation-terms list, and any update to it raised. It is now **conditionally
-mutable**: forward only, in 30-second quanta, only inside `place_bid`, and only together
-with `extension_count + 1` — four conditions, all required, enforced by
-`auctions_guard_update()` (`20260814000000:113`). Every other shape still raises.
+mutable** through exactly two doors: (1) inside `place_bid`, forward only, in 30-second
+quanta, and only together with `extension_count + 1` — four conditions, all required,
+enforced by `auctions_guard_update()` (`20260814000000:113`); or (2) inside the
+pause/resume operation (`resume_session()`), which moves `end_time` forward by the
+exact wall-clock interval the session was paused, and never touches `extension_count`.
+Every other shape still raises. `CLAUDE.md` §5 records both doors as the governing rule.
 
 > **⚠️ Superseded in part on 2026-08-15 — the word to distrust in the paragraph above is
 > "only".** The owner decided that **pause is supported**: a host-only atomic operation
@@ -403,6 +406,38 @@ Also out of scope for the record, from `PRD` v3.0: no cancel, no edit, no draft 
 > `amount` to a multiple of the increment is the bug this whole row exists to prevent, and
 > `D-01` §4 requires the test asserting the server still accepts a non-multiple to land **in
 > the same PR as the column** — not after it.
+
+> **🔴 The day the notice above predicted arrived on 2026-08-15, and none of the four things
+> the notice required happened. This paragraph is the record, not the resolution.**
+>
+> V2 shipped. `bid_increment public.sar_increment not null` is a column on `auctions`
+> (`supabase/migrations/20260815100000_core_schema.sql:119`), and `place_bid` does not merely
+> *offer* it on the screen — it **enforces** it, inside the row lock: `v_min :=
+> v_a.current_price + v_a.bid_increment` (`:256`), then `if v_amount < v_min then … 'error',
+> 'too_low'` (`:259`, `:261`). That is a **minimum-raise rejection on the server**, which is
+> the exact thing the paragraph above says never moves — `BR-32` governs what the server
+> accepts, and this rejects.
+>
+> Measure the four requirements against what shipped:
+>
+> | The notice required | What happened |
+> |---|---|
+> | row 1 amended **explicitly**, in the PR adding the column | not amended — row 1 above still reads as it always has |
+> | `S0-12` §9.5 amended alongside it | not amended |
+> | `INT-08` narrowed **in the same PR** | narrowed later, on `delivery/v2-app`, in a separate change — it now pins the increment *inside* `place_bid`'s lock instead of prohibiting it |
+> | `D-01` §4's non-multiple survival test, in the same PR as the column | **does not exist.** V2 has no database suite at all (see `.github/workflows/ci.yml`) |
+>
+> **Row 1 is still not hereby amended.** Nothing here approves the column and nothing here
+> retracts `BR-32`; a contract clause is not amended by the code disagreeing with it, which is
+> the whole reason `CLAUDE.md` §2 ranks contracts where it does. What is recorded is that the
+> code and the contract now **contradict** each other in production, that the contradiction is
+> written up in full in `CLAUDE.md` §0, and that closing it is the **owner's** call — either
+> `BR-32`/`PRD` §21.1 Q4 is amended, or `place_bid` stops rejecting below `v_min`. Until he
+> answers, both sides stay exactly as they are, and this notice is what stops the disagreement
+> from being discovered by someone reading only one of them.
+>
+> `tests/v2/graph.check.mjs` measures both sides of this every run, so neither can be quietly
+> moved to make the other look right.
 
 And two more, from `S0-12` (FINAL): **no money column that is not the `sar_amount`
 domain**, and **no floating point anywhere on an amount** — including in a sort, an index

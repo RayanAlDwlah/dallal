@@ -2,48 +2,112 @@
 # Dalal CI — the thing that runs the suites nobody was running.
 #
 # Until this file existed, `.github/` held an issue template and a PR template
-# and nothing else. Five test suites were written, maintained, argued over in
+# and nothing else. Test suites were written, maintained, argued over in
 # review, and executed only when a human remembered to type the command. Any
-# one of us could have merged a PR that broke the extension cap, the money
-# domain or the whole database, and the only way anyone would have found out is
-# by running something later, by hand, for an unrelated reason.
+# one of us could have merged a PR that broke the money domain or the RTL rules
+# and the only way anyone would have found out is by running something later,
+# by hand, for an unrelated reason.
 #
 # Three developers, three Claude sessions that cannot see each other, one
 # protected branch. This file is the part of the review that does not get
 # tired, does not forget, and does not take somebody's word for it.
 #
 # ---------------------------------------------------------------------------
-# THE SHAPE — two jobs, split by what they cost, not by what they cover
+# REWRITTEN FOR V2 ON 2026-08-16 — AND WHAT THAT COST, SAID FIRST
 #
-#   static    seconds, no Docker.   Runs on every push of every branch.
-#   database  minutes, PostgreSQL 17 in Docker. The three SQL suites.
+# This file arrived on `delivery/v2-app` from `main`, where it wires suites the
+# V2 branch DELETED along with the V1 product: tests/auth/, tests/auction/,
+# tests/bidding/, tests/realtime/, tests/ui/. Twelve steps and an entire
+# `database` job named files that are not in this tree. A workflow that names a
+# missing file does not go quietly green — it goes red on `No such file` — but
+# a red for the wrong reason is its own defect: it trains everyone to expect
+# red and stop reading.
 #
-# `static` is deliberately first and deliberately fast: a violation of the
-# money rules or the RTL rules should be on screen before the runner has
-# finished pulling a database image. The two jobs do NOT depend on each other —
-# a broken guard must not hide a broken migration, and vice versa. Both run,
-# both report, and the branch is red if either is.
+# So every step below names a file that exists here, and the steps that named
+# deleted files are GONE rather than commented out.
 #
 # ---------------------------------------------------------------------------
-# WHAT THIS CI DOES NOT COVER, SAID PLAINLY
+# THE REGRESSION THIS FILE CARRIED FOR ONE DAY — AND HOW IT CLOSED
 #
-# Three suites in tests/ are NOT run here, and this is not an oversight:
+# Between 2026-08-15 and 2026-08-16 this paragraph read: **"There is no
+# `database` job any more, and V2 has no database suite at all."** It is kept in
+# outline because the hole it described is the most expensive thing that
+# happened on this branch, and because a closed hole with no record of having
+# been open teaches nobody anything.
 #
-#   tests/auth/identity-e2e.check.mjs   writes real rows to a real Supabase
-#                                       project, and nothing in this product
-#                                       can delete an auction (BR-30, BR-31).
-#                                       CI would accumulate junk forever.
-#   tests/auth/session.check.mjs        needs a running server
-#   tests/realtime/reconnect.check.mjs  needs project credentials and 35 s
-#                                       against a live realtime socket
+# V2 rewrote `place_bid` — D-01's server-side increment, in
+# `supabase/migrations/20260815100000_core_schema.sql` — in the same window that
+# deleted `tests/bidding/`, the suite proving the extension cap, the lock
+# ordering, the `sar_amount` domain and the concurrency behaviour. For a day the
+# shipped bid operation was held up by nothing but the text of a migration, and
+# `D-01` §4's required assertion ("the server accepts an amount that is NOT a
+# multiple of the increment") had no suite to ship in — so the contradiction
+# between `place_bid` and `BR-32` reached production unnoticed. It is now
+# assertion 19 of `tests/bidding-v2/acceptance.sql`, pinned as it shipped and
+# labelled UNRESOLVED. See CLAUDE.md §0.
 #
-# All three need credentials, and this repository is PUBLIC (CLAUDE.md §6). A
-# workflow secret readable by any fork's pull_request_target is not a place to
-# put a key that reaches our database.
+# `tests/bidding-v2/` closes it: 150 assertions plus a contention runner, on a
+# throwaway postgres:17, credential-free. The thing that made it hard is one
+# file — V2's schema INSERTs storage buckets and creates four `storage.objects`
+# policies at TOP LEVEL, so a bare container aborts at `core_schema.sql:496` and
+# nothing after it exists. `tests/bidding-v2/lib/supabase-shim.sql` mirrors
+# `auth` and `storage` at the fidelity the assertions read.
 #
-# That list is not a comment anyone has to trust. `tests/guards/ci-coverage.sh`
-# runs in the `static` job below and FAILS if a suite exists in tests/ that is
-# neither wired into this file nor written down in its allowlist with a reason.
+# Applying the migrations is itself the first test, and that half was never
+# covered even on V1's job: `supabase db push` does not re-apply what a project
+# already has, so a syntax error or an unsatisfiable constraint in a migration
+# reaches production unchecked. The `database` job below applies all six from
+# empty, in push order, before an assertion runs.
+#
+# ---------------------------------------------------------------------------
+# THE SECOND BIDDING OPERATION — THIS PARAGRAPH USED TO NAME A HOLE
+#
+# It read: "`tests/bidding-v2/` covers `place_bid`. It does NOT cover
+# `place_lot_bid` … the newest bidding code in the tree and the least proven.
+# Do not read the green `database` job as covering it." That was true for a few
+# hours on 2026-08-16 and is kept in outline for the same reason as the
+# paragraph above it.
+#
+# `tests/bidding-v2/sessions.sql` closes it: 73 assertions over
+# `place_lot_bid`, `open_next_lot`, `advance_session`, `pause`/`resume`,
+# `end_session` and `join_session`/`approve_entry`. Three of the things it
+# proves have no analogue on the auction path at all —
+#
+#   * the ENTRY GATE. `session_entries.approved` gates BIDDING and never
+#     watching, and it is checked AFTER the row lock, which puts it in the same
+#     class as `too_low` for §5's "a rejected bid never extends" rule.
+#   * the SESSION state above the lot: scheduled / live / ended / paused. A
+#     paused hall refuses bids EXPLICITLY, because its open lot's `end_time` is
+#     still its old future value and the clock alone would accept them.
+#   * a NULL `end_time`, added by V2.1 for open-ended lots («بدون مدة») on
+#     2026-08-16. Every clock comparison is now guarded by `end_time is not
+#     null`, and a missing guard fails three different ways: `place_lot_bid`
+#     reads the null as expired and refuses the feature's every bid;
+#     `open_next_lot` compares a 15-second window against an end that does not
+#     exist; and `advance_session` LOOPS FOREVER — it is refused with
+#     `lot_still_running`, changes nothing, and reads the same row again. That
+#     last one hangs rather than fails, which is why `sessions.sql` sets a
+#     `statement_timeout` at the top of the file.
+#
+# ---------------------------------------------------------------------------
+# THE SHAPE — two jobs
+#
+# `static` costs seconds and needs no Docker, so it runs first and is ordered
+# cheapest-first: a money or RTL violation should be on screen before the
+# toolchain has warmed up. `database` costs a minute and runs in parallel with
+# it, not after — a bidding defect and a lint error are independent, and
+# gating one behind the other only delays the more important of the two.
+#
+# Every suite here is CREDENTIAL-FREE by construction. That is not a
+# coincidence — this repository is PUBLIC (CLAUDE.md §6), and a workflow secret
+# readable by a fork's `pull_request_target` is not a place to put a key that
+# reaches our database. It is also why the allowlist in
+# `tests/guards/ci-coverage.sh` is now empty: on `main` it excused three suites
+# that needed real project credentials, and all three were deleted with V1.
+#
+# That completeness is not a comment anyone has to trust.
+# `tests/guards/ci-coverage.sh` runs below and FAILS if a suite exists in
+# tests/ that is neither wired into this file nor written down with a reason.
 # Add a test and forget to run it, and CI tells you — which is the failure this
 # whole file exists to stop, applied to itself.
 # ============================================================================
@@ -81,11 +145,11 @@ jobs:
 
       - uses: actions/setup-node@v4
         with:
-          # >= 22 is a hard floor: every *.check.mjs imports a .ts module
-          # directly and relies on native type-stripping. On an older node the
-          # suites announce themselves as NOT RUN and count it as a failure
-          # (#121) rather than skipping quietly — so a wrong version here is
-          # loud, but there is no reason to make it happen.
+          # >= 22 is a hard floor: tests/integration/check-imports.check.sh
+          # runs each *.check.mjs through native type-stripping. On an older
+          # node it reports NOT-RUN and counts that as a FAILURE (#121) rather
+          # than skipping quietly — so a wrong version here is loud, but there
+          # is no reason to make it happen.
           node-version: 22
           cache: npm
 
@@ -98,9 +162,9 @@ jobs:
         run: ./tests/guards/run.sh
 
       # A guard that cannot fail is worse than no guard: it reports green for
-      # its own reasons while the rule it names rots. This breaks all twenty
-      # rules on purpose and asserts the suite catches every one. It mutates
-      # tracked files and restores them, which is why fetch-depth is 0 above.
+      # its own reasons while the rule it names rots. This breaks every rule on
+      # purpose and asserts the suite catches each one. It mutates tracked files
+      # and restores them, which is why fetch-depth is 0 above.
       - name: guards — prove every check can fail
         run: ./tests/guards/negative.sh
 
@@ -109,7 +173,7 @@ jobs:
       - name: guards — every suite is either in CI or written down as not
         run: ./tests/guards/ci-coverage.sh
 
-      # --- the credential-free suites --------------------------------------
+      # --- the board and the governance prose ------------------------------
       # The V2 dependency graph is written twice — SPEC.md §4.3's `blocks`
       # column and TICKETS.md's `blocked on` column — and both documents state
       # their own totals in English prose. SPEC.md says two copies of a graph
@@ -121,12 +185,11 @@ jobs:
 
       # …and the same demand made of it that `negative.sh` makes of the guards.
       # Every defect this check has ever found was found by a probe, and every
-      # one of those probes lived in /tmp until now. 52 of them, each breaking
-      # one stated number or one edge on purpose.
+      # one of those probes lived in /tmp until it was committed here.
       - name: V2 — prove the board check can fail
         run: ./tests/v2/graph-negative.check.sh
 
-      # The same failure one level out, in prose. CLAUDE.md §1 carries the
+      # The same failure one level out, in prose. CLAUDE.md carries the
       # seven-step workflow; TEAM.md §7 and SPEC.md §5.1 each restated it, and
       # three copies that agree are a problem only on the day one is edited.
       # This extracts the steps FROM CLAUDE.md and refuses a second copy.
@@ -139,63 +202,31 @@ jobs:
       - name: governance — prove the workflow check can fail
         run: ./tests/governance/workflow-negative.check.sh
 
+      # --- the product audits ----------------------------------------------
+      # Re-aimed at V2 on 2026-08-16, and two of its checks were found passing
+      # for reasons unrelated to the rule they named — see §3 of the file.
       - name: INT-08 — the excluded-features audit
         run: ./tests/integration/excluded-features.check.sh
 
       - name: INT-06 — the statically decidable half of 375 px
         run: ./tests/integration/responsive-375.check.sh
 
-      - name: BID-10 — realtime UX rules (RT-X4, RT-X5)
-        run: |
-          node --no-warnings tests/realtime/convergence.check.mjs
-          node --experimental-strip-types --no-warnings tests/realtime/ux-rules.check.mjs
-
-      - name: BID-09 — the auction page mounts the live price region
-        run: node --no-warnings tests/realtime/live-price-mount.check.mjs
-
-      # #156 — the only check in the tree that COMPILES a component instead of
-      # reading it. The defect it holds does not exist in the source: `gap-1`
-      # spaced the price visually while `textContent` read `1,250.00SAR`, and
-      # nothing could see that until the JSX became children.
-      - name: UI — a rendered price is the canonical string (CLAUDE.md §4.6)
+      # #156 — the rendered text of a price is the canonical `1,250.00 SAR`.
+      # Arrived from `main` in the 2026-08-16 merge written against V1's `Money`
+      # and re-aimed at V2's in the same commit. Its V1 region lookup degraded
+      # silently on V2 — three of seven checks passed because the probe found
+      # nothing — so it now REFUSES with BROKEN when it cannot locate the
+      # component, and carries a third control proving the isolate assertion can
+      # fail. It compiles the component; it needs no browser and no database.
+      - name: UI — a price's rendered text is the canonical string (#156)
         run: node --no-warnings tests/ui/money-canonical-text.check.mjs
 
-      - name: BID-17 — the auction page mounts the live status region (#160)
-        run: node --no-warnings tests/realtime/live-status-mount.check.mjs
-
-      # tests/auction/run.sh names its members literally rather than sweeping
-      # the directory, so adding a file there does not run it. This step is the
-      # one that does — ci-coverage.sh said UNWIRED for exactly that reason.
-      - name: AUC — the create form survives a rejection (image + review)
-        run: node --no-warnings tests/auction/create-form-recovery.check.mjs
-
-      # BID-18 (#161) — FR-END-14 and SC-36 are both Must and both had zero
-      # implementation. The rendering half only; the server-side decision that
-      # feeds `viewerIsWinner` is asserted by its own owner's suite.
-      - name: BID-18 — the winner is told they won (FR-END-14, SC-36)
-        run: node --no-warnings tests/auction/winner-statement.check.mjs
-
-      # #147 — every *.check.mjs must actually LOAD. This suite arrives with
-      # #155, which cannot wire it here because this file does not exist on
-      # main yet. So the wiring lives on this branch instead.
-      #
-      # THIS STEP IS RED UNTIL #155 MERGES, ON PURPOSE. The alternative was an
-      # ALLOWLIST line, and an allowlist entry for a suite that CI can perfectly
-      # well run is exactly the ignore CLAUDE.md §9 forbids. A red that names its
-      # own precondition is the honest shape.
-      #
-      # Measured 2026-08-15 on this branch with #155's file copied in:
-      #   18 suite(s) found · 1 unwired · CI-COVERAGE: FAIL — 1 problem(s)
-      # Neither PR's own CI catches this if the second one merges stale: GitHub
-      # does not re-run a PR when its base moves, and no status check is
-      # required on main.
-      - name: INT — the check harness itself loads (#147, suite from #155)
-        run: |
-          if [ ! -f tests/integration/check-imports.check.sh ]; then
-            echo "::error::tests/integration/check-imports.check.sh is absent — PR #155 has not merged yet. Merge #155 before #167; this step is the wiring #155 could not carry."
-            exit 1
-          fi
-          ./tests/integration/check-imports.check.sh
+      # #147 — every *.check.mjs must actually LOAD, and no `@/` value import
+      # appears anywhere in the check graph. On `main` this step carried a guard
+      # against being merged before #155; #155 is merged and the file is here,
+      # so the guard is gone and the suite runs plainly.
+      - name: INT — the check harness itself loads (#147)
+        run: ./tests/integration/check-imports.check.sh
 
       # --- the toolchain ---------------------------------------------------
       - name: lint
@@ -206,80 +237,43 @@ jobs:
 
       # The build runs with NO environment variables at all, and that is the
       # assertion, not a convenience. Every route is server-rendered on demand,
-      # so nothing calls publicSupabaseConfig() at build time. The day someone
-      # adds a statically prerendered page that reads the database, this step
-      # goes red with the exact error that function raises — before the missing
-      # value reaches Supabase as the string "undefined" and surfaces days
-      # later as an unexplained network error.
+      # so nothing calls the public Supabase config at build time. The day
+      # someone adds a statically prerendered page that reads the database, this
+      # step goes red with the exact error that function raises — before the
+      # missing value reaches Supabase as the string "undefined" and surfaces
+      # days later as an unexplained network error.
+      #
+      # The AI layer is env-gated and hides itself when unconfigured
+      # (CLAUDE.md §0), so a build with no GEMINI key is the configuration this
+      # step is meant to prove, not a gap in it.
       - name: build (deliberately with no credentials)
         run: npm run build
 
   # =========================================================================
-  # database — the three SQL suites against a throwaway PostgreSQL 17.
+  # database — the committed migrations, applied from empty, then exercised.
+  #
+  # Runs in PARALLEL with `static`; it needs none of that job's output.
+  #
+  # No Supabase account, no network, no shared database, no credentials — the
+  # locking and constraint semantics under test are properties of the
+  # PostgreSQL engine, not of our hosting. Anyone on the team, including a
+  # Claude session with no credentials, can reproduce a red run locally with
+  # the same command.
+  #
+  # Docker is preinstalled on ubuntu-latest and postgres:17 is the same image
+  # the runner pulls locally, so "passes on my machine" and "passes in CI" mean
+  # the same thing here.
   # =========================================================================
-  #
-  # No Supabase account, no shared database, no network. Each run.sh starts its
-  # own postgres:17 container, applies the COMMITTED migration files in the
-  # order `supabase db push` applies them, and asserts against those — not
-  # against a copy. The locking semantics the bidding suite proves are a
-  # property of the PostgreSQL engine, so proving them in a container is not a
-  # weaker test than proving them in production; it is the same test, cheaper.
-  #
-  # They run as separate steps rather than one, so a red X names the suite.
   database:
-    name: database — auth, auction, bidding
+    name: database — migrations, both bid paths, closing, money, contention
     runs-on: ubuntu-latest
     steps:
       - uses: actions/checkout@v4
 
-      - uses: actions/setup-node@v4
-        with:
-          node-version: 22
-          cache: npm
-
-      - run: npm ci
-
-      # Pulled once here so the three suites below do not each pay for it, and
-      # so an image-registry failure is reported as an image-registry failure
-      # rather than as a suite failure.
-      - name: pull postgres:17
-        id: pg
-        run: docker pull postgres:17
-
-      # --- the three suites, each independent of the other two --------------
-      #
-      # The `if` is the same reasoning as the two jobs not depending on each
-      # other, applied one level down, and it was added because the FIRST run
-      # of this file demonstrated the need: the auction suite failed on a real
-      # three-day-old import bug (#155), and GitHub skipped the bidding suite
-      # entirely. The bidding suite is the one that proves the extension cap,
-      # the lock ordering and the money domain — and its result was simply
-      # absent, on a run that took four minutes and looked complete.
-      #
-      # A suite whose result is missing reads exactly like a suite that had
-      # nothing to say. So: a failure in one names that suite and the other two
-      # still report. `!cancelled()` rather than `always()` so a cancelled run
-      # stops; gated on `steps.pg` so nothing tries to reach a database that
-      # was never pulled, which would turn one setup failure into three
-      # confusing suite failures.
-      #
-      # NOT done for the `static` job above, deliberately: those steps cost
-      # seconds, a re-run is free, and they are ordered cheapest-first on
-      # purpose so a money or RTL violation is on screen before the toolchain
-      # has warmed up. Fail-fast is the feature there. Here it costs minutes
-      # and hides an answer.
-      - name: auth — identity acceptance (AUTH-*)
-        if: ${{ !cancelled() && steps.pg.outcome == 'success' }}
-        run: ./tests/auth/run.sh
-
-      - name: auction — creation, immutability, duplicates (AUC-*)
-        if: ${{ !cancelled() && steps.pg.outcome == 'success' }}
-        run: ./tests/auction/run.sh
-
-      # 8 rounds is run.sh's default and what a normal PR gets. The contract
-      # asks for 30 before merging a change to place_bid itself; that is a
-      # deliberate human decision at the moment it matters, not a number this
-      # file should quietly impose on every push.
-      - name: bidding — acceptance, closing, extension, concurrency (BID-*)
-        if: ${{ !cancelled() && steps.pg.outcome == 'success' }}
-        run: ./tests/bidding/run.sh
+      # The rounds are raised from the local default of 8. Contention is a
+      # probabilistic instrument: a lost update that shows up in one round of
+      # ten will pass a short run and reach production. CI has the minute; a
+      # developer waiting on a local run does not, which is why the default is
+      # lower and the argument exists.
+      - name: bidding-v2 — 32 + 26 + 19 + 73 assertions, then 40 contended rounds
+        run: ./tests/bidding-v2/run.sh 40 8

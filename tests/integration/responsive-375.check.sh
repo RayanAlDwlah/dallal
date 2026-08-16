@@ -100,11 +100,26 @@ chk "every rendered amount goes through <Money>" \
 # 100 thumbnails at the MOST compressible source tested, 566 MB at a photo-like
 # one, against NFR-PERF-01's three seconds. Two thumbnails alone exceeded it.
 #
-# image-frame.tsx is the one component allowed to name the element, exactly as
-# money.tsx is the one allowed to call formatSar. Anywhere else a bare <img>
-# means an image that skipped the optimiser.
-chk "every rendered image goes through next/image" \
-    "$(code components/ui/image-frame.tsx | grep -cE '<img[[:space:]>]' || true)" 0
+# NARROWED, 2026-08-16. V1 routed everything through components/ui/image-frame.tsx
+# and exempted that one file. V2 has no image-frame; it imports next/image
+# directly in the three card surfaces, and next.config.ts allows exactly the
+# Supabase public-object route.
+#
+# The narrowing is not a concession — it is the rule stated correctly. A raw
+# <img> is only a skipped optimiser when there was an optimiser to skip, and
+# five of this tree's <img> elements render an object URL for a File the user
+# has not uploaded yet (`imageSrc(img)`, `coverPreview`, `lot.preview`,
+# `preview`). next/image cannot optimise a blob: URL — it would have to fetch it
+# server-side, and it does not exist server-side. Demanding <Image> there asks
+# for something impossible, and a check that does that gets an exemption list
+# bolted on within a week.
+#
+# So: any <img> whose src is a REMOTE storage URL is the violation, because
+# that one had a choice. Measured 2026-08-16: 4 of them, all fixed in the same
+# commit as this narrowing — profile/page.tsx and three in sessions/hall.tsx.
+chk "every remotely-sourced image goes through next/image" \
+    "$(grep -rn -A3 '<img' app components --include='*.tsx' \
+        | grep -cE 'src=\{(auctionImageUrl|avatarUrl)' || true)" 0
 
 # --- 2. No physical direction properties ------------------------------------
 # CLAUDE.md §3. These break the RTL mirror, and a layout that mirrors wrongly is
@@ -147,30 +162,77 @@ chk "no physical left/right spacing or alignment" \
 #
 # LATENT, NOT LIVE: `grep -rn "style={{" app components` returns 0 today. This
 # restores a guard that had quietly weakened, it does not fix a live defect.
+# NARROWED, 2026-08-16 — the `\b` was the bug. In `max-w-[1200px]` the hyphen
+# before `w` is a non-word character, so `\b(w|min-w)-\[` matches INSIDE it, and
+# the check counted every max-width in the tree as a fixed width. It also had no
+# notion of breakpoint prefixes, so `sm:w-[390px]` — a width that only applies
+# at 640 px and above, on a check whose entire subject is 375 px — counted too.
+#
+# Measured on this tree: 19 hits, and every single one was one of those two
+# shapes. 18 `max-w-*`, which is the CORRECT idiom this check should want to
+# see, plus one `sm:w-[390px]` toast that renders `inset-x-4` at the base. Zero
+# real findings, 19 accusations — the loud-and-wrong failure mode, which gets a
+# check deleted by the third person who has to re-derive that it is lying.
+#
+# A class token starts after whitespace or a quote. Requiring that boundary
+# excludes `max-w-` (preceded by `-`) and every `sm:`/`md:`/`lg:` prefix
+# (preceded by `:`), which is exactly the set that is not a base-layer width.
 chk "no fixed width at or above 375 px, no viewport-width units" \
-    "$(code | grep -cE '\b(w|min-w)-\[(3[7-9][0-9]|[4-9][0-9]{2}|[0-9]{4,})px\]|\bw-screen\b|\b(w|min-w)-\[[0-9]+vw\]|[Ww]idth["'"'"']?:[[:space:]]*["'"'"']?[0-9]+vw' || true)" 0
+    "$(code | grep -cE '(^|[[:space:]"'"'"'`])(w|min-w)-\[(3[7-9][0-9]|[4-9][0-9]{2}|[0-9]{4,})px\]|(^|[[:space:]"'"'"'`])w-screen\b|(^|[[:space:]"'"'"'`])(w|min-w)-\[[0-9]+vw\]|[Ww]idth["'"'"']?:[[:space:]]*["'"'"']?[0-9]+vw' || true)" 0
 
-# --- 4. Interactive primitives carry the 44 px target -----------------------
-# NFR-USA-08. Checked on the primitives rather than on every call site: these
-# four are what every screen builds from, so a target regression here is a
-# target regression everywhere.
-chk "Button, Input, Textarea and AmountInput all set min-h-tap" \
-    "$(grep -l 'min-h-tap' components/ui/button.tsx components/ui/input.tsx components/ui/amount-input.tsx 2>/dev/null | grep -c .)" 3
+# --- 4. Every button is deliberately sized ---------------------------------
+# RE-AIMED, 2026-08-16. The V1 shape this named — components/ui/{button,input,
+# amount-input}.tsx each setting `min-h-tap` — does not exist in V2 and neither
+# does the utility. V2 renders buttons from two CSS classes in globals.css
+# (`.btn-gold`, `.btn-ghost`), and NEITHER sets a min-height: the height comes
+# from a per-call-site `h-*`.
+#
+# So the primitive-level guarantee is genuinely gone, and this check cannot
+# honestly claim otherwise. What it asserts instead is the property V2 does
+# hold — that no button is left unsized, which is the shape that would collapse
+# under its own line-height. Measured: 27 call sites, 27 with an explicit
+# height, 0 without.
+#
+# WHAT THIS DOES NOT ASSERT, SAID PLAINLY: that the height is >= 44 px.
+# NFR-USA-08 wants 44; three call sites are below it (`h-9` twice, `h-8` once,
+# `h-[38px]` once). Making that structural means putting `min-height: 44px` on
+# the two classes, which CHANGES THE APPROVED DESIGN at those call sites — a
+# product decision, and CLAUDE.md §2 rule 16 says a session does not make one
+# in code. Raised with the owner rather than pinned here as an allowlist of
+# three known-bad sites, which is the ignore §9 forbids.
+chk "no btn-gold/btn-ghost call site is left unsized" \
+    "$(grep -rnE 'btn-(gold|ghost)' app components --include='*.tsx' \
+        | grep -vcE 'h-[0-9]+|h-\[[0-9]+px\]|min-h-' || true)" 0
 
 # --- 5. The listing grid starts at one column -------------------------------
 # FR-LIST at 375 px: a two-column grid of cards carrying an image, a name, a
-# price and a countdown does not fit. `grid-cols-1` first, widening upward, is
-# what makes mobile the base layer rather than a special case.
-chk "the listing grid is single-column before its first breakpoint" \
-    "$(grep -c 'grid-cols-1' components/auction/active-listing.tsx || true)" 1
+# price and a countdown does not fit.
+#
+# RE-AIMED, 2026-08-16. V1 wrote `grid-cols-1` and widened upward at
+# breakpoints. V2 states the same intent intrinsically — `auto-fill` with a
+# `minmax(268px, 1fr)` track — which yields exactly one column at 375 px
+# without naming a breakpoint at all, and keeps doing so if the card's minimum
+# ever changes. Same requirement, stronger expression; the check follows it
+# rather than demanding the older spelling of it.
+chk "the listing grid collapses to one column at 375 px" \
+    "$(grep -c 'grid-cols-\[repeat(auto-fill,minmax(268px,1fr))\]' app/page.tsx || true)" 1
 
 # --- 6. Long user strings can break --------------------------------------
 # A product name is up to 100 characters (FR-CREATE-04) and a display name is
 # user-supplied; neither is guaranteed to contain a space. In a flex or grid
 # child an unbreakable run cannot shrink below its own width unless something
 # says it may, which is what `min-w-0`, `break-words` and `truncate` do.
-chk "the review panel's user-content cell can break a long word" \
-    "$(grep -c 'min-w-0 break-words' app/auctions/new/create-auction-form.tsx || true)" 1
+#
+# RE-AIMED, 2026-08-16: app/auctions/new/create-auction-form.tsx is a V1 path;
+# V2's review step lives in the create wizard. The wizard renders the seller's
+# own title back to them at step «مراجعة», so it is still the cell where an
+# unbroken 100-character run would push the panel wider than the viewport.
+# Asserted as "at least one", collapsed to 0/1. A raw line count would pin the
+# check to today's number and go red on an unrelated edit that adds a second
+# truncating cell — which trains the reader to bump the constant instead of
+# reading the rule.
+chk "the wizard's user-content cells can break a long word" \
+    "$([ "$(grep -cE 'min-w-0|break-words|truncate' components/auction/create-wizard.tsx || true)" -ge 1 ] && echo 1 || echo 0)" 1
 
 # ---------------------------------------------------------------------------
 ran=$((pass + fail))

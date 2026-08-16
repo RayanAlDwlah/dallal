@@ -1,29 +1,26 @@
+import type { Metadata } from "next";
 import { redirect } from "next/navigation";
 
-import { Page } from "@/components/layout/container";
-import { Card, CardBody } from "@/components/ui/card";
-import { getVerifiedUserId } from "@/lib/auth/identity";
+import { createClient } from "@/lib/supabase/server";
 
 import { RegisterForm } from "./register-form";
 
-export const metadata = { title: "إنشاء حساب — دلال" };
+export const metadata: Metadata = { title: "إنشاء حساب" };
 
 export default async function RegisterPage() {
-  if (await getVerifiedUserId()) {
-    redirect("/");
-  }
+  const supabase = await createClient();
+  const {
+    data: { user },
+  } = await supabase.auth.getUser();
+  if (user) redirect("/");
 
   return (
-    <Page
-      title="إنشاء حساب"
-      description="سجّل واستخدم المنصة فورًا — لا خطوة تحقق بريد (BR-37)."
-      width="narrow"
-    >
-      <Card>
-        <CardBody>
-          <RegisterForm />
-        </CardBody>
-      </Card>
-    </Page>
+    <div className="mx-auto mt-14 w-full max-w-[420px]">
+      <h1 className="mb-1 font-display text-[28px] font-semibold">إنشاء حساب</h1>
+      <p className="mb-7 text-[15px] text-ink2">
+        اسمك المعروض هو هويتك الوحيدة أمام الآخرين — بريدك ما يظهر لأحد.
+      </p>
+      <RegisterForm />
+    </div>
   );
 }

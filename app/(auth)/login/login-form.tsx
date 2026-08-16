@@ -3,80 +3,65 @@
 import Link from "next/link";
 import { useActionState } from "react";
 
-import { Alert } from "@/components/ui/alert";
-import { Button } from "@/components/ui/button";
-import { Field } from "@/components/ui/field";
-import { Input } from "@/components/ui/input";
-import { loginAction, type AuthFormState } from "../actions";
+import { signIn, type AuthFormState } from "@/app/(auth)/actions";
 
-/**
- * AUTH-04 — FR-AUTH-08 → FR-AUTH-11.
- *
- * Presentation is composed entirely from Mohammed's primitives (CLAUDE.md §1);
- * this file adds behaviour and no visual language of its own.
- */
+const initial: AuthFormState = { error: null };
+
 export function LoginForm({ next }: { next?: string }) {
-  const [state, formAction, pending] = useActionState<AuthFormState, FormData>(
-    loginAction,
-    {},
-  );
+  const [state, action, pending] = useActionState(signIn, initial);
 
   return (
-    <form action={formAction} className="flex flex-col gap-5">
-      {/*
-        FR-AUTH-09 — the failure message is form-level, never attached to the
-        email field: a message under "email" would itself say which half was
-        wrong, which is the disclosure the requirement forbids.
-      */}
-      {state.error ? <Alert tone="error">{state.error}</Alert> : null}
+    <form action={action} className="hairline rounded-[22px] bg-surface p-6">
+      {next ? <input type="hidden" name="next" value={next} /> : null}
 
-      {/* Carries the return destination through the POST (FR-AUTH-10). */}
-      <input type="hidden" name="next" value={next ?? ""} />
+      <label className="mb-1.5 block text-[13.5px] font-semibold" htmlFor="email">
+        البريد الإلكتروني
+      </label>
+      <input
+        id="email"
+        name="email"
+        type="email"
+        required
+        autoComplete="email"
+        dir="ltr"
+        className="field mb-5 text-start"
+        placeholder="you@example.com"
+      />
 
-      <Field label="البريد الإلكتروني" error={state.fieldErrors?.email} required>
-        {(props) => (
-          <Input
-            {...props}
-            name="email"
-            type="email"
-            inputMode="email"
-            autoComplete="email"
-            dir="ltr"
-            className="text-start"
-            placeholder="you@example.com"
-          />
-        )}
-      </Field>
-
-      <Field label="كلمة المرور" error={state.fieldErrors?.password} required>
-        {(props) => (
-          <Input
-            {...props}
-            name="password"
-            type="password"
-            autoComplete="current-password"
-            dir="ltr"
-            className="text-start"
-          />
-        )}
-      </Field>
-
-      <Button type="submit" loading={pending}>
-        تسجيل الدخول
-      </Button>
-
-      <div className="text-ink-2 flex flex-col gap-2 text-sm">
-        {/* FR-AUTH-25 — reset starts from the login screen, unauthenticated. */}
-        <Link href="/reset-password" className="text-brand-text font-semibold">
-          نسيت كلمة المرور؟
+      <div className="mb-1.5 flex items-baseline justify-between gap-3">
+        <label className="text-[13.5px] font-semibold" htmlFor="password">
+          كلمة المرور
+        </label>
+        <Link href="/reset-password" className="text-[12.5px] text-ink3 hover:text-gold">
+          نسيتها؟
         </Link>
-        <p>
-          ليس لديك حساب؟{" "}
-          <Link href="/register" className="text-brand-text font-semibold">
-            أنشئ حسابًا
-          </Link>
-        </p>
       </div>
+      <input
+        id="password"
+        name="password"
+        type="password"
+        required
+        autoComplete="current-password"
+        dir="ltr"
+        className="field text-start"
+      />
+
+      {state.error ? (
+        <p className="mt-4 rounded-[13px] bg-[rgba(255,77,94,.08)] px-4 py-3 text-[13.5px] text-[#FFB3BB] [box-shadow:inset_0_0_0_1px_rgba(255,77,94,.24)]">
+          {state.error}
+        </p>
+      ) : null}
+
+      <button type="submit" disabled={pending} className="btn-gold mt-6 h-12 w-full text-[15px]">
+        {pending ? "جارٍ الدخول…" : "دخول"}
+      </button>
+
+      <p className="mt-5 text-center text-sm text-ink2">
+        ما عندك حساب؟{" "}
+        <Link href="/register" className="font-semibold text-gold">
+          أنشئ حسابًا
+        </Link>
+      </p>
     </form>
   );
 }

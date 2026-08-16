@@ -155,8 +155,31 @@ echo "--- money"
 # If a genuinely non-money `Number()` is ever needed (a page index, a count),
 # this check fires and it is RIGHT to fire: narrow it in a PR that says which
 # call and why. Do not add an ignore file.
-chk "no Number()/parseFloat/parseInt/toFixed anywhere in app,components,lib" \
-    "$(count_ts '\b(Number|parseFloat|parseInt)\s*\(|\.toFixed\s*\(')" 0
+#
+# NARROWED FOR V2, 2026-08-16 — this is that PR. The V1 tree had zero
+# non-money conversions, so a blanket count was free. V2 has seven, and every
+# one of them is a genuinely non-money integer: a brightness slider, a lot
+# duration in minutes, an "ends within N hours" filter, two «بعد N ساعات»
+# presets and an AI sampling knob. A check that reports seven violations on a
+# tree that has none gets deleted by the next person in a hurry — which is the
+# real failure mode, not the one it was guarding.
+#
+# So the ban is split by what the call can actually do:
+#
+#   parseFloat / toFixed  — absolute, still zero. Neither has a non-money use
+#                           on this codebase and both exist to produce or
+#                           print a float. `toFixed` is also the quiet way a
+#                           second formatter arrives.
+#   Number / parseInt     — banned on a LINE THAT NAMES AN AMOUNT. That is
+#                           where the damage is: `Number(a.current_price)` is
+#                           the defect, `Number(hours)` is a filter.
+#
+# The money vocabulary is the same list M2 and M3 use. Widen all three
+# together or none.
+chk "no float call on an amount — parseFloat/toFixed at all, Number()/parseInt() on a money line" \
+    "$(( $(count_ts '\bparseFloat\s*\(|\.toFixed\s*\(') \
+       + $(code_ts | grep -E '\b(Number|parseInt)\s*\(' \
+            | grep -ciE '\b(amount|price|increment|deposit|sar)\b') ))" 0
 
 # M2. §4 rule 7, and the only rule on this list that was MEASURED breaking
 # (#103). Not writing Number() is not enough: PostgREST serialises a bare
@@ -182,9 +205,45 @@ chk "no Number()/parseFloat/parseInt/toFixed anywhere in app,components,lib" \
 #
 # A filter argument — .eq("current_price", …) — would fire this and needs no
 # cast. None exists today. If one arrives, narrow this in a PR that says so.
-chk "every *_price column named in a TypeScript string carries ::text" \
-    "$(( $(strings_ts | grep -oE '\b(starting_price|current_price|final_price)\b' | grep -c .) \
-       - $(strings_ts | grep -oE '\b(starting_price|current_price|final_price)::text' | grep -c .) ))" 0
+#
+# NARROWED FOR V2, 2026-08-16 — one arrived, twice. `/api/price-suggestion`
+# filters with .not("current_price", "is", null) and the home page filters with
+# the PostgREST expression `current_price.lte.${maxPrice}`. Neither reads the
+# VALUE — a filter is evaluated in PostgreSQL and returns rows, so there is no
+# number crossing the wire to corrupt, and `::text` in a filter is a syntax
+# error rather than a fix.
+#
+# So the check moved from "any string" to the two places a money value can
+# actually cross the wire, and it is the sum of both:
+#
+#   part 1  every money column inside a .select() STRING LITERAL is cast
+#   part 2  every money column inside the shared column CONSTANTS is cast
+#
+# Part 2 is the one that matters on this tree, and it is why the V1 comment
+# above about named constants is still true: almost every select on V2 passes
+# an identifier (AUCTION_WITH_RELATIONS, LOT_COLUMNS, SESSION_COLUMNS), so a
+# check that only read .select() arguments would see three casts and miss
+# fourteen. types/db.ts and types/sessions.ts are where all five money columns
+# — starting_price, current_price, bid_increment, amount, deposit — are named
+# for reading, in one place, once. That is V2's whole §4.7 defence.
+#
+# Both parts read STRING LITERALS, not identifiers, for the V1 reason above: a
+# money column also appears as a TypeScript interface field and as an insert
+# payload key, and neither is a read.
+chk "every money column read — in a .select() or in the shared constants — carries ::text" \
+    "$(( $(code_ts | perl -0777 -ne 'while(/\.select\(\s*([`"'"'"'])(.*?)\1/gs){print "$2\n"}' \
+            | grep -oE '\b(starting_price|current_price|bid_increment|amount|deposit)\b(::text)?' \
+            | grep -vc '::text') \
+       + $(perl -0777 -ne 'while(/"([^"]*)"/g){print "$1\n"}' types/db.ts types/sessions.ts 2>/dev/null \
+            | grep ',' \
+            | grep -oE '\b(starting_price|current_price|bid_increment|amount|deposit)\b(::text)?' \
+            | grep -vc '::text') ))" 0
+# ^ part 2 reads only string literals CONTAINING A COMMA, i.e. column lists.
+# `"deposit"` on its own is EntryMode's value, not a column — the entry mode is
+# «وديعة» or «دعوة», and a session whose entry_mode is the string deposit has
+# no more crossed the wire as a number than one whose city is a string. A
+# single-column select of a money column has no comma either, and is caught by
+# part 1, which reads .select() arguments and does not care about commas.
 
 # M3. The one money column read WITHOUT a ::text cast is bid_history.amount,
 # and it is safe for a structural reason rather than a careful one: the view
@@ -200,19 +259,42 @@ chk "every *_price column named in a TypeScript string carries ::text" \
 # the directory would assert a number that grows by one every time someone
 # touches it — which is the same as asserting nothing. Filename order is the
 # order `supabase db push` applies them, so the last definition is the live one.
-hist_sql="$(grep -lE 'create (or replace )?view public\.bid_history' \
-              supabase/migrations/*.sql 2>/dev/null | sort | tail -1)"
-chk "bid_history.amount is sar_text() output, not the raw numeric column" \
-    "$(perl -0777 -pe 's{--[^\n]*}{}g' "${hist_sql:-/dev/null}" \
-        | grep -c 'sar_text(b\.amount) as amount')" 1
+# RE-AIMED FOR V2, 2026-08-16. There is no `public.bid_history` view in V2 and
+# no `sar_text()`; the reply path is different, so the check follows the defect
+# rather than the file it used to live in.
+#
+# The defect is unchanged: a `numeric` reaching the wire is parsed into a float
+# by the Supabase client before any of our code runs (#103). In V2 the second
+# place that can happen — after the select lists M2 holds — is a SECURITY
+# DEFINER function's `jsonb` reply. `jsonb_build_object('amount', v_amount)`
+# puts an unquoted JSON *number* in the payload, and the bid button reads that
+# payload. It looks exactly like the correct line; the only difference is the
+# five characters that are missing.
+#
+# So: every money-named key in every jsonb reply, across every migration, must
+# carry `::text`. The value expression must start with an identifier — a quoted
+# literal ('invite' under the 'deposit' key of entry_mode) is not an amount.
+chk "no money value enters a jsonb reply uncast — every RPC amount is ::text" \
+    "$(code_sql \
+        | grep -ohE "'(amount|current_price|min_amount|starting_price|increment|new_price|deposit)'[[:space:]]*,[[:space:]]*[a-z_][a-zA-Z_0-9.]*(::text)?" \
+        | grep -vc '::text')" 0
 
 # M4. §4 rule 3. INT-08 already bans the numeric(P,S) TYPMOD, which is the
 # loud version of this mistake. The quiet version passes that check untouched:
 # a new money column declared bare `numeric` has no typmod, no ceiling, and no
 # domain either — so it accepts NaN, accepts three decimals, and accepts a
 # negative. It looks like every other column in the file.
+#
+# NARROWED FOR V2, 2026-08-16: PL/pgSQL LOCALS are subtracted. `place_bid`
+# declares `v_amount numeric` and must — the incoming text is cast into it so
+# the domain's own predicate (> 0, two decimals, < Infinity) can be re-checked
+# before anything is written. A local is not a column, holds no row, and its
+# value is validated three lines later. The `v_` prefix is the convention every
+# function in this schema follows; a money COLUMN named `v_something` would be
+# a stranger thing than the one this check exists to catch.
 chk "no money column is declared bare numeric — every one is sar_amount" \
-    "$(count_sql '\b[a-z_]*(price|amount)\s+numeric\b')" 0
+    "$(( $(count_sql '\b[a-z_]*(price|amount)\s+numeric\b') \
+       - $(count_sql '\bv_[a-z_]*(price|amount)\s+numeric\b') ))" 0
 
 # M5. §4 rule 6 — one formatter, byte-identical wherever it exists. A second
 # formatter does not announce itself as a second formatter; it arrives as a
@@ -277,9 +359,44 @@ chk "no physical ml-/mr-/pl-/pr- utility in JSX" \
 # indicator reorder in RTL — "1,250.00 SAR" renders as something else entirely,
 # and it renders that way only in Arabic, so a reviewer reading the JSX sees
 # nothing wrong. The isolate lives in one component; assert it is still there.
-chk "the Money component isolates its digits in <bdi>" \
-    "$(perl -0777 -pe 's{/\*.*?\*/}{}gs; s{^\s*//[^\n]*$}{}gm' components/ui/money.tsx \
-        | grep -c '<bdi')" 1
+#
+# RE-AIMED FOR V2, 2026-08-16. Counting `<bdi` in money.tsx and demanding
+# exactly one was a count of that file's components, not of the rule: V2 ships
+# two money renderings there (`Money`, and `IncrementAmount` for «زايد بـ 500»,
+# which prints no decimals), so the count is 2 and says nothing either way.
+#
+# The rule has two halves and this now asserts both, as a sum that must be 0:
+#
+#   part 1  every <bdi> in money.tsx wraps a FORMATTER CALL, not a raw value.
+#           `<bdi>{amount}</bdi>` renders 1250 where 1,250.00 belongs — the
+#           isolate is intact and the string is wrong.
+#   part 2  no <bdi> anywhere in the tree contains SAR. This is the half that
+#           actually breaks: put the indicator inside the isolate and the
+#           decimal point and the indicator reorder in Arabic only, so the JSX
+#           reads correctly to a reviewer and renders wrongly to a user.
+#
+# Part 2 is tree-wide on purpose. money.tsx is where the pattern is defined;
+# any component is where it gets copied wrong.
+#
+# PART 1 WAS LINE-ANCHORED AND WENT BLIND IN THE SAME COMMIT THAT RE-AIMED IT.
+# It read `grep -oE '<bdi[^>]*>[{][a-zA-Z_]+'`, which requires the `{` to sit
+# IMMEDIATELY after the `>`. The 2026-08-16 merge restored the literal space
+# between the digits and `SAR`, which reflowed `Money`'s JSX across three lines —
+# and from that moment part 1 matched only `IncrementAmount`, the single-line
+# one. The PRIMARY money rendering, the whole reason the check exists, was
+# unwatched and the suite still printed PASS.
+#
+# Found by `tests/guards/negative.sh` reporting MISSED, not by reading: the
+# probe replaces `{formatMoney(amount)}` with `{amount}` and the guard stayed
+# green. That is the third time on this project that a pattern which silently
+# stopped matching reported nothing — a formatter is not a line, and a check
+# about JSX must be written over the file, not over its lines.
+chk "money renders through a formatter inside <bdi>, with SAR outside the isolate" \
+    "$(( $(perl -0777 -ne 's{/\*.*?\*/}{}gs; s{^\s*//[^\n]*$}{}gm;
+                           while(/<bdi\b[^>]*>\s*\{\s*([A-Za-z_]\w*)/gs){ print "$1\n" }' \
+              components/ui/money.tsx | grep -vc 'format') \
+       + $(code_ts | perl -0777 -ne 'while(/<bdi\b.*?<\/bdi>/gs){ print "$&\n" }' \
+            | grep -c 'SAR') ))" 0
 
 # ===========================================================================
 # SECRETS — CLAUDE.md §6
@@ -332,8 +449,22 @@ echo "--- bidding"
 # A comment asking a future session not to tidy something is not a guard. This
 # is. The read is ordered by `seq` — the view's public rank over bids.id — and
 # any .order() naming created_at is the regression, whatever it is ordering.
-chk "no .order(\"created_at\") on any read in TypeScript" \
-    "$(count_ts '\.order\(\s*.created_at')" 0
+#
+# NARROWED FOR V2, 2026-08-16. The rule is about BIDS, and V1's tree happened
+# to contain no other ordered read, so "any read" and "a bids read" were the
+# same number there. V2 orders three things by created_at and every one is
+# correct: a seller's own auctions, a host's own sessions, and a session's
+# attendee list. None of them is a bid, none is subject to lock-order skew, and
+# for all three created_at IS the intended key.
+#
+# So this now walks each PostgREST chain and fires only when the table is
+# `bids`. `(?:(?!\.from\().)*?` stops the match at the next .from( so one
+# query's .order() cannot be attributed to another query's table — the whole
+# point of scoping it. V2's own bids read is `.order("id")`, which is the
+# shape §5 asks for and what this check protects.
+chk "no .order(\"created_at\") on a bids read" \
+    "$(code_ts | perl -0777 -ne 'while(/\.from\(\s*["'"'"'`]bids["'"'"'`](?:(?!\.from\().)*?\.order\(\s*["'"'"'`]created_at/gs){print "hit\n"}' \
+        | grep -c .)" 0
 
 # ===========================================================================
 # GOVERNANCE — CLAUDE.md §1

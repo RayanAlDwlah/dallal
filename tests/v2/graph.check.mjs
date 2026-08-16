@@ -43,6 +43,16 @@ import { dirname, join } from "node:path";
 
 const ROOT = join(dirname(fileURLToPath(import.meta.url)), "..", "..");
 const read = (p) => readFileSync(join(ROOT, p), "utf8");
+/* Same, but null instead of throwing — for the citation resolver, which probes
+   several candidate locations for one cited basename and must not die on the
+   misses. Everywhere else, a missing file IS the finding: keep using `read`. */
+const readIfAny = (p) => {
+  try {
+    return readFileSync(join(ROOT, p), "utf8");
+  } catch {
+    return null;
+  }
+};
 
 const TICKETS = read("docs/v2/TICKETS.md");
 const SPEC = read("docs/v2/SPEC.md");
@@ -1310,20 +1320,100 @@ if (!section) {
     ["docs/decisions/README.md", DEC_README],
   ];
 
+  // ── The bare `:NNN` continuation, and the bug it hid until 2026-08-16 ──────
+  //
+  // These documents write a run of citations into one file as `file.md:12`
+  // followed by bare `` `:15` ``, `` `:16` ``. The first draft of this scanner
+  // read EVERY bare `` `:NNN` `` in a citing document as a PRD.md line, whatever
+  // file the surrounding prose was actually pointing at. It passed for weeks,
+  // because a random line number in a 2000-line PRD is usually non-blank — so
+  // the check was resolving citations against the WRONG FILE and reporting
+  // success. It only became visible when a `` `:509` `` into a SQL migration
+  // happened to land on a blank PRD line.
+  //
+  // That is the exact failure this section's own header warns about — "a
+  // citation that resolves to the wrong live line is worse than one that
+  // resolves to nothing, because it looks checked" — committed by the checker
+  // rather than by the prose. So the fix is not a narrower regex around PRD.md.
+  // It is to resolve every citation to the file its prose names, and then check
+  // ALL of them, not just the PRD's. A `:NNN` into core_schema.sql rots exactly
+  // as quietly as one into the PRD.
+  //
+  // HOW A BARE `:NNN` IS RESOLVED, AND WHY IT IS NOT "the last file named".
+  //
+  // That was the second draft, and it was wrong in a way worth keeping written
+  // down. These documents argue in long blockquotes that name several files
+  // before the bare run starts — TICKETS.md item 8 opens with a `PRD.md` table
+  // header and then cites `:798`, `:1218`, `:1223` for sixty lines, mentioning
+  // CLAUDE.md and SPEC.md in between. "Last named" attributed `:798` to
+  // CLAUDE.md and reported a dangling citation that a human reading the same
+  // paragraph could not misread. A checker that invents a defect is worse than
+  // one that misses it: the next session spends its budget on the checker.
+  //
+  // So: an EXPLICIT `file.md:12` is resolved against that file, exactly. A BARE
+  // `:12` is resolved against every file named in its block, and is reported
+  // only if it fails against ALL of them. That is deliberately weaker per
+  // citation and it is the strongest claim the syntax actually supports — a
+  // bare continuation is ambiguous, and the honest response to ambiguity is a
+  // narrower assertion, not a confident guess. It still catches the thing this
+  // is for: a line number that ROTTED is out of range or blank everywhere.
+  //
+  // A block is a run of lines between truly empty ones. Markdown blockquotes
+  // separate their paragraphs with `>` rather than a blank line, so one
+  // blockquote is one block — which is exactly the scope a reader carries a
+  // bare continuation across.
+  const TOKEN = /`([A-Za-z0-9_./-]+\.(?:md|sql|ts|tsx|sh|mjs|yml|json))(?::(\d+))?`|`:(\d+)`/g;
   const cites = [];
   for (const [name, body] of CITERS) {
-    for (const m of body.matchAll(/`PRD\.md:(\d+)`|`PRD\.md` §[\d.]+ — [^\n]*?`:(\d+)`|`:(\d+)`/g)) {
-      const n = Number(m[1] ?? m[2] ?? m[3]);
-      cites.push({ doc: name, line: n });
+    for (const block of body.split(/\n[ \t]*\n/)) {
+      const named = [...new Set([...block.matchAll(TOKEN)].map((m) => m[1]).filter(Boolean))];
+      for (const m of block.matchAll(TOKEN)) {
+        if (m[1] && m[2]) cites.push({ doc: name, files: [m[1]], line: Number(m[2]) });
+        else if (!m[1] && named.length) cites.push({ doc: name, files: named, line: Number(m[3]) });
+      }
     }
   }
 
-  chk("PRD citations were found at all", cites.length > 0, true);
+  const prdCites = cites.filter((c) => c.files.some((f) => f.endsWith("PRD.md")));
+  chk("PRD citations were found at all", prdCites.length > 0, true);
 
-  const dangling = cites
-    .filter((c) => !(c.line >= 1 && c.line <= PRD.length) || PRD[c.line - 1].trim() === "")
-    .map((c) => `${c.doc} → PRD.md:${c.line}`);
-  chk("every PRD.md line cited by the V2 docs exists and is not blank", [...new Set(dangling)].sort(), []);
+  // Resolve a cited file to a path that exists. The docs cite bare basenames
+  // (`PRD.md`) and repo-relative paths alike, and V1 files moved to
+  // supabase/archive-v1/ — so a citation naming the old location still resolves.
+  // Anything unresolvable is SKIPPED, not failed: this scanner must not become a
+  // second, accidental "does this file exist" check with a worse error message.
+  const CANDIDATES = (f) => [
+    f,
+    `docs/${f}`,
+    `docs/contracts/${f}`,
+    `docs/v2/${f}`,
+    `docs/decisions/${f}`,
+    `supabase/migrations/${f}`,
+    `supabase/archive-v1/${f}`,
+    f.replace(/^supabase\/migrations\//, "supabase/archive-v1/"),
+  ];
+  const linesOf = (f) => {
+    for (const p of CANDIDATES(f)) {
+      const t = readIfAny(p);
+      if (t !== null) return t.split("\n");
+    }
+    return null;
+  };
+
+  const resolves = (file, line) => {
+    const lines = linesOf(file);
+    // Unresolvable file → treat as satisfied, so this never doubles as a
+    // "does the file exist" check with a misleading message.
+    if (lines === null) return true;
+    return line >= 1 && line <= lines.length && lines[line - 1].trim() !== "";
+  };
+
+  const dangling = [];
+  for (const c of cites) {
+    if (c.files.some((f) => resolves(f, c.line))) continue;
+    dangling.push(`${c.doc} → ${c.files.join("|")}:${c.line}`);
+  }
+  chk("every line the V2 docs cite exists and is not blank", [...new Set(dangling)].sort(), []);
 
   // Every PRD row one of the ratification blockquote's items rests on. Each is
   // quoted in TICKETS.md beside its line number, so the quote is checked
@@ -1461,7 +1551,7 @@ if (!section) {
 {
   const ARCH = read("ARCHITECTURE.md").split("\n");
   const POLICY = read(
-    "supabase/migrations/20260812120000_bid02_bid_acceptance.sql",
+    "supabase/archive-v1/20260812120000_bid02_bid_acceptance.sql",
   ).split("\n");
 
   const archCites = [...TICKETS.matchAll(/`ARCHITECTURE\.md:(\d+)`/g)].map((m) =>
@@ -1530,19 +1620,53 @@ if (!section) {
     .map((n) => `ARCHITECTURE.md:${n}`);
   chk("TICKETS.md still cites every ARCHITECTURE.md line its crossings section rests on", archUncited, []);
 
-  // Crossing 6. Not a document — the `auctions_owner_insert` WITH CHECK that is
-  // on `main` today. `V2-A11` says a lot's end_time is computed when the lot
-  // opens; this says a row cannot be inserted without one. Both halves of the
-  // policy block are pinned because the crossings section argues from both:
-  // the insert-time bound, and the comment recording that no update or delete
-  // policy exists at all.
+  // Crossing 6. Not a document — the V1 `auctions_owner_insert` WITH CHECK
+  // that is in the archive. `V2-A11` says a lot's end_time is computed when
+  // the lot opens; V1 refused an insert without one. V2 resolved this crossing
+  // with a draft status and a trigger-based guard at publish time (see the
+  // updated crossing 6 note in TICKETS.md). Both halves of the V1 policy block
+  // are pinned because the crossings section argues from both: the insert-time
+  // bound (line 524, index 523) and the no-update/no-delete comment (line 509,
+  // index 508).
+  //
+  // THESE NUMBERS MOVED TWICE IN ONE DAY, AND THE ROUND TRIP IS THE LESSON.
+  //
+  // Earlier on 2026-08-16 they were changed FROM 524/509 TO 500/485. That was
+  // correct at the time and measured, not guessed: this branch forked before
+  // main's 24-line pause note was added above both statements, so the archived
+  // copy really did hold them 24 lines earlier. Then the merge with main landed
+  // — git followed the supabase/migrations/ → supabase/archive-v1/ rename and
+  // applied those same 24 lines to the archived copy — and the archive became
+  // byte-identical to V1's final state on main (verified with `diff`, not
+  // assumed). So the pins moved back.
+  //
+  // The rule that survives both moves: a pin is re-derived by diffing the two
+  // copies and finding the statement, NEVER by sliding the index until the
+  // check goes green. Both times the number changed, the sentence at that index
+  // was the same sentence. That is the only evidence that distinguishes a
+  // corrected pin from a defeated check.
+  //
+  // THESE TWO ASSERTIONS DEFEND LESS THAN THEY APPEAR TO, AND THAT IS WRITTEN
+  // HERE RATHER THAN LEFT TO BE DISCOVERED. supabase/archive-v1/ is frozen —
+  // V1 is not developed on this branch — so a pin into it cannot fail because
+  // of anything anyone does to the PRODUCT. What they still catch is an edit to
+  // the archive itself, which tests/v2/graph-negative.check.sh proves by making
+  // one. That is narrow, and it is not nothing: an edit to a frozen directory
+  // is precisely the change nobody thinks to look for. They are kept because
+  // the crossings section argues from V1's starting position and a reader has
+  // to be able to check that argument.
+  //
+  // The V2 guarantee that replaced this one is defended, by a live check
+  // against the live schema: "auction update and delete are confined to drafts
+  // by RLS policy", in tests/integration/excluded-features.check.sh §3. That
+  // is the one to edit when the rule changes. This one will keep saying yes.
   chk(
-    "the shipped auctions insert policy still demands a future end_time at insert time",
+    "the archived V1 insert policy demanded a future end_time at insert time",
     (POLICY[523] ?? "").includes("end_time >= now() + interval '5 minutes'"),
     true,
   );
   chk(
-    "the shipped auctions policy block still records that no update or delete path exists",
+    "the archived V1 policy block recorded that no update or delete path existed",
     (POLICY[508] ?? "").includes("There is NO update and NO delete policy on auctions for any user"),
     true,
   );
@@ -1552,8 +1676,15 @@ if (!section) {
   const archHeading = TICKETS.split("\n").find((l) =>
     l.startsWith("### `ARCHITECTURE.md` and this board do not cite each other"),
   ) ?? "";
+  // The `archive-v1/` prefix is optional because row 6's citation gained one in
+  // the 2026-08-16 merge — the file it names moved from supabase/migrations/ to
+  // supabase/archive-v1/ when V1 was archived, and the row was corrected to say
+  // so. Without the optional group this counted 5 rows in a 6-row table and
+  // reported the HEADING as wrong, which is the failure mode worth naming: a
+  // row-matching pattern that silently stops matching does not report itself
+  // missing, it blames the count.
   const archRows = TICKETS.split("\n").filter((l) =>
-    /^\| \*\*\d+\*\* \| `(ARCHITECTURE\.md|20260812120000_)/.test(l),
+    /^\| \*\*\d+\*\* \| `(ARCHITECTURE\.md|(?:archive-v1\/)?20260812120000_)/.test(l),
   ).length;
   chk(
     "the crossings section's stated count matches the rows in its table",
@@ -1840,6 +1971,8 @@ if (!section) {
   const BID02 = read("docs/contracts/BID-02-bid-operation.md");
   const MONEY = read("lib/money.ts");
   const INT08 = read("tests/integration/excluded-features.check.sh");
+  const CORE = read("supabase/migrations/20260815100000_core_schema.sql");
+  const CLAUDE = read("CLAUDE.md");
 
   // A contract that states the end_time write-door rule and does not name the
   // pause door is the armed-stale-copy case: rank 5 beats an older document,
@@ -1868,39 +2001,78 @@ if (!section) {
     [],
   );
 
-  // S0-11 §7's notice claims three artefacts prohibit bid_increment and that
-  // V2-A3 names only one. Each membership is recomputed. When V2-A3 lands and
-  // amends all three, this SHOULD go red — the notice's "the prohibition
-  // stands" becomes false at that moment and the notice is what must change.
+  // ── This assertion did the job it was written for, and then changed shape ──
   //
-  // INT-08 spells it as a regex alternation, not a literal — the first draft of
-  // this line asked for /bid_increment/ and reported a check that has been
-  // there all along as missing.
+  // It used to read "all three artefacts S0-11 §7 says prohibit bid_increment
+  // still do", and its own comment predicted its death: "When V2-A3 lands and
+  // amends all three, this SHOULD go red — the notice's 'the prohibition
+  // stands' becomes false at that moment and the notice is what must change."
   //
-  // The second draft asked for the alternation ANYWHERE IN THE FILE, and the
-  // negative probe caught that one too: INT-08 counts twice, once over
-  // TypeScript and once over SQL, and each half carries its own copy of the
-  // pattern. Deleting the TS half left the SQL half matching and the assertion
-  // green. That is not a hypothetical narrowing — it is the LIKELIEST one,
-  // because a `bid_increment` column is SQL and the button carrying it is
-  // TypeScript, so D-01's change lands on the TS half alone. Scope to the one
-  // `chk` and measure the two halves as two separate facts.
+  // On 2026-08-15 the column landed. It went red on 2026-08-16, the first time
+  // it was run against the shipped tree. So the prediction was right about the
+  // event and wrong about the shape: V2-A3 did NOT amend all three. It amended
+  // ONE — INT-08, and not even in the same PR — and left the two contract
+  // clauses standing. The tree now holds a documented prohibition and a server
+  // that enforces the opposite, which is a state neither the old assertion nor
+  // the notice had a way to express.
+  //
+  // WHAT THIS MEASURES NOW IS THE CONTRADICTION ITSELF, AND THAT IS DELIBERATE.
+  // Re-aiming it at "the increment is enforced" would have been the easy green
+  // and would have quietly ratified a product decision nobody made — exactly
+  // what CLAUDE.md §8 says this project keeps doing. So every side is pinned:
+  // the two contract clauses that still prohibit, the countersignature that
+  // still says the prohibition holds, the code that rejects below v_min, the
+  // re-aimed INT-08, and the two places the contradiction is written up as
+  // open. Move ANY one of them alone and this goes red.
+  //
+  // It goes red in both directions on purpose. Resolve it the owner's way (b) —
+  // amend the contracts — and this fails until the assertion is rewritten to
+  // match, which is the moment someone must state which way it went. Resolve it
+  // way (a) — place_bid drops back to `> current_price` — and it fails too. The
+  // ONLY green state is the honest one: unresolved, and recorded as unresolved.
+  //
+  // Keeping the two INT-08 halves separate is inherited from the old assertion
+  // and still earns its place — a narrowing lands on one half at a time; see
+  // the negative probe that caught exactly that.
   const int08Block = INT08.match(/^chk "no bid increment \/ minimum raise"[\s\S]*?\n(?=chk )/m) ?? [""];
   chk(
-    "all three artefacts S0-11 §7 says prohibit bid_increment still do",
+    "the bid_increment contradiction is intact on BOTH sides and recorded as open",
     {
-      "S0-11 §7 row": /❌ `bid_increment`/.test(S011),
-      "S0-12 §9.5": /\*\*No re-added checks\.\*\* No increment/.test(S012),
-      "INT-08 (TS half)": /count_ts '[^']*bid_\?increment/.test(int08Block[0]),
-      "INT-08 (SQL half)": /count_sql '[^']*bid_\?increment/.test(int08Block[0]),
-      "S0-11 §10 countersigned it as holding": /No `bid_increment`/.test(S011),
+      // the prohibition side — unamended, and it must stay unamended until the
+      // owner rules, because a contract is not amended by code disagreeing
+      "S0-11 §7 row still prohibits": /❌ `bid_increment`/.test(S011),
+      "S0-12 §9.5 still prohibits": /\*\*No re-added checks\.\*\* No increment/.test(S012),
+      "S0-11 §10 still countersigns it as holding": /No `bid_increment`/.test(S011),
+      // the enforcement side — what actually shipped
+      "core_schema computes a minimum raise": /v_min := v_a\.current_price \+ v_a\.bid_increment/.test(CORE),
+      "core_schema rejects below it": /if v_amount < v_min then/.test(CORE),
+      "INT-08 no longer carries the prohibition": int08Block[0] === "",
+      "INT-08 pins the increment inside place_bid's lock instead":
+        /v_a\.current_price \+ v_a\.bid_increment/.test(INT08),
+      // the record — the only reason the two sides above may coexist
+      // The anchor moved on 2026-08-16 and the move is worth a line. It used to
+      // match §0's summary sentence, "…is an open contradiction and is written
+      // here as one" — which had to be rewritten when §0 grew from two §5
+      // divergences to four. A summary sentence counting its own items is a bad
+      // anchor: it changes for reasons that have nothing to do with the fact
+      // being pinned. This matches the item's own claim instead, which only
+      // changes when the claim does.
+      "CLAUDE.md §0 states it as an open contradiction":
+        /This has not been decided by anyone, and no session may settle it/.test(CLAUDE),
+      "CLAUDE.md §0 leaves both ways out unchosen": /Two ways out/.test(CLAUDE),
+      "S0-11 §7 records that the predicted day arrived": /The day the notice above predicted arrived/.test(S011),
     },
     {
-      "S0-11 §7 row": true,
-      "S0-12 §9.5": true,
-      "INT-08 (TS half)": true,
-      "INT-08 (SQL half)": true,
-      "S0-11 §10 countersigned it as holding": true,
+      "S0-11 §7 row still prohibits": true,
+      "S0-12 §9.5 still prohibits": true,
+      "S0-11 §10 still countersigns it as holding": true,
+      "core_schema computes a minimum raise": true,
+      "core_schema rejects below it": true,
+      "INT-08 no longer carries the prohibition": true,
+      "INT-08 pins the increment inside place_bid's lock instead": true,
+      "CLAUDE.md §0 states it as an open contradiction": true,
+      "CLAUDE.md §0 leaves both ways out unchosen": true,
+      "S0-11 §7 records that the predicted day arrived": true,
     },
   );
   chk(
@@ -1931,8 +2103,26 @@ if (!section) {
   );
 
   // S0-12 §9.6 argues from an inventory of lib/money.ts. An inventory that is
-  // allowed to drift is a recollection, and the whole point of §9.6 is that
-  // the addition primitive is ABSENT — a claim that has to be re-measured.
+  // allowed to drift is a recollection, so both the names and the counts are
+  // recomputed from the module every run.
+  //
+  // The third assertion below used to read "no addition primitive has appeared
+  // in lib/money.ts while §9.6 still says none exists", and §9.6 promised in
+  // its own text that "the day an `addSar` appears, the check goes red and this
+  // section is what has to be rewritten". THAT DAY WAS 2026-08-15 and the
+  // promise was kept: V2 shipped `addMoney`, this went red on the first run
+  // against the shipped tree, and §9.6 was rewritten rather than the check
+  // relaxed.
+  //
+  // It is re-aimed, not deleted, and at a DIFFERENT fact — because the fact it
+  // guarded is spent. §9.6 was protecting "there is no sanctioned way to add",
+  // which is now false by decision. What replaces it is the property that
+  // actually has to survive: the addition exists AND it is integer-cent
+  // arithmetic on BigInt, never on a float. Rule 1 forbids float arithmetic on
+  // an amount, not the concept of addition — so the check that matters is no
+  // longer "does addition exist" but "is the addition still exact". A future
+  // session reimplementing addMoney with Number() would satisfy the old
+  // assertion perfectly and violate rule 1 completely.
   const declared = [...(S012.match(/Its exported values are exactly, and exhaustively:\n([\s\S]*?)—/) ?? [])[1]
     ?.matchAll(/`(\w+)`/g) ?? []].map((m) => m[1]).sort();
   const actual = [...MONEY.matchAll(/^export (?:function|const) (\w+)/gm)].map((m) => m[1]).sort();
@@ -1946,17 +2136,40 @@ if (!section) {
     [actual.length, (MONEY.match(/^export function /gm) ?? []).length],
   );
   chk(
-    "no addition primitive has appeared in lib/money.ts while §9.6 still says none exists",
-    actual.filter((n) => /^(add|plus|sum|subtract|minus|multiply|divide)/i.test(n)),
-    [],
+    "lib/money.ts's arithmetic is BigInt integer cents — never Number, never a float",
+    {
+      // §9.6 option (b) shipped: the primitive exists and is named in the doc
+      "an addition primitive exists": actual.some((n) =>
+        /^(add|plus|sum)/i.test(n),
+      ),
+      "§9.6 records that V2 took option (b)": /V2 built \(b\)/.test(S012),
+      // and the reason it is allowed to exist at all
+      "it converts through integer cents": /toCents\(a\) \+ toCents\(b\)/.test(MONEY),
+      "toCents returns BigInt": /function toCents\([^)]*\): bigint/.test(MONEY),
+      "no float constructor anywhere in the module":
+        !/\b(?:Number|parseFloat|parseInt)\s*\(/.test(MONEY),
+      // the bid button is the call site §9.6 was written about
+      "the bid button uses it rather than arithmetic of its own":
+        /addMoney\(auction\.current_price, auction\.bid_increment\)/.test(
+          read("components/bidding/live-auction.tsx"),
+        ),
+    },
+    {
+      "an addition primitive exists": true,
+      "§9.6 records that V2 took option (b)": true,
+      "it converts through integer cents": true,
+      "toCents returns BigInt": true,
+      "no float constructor anywhere in the module": true,
+      "the bid button uses it rather than arithmetic of its own": true,
+    },
   );
 
   // BID-02's pause note turns on one measurable fact: the flag is shared by the
   // bids-insert gate and the end_time gate. If a future migration splits them,
   // the note's argument evaporates and the note must be rewritten rather than
   // left standing as a reason that no longer holds.
-  const mig = read("supabase/migrations/20260814000000_bid15_closing_and_extension.sql");
-  const bid02mig = read("supabase/migrations/20260812120000_bid02_bid_acceptance.sql");
+  const mig = read("supabase/archive-v1/20260814000000_bid15_closing_and_extension.sql");
+  const bid02mig = read("supabase/archive-v1/20260812120000_bid02_bid_acceptance.sql");
   chk(
     "BID-02's pause note still describes a real overload — one flag, both gates",
     {

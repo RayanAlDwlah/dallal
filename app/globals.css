@@ -1,269 +1,221 @@
-/* ==========================================================================
-   Dalal — app/globals.css
-   Tailwind CSS v4 · CSS-first configuration · RTL
-   --------------------------------------------------------------------------
-   There is NO tailwind.config.js. v4 configures from CSS.
-
-   Three layers, in order:
-     1. @import "tailwindcss"
-     2. the TOKEN layer  — raw --c-* values, swapped per theme
-     3. @theme inline    — maps tokens onto Tailwind's namespaces so
-                           `bg-surface` follows the theme with no `dark:`
-                           variant anywhere in component code
-
-   `@theme inline` is what makes step 3 work: it inlines the var() reference
-   instead of copying the value, so switching --c-* at runtime switches every
-   utility built from it.
-   ========================================================================== */
-
 @import "tailwindcss";
 
-/* ==========================================================================
-   1. Token layer — V2: dark, and dark only
+/*
+ * دلال — design tokens. Source of truth: the approved previews
+ * (colors.html, type-and-money.html). Do not invent colors outside this set.
+ * Purple is allowed ONLY inside the hero glow.
+ */
+@theme {
+  --color-canvas: #07090d;
+  --color-surface: #0f1219;
+  --color-raised: #161a23;
+  --color-hair: rgba(255, 255, 255, 0.08);
 
-   Ported from Rayan's V2 design system (`design-system/tokens.css` on
-   `feature/rayan-v2-spec`), which is a DARK design: "Dark futuristic · bento ·
-   editorial Arabic · RTL". Adopting it entirely means the product is dark, so
-   all three theme blocks that used to live here collapsed into this one.
+  --color-ink: #e9edf5;
+  --color-ink2: #9aa4b8;
+  --color-ink3: #5c6579;
 
-   COLOUR CARRIES MEANING IN THAT SYSTEM, it is not decoration:
+  --color-gold: #f5b942;
+  --color-gold-ink: #1a1204;
+  --color-teal: #2dd4bf;
+  --color-red: #ff4d5e;
+  --color-green: #34d399;
+  --color-purple: #7c3aed;
 
-     gold  = money, prices, the primary action
-     teal  = live, active, realtime
-     red   = the final seconds, and errors
-     green = you won            (see the note under `brand`)
-
-   HOW HIS FOUR ROLES WERE MAPPED ONTO THE FOUR THIS APP ALREADY HAS. The app's
-   components name colours semantically — `bg-brand-weak`, `text-urge-text` —
-   never as hex, so re-pointing the values below re-skins every screen without
-   touching one component. Measured usage decided the mapping:
-
-     brand  43 uses   <- gold   the dominant slot: primary buttons AND money
-     stop   12 uses   <- red    errors, and his "final seconds"
-     urge    9 uses   <- teal   his "live/active"; the app uses `urge` for the
-                                concurrency-loss state, which is the live-bidding
-                                surface. Its rule was "brass, deliberately NOT
-                                red" (DESIGN_SYSTEM §8.1) — teal keeps that
-                                distinction and reads as live rather than wrong.
-     calm    8 uses   <- ink2   neutral/info, from his text ramp
-
-   `green = you won` has no slot of its own: the one `tone="success"` in the
-   tree is the winner statement (#161), and gold — money, the prize — carries it
-   without inventing a fifth namespace. If a green is wanted there later it is
-   one token and one `Alert` variant, and it is a design call, not a port.
-
-   WHAT WAS DELIBERATELY NOT PORTED: his `@import url(fonts.googleapis.com)`.
-   `app/fonts.ts` already loads IBM Plex Sans Arabic — the SAME family his tokens
-   ask for — through `next/font/local` from @fontsource, precisely because the
-   Google loader fetches during `next build` and "that is exactly how the Vercel
-   deployment broke". The typography already matches; copying the import would
-   only re-break the build.
-   ========================================================================== */
-
-:root {
-  color-scheme: dark;
-
-  /* surfaces — canvas / surface / raised */
-  --c-ground:#07090D; --c-surface:#0F1219; --c-sunk:#161A23;
-  --c-rule:rgba(255,255,255,.08); --c-rule-strong:rgba(255,255,255,.14);
-
-  /* text ramp.
-
-     `--c-text-3` is #7A8398, NOT his #5C6579, and this is the one place the
-     port deviates from the source. Measured against all three surfaces:
-
-       #5C6579  ground 3.41  surface 3.21  raised 2.98   <- fails AA
-       #7A8398  ground 5.24  surface 4.93  raised 4.58   <- passes on all three
-
-     WCAG AA wants 4.5:1 for small text, and every caller of `text-ink-3` in
-     this tree is small: `text-ink-3 text-xs` labels at 12px — «الفائز»,
-     «السعر النهائي», «نتيجة المزاد». His previews are static HTML mockups and
-     nothing measured them against real callers.
-
-     The presentation side of accessibility is mine (CLAUDE.md §1), so this is
-     a call I make rather than a divergence to report. It is the smallest step
-     up the same ramp that clears the bar — still clearly the third, dimmest
-     tier, still between #9AA4B8 and the surfaces. */
-  --c-text:#E9EDF5;   --c-text-2:#9AA4B8;  --c-text-3:#7A8398;
-
-  /* gold — money, prices, the primary action */
-  --c-brand:#F5B942;  --c-brand-hover:#FFC95E; --c-brand-weak:rgba(245,185,66,.12);
-  --c-brand-line:#C98A16; --c-brand-text:#F5B942; --c-on-brand:#07090D;
-
-  /* teal — live, active, realtime */
-  --c-urge:#2DD4BF;   --c-urge-hover:#5FE6D5;  --c-urge-weak:rgba(45,212,191,.12);
-  --c-urge-line:#1B8B7E;  --c-urge-text:#5FE6D5; --c-on-urge:#04211E;
-
-  /* red — the final seconds, and errors */
-  --c-stop:#FF4D5E;   --c-stop-hover:#FF6B79;  --c-stop-weak:rgba(255,77,94,.12);
-  --c-stop-line:#8E2A34;  --c-stop-text:#FF8A95; --c-on-stop:#2A0509;
-
-  /* neutral — info, secondary */
-  --c-calm:#9AA4B8;   --c-calm-weak:rgba(154,164,184,.10); --c-calm-line:rgba(255,255,255,.14);
-  --c-calm-text:#9AA4B8;  --c-on-calm:#07090D;
-
-  /* Gold, not the brand green it used to be: on #07090D a focus ring has to
-     survive against every surface here, and gold is the highest-contrast hue
-     in the palette. */
-  --c-focus:#F5B942;
+  --font-display: "Rubik", system-ui, sans-serif;
+  --font-body: "IBM Plex Sans Arabic", system-ui, sans-serif;
 }
 
-/* ==========================================================================
-   2. Theme — Tailwind namespaces built from the tokens
-   ========================================================================== */
-
-@theme inline {
-  /* --- colour: `bg-surface`, `text-ink-2`, `border-rule`, … ------------- */
-  --color-ground:      var(--c-ground);
-  --color-surface:     var(--c-surface);
-  --color-sunk:        var(--c-sunk);
-  --color-rule:        var(--c-rule);
-  --color-rule-strong: var(--c-rule-strong);
-
-  --color-ink:    var(--c-text);
-  --color-ink-2:  var(--c-text-2);
-  --color-ink-3:  var(--c-text-3);
-
-  --color-brand:       var(--c-brand);
-  --color-brand-hover: var(--c-brand-hover);
-  --color-brand-weak:  var(--c-brand-weak);
-  --color-brand-line:  var(--c-brand-line);
-  --color-brand-text:  var(--c-brand-text);
-  --color-on-brand:    var(--c-on-brand);
-
-  --color-urge:       var(--c-urge);
-  --color-urge-hover: var(--c-urge-hover);
-  --color-urge-weak:  var(--c-urge-weak);
-  --color-urge-line:  var(--c-urge-line);
-  --color-urge-text:  var(--c-urge-text);
-  --color-on-urge:    var(--c-on-urge);
-
-  --color-stop:       var(--c-stop);
-  --color-stop-hover: var(--c-stop-hover);
-  --color-stop-weak:  var(--c-stop-weak);
-  --color-stop-line:  var(--c-stop-line);
-  --color-stop-text:  var(--c-stop-text);
-  --color-on-stop:    var(--c-on-stop);
-
-  --color-calm:      var(--c-calm);
-  --color-calm-weak: var(--c-calm-weak);
-  --color-calm-line: var(--c-calm-line);
-  --color-calm-text: var(--c-calm-text);
-  --color-on-calm:   var(--c-on-calm);
-
-  --color-focus: var(--c-focus);
-
-  /* --- type: `font-ui`, `font-num` -------------------------------------- */
-  --font-ui:  var(--font-ui),  "Segoe UI", "Noto Sans Arabic", Tahoma, system-ui, sans-serif;
-  --font-num: var(--font-num), "Segoe UI", Tahoma, system-ui, sans-serif;
-
-  /* --- text scale: leading set for Arabic -------------------------------- */
-  --text-xs:   12px;  --text-xs--line-height:   18px;
-  --text-sm:   13px;  --text-sm--line-height:   21px;
-  --text-base: 15px;  --text-base--line-height: 26px;
-  --text-md:   17px;  --text-md--line-height:   29px;
-  --text-lg:   20px;  --text-lg--line-height:   32px;
-  --text-xl:   24px;  --text-xl--line-height:   36px;
-  --text-2xl:  30px;  --text-2xl--line-height:  44px;
-  --text-3xl:  38px;  --text-3xl--line-height:  52px;
-
-  /* Money has its own scale. `text-money-hero` is never `text-3xl` —
-     keeping them separate is what makes NFR-USA-04 true by construction. */
-  --text-money-hero: 44px;  --text-money-hero--line-height: 50px;
-  --text-money-lg:   26px;  --text-money-lg--line-height:   34px;
-  --text-money-md:   19px;  --text-money-md--line-height:   26px;
-  --text-money-sm:   15px;  --text-money-sm--line-height:   22px;
-
-  /* --- radius, shadow, easing ------------------------------------------- */
-  /* V2 shape: his --r-btn 12 / --r-card 20 / --r-panel 28. The app has three
-     steps rather than four, so `md` takes the button radius and `lg` the card;
-     28 has no caller here and inventing a fourth namespace for it would add a
-     token nothing uses. */
-  --radius-sm: 8px;
-  --radius-md: 12px;
-  --radius-lg: 20px;
-
-  /* A DARK UI DOES NOT SHOW DROP SHADOWS, so V2 elevates with a hairline ring
-     and a deep glow instead — his --e-rest / --e-raised. The old ramp was three
-     black shadows at 4-10% opacity, which on #07090D is invisible: every card
-     in the product would have read as flat. */
-  --shadow-e1: inset 0 0 0 1px rgb(255 255 255 / .06);
-  --shadow-e2: inset 0 0 0 1px rgb(255 255 255 / .08), 0 8px 32px rgb(0 0 0 / .5);
-  --shadow-e3: inset 0 0 0 1px rgb(255 255 255 / .10), 0 16px 48px rgb(0 0 0 / .6);
-
-  --ease-out-soft: cubic-bezier(.2, .7, .3, 1);
-
-  --animate-price-flash: price-flash 320ms var(--ease-out-soft);
-  --animate-row-enter:   row-enter   320ms var(--ease-out-soft);
-
-  /* Minimum hit target, NFR-USA-06 / NFR-USA-08 → `min-h-tap` */
-  --spacing-tap: 44px;
+html {
+  background: var(--color-canvas);
 }
 
-@keyframes price-flash {
-  from { background-color: var(--c-brand-line); }
-  to   { background-color: var(--c-brand-weak); }
-}
-@keyframes row-enter {
-  from { opacity: 0; transform: translateY(-8px); }
-}
-
-/* ==========================================================================
-   3. Base
-   ========================================================================== */
-
-@layer base {
-  html {
-    /* dir="rtl" is set on <html> in app/layout.tsx, once, and never again. */
-    -webkit-text-size-adjust: 100%;
-  }
-
-  body {
-    /* Explicit background — never transparent. */
-    background-color: var(--color-ground);
-    color: var(--color-ink);
-    font-family: var(--font-ui);
-    font-size: var(--text-base);
-    line-height: var(--text-base--line-height);
-    /* Arabic letters join. Tracking breaks the joins. Do not change. */
-    letter-spacing: 0;
-  }
-
-  /* One visible focus state, everywhere. Never `outline: none` alone. */
-  :where(a, button, input, select, textarea, [tabindex]):focus-visible {
-    outline: none;
-    border-radius: var(--radius-sm);
-    box-shadow: 0 0 0 2px var(--color-surface), 0 0 0 4px var(--color-focus);
-  }
-
-  /* Motion is decoration everywhere except the price flash, whose meaning is
-     carried by the ▲ arrow and the delta label instead — which is exactly why
-     those are never optional (NFR-USA-10). */
-  @media (prefers-reduced-motion: reduce) {
-    *, *::before, *::after {
-      animation-duration: 1ms !important;
-      animation-iteration-count: 1 !important;
-      transition-duration: 1ms !important;
-    }
-  }
+body {
+  margin: 0;
+  direction: rtl;
+  background: var(--color-canvas);
+  color: var(--color-ink);
+  font-family: var(--font-body);
+  font-size: 16px;
+  line-height: 1.7;
+  -webkit-font-smoothing: antialiased;
 }
 
-/* ==========================================================================
-   4. Utilities
-   ========================================================================== */
-
-/* Every numeric run is an LTR island inside RTL text. Without isolation the
-   decimal point and the currency suffix reorder. Applied by <Money>, so it
-   cannot be forgotten. */
-@utility num {
-  font-family: var(--font-num);
-  font-variant-numeric: tabular-nums lining-nums;
-  font-feature-settings: "tnum" 1, "lnum" 1;
+/* Tabular numerals — every price, counter and count. Western digits only.
+ *
+ * `direction: ltr` restored from main in the 2026-08-16 merge, and it is not
+ * cosmetic. <Money> makes this element a scroll island, so that an amount with
+ * no ceiling (BR-21) scrolls inside itself instead of widening the document.
+ * A scroll container opens at its START edge — so in an RTL context the island
+ * would rest at the END of the digits, showing "…,890.99" and hiding the
+ * magnitude, which is the one part of a price nobody may have to scroll to
+ * find. LTR makes the start edge the MOST significant digit.
+ *
+ * `<bdi>` already supplies `unicode-bidi: isolate`, which is why that half of
+ * main's rule is not repeated here. Every consumer of `.num` in this tree is a
+ * `<bdi>`; if that ever stops being true, this needs the isolate back. */
+.num {
+  font-variant-numeric: tabular-nums;
   direction: ltr;
-  unicode-bidi: isolate;
 }
 
-/* Directional icons mirror; a clock, a checkmark and the vertical ▲ do not. */
-@utility icon-directional {
-  [dir="rtl"] & { transform: scaleX(-1); }
+/* The SAR indicator — always OUTSIDE the number's bidi isolate. */
+.sar {
+  font-size: 0.62em;
+  color: var(--color-ink2);
+  font-weight: 500;
+  margin-inline-start: 5px;
+}
+
+/* The only permitted border: a 1px inset hairline. */
+.hairline {
+  box-shadow: inset 0 0 0 1px var(--color-hair);
+}
+
+/* ---- shared field styling (create forms, search) ---- */
+.field {
+  width: 100%;
+  height: 46px;
+  border: 0;
+  border-radius: 12px;
+  background: var(--color-raised);
+  color: var(--color-ink);
+  font-family: var(--font-body);
+  font-size: 15px;
+  padding-inline: 14px;
+  box-shadow: inset 0 0 0 1px var(--color-hair);
+  outline: none;
+}
+.field:focus {
+  box-shadow:
+    inset 0 0 0 1px var(--color-teal),
+    0 0 0 3px rgba(45, 212, 191, 0.13);
+}
+.field::placeholder {
+  color: var(--color-ink3);
+}
+textarea.field {
+  height: auto;
+  min-height: 110px;
+  padding: 12px 14px;
+  line-height: 1.7;
+  resize: vertical;
+}
+
+/* ---- pills ---- */
+.pill {
+  display: inline-flex;
+  align-items: center;
+  gap: 6px;
+  height: 26px;
+  padding: 0 11px;
+  border-radius: 999px;
+  font-size: 12px;
+  font-weight: 600;
+  backdrop-filter: blur(8px);
+}
+.pill-live {
+  background: rgba(45, 212, 191, 0.16);
+  color: var(--color-teal);
+  box-shadow: inset 0 0 0 1px rgba(45, 212, 191, 0.3);
+}
+.pill-live .dot {
+  width: 6px;
+  height: 6px;
+  border-radius: 50%;
+  background: var(--color-teal);
+  box-shadow: 0 0 8px var(--color-teal);
+}
+.pill-urgent {
+  background: rgba(255, 77, 94, 0.16);
+  color: var(--color-red);
+  box-shadow: inset 0 0 0 1px rgba(255, 77, 94, 0.3);
+}
+.pill-done {
+  background: rgba(255, 255, 255, 0.07);
+  color: var(--color-ink2);
+}
+
+/* ---- the gold action button ---- */
+.btn-gold {
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  gap: 10px;
+  border: 0;
+  border-radius: 12px;
+  background: var(--color-gold);
+  color: var(--color-gold-ink);
+  font-family: var(--font-body);
+  font-weight: 600;
+  cursor: pointer;
+  transition:
+    transform 0.15s ease-out,
+    box-shadow 0.15s ease-out;
+}
+.btn-gold:hover {
+  transform: translateY(-1px);
+  box-shadow: 0 0 28px rgba(245, 185, 66, 0.35);
+}
+.btn-gold:active {
+  transform: translateY(0) scale(0.985);
+}
+.btn-gold:disabled {
+  background: var(--color-raised);
+  color: var(--color-ink3);
+  box-shadow: inset 0 0 0 1px var(--color-hair);
+  cursor: not-allowed;
+  transform: none;
+}
+.btn-ghost {
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  border: 0;
+  border-radius: 12px;
+  background: transparent;
+  color: var(--color-ink2);
+  box-shadow: inset 0 0 0 1px var(--color-hair);
+  font-family: var(--font-body);
+  font-weight: 500;
+  cursor: pointer;
+  transition: color 0.15s;
+}
+.btn-ghost:hover {
+  color: var(--color-ink);
+}
+
+/* Card hover: the hairline glows gold — thickness never changes. */
+.card-glow {
+  transition:
+    box-shadow 0.15s ease-out,
+    transform 0.15s ease-out;
+}
+.card-glow:hover {
+  transform: translateY(-2px);
+  box-shadow:
+    inset 0 0 0 1px rgba(245, 185, 66, 0.35),
+    0 0 28px rgba(245, 185, 66, 0.14);
+}
+
+/* Hero glow — the ONLY place a gradient (and purple) is allowed. */
+.hero-glow {
+  position: absolute;
+  inset: -40%;
+  background:
+    radial-gradient(40% 50% at 25% 40%, rgba(245, 185, 66, 0.5), transparent 70%),
+    radial-gradient(40% 50% at 70% 60%, rgba(45, 212, 191, 0.45), transparent 70%),
+    radial-gradient(45% 55% at 50% 20%, rgba(124, 58, 237, 0.45), transparent 70%);
+  filter: blur(60px);
+  opacity: 0.55;
+  pointer-events: none;
+}
+
+/* Horizontal rails scroll without a visible scrollbar. */
+.rail-scroll {
+  overflow-x: auto;
+  scrollbar-width: none;
+}
+.rail-scroll::-webkit-scrollbar {
+  display: none;
 }

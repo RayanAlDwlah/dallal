@@ -384,42 +384,59 @@ cannot be written yet. What `V2-A3` must do, in the PR that adds the column: ame
 amend [`S0-11` §7](S0-11-auction-record.md) row 1, and narrow `INT-08` — **three artefacts,
 of which only `INT-08` is named in `V2-A3`'s stated scope or in `CLAUDE.md` §9.**
 
-### 9.6 The gap rule 1 leaves open — there is no sanctioned way to *add* two amounts
+### 9.6 The gap rule 1 left open — **closed 2026-08-15 by V2, which took option (b)**
+
+**Read this section knowing it has already been answered.** It used to be a question, and it
+is preserved as one below because the reasoning is what makes the answer checkable. What
+changed is that `V2` shipped a rewritten `lib/money.ts` and the primitive now exists.
 
 Rule 1 forbids "arithmetic on amounts" in JavaScript, and it is right to. But `D-01`'s button
 must display and submit **`current_price + increment`**, which is an addition, on two amounts,
-on the client. Today:
+on the client. The two ways out this section recorded were: **(a)** the server returns the
+button's amount as text, already computed, so the client never does arithmetic at all; or
+**(b)** an addition primitive in `lib/money.ts` doing pure string arithmetic in `formatSar`'s
+style. This section judged **(a)** "the smaller change and the one that keeps rule 1 absolute
+rather than carved out", at the cost of a round trip per price change.
 
-- **`lib/money.ts` has no addition.** Its exported values are exactly, and exhaustively:
-  `SAR_SUFFIX`, `compareSar`, `formatSar`, `formatSarWithSuffix`, `isSar`, `meetsMinimum`,
-  `minimumAcceptableBid`, `minimumBidHint`, `sar`, `trySar` — **ten, of which nine are
-  functions, and not one of them combines two amounts into a third.** Validation
-  (`sar`, `trySar`, `isSar`), comparison (`compareSar`, `meetsMinimum`,
-  `minimumAcceptableBid`), presentation (`formatSar`, `formatSarWithSuffix`,
-  `minimumBidHint`). The primitive `D-01` needs **does not exist**. *(That list is
-  machine-checked against the module, so it is an inventory rather than a recollection — and
-  the day an `addSar` appears, the check goes red and this section is what has to be
-  rewritten.)*
-- **The obvious implementation is banned on sight** by rule 1, and correctly: `Number(a) +
-  Number(b)` corrupts above 2⁵³ and misrepresents decimal fractions below it.
-- **§7's precedent shows the shape of the answer** — `formatSar` does "pure string arithmetic,
-  no floats, correct beyond 2⁵³" on the decimal string. An `addSar` in the same module, in the
-  same style, with the same 40-digit golden fixture, is the natural home.
-- **`O29` makes this worse, not better.** It asks whether an off-grid price (after a crafted
-  `+0.01`) means the button offers `current + increment` or **rounds up to the next multiple**.
-  Round-up needs division and modulo on decimal strings, not just addition — a strictly larger
-  primitive. **Whichever way `O29` is answered, something must be built here.**
+**V2 built (b).** The bid button computes the amount on the client —
+`addMoney(auction.current_price, auction.bid_increment)`
+(`components/bidding/live-auction.tsx:138`, `components/sessions/hall.tsx:227`) — which is
+exactly the call site this section was written about.
 
-**This is an engineering question, not a product one, so it does not wait on the owner** — but
-it also is not decided, and no ticket names it. `V2-C3` (the bid-button contract) is where it
-belongs. Two candidate answers, for whoever claims it: **(a)** the server returns the button's
-amount as **text**, already computed, so the client never does arithmetic at all — consistent
-with §6's "strings at every boundary" and with §9.9's "no client-side authority"; or **(b)**
-an `addSar` in `lib/money.ts` mirroring `formatSar`'s string technique. **(a) is the smaller
-change and the one that keeps rule 1 absolute rather than carved out** — but it costs a round
-trip per price change on a live-updating surface, and that is a real cost that the person
-building the button should weigh. Recorded here so the choice is made once and deliberately,
-rather than three times by three sessions reaching for `Number()`.
+- **`lib/money.ts` now has addition, and it is not a carve-out from rule 1.**
+  Its exported values are exactly, and exhaustively:
+  `addMoney`, `compareMoney`, `formatIncrement`, `formatMoney`, `isMoneyString`,
+  `parseIncrementInput`, `parseMoneyInput` — **seven, of which seven are
+  functions.** Every one of them routes through one private pair, `toCents` / `fromCents`,
+  which converts the decimal string to **`BigInt` integer cents** and back. `addMoney` is
+  therefore `toCents(a) + toCents(b)` — addition on arbitrary-precision integers, never on a
+  binary float, and `BigInt` has no 2⁵³ and no ceiling, so `BR-21` survives it. *(That list is
+  machine-checked against the module, so it is an inventory rather than a recollection. The
+  check now asserts the primitive is **present** and BigInt-backed; the day someone
+  reimplements it on `Number`, it goes red.)*
+- **The obvious implementation is still banned on sight** by rule 1, and correctly: `Number(a)
+  + Number(b)` corrupts above 2⁵³ and misrepresents decimal fractions below it. **What rule 1
+  forbids is float arithmetic on an amount, not the concept of addition** — and that
+  distinction is the entire load-bearing content of this section. `parseFloat`, `Number()` and
+  `+` on a decimal string remain forbidden everywhere, `lib/money.ts` included.
+- **What (b) costs, now that it is the answer.** The client holds an amount the server did not
+  compute, so the two can disagree — and the server is the authority (§9.9). V2's shape keeps
+  that safe by never letting the client's number be the decision: the button submits an
+  amount, and `place_bid` re-derives its own `v_min` inside the row lock and rejects a
+  disagreement. The client-side sum is a **display and a submission**, never an authorisation.
+  That is the property to protect if this is ever refactored.
+- **`O29` is still open and this does not close it.** It asks whether an off-grid price (after
+  a crafted `+0.01`) means the button offers `current + increment` or **rounds up to the next
+  multiple**. Round-up needs division and modulo on decimal strings — a strictly larger
+  primitive than `addMoney`. V2 shipped plain addition, which is `O29`'s first branch, **by
+  building rather than by deciding**. If the owner answers `O29` the other way, `lib/money.ts`
+  needs the larger primitive.
+
+**One thing this section asked for did not ship: the fixture.** It called for "the same 40-digit
+golden fixture" that §7 requires of the formatter. V2 has no test over `lib/money.ts` at all —
+not for `addMoney`, not for `formatMoney`. The technique is right and unverified, which is a
+weaker claim than this section is written to support, and it is stated here rather than left
+for someone to assume the machine-checked inventory covers behaviour. It covers **names**.
 
 ---
 

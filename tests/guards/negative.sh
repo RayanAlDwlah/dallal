@@ -51,14 +51,22 @@ cd "$ROOT" || exit 1
 
 # Every file a mutation below touches. Kept as one list so the safety check and
 # the restore trap cannot drift apart.
-TOUCHED="lib/auctions/listing.ts
-supabase/migrations/20260814200000_bid09_history_order_key.sql
-supabase/migrations/20260812120000_bid02_bid_acceptance.sql
+# RE-AIMED FOR V2, 2026-08-16. Four of the paths this list carried are V1 files
+# that the ship deleted: lib/auctions/listing.ts, the bid09 and bid02 migrations,
+# components/bidding/bid-panel.tsx. A probe whose mutation targets a missing file
+# does not mutate anything — `perl -pi` errors, run.sh stays green, and the probe
+# reports MISSED, which reads as "this check is broken" about a check that is
+# fine. Four false accusations pointed at the wrong half of the suite. The V2
+# equivalents are lib/auctions/queries.ts, the core schema, and live-auction.tsx;
+# types/db.ts is new to the list because V2 keeps its money casts in one shared
+# constant rather than inline at each call site.
+TOUCHED="lib/auctions/queries.ts
+types/db.ts
+supabase/migrations/20260815100000_core_schema.sql
 components/ui/money.tsx
 app/layout.tsx
 .env.example
-lib/supabase/config.ts
-components/bidding/bid-panel.tsx
+components/bidding/live-auction.tsx
 TEAM.md
 docs/decisions/D-01-bid-increment-button.md
 docs/decisions/README.md
@@ -132,7 +140,7 @@ trap restore EXIT
 
 pass=0
 fail=0
-EXPECTED=21
+EXPECTED=24   # 21 → 24: M1, M2 and R5 each gained a second probe, one per half
 
 # probe LABEL_SUBSTRING  MUTATION_COMMAND
 #
@@ -161,17 +169,43 @@ echo "==> breaking each rule on purpose — every one must be CAUGHT"
 echo
 
 # --- money -----------------------------------------------------------------
-probe "no Number()/parseFloat/parseInt/toFixed" \
-  "perl -pi -e 's{^}{const x = Number(1); // GUARDNEGATIVE\n} if \$. == 1' lib/auctions/listing.ts"
+# M1 and M2 each get TWO probes, because each is now a sum of two counts and a
+# single probe can only ever prove one of them fires. That is exactly how a
+# narrowed check goes half-vacuous without anyone noticing: the half with the
+# probe keeps working, the half without it stops matching, and the suite still
+# prints one confident PASS. Both halves of the narrowing are what V2 added, so
+# both halves are what has to be shown breakable.
 
+# M1, first half — parseFloat/toFixed, banned outright wherever they appear.
+probe "no float call on an amount" \
+  "perl -pi -e 's{^}{const x = parseFloat(\"1\"); // GUARDNEGATIVE\n} if \$. == 1' lib/auctions/queries.ts"
+
+# M1, second half — the narrowing. Number() survives in this tree on array
+# indices and timestamps, so the check only counts it on a line that also names
+# money. This probe writes that line. `bid.amount` and not `current_price`: the
+# check matches \bamount\b, and an underscore is a word character, so «price» in
+# «current_price» has no word boundary in front of it and would not have fired.
+probe "no float call on an amount" \
+  "perl -pi -e 's{^}{const x = Number(bid.amount); // GUARDNEGATIVE\n} if \$. == 1' lib/auctions/queries.ts"
+
+# M2, first half — an inline .select() naming a money column bare.
 probe "carries ::text" \
-  "perl -pi -e 's/starting_price::text/starting_price/ if /GUARDNEGATIVE|starting_price::text/' lib/auctions/listing.ts"
+  "perl -pi -e 's{^}{const q = supabase.from(\"auctions\").select(\"id, current_price\");\n} if \$. == 1' lib/auctions/queries.ts"
 
-probe "bid_history.amount is sar_text()" \
-  "perl -pi -e 's/public\.sar_text\(b\.amount\) as amount/b.amount as amount/' supabase/migrations/20260814200000_bid09_history_order_key.sql"
+# M2, second half — the shared constants, which is where V2 actually keeps the
+# casts and therefore where the regression would land.
+probe "carries ::text" \
+  "perl -pi -e 's/starting_price::text/starting_price/' types/db.ts"
+
+# Replaces the probe for the V1 `bid_history.amount is sar_text()` check. V2 has
+# no bid_history view; place_bid answers in jsonb, and an uncast money value in
+# that reply reaches JSON.parse as a bare number — the #103 defect, one layer
+# further out. Same rule, new mechanism, so the probe moves with it.
+probe "no money value enters a jsonb reply uncast" \
+  "perl -pi -e \"s/'current_price', v_amount::text/'current_price', v_amount/\" supabase/migrations/20260815100000_core_schema.sql"
 
 probe "no money column is declared bare numeric" \
-  "perl -pi -e 's{^}{alter table public.auctions add column if not exists reserve_price numeric;\n} if \$. == 1' supabase/migrations/20260812120000_bid02_bid_acceptance.sql"
+  "perl -pi -e 's{^}{alter table public.auctions add column if not exists reserve_price numeric;\n} if \$. == 1' supabase/migrations/20260815100000_core_schema.sql"
 
 probe "no second formatter" \
   "perl -pi -e 's{^}{const y = (1).toLocaleString();\n} if \$. == 1' components/ui/money.tsx"
@@ -198,8 +232,23 @@ probe "that one declaration is the root layout" \
 probe "no physical ml-/mr-/pl-/pr-" \
   "perl -pi -e 's{^}{const c = \"ml-4\";\n} if \$. == 1' components/ui/money.tsx"
 
-probe "isolates its digits in <bdi>" \
-  "perl -pi -e 's/<bdi/<span/' components/ui/money.tsx"
+# The old mutation here turned every <bdi> into a <span> — and that is NOT
+# caught, by this check or the re-aimed one, because both count bad <bdi>
+# elements and a tree with no <bdi> at all has none. It reported CAUGHT on V1
+# only because the check it probed was worded the other way round. Two probes
+# now, one per half of the rule the check actually states.
+#
+# First half: the number renders without going through the formatter — the
+# «one formatter, byte-identical wherever it exists» rule (§4.6) breaking at
+# the point of render rather than by someone writing a second formatter.
+probe "inside <bdi>" \
+  "perl -pi -e 's/\{formatMoney\(amount\)\}/{amount}/' components/ui/money.tsx"
+
+# Second half: SAR pulled INSIDE the isolate. This is the one that looks like
+# tidying — one element instead of two — and it is the bug §3 names: the
+# indicator and the decimal point reorder in RTL text.
+probe "inside <bdi>" \
+  "perl -pi -e 's{<span className=\"sar\">SAR</span>}{<bdi className=\"sar\">SAR</bdi>}' components/ui/money.tsx"
 
 # --- secrets ---------------------------------------------------------------
 # An empty file, staged and immediately unstaged. Nothing is committed and no
@@ -218,11 +267,14 @@ probe "no SERVICE_ROLE name carries the NEXT_PUBLIC_ prefix" \
   "printf 'NEXT_PUBLIC_SUPABASE_SERVICE_ROLE_KEY=\n' >> .env.example"
 
 probe "no \"use client\" module mentions SERVICE_ROLE" \
-  "perl -pi -e 's{^}{const k = process.env.SUPABASE_SERVICE_ROLE_KEY;\n} if \$. == 2' components/bidding/bid-panel.tsx"
+  "perl -pi -e 's{^}{const k = process.env.SUPABASE_SERVICE_ROLE_KEY;\n} if \$. == 2' components/bidding/live-auction.tsx"
 
 # --- bidding ---------------------------------------------------------------
+# fetchBids() orders by `id` and §5 says why: created_at defaults to now() =
+# transaction start, not lock order, so sorting by it renders a DECREASING bid
+# history under contention. This flips exactly that one .order().
 probe "no .order(\"created_at\")" \
-  "perl -pi -e 's/\.order\(\"end_time\"/.order(\"created_at\"/' lib/auctions/listing.ts"
+  "perl -pi -e 's/\.order\(\"id\"/.order(\"created_at\"/' lib/auctions/queries.ts"
 
 # --- governance ------------------------------------------------------------
 # Both governance checks strip quotations before matching, because this

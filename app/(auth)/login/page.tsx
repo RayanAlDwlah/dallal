@@ -1,62 +1,35 @@
+import type { Metadata } from "next";
 import { redirect } from "next/navigation";
 
-import { Page } from "@/components/layout/container";
-import { Alert } from "@/components/ui/alert";
-import { Card, CardBody } from "@/components/ui/card";
-import { getVerifiedUserId } from "@/lib/auth/identity";
-import { safeLoginReason, safeNextPath } from "@/lib/auth/validation";
+import { createClient } from "@/lib/supabase/server";
 
 import { LoginForm } from "./login-form";
 
-export const metadata = { title: "تسجيل الدخول — دلال" };
-
-/**
- * FR-AUTH-17 — an expired session must leave the user told, not guessing.
- *
- * Deliberately `info` and not `error`: neither case is the user's mistake, and
- * `DESIGN_SYSTEM.md` §8.1 reserves red for actual errors. A session ending is
- * the product working as designed.
- */
-const NOTICE: Record<"expired" | "required", { title: string; body: string }> = {
-  expired: {
-    title: "انتهت جلستك",
-    body: "سجّل الدخول مرة أخرى للمتابعة من حيث توقّفت. تصفّح المزادات وسجل المزايدات يعمل بدون تسجيل دخول.",
-  },
-  required: {
-    title: "هذه الصفحة تتطلب تسجيل الدخول",
-    body: "سجّل الدخول للمتابعة. تصفّح المزادات وسجل المزايدات مفتوح للجميع بدون حساب.",
-  },
-};
+export const metadata: Metadata = { title: "تسجيل الدخول" };
 
 export default async function LoginPage({
   searchParams,
 }: {
-  searchParams: Promise<{ next?: string; reason?: string }>;
+  searchParams: Promise<{ next?: string; link?: string }>;
 }) {
-  const { next, reason } = await searchParams;
-  const safeNext = safeNextPath(next);
-  const notice = safeLoginReason(reason);
+  const supabase = await createClient();
+  const {
+    data: { user },
+  } = await supabase.auth.getUser();
+  if (user) redirect("/");
 
-  /* Already signed in — send them on rather than showing a form they do not need. */
-  if (await getVerifiedUserId()) {
-    redirect(safeNext ?? "/");
-  }
+  const { next, link } = await searchParams;
 
   return (
-    <Page title="تسجيل الدخول" description="ادخل إلى حسابك." width="narrow">
-      <div className="flex flex-col gap-4">
-        {notice ? (
-          <Alert tone="info" title={NOTICE[notice].title}>
-            {NOTICE[notice].body}
-          </Alert>
-        ) : null}
-
-        <Card>
-          <CardBody>
-            <LoginForm next={safeNext ?? undefined} />
-          </CardBody>
-        </Card>
-      </div>
-    </Page>
+    <div className="mx-auto mt-14 w-full max-w-[420px]">
+      <h1 className="mb-1 font-display text-[28px] font-semibold">تسجيل الدخول</h1>
+      <p className="mb-7 text-[15px] text-ink2">ارجع لمزاداتك ومزايداتك.</p>
+      {link === "invalid" ? (
+        <p className="mb-4 rounded-[13px] bg-[rgba(255,77,94,.08)] px-4 py-3 text-[13.5px] text-[#FFB3BB] [box-shadow:inset_0_0_0_1px_rgba(255,77,94,.24)]">
+          الرابط غير صالح أو انتهت صلاحيته — تُستخدم روابط البريد مرة وحدة فقط.
+        </p>
+      ) : null}
+      <LoginForm next={next} />
+    </div>
   );
 }

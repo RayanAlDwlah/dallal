@@ -189,6 +189,23 @@ create trigger auctions_immutable_terms
   for each row execute function public.auctions_guard_update();
 ```
 
+> **READ THIS BEFORE IMPLEMENTING PAUSE — pause is now implemented on sessions.**
+>
+> `CLAUDE.md` §5 records exactly two doors onto `end_time`: `place_bid` (anti-sniping,
+> 30-second quanta, `extension_count` locked) and the pause/resume operation (forward by
+> the exact paused wall-clock interval, no `extension_count` touch). In V2, pause lives on
+> `sessions.paused_at` and `resume_session()` moves `session_lots.end_time` — not
+> `auctions.end_time` directly. This contract covers the V1 architecture (bids against
+> `auctions`); the V2 session mechanism is in
+> `supabase/migrations/20260815200000_sessions.sql`.
+>
+> **The one-flag overload:** in the V1 archive, `dalal.in_place_bid` is shared between the
+> `bids_only_via_place_bid` gate and the `auctions_guard_update` end_time gate. If a future
+> migration splits these flags, the guard's semantics change — any implementation that
+> opens the end_time gate without the bids gate must re-read CLAUDE.md §5 and confirm both
+> doors are still correctly accounted for. The guard as written raises for any unflagged
+> update to `end_time`; "opening the gate" is the one operation §5 forbids doing silently.
+
 ---
 
 ## 2. The bid function — the trust boundary
@@ -650,7 +667,9 @@ create policy auctions_owner_insert on public.auctions
     and winner_id is null
     and final_price is null
     and closed_at is null                         -- SEC-Z6: no user pre-sets an outcome
-    and end_time >= now() + interval '5 minutes'
+    and end_time >= now() + interval '5 minutes'  -- V1 insert-time bound (V2 uses a trigger;
+                                                  -- end_time is written by place_bid or pause/resume
+                                                  -- ONLY — see CLAUDE.md §5 for both doors)
     and end_time <= now() + interval '7 days'     -- BR-38, SC-68, server clock (BR-19)
   );
 

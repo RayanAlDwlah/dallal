@@ -1,134 +1,69 @@
+import Image from "next/image";
 import Link from "next/link";
 
+import { CardPill } from "@/components/auction/card-pill";
 import { Countdown } from "@/components/auction/countdown";
-import { Card, CardBody } from "@/components/ui/card";
-import { ImageFrame } from "@/components/ui/image-frame";
 import { Money } from "@/components/ui/money";
-import { StatusPill } from "@/components/ui/status-pill";
-import type { AuctionListEntry } from "@/lib/auctions/listing";
+import { auctionImageUrl } from "@/lib/images";
+import type { AuctionListItem } from "@/types/db";
 
 /**
- * One entry in the marketplace listing — AUC-09, FR-LIST-02.
- *
- * Mohammed's issue (#51); see the header of app/auctions/new/actions.ts.
- *
- * Built on Card / ImageFrame / Money / Countdown / StatusPill rather than on
- * its own markup, which is what card.tsx already says the listing card must do.
- * Nothing here formats a price itself (NFR-DAT-08, CLAUDE.md §4.6) and nothing
- * here derives a lifecycle state (status-pill.tsx: "this component contains no
- * lifecycle logic").
+ * The one auction card, used everywhere (auction-card.html). The hairline
+ * glows gold on hover — its thickness never changes.
  */
-export interface AuctionCardProps {
-  auction: AuctionListEntry;
-  /**
-   * The server clock at read time, from the same response as the rows. Passed
-   * down rather than read here so every countdown on the page measures skew
-   * against one value (BR-19, EC-17).
-   */
-  serverNow: string;
-}
-
-export function AuctionCard({ auction, serverNow }: AuctionCardProps) {
-  /*
-   * FR-LIST-03 — labelled unambiguously, and the two labels use DIFFERENT
-   * words, not the same noun with a different adjective. price-block.tsx
-   * explains why this is a requirement rather than copywriting: with no bids
-   * the amount is inclusive (BR-29, a bid of exactly this is accepted), and
-   * with bids it is exclusive (BR-03, the next must be strictly greater). A
-   * user must not have to read carefully to tell which applies (NFR-USA-11).
-   *
-   * Derived from bidCount, never from comparing the two prices — they are equal
-   * after the first bid at the starting price.
-   */
-  const hasBids = auction.bidCount > 0;
+export function AuctionCard({ auction }: { auction: AuctionListItem }) {
+  const ended = auction.status === "ended";
+  const hasBids = auction.bid_count > 0;
+  const cover = auction.images[0];
 
   return (
-    <Card as="article" interactive className="overflow-hidden">
-      {/*
-        The whole card is the link (FR-LIST-07). One tab stop and one 44px+
-        target per auction, rather than a separate link on the image and the
-        title (NFR-USA-08).
-      */}
-      <Link
-        href={`/auctions/${auction.id}`}
-        className="flex flex-col focus-visible:outline-2 focus-visible:outline-offset-2"
-      >
-        {/*
-          V2 (auction-card.html): the status pill floats OVER the image rather
-          than competing with the title for its line — which is also what frees
-          the title to run a full line before clamping.
-        */}
-        <div className="relative">
-          <ImageFrame
-            src={auction.imageUrl}
-            /*
-             * The product name IS the alt text: for a listing thumbnail the image
-             * carries no information the name does not. A user-supplied string
-             * lands here, which is fine in an attribute — nothing is interpreted.
-             */
-            alt={auction.name}
-            ratio="square"
-            className="rounded-b-none border-0"
-          />
-          {/*
-            Active, always — the listing is active-only by construction
-            (FR-LIST-05), so there is no state to compute here and no
-            "ending soon" threshold invented. Urgency is the countdown's job,
-            and it already has one. The glowing dot is decorative; the word
-            carries the state (NFR-USA-10).
-          */}
-          <StatusPill tone="active" className="absolute start-3 top-3 z-10">
-            <span
-              aria-hidden="true"
-              className="bg-urge size-1.5 rounded-full shadow-[0_0_8px_var(--c-urge)]"
+    <Link href={`/auctions/${auction.id}`} className="block">
+      <article className="hairline card-glow overflow-hidden rounded-[20px] bg-surface">
+        <div
+          className="relative h-[158px]"
+          style={{ background: "linear-gradient(135deg,#1B212C,#11151D)" }}
+        >
+          {cover ? (
+            <Image
+              src={auctionImageUrl(cover)}
+              alt={auction.title}
+              fill
+              sizes="(max-width: 640px) 100vw, (max-width: 1024px) 50vw, 300px"
+              className="object-cover"
             />
-            نشط
-          </StatusPill>
+          ) : null}
+          <span className="absolute start-3 top-3">
+            <CardPill status={auction.status} endTime={auction.end_time} />
+          </span>
         </div>
 
-        <CardBody className="gap-3">
-          {/*
-            A product name is user-supplied and may be Latin, Arabic or mixed.
-            Unisolated it reorders the line it sits in (CLAUDE.md §3).
-            line-clamp keeps a 100-character name from setting the card's
-            height (FR-CREATE-04 allows one).
-          */}
-          <h2 className="line-clamp-2 text-base font-bold">
-            <bdi>{auction.name}</bdi>
-          </h2>
-
-          {/*
-            V2's card footer: the labelled gold price on one side, time and
-            bid count on the other. Gold digits, dim SAR — `Money`'s suffix
-            carries its own text-ink-2, so the wrapper colour reaches only the
-            digits. Containment, isolate and format all stay Money's
-            (NFR-DAT-08); nine digits wide still scrolls inside itself.
-          */}
+        <div className="p-4">
+          <h3 className="mb-3 truncate text-[16px] font-semibold">{auction.title}</h3>
           <div className="flex items-end justify-between gap-3">
-            <div className="flex min-w-0 flex-col gap-0.5">
-              <span className="text-ink-3 text-xs font-bold">
-                {hasBids ? "المزايدة الحالية" : "سعر البداية"}
+            <div>
+              <span className="block text-[12px] text-ink3">
+                {ended ? (hasBids ? "بِيع بـ" : "انتهى بدون مزايدات") : hasBids ? "السعر الحالي" : "يبدأ من"}
               </span>
-              <Money
-                amount={hasBids ? auction.currentPrice : auction.startingPrice}
-                size="md"
-                className="text-brand-text"
-              />
+              {ended && !hasBids ? null : (
+                <Money
+                  amount={auction.current_price ?? auction.starting_price}
+                  className={`font-display text-[22px] font-bold leading-tight ${ended && hasBids ? "text-green" : "text-gold"}`}
+                />
+              )}
             </div>
-
-            <div className="text-ink-2 flex shrink-0 flex-col items-end gap-0.5 text-xs">
-              {/* FR-LIST-04 — a live countdown, not a static "ends at". */}
-              <Countdown endsAt={auction.endsAt} serverNow={serverNow} />
-              {/*
-                Count, not amount — no Money and no isolate needed for an
-                integer; digits are Western already (BR-42). Derived from
-                bidCount, never from comparing prices (BR-29).
-              */}
-              <span className="num">{hasBids ? `${auction.bidCount} مزايدة` : "بلا مزايدات بعد"}</span>
+            <div className="num text-end text-[12px] leading-relaxed text-ink2">
+              {ended ? null : <Countdown endTime={auction.end_time} className="text-[14px]" />}
+              <br />
+              {ended && hasBids && auction.winner?.display_name ? (
+                <>
+                  الفائز <bdi>{auction.winner.display_name}</bdi> ·{" "}
+                </>
+              ) : null}
+              {hasBids ? `${auction.bid_count} مزايدة` : ended ? null : "أول مزايدة مقبولة"}
             </div>
           </div>
-        </CardBody>
-      </Link>
-    </Card>
+        </div>
+      </article>
+    </Link>
   );
 }

@@ -545,7 +545,7 @@ model — and **no ticket on this board changes it**, including the one `D-01` s
 | **3** | `ARCHITECTURE.md:1218` — the application holds no elevated credential | `AI_API_KEY` | architecture steward |
 | **4** | `ARCHITECTURE.md:958` — realtime is scoped per auction | the session room | Rayan (realtime) |
 | **5** | `ARCHITECTURE.md:681`, `:685` — the owner has **no** update rights | host powers, pause | Rayan (bidding/closing) |
-| **6** | `20260812120000_bid02_bid_acceptance.sql:524` — `end_time` required at insert | a lot has none until it opens | Rayan (bidding/closing) |
+| **6** | `archive-v1/20260812120000_bid02_bid_acceptance.sql:524` — `end_time` required at insert | a lot has none until it opens; **V2 resolved this** — `20260815100000_core_schema.sql` uses a trigger-based guard at publish time and adds update/delete paths for drafts only | Rayan (bidding/closing) |
 
 > **1. ADR-3's reversal condition has already fired, and nobody re-ran the decision.**
 > `ARCHITECTURE.md:1384` names the trigger in its own words — *"an outbound integration appears
@@ -611,25 +611,39 @@ model — and **no ticket on this board changes it**, including the one `D-01` s
 > change, and "there is no edit path" is a sentence someone will read while reviewing the ticket
 > that builds one.
 
-> **6. A lot cannot be inserted under the policy that is on `main` today. This one is code, not
-> prose.** `supabase/migrations/20260812120000_bid02_bid_acceptance.sql:524` — inside the
-> `auctions_owner_insert` `WITH CHECK` — requires `end_time >= now() + interval '5 minutes'` at
-> **insert** time, with `:501` capping it at seven days. `V2-A11` says the opposite in one
-> sentence: *"`end_time` is **computed when the lot opens**, not at creation."* If `O4` is
-> answered "a lot is an `auctions` row with a nullable `session_id`" — which is what `D-03` says
-> the owner's «كل قطعة مزاد كامل» *suggests* — then a lot created before its session opens has no
-> `end_time` the policy will accept, and the insert is refused with `42501`.
+> **6. A lot could not be inserted under the V1 policy — and V2 resolved it by replacing the
+> policy with a trigger.** `supabase/archive-v1/20260812120000_bid02_bid_acceptance.sql:524` —
+> inside the `auctions_owner_insert` `WITH CHECK` — requires `end_time >= now() + interval '5
+> minutes'` at **insert** time, with `:525` capping it at seven days. `V2-A11` says the opposite
+> in one sentence: *"`end_time` is **computed when the lot opens**, not at creation."* The same
+> `WITH CHECK` also demands `status = 'active'` and `current_price = starting_price`, so a
+> not-yet-open lot would have been born `active` with `LC-03` having no `end_time` to compare
+> the clock against. `O23` was **not** this question — it asks whether `BR-38`'s bound applies
+> to a *lot's duration*; this was an *insert-time* problem that survived either answer.
 >
-> **`O23` is not this question.** `O23` asks whether `BR-38`'s five-minute-to-seven-day bound
-> applies to a *lot's duration*. This is an *insert-time* problem and it survives **either**
-> answer, because the bound is evaluated against `now()` when the row is written, not when the
-> lot runs. The same `WITH CHECK` also demands `status = 'active'` and
-> `current_price = starting_price`, so a not-yet-open lot would be born `active` with `LC-03`
-> having no `end_time` to compare the clock against.
+> **V2 shipped a different schema** (`20260815100000_core_schema.sql`) that closes the crossing
+> in two ways. First, a `draft` status: lots are born `draft`, which carries no `end_time`
+> requirement at insert, because the `auctions_guard()` trigger gates the whole check on the
+> publish moment — `status = 'active'`, either at insert or on a draft → active transition
+> (`core_schema.sql:152`) — and only then applies the five-minute bound (`:156`). Second, RLS
+> update and delete paths scoped to drafts: *"owners update own drafts"* and *"owners delete own
+> drafts"* (`core_schema.sql:473`, `:477`), both keyed on `status = 'draft'` — a **published**
+> auction stays immutable to clients, so `BR-31`'s property survives with a narrower door. The
+> V1 comment at `:509`, *"There is NO update and NO delete policy on auctions for any user"*, no
+> longer describes the shipped behaviour; it describes V1, and that is now what it is filed as.
 >
-> The comment above the policy, at `:485`, states the other half in the same breath: *"There is
-> NO update and NO delete policy on auctions for any user"*. Crossings 5 and 6 are one code
-> block.
+> So a lot can be created as a `draft` without any `end_time`, edited while in draft, and
+> published when the session is ready. Crossings 5 and 6 are still one code block in the V1
+> archive — recorded here as the constraint V2's draft/publish model was designed to lift.
+>
+> **Three line citations in this item moved on 2026-08-16, and how they moved is worth one
+> sentence.** `main` gained a 24-line pause note above the policy on 2026-08-15 and bumped
+> **one** of the three numbers this item cites — `500` → `524` — leaving `:501` and `:485`
+> pointing at a blank line and a `grant`. The V2 branch had forked before the note and its three
+> numbers were internally consistent at `500`/`501`/`485`. The merge then applied the note to the
+> archived copy through git's rename detection, so all three move together to `524`/`525`/`509`,
+> which is what is written above. The lesson is not the arithmetic: **a line citation that is
+> updated one-at-a-time rots silently**, because the one you checked is right.
 
 **Three things were checked and are recorded as not crossing, so nobody re-runs them:**
 

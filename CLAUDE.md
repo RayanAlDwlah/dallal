@@ -5,6 +5,183 @@ each other. This file is the only mechanism that constrains all three at once. *
 before writing code.**
 
 ---
+## 0. Status note — V2 is the product, shipped 2026-08-15/16 (read before "fixing" anything)
+
+The tree carries the **V2 product**: the app built from `design-system/previews/*.html`
+(Rayan's approved designs), running on Supabase project `dallal-prod`
+(`yfszokbunbqesigdfuwk`) with the self-contained schema in
+`supabase/migrations/20260815100000_core_schema.sql`. Live at
+https://dallal-rust.vercel.app. Decided by the project owner, who waived the review gate
+for the ship window and then kept it waived — see §1, which is the governing text on
+ownership and is **not** superseded by this section.
+
+Everything below (§1–§9) governs. This section records only where **V2 as shipped**
+diverges from what those sections describe, so that a future session neither "fixes" V2
+back to a stale rule nor assumes a rule was quietly dropped. Each item below was measured
+against the shipped tree on 2026-08-16, not remembered.
+
+**§5 — bidding.** Four divergences. The second is deliberate and the fourth is structural.
+**The first and third are open — written here as findings, not as decisions.** Do not read
+either as settled because it is written down calmly.
+
+1. **A seller-chosen `bid_increment` exists** (`D-01`), and the shipped server **enforces
+   it as a minimum raise**. `place_bid` computes
+   `v_min := current_price + bid_increment` and returns `'error', 'too_low'` for anything
+   below it (`core_schema.sql:256`, `:259`). That is a **minimum-raise rejection**, which
+   is the first of the three checks §5 says must not exist.
+
+   **This has not been decided by anyone, and no session may settle it by editing code or
+   the PRD.** It contradicts four separate records at once, all of which currently say the
+   opposite:
+
+   | record | says |
+   |---|---|
+   | `PRD.md` §21.1 Q4, `BR-32` | "No fixed increment. `+0.01 SAR` is as valid as `+1,000 SAR`." |
+   | `PRD.md` `SD-05` | "No implementer may introduce … a bid increment (BR-32)." |
+   | `D-01` §2 | "**BR-32 governs what the SERVER ACCEPTS. D-01 governs what the SCREEN OFFERS**", with a table of amounts — including `current price + 0.01` — that "**must still be accepted by `place_bid`**". |
+   | this file, §9 | "`BR-32` governs what the server accepts; D-01 governs only what the screen offers." |
+
+   `D-01` §3 named this exact regression in advance, and `D-01` §4 required the assertion
+   that would have caught it — *"the server accepts an amount that is NOT a multiple of the
+   increment"* — to ship **in the same PR as the column**. It never shipped, because the
+   database suite was deleted along with V1, and nothing mechanical watched `BR-32` between
+   2026-08-15 and 2026-08-16.
+
+   **It is watched now, and it is pinned the way it shipped, not the way the documents ask
+   for.** `tests/bidding-v2/acceptance.sql` assertion 19 asserts that `place_bid` REJECTS
+   `current price + 0.01`, labelled `UNRESOLVED`. Written the other way round it would turn
+   the suite red for reporting the truth and someone would "fix" the suite. It goes red in
+   **both** directions on purpose: resolve it way (a) below and it fails, which is the
+   moment somebody has to state that the decision was made; resolve it way (b) and it keeps
+   passing, correctly. The only state in which that assertion lies is the one where somebody
+   changed the server and told nobody.
+
+   **It is pinned twice, because the code says it twice.** `place_lot_bid` is a sibling of
+   `place_bid`, not a caller of it, and it reproduces the identical rejection on the
+   live-session path — `tests/bidding-v2/sessions.sql` assertion 29. Whoever resolves this
+   resolves it in **two functions**; a fix to one alone goes red on the other rather than
+   green everywhere.
+
+   Two ways out, and the difference between them is a **product decision** that belongs to
+   the owner under `TEAM.md` rule 16:
+
+   - **(a)** the implementation over-reached — `place_bid` drops back to `> current_price`
+     and the button keeps offering the increment, exactly as `D-01` §2 describes; or
+   - **(b)** the owner wants enforcement — then `BR-32`, `SD-05`, `PRD` §21.1 Q4 and §21.2
+     are amended to say so, following the `Q7` *"REOPENED AND REVERSED 2026-08-13"*
+     precedent, and `D-01` §2 is rewritten rather than left contradicting the code.
+
+   Raised with the owner on 2026-08-16. Until he answers, **`place_bid` stays as shipped
+   and the PRD stays as written** — a session that quietly aligns one to the other has
+   made the decision on his behalf, which is the failure mode §8 exists about.
+
+   §5's other two absent checks — no maximum/reserve, no leading-bidder rejection — are
+   still absent, and their absence is still the requirement.
+2. **`auctions.status` has three values, not two: `draft`, `active`, `ended`.** §5 says
+   "exactly two". The third is load-bearing and must not be removed as hygiene:
+   `place_bid` **rejects a bid on a `draft` auction** (`core_schema.sql:241`), the update
+   guard forbids `active → draft`, and the RLS insert policy admits only `draft` or
+   `active`. Deleting `draft` would delete the only thing standing between an unpublished
+   listing and a live bid. What §5 actually forbids — a *cancel* and an *edit after
+   bidding* — is still absent.
+
+The rest of §5 is intact — the anti-snipe shape (final 15 s → +30 s), the `CHECK`-capped 20
+extensions, server-clock eligibility via `clock_timestamp()`, and history ordered by
+`bids.id`. Until 2026-08-16 that sentence read "intact **in the schema**", meaning it had
+been read in `core_schema.sql` and asserted nowhere. **`tests/bidding-v2/` now proves it**:
+150 assertions and a contention runner on a throwaway `postgres:17`, credential-free, wired
+into CI's `database` job — and it proves all four **on both bidding paths**, because
+`place_lot_bid` carries its own copy of each. Applying the six committed migrations from
+empty is itself the first test — `supabase db push` does not re-apply what a project
+already has, so a broken migration reached production unchecked before this.
+
+3. **One of those five is NOT intact, and the suite says so instead of asserting it.** §5
+   requires `end_time` to move *"forward only, in 30-second quanta, only inside `place_bid`,
+   and only together with `extension_count + 1`. Every other shape raises."* On V1 a trigger
+   in `20260814000000_bid15_closing_and_extension.sql` made that true. **`core_schema.sql`
+   carries no such trigger.** What protects `end_time` today is the RLS policy `owners
+   update own drafts` — a *permission* boundary, not a shape invariant, and permission
+   boundaries do not constrain `SECURITY DEFINER` code, which is what every RPC in this
+   schema is. `closing.sql` 24–25 assert the RLS half (a client gets 0 rows, not an error);
+   `closing.sql` 26 is a **FINDING**, asserting what is true — a privileged write moves
+   `end_time` backwards unopposed — rather than what §5 says should be. It is a passing
+   assertion documenting a gap; the day someone adds the trigger it goes red, which is the
+   correct moment to delete it. **Raised with the owner on 2026-08-16.** Do not silently
+   "fix" either side.
+
+4. **There are TWO bidding operations, and `place_lot_bid` is the newer one.** Live-session
+   bidding shipped in V2.1 with its own row lock on a different table, its own anti-snipe
+   window, its own `too_low`, an entry-approval gate the auction path has no analogue for,
+   and — since `20260816000000_v2_open_ended_lots.sql` — a `NULL end_time` branch for
+   open-ended lots («بدون مدة») where `end_time is not null` guards every clock comparison.
+   This item used to say it was unproven and the largest known hole; `tests/bidding-v2/
+   sessions.sql` closed that on 2026-08-16 with 73 assertions. What the item is **for now**
+   is the sibling rule:
+
+   > **`place_bid` and `place_lot_bid` are siblings, not a function and its caller.** Every
+   > rule in §4 and §5 exists twice in the schema. Change one and you have changed half the
+   > product — the suite will tell you, because each rule is asserted on both paths, but the
+   > code will not.
+
+   Three places where the lot path genuinely differs, and none of them may be "simplified"
+   into the auction path's shape: the **entry gate** (`session_entries.approved` gates
+   BIDDING and never watching, checked *after* the row lock, so §5's "a rejected bid never
+   extends" has one more exit to cover here); the **session state above the lot** (a paused
+   hall refuses bids *explicitly*, because the open lot's `end_time` is still its old future
+   value and the clock alone would accept them); and the **NULL `end_time`**, where a
+   missing guard makes `advance_session` **loop forever** rather than answer wrongly — which
+   is why `sessions.sql` sets a `statement_timeout`.
+
+   Contention on the lot path is **still unmeasured** — `concurrency.sh` races an auction
+   only. Written up under "Not covered" in `tests/bidding-v2/README.md`.
+
+**§5's pause amendment is implemented — on sessions.** `sessions.paused_at` is the second
+door on `end_time` the owner described: a paused lot's remaining time is preserved and
+`end_time` moves forward on resume. A `place_bid` on a paused session's lot is rejected
+(`sessions.sql:144`). §5's amendment therefore describes shipped behaviour, not pending
+work.
+
+**§4 — money is intact, by a different mechanism than §4.7 names.** There is no
+`public.bid_history` view and no `sar_text()` in V2. The guarantee is instead structural
+in one place: `types/db.ts` defines `AUCTION_COLUMNS` and `BID_COLUMNS`, and **every money
+column in them carries `::text`** — `starting_price::text, current_price::text,
+bid_increment::text, amount::text`. Every read goes through those constants. Where §4.7
+says "read through `public.bid_history` / `sar_text()`, or cast every money column in the
+select", V2 does the second thing, once, in a shared constant instead of at each call
+site. `lib/money.ts` remains the single formatter; the canonical string is still
+`1,250.00 SAR`. The `sar_amount` domain, its `VALUE < 'Infinity'` guard, and the absence
+of any typmod are unchanged — and `sar_increment` is a second domain with the same
+guards plus a whole-tens check.
+
+**§9 — the guard layer runs, and four of its checks were re-aimed at V2's mechanisms**
+(commit that carries this note). None was weakened: each still fails when its rule is
+broken, and `tests/guards/negative.sh` proves it. The four, and why:
+
+| check | was | is |
+|---|---|---|
+| M1 | blanket ban on `Number(`/`parseInt(` | ban on those calls **on a line naming an amount**, plus an absolute ban on `parseFloat`/`toFixed`. V2 has legitimate non-money conversions (a slider, a duration in minutes, an AI sampling knob); V1 had none, so a blanket count worked there and cries wolf here. |
+| M2 | every `*_price` in any string carries `::text` | every money column **in a `.select()` argument** carries `::text`, and the shared constants carry all four casts. A PostgREST *filter* (`current_price.lte.…`) needs no cast and is not a read of the value. |
+| M3 | `bid_history.amount` is `sar_text()` output | `place_bid`'s JSON reply casts every amount to text before it enters `jsonb` — the same defect (`numeric` crossing the wire) at V2's actual boundary. |
+| M4 | no money column declared bare `numeric` | unchanged in intent; PL/pgSQL **locals** (`v_amount numeric`) are excluded, since a local is not a column and comparing amounts needs one. |
+
+**File references in §5/§9 that describe the V1 tree.** V1 migrations live under
+`supabase/archive-v1/`, frozen. The V1 test suites were removed on the ship branch:
+`tests/guards`, `tests/v2`, `tests/governance` and `tests/integration` were restored from
+`main`, re-aimed at V2, and run in CI — **and the database half was not replaced by
+anything.** Wherever §5 or §9 cites `tests/bidding/*.sql` as the thing that holds a rule
+up, read it as *"held up by nothing on this branch"* and see the note above §4.
+
+**§6 (security/privacy) and §3 (Arabic RTL) are unchanged** and the V2 code complies:
+email never leaves the auth schema, the service-role key is server-only, `dir="rtl"` is
+declared once at the root, digits stay Western.
+
+**The AI layer** (`lib/ai/`, `app/api/ai/*`) is input/display-path only, per
+`design-system/previews/ai.html`: it never bids, never accepts/rejects/ends anything,
+never sees an email or internal id, and **a model never produces an amount** — the price
+suggestion is SQL over ended auctions. Unconfigured, it hides itself.
+
+---
+
 
 ## 1. What Dalal is
 
@@ -337,8 +514,21 @@ migration:
 
 | job | cost | what it runs |
 |---|---|---|
-| `static` | seconds, no Docker | the three guard scripts, the V2 board check, **the governance workflow check**, INT-06, INT-08, the realtime checks, `lint`, `typecheck`, `build` |
-| `database` | minutes, PostgreSQL 17 in Docker | `tests/auth/run.sh`, `tests/auction/run.sh`, `tests/bidding/run.sh` |
+| `static` | seconds, no Docker | the three guard scripts, the V2 board check, **the governance workflow check**, INT-06, INT-08, `lint`, `typecheck`, `build` |
+| `database` | ~a minute, Docker | `tests/bidding-v2/run.sh 40 8` — the six committed migrations applied **from empty**, then 150 assertions over **both** bid paths (`place_bid` and `place_lot_bid`), the anti-snipe cap on each, `finalize_auction`, the live-session machinery and the money domains, then 40 rounds of 8 simultaneous bidders |
+
+**This row was struck through for one day** — between the V2 ship on 2026-08-15 and
+2026-08-16 there was no `database` job and no database suite, because the V1 job ran
+`tests/auth/`, `tests/auction/` and `tests/bidding/`, all three deleted with V1. It is
+recorded here rather than quietly replaced: that gap is what let §0's `bid_increment`
+contradiction reach production, and a closed hole with no record of having been open
+teaches nobody anything.
+
+The job needs **no credentials** — everything it proves is a property of the PostgreSQL
+engine and of the committed migration files, not of our hosting, so a laptop and CI mean
+the same thing. What it still does **not** cover is `place_lot_bid`; see §0 item 4 and
+`.github/workflows/ci.yml`'s header, written as an open hole rather than left to be
+discovered.
 
 Three things in `tests/guards/` are new and each answers a different question:
 
@@ -491,13 +681,25 @@ Deleting a check, adding an ignore, or renaming an identifier to slip past a pat
 make the tree green while removing the only thing watching a rule. Each is a worse outcome
 than the red build.
 
-**A concrete instance is already written down**: `docs/decisions/D-01-bid-increment-button.md`
-records that the bid control becomes a button carrying a seller-set amount, and the INT-08
-audit (`tests/integration/excluded-features.check.sh`) will go red the day a `bid_increment`
-column lands — measured, not predicted. The one acceptable response is narrowing it *in the same PR*, together
-with a test asserting the server still accepts an amount that is **not** a multiple of the
-increment. `BR-32` governs what the server accepts; D-01 governs only what the screen
-offers.
+**A concrete instance has now run its full course, and it is worth reading as a case study
+because the mechanism worked right up until the last step.**
+`docs/decisions/D-01-bid-increment-button.md` recorded that the bid control becomes a
+button carrying a seller-set amount. §3 predicted, by name, that a later session would add
+a server-side increment constraint and that it would look like tightening. §4 said the
+INT-08 audit would go red the day a `bid_increment` column landed, and named the one
+acceptable response: narrow the check *in the same PR*, **together with a test asserting
+the server still accepts an amount that is not a multiple of the increment**.
+
+The column landed. INT-08 was narrowed. **The test was not written** — the suite it belonged
+in had been deleted with V1 — and the server-side constraint §3 predicted is now in
+`place_bid`. The prediction was correct, the guard fired, the narrowing happened, and the
+one part that was a *promise* rather than a *mechanism* is the one part that did not
+happen. That is the whole argument of this section in a single example: **a follow-up issue
+is a promise, and promises are not mechanisms.**
+
+`BR-32` governs what the server accepts; D-01 governs only what the screen offers — that
+is still what every document on this branch says, and §0 records that the shipped code
+currently says otherwise. Do not resolve that by editing either one.
 
 <!-- BEGIN:nextjs-agent-rules -->
 

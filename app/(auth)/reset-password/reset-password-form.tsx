@@ -3,69 +3,62 @@
 import Link from "next/link";
 import { useActionState } from "react";
 
-import { Alert } from "@/components/ui/alert";
-import { Button } from "@/components/ui/button";
-import { Field } from "@/components/ui/field";
-import { Input } from "@/components/ui/input";
-import { requestPasswordResetAction, type AuthFormState } from "../actions";
+import { requestPasswordReset, type AuthFormState } from "@/app/(auth)/actions";
 
-/** AUTH-12 — FR-AUTH-25 → FR-AUTH-27. */
+const initial: AuthFormState = { error: null };
+
 export function ResetPasswordForm() {
-  const [state, formAction, pending] = useActionState<AuthFormState, FormData>(
-    requestPasswordResetAction,
-    {},
-  );
+  const [state, action, pending] = useActionState(requestPasswordReset, initial);
 
-  /*
-   * FR-AUTH-27 / EC-27 — the confirmation is identical for a registered and an
-   * unregistered address, so the form is replaced by it either way. Leaving
-   * the form on screen for one case and not the other would leak by shape
-   * what the wording is careful not to leak in words.
-   */
-  if (state.notice) {
+  if (state.sent) {
     return (
-      <div className="flex flex-col gap-4">
-        <Alert tone="success" title="تحقّق من بريدك">
-          {state.notice}
-        </Alert>
-        <Link href="/login" className="text-brand-text text-sm font-semibold">
-          العودة إلى تسجيل الدخول
+      <div className="hairline rounded-[22px] bg-surface p-6 text-center">
+        <p className="m-0 mb-1.5 font-display text-[19px] font-semibold text-teal">
+          راجع بريدك
+        </p>
+        <p className="m-0 mb-6 text-sm text-ink2">
+          إذا كان لهذا البريد حساب عندنا، وصله رابط لاختيار كلمة مرور جديدة. الرابط صالح لمدة
+          محدودة — وإذا ما وصل، شوف مجلد الرسائل غير المرغوب فيها.
+        </p>
+        <Link href="/login" className="btn-ghost h-11 px-6 text-sm">
+          رجوع لتسجيل الدخول
         </Link>
       </div>
     );
   }
 
   return (
-    <form action={formAction} className="flex flex-col gap-5">
-      {state.error ? <Alert tone="error">{state.error}</Alert> : null}
-
-      <Field
-        label="البريد الإلكتروني"
-        hint="أدخل البريد المسجّل في حسابك."
-        error={state.fieldErrors?.email}
+    <form action={action} className="hairline rounded-[22px] bg-surface p-6">
+      <label className="mb-1.5 block text-[13.5px] font-semibold" htmlFor="email">
+        البريد الإلكتروني
+      </label>
+      <input
+        id="email"
+        name="email"
+        type="email"
         required
-      >
-        {(props) => (
-          <Input
-            {...props}
-            name="email"
-            type="email"
-            inputMode="email"
-            autoComplete="email"
-            dir="ltr"
-            className="text-start"
-            placeholder="you@example.com"
-          />
-        )}
-      </Field>
+        autoComplete="email"
+        dir="ltr"
+        className="field text-start"
+        placeholder="you@example.com"
+      />
 
-      <Button type="submit" loading={pending}>
-        أرسل رابط إعادة التعيين
-      </Button>
+      {state.error ? (
+        <p className="mt-4 rounded-[13px] bg-[rgba(255,77,94,.08)] px-4 py-3 text-[13.5px] text-[#FFB3BB] [box-shadow:inset_0_0_0_1px_rgba(255,77,94,.24)]">
+          {state.error}
+        </p>
+      ) : null}
 
-      <Link href="/login" className="text-brand-text text-sm font-semibold">
-        العودة إلى تسجيل الدخول
-      </Link>
+      <button type="submit" disabled={pending} className="btn-gold mt-6 h-12 w-full text-[15px]">
+        {pending ? "جارٍ الإرسال…" : "أرسل الرابط"}
+      </button>
+
+      <p className="mt-5 text-center text-sm text-ink2">
+        تذكّرتها؟{" "}
+        <Link href="/login" className="font-semibold text-gold">
+          سجّل الدخول
+        </Link>
+      </p>
     </form>
   );
 }
