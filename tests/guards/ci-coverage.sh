@@ -103,12 +103,16 @@ WORKFLOW=".github/workflows/ci.yml"
 # Do not read an allowlist entry as "nothing is missing." Suites that do not
 # exist at all are a different question again, and an allowlist can only name
 # files it can stat. The largest of those was a V2 database suite for
-# `place_bid`; it was written on 2026-08-16 as tests/bidding-v2/ and is wired
-# into the `database` job, so this script now sees it as a file rather than as
-# a paragraph. The next one down is a suite for `place_lot_bid` — live-session
-# bidding shipped in V2.1 with the same lock, the same anti-snipe window and no
-# assertions at all — and it is written up in the header of
-# .github/workflows/ci.yml for the same reason: it has no path to allow yet.
+# `place_bid`; the next was one for `place_lot_bid`, live-session bidding, which
+# shipped in V2.1 with its own lock, its own anti-snipe window and no assertions
+# at all. Both were written on 2026-08-16 as tests/bidding-v2/ and both are
+# wired into the `database` job, so this script now sees them as files rather
+# than as paragraphs.
+#
+# THE POINT IS NOT THAT THE LIST IS EMPTY. It is that the list lived in the
+# header of .github/workflows/ci.yml for as long as it did, in prose, because
+# there was no path to allow — which is the one thing this script structurally
+# cannot check. When you find the next such hole, write it there.
 # ---------------------------------------------------------------------------
 ALLOWLIST="
 tests/auction/create-form-recovery.check.mjs — compiles V1's app/auctions/new/create-auction-form.tsx, which V2 replaced with components/auction/create-wizard.tsx; the File-retention property still applies and the AST anchors do not

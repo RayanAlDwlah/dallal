@@ -20,9 +20,9 @@ diverges from what those sections describe, so that a future session neither "fi
 back to a stale rule nor assumes a rule was quietly dropped. Each item below was measured
 against the shipped tree on 2026-08-16, not remembered.
 
-**§5 — bidding.** Four divergences. The second is deliberate. **The first and third are open
-— written here as findings, not as decisions — and the fourth is a gap in coverage, not in
-behaviour.**
+**§5 — bidding.** Four divergences. The second is deliberate and the fourth is structural.
+**The first and third are open — written here as findings, not as decisions.** Do not read
+either as settled because it is written down calmly.
 
 1. **A seller-chosen `bid_increment` exists** (`D-01`), and the shipped server **enforces
    it as a minimum raise**. `place_bid` computes
@@ -56,6 +56,12 @@ behaviour.**
    passing, correctly. The only state in which that assertion lies is the one where somebody
    changed the server and told nobody.
 
+   **It is pinned twice, because the code says it twice.** `place_lot_bid` is a sibling of
+   `place_bid`, not a caller of it, and it reproduces the identical rejection on the
+   live-session path — `tests/bidding-v2/sessions.sql` assertion 29. Whoever resolves this
+   resolves it in **two functions**; a fix to one alone goes red on the other rather than
+   green everywhere.
+
    Two ways out, and the difference between them is a **product decision** that belongs to
    the owner under `TEAM.md` rule 16:
 
@@ -83,10 +89,11 @@ The rest of §5 is intact — the anti-snipe shape (final 15 s → +30 s), the `
 extensions, server-clock eligibility via `clock_timestamp()`, and history ordered by
 `bids.id`. Until 2026-08-16 that sentence read "intact **in the schema**", meaning it had
 been read in `core_schema.sql` and asserted nowhere. **`tests/bidding-v2/` now proves it**:
-77 assertions and a contention runner on a throwaway `postgres:17`, credential-free, wired
-into CI's `database` job. Applying the six committed migrations from empty is itself the
-first test — `supabase db push` does not re-apply what a project already has, so a broken
-migration reached production unchecked before this.
+150 assertions and a contention runner on a throwaway `postgres:17`, credential-free, wired
+into CI's `database` job — and it proves all four **on both bidding paths**, because
+`place_lot_bid` carries its own copy of each. Applying the six committed migrations from
+empty is itself the first test — `supabase db push` does not re-apply what a project
+already has, so a broken migration reached production unchecked before this.
 
 3. **One of those five is NOT intact, and the suite says so instead of asserting it.** §5
    requires `end_time` to move *"forward only, in 30-second quanta, only inside `place_bid`,
@@ -102,15 +109,31 @@ migration reached production unchecked before this.
    correct moment to delete it. **Raised with the owner on 2026-08-16.** Do not silently
    "fix" either side.
 
-4. **`place_lot_bid` is still unproven, and it is now the largest known hole.** Live-session
-   bidding shipped in V2.1 with its own row lock, its own anti-snipe window, its own
-   `too_low`, an entry-approval gate the auction path has no analogue for, and — since
-   `20260816000000_v2_open_ended_lots.sql` — a `NULL end_time` branch for open-ended lots
-   («بدون مدة») where `end_time is not null` guards every clock comparison. Newest bidding
-   code in the tree, least proven. `tests/bidding-v2/` covers `place_bid` only; its runner,
-   shim and fixtures already support the session path and only the assertions are missing.
-   Written up in the header of `.github/workflows/ci.yml`. **Do not read the green
-   `database` job as covering it.**
+4. **There are TWO bidding operations, and `place_lot_bid` is the newer one.** Live-session
+   bidding shipped in V2.1 with its own row lock on a different table, its own anti-snipe
+   window, its own `too_low`, an entry-approval gate the auction path has no analogue for,
+   and — since `20260816000000_v2_open_ended_lots.sql` — a `NULL end_time` branch for
+   open-ended lots («بدون مدة») where `end_time is not null` guards every clock comparison.
+   This item used to say it was unproven and the largest known hole; `tests/bidding-v2/
+   sessions.sql` closed that on 2026-08-16 with 73 assertions. What the item is **for now**
+   is the sibling rule:
+
+   > **`place_bid` and `place_lot_bid` are siblings, not a function and its caller.** Every
+   > rule in §4 and §5 exists twice in the schema. Change one and you have changed half the
+   > product — the suite will tell you, because each rule is asserted on both paths, but the
+   > code will not.
+
+   Three places where the lot path genuinely differs, and none of them may be "simplified"
+   into the auction path's shape: the **entry gate** (`session_entries.approved` gates
+   BIDDING and never watching, checked *after* the row lock, so §5's "a rejected bid never
+   extends" has one more exit to cover here); the **session state above the lot** (a paused
+   hall refuses bids *explicitly*, because the open lot's `end_time` is still its old future
+   value and the clock alone would accept them); and the **NULL `end_time`**, where a
+   missing guard makes `advance_session` **loop forever** rather than answer wrongly — which
+   is why `sessions.sql` sets a `statement_timeout`.
+
+   Contention on the lot path is **still unmeasured** — `concurrency.sh` races an auction
+   only. Written up under "Not covered" in `tests/bidding-v2/README.md`.
 
 **§5's pause amendment is implemented — on sessions.** `sessions.paused_at` is the second
 door on `end_time` the owner described: a paused lot's remaining time is preserved and
@@ -492,7 +515,7 @@ migration:
 | job | cost | what it runs |
 |---|---|---|
 | `static` | seconds, no Docker | the three guard scripts, the V2 board check, **the governance workflow check**, INT-06, INT-08, `lint`, `typecheck`, `build` |
-| `database` | ~a minute, Docker | `tests/bidding-v2/run.sh 40 8` — the six committed migrations applied **from empty**, then 77 assertions over `place_bid`, the anti-snipe cap, `finalize_auction` and the money domains, then 40 rounds of 8 simultaneous bidders |
+| `database` | ~a minute, Docker | `tests/bidding-v2/run.sh 40 8` — the six committed migrations applied **from empty**, then 150 assertions over **both** bid paths (`place_bid` and `place_lot_bid`), the anti-snipe cap on each, `finalize_auction`, the live-session machinery and the money domains, then 40 rounds of 8 simultaneous bidders |
 
 **This row was struck through for one day** — between the V2 ship on 2026-08-15 and
 2026-08-16 there was no `database` job and no database suite, because the V1 job ran

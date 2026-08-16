@@ -1,7 +1,7 @@
 # `tests/bidding-v2/` — the V2 database suite
 
 ```bash
-./tests/bidding-v2/run.sh              # 77 assertions + 8 contended rounds  (~40 s)
+./tests/bidding-v2/run.sh              # 150 assertions + 8 contended rounds (~50 s)
 ./tests/bidding-v2/run.sh 40 8         # 40 rounds of 8 simultaneous bidders
 KEEP=1 ./tests/bidding-v2/run.sh       # leave the container up to poke at
 ```
@@ -40,6 +40,7 @@ unnoticed. It is assertion 19 of `acceptance.sql` now. See `CLAUDE.md` §0.
 | `acceptance.sql` — 32 | `place_bid`: identity, amounts, state, price rules, notifications |
 | `closing.sql` — 26 | anti-snipe quantum, the cap, `finalize_auction`, `end_time` |
 | `money.sql` — 19 | the `sar_amount`/`sar_increment` domains, and money on the wire |
+| `sessions.sql` — 73 | `place_lot_bid` and the rest of the live-session machinery |
 | `concurrency.sh` | N real connections racing one auction, four invariants |
 
 **Applying the migrations is itself a test, and it is the half nobody was
@@ -82,9 +83,10 @@ Two places in it are load-bearing and look like details:
 
 ---
 
-## Three assertions to read before trusting a green run
+## Four assertions to read before trusting a green run
 
-**`acceptance.sql` 19 — the contradiction, pinned as it shipped.** `D-01` §4,
+**`acceptance.sql` 19 and `sessions.sql` 29 — the contradiction, pinned as it
+shipped, in both functions that carry it.** `D-01` §4,
 `BR-32` and `SD-05` all say the server must ACCEPT `current price + 0.01`;
 `D-01` §2 draws the line explicitly — *"BR-32 governs what the SERVER ACCEPTS.
 D-01 governs what the SCREEN OFFERS."* The shipped server says `too_low`. The
@@ -97,6 +99,22 @@ drops back to `> current_price` — and this fails, which is the moment somebody
 has to state that the decision was made. Resolve it way (b) — amend `BR-32`,
 `SD-05` and `PRD` §21.1 Q4 — and it keeps passing, correctly. The only state in
 which it lies is the one where somebody changed the server and told nobody.
+
+There are **two** of them because there are two functions. `place_lot_bid` is a
+sibling of `place_bid`, not a caller of it, and it reproduces the same rejection
+independently — so a half-done fix that changes one function goes red on the
+other, instead of going green everywhere.
+
+**`sessions.sql` 38 — the assertion that cannot fail, only hang.** V2.1's
+open-ended lots («بدون مدة») put a NULL `end_time` into three functions, and
+`advance_session` is the one where a missing `end_time is null` guard does not
+return a wrong answer: it calls `open_next_lot`, is refused with
+`lot_still_running`, changes nothing, and reads the same row again — forever. A
+hung `psql` is a CI job that burns its whole budget and reports nothing at all,
+so `sessions.sql` sets `statement_timeout = '30s'` at the top of the file. The
+block then aborts, its assertions never print, and `run.sh`'s `EXPECTED` count
+reports exactly how many were lost. That is the difference between a timeout
+and a hang, and it is the only reason the number 73 appears in `run.sh`.
 
 **`closing.sql` 26 — a finding, written as one.** `CLAUDE.md` §5 says `end_time`
 moves *"forward only, in 30-second quanta, only inside `place_bid`, and only
@@ -165,9 +183,24 @@ at all (#116).
 
 ## Not covered
 
-`place_lot_bid` — the **second** bidding operation, shipped with live sessions
-and amended for open-ended lots. Its own row lock, its own anti-snipe window,
-its own `too_low`, an entry-approval gate the auction path has no analogue for,
-and a `NULL end_time` branch where `end_time is not null` guards every clock
-comparison. Newest bidding code in the tree, least proven. The runner, the shim
-and the fixtures here already support it; only the assertions are missing.
+**Contention on `place_lot_bid`.** `concurrency.sh` races one *auction*, and
+`sessions.sql` proves the lot path's logic one caller at a time. The two have
+never met. That matters more here than the assertion count suggests: a live hall
+is the one screen in this product where every bidder is looking at the same item
+at the same second, so the lot path is where contention is *likeliest*, and it
+is the path with no measured evidence under it. The four invariants transfer
+unchanged (`bid_count` = row count; `current_price` = last bid by `id`;
+`current_price` = max; **amounts by `id` strictly increasing**) — what is
+missing is a second worker loop reading
+`coalesce(current_price + bid_increment, starting_price)` off `session_lots`,
+and a seat in `session_entries` for each worker.
+
+**The screens.** Nothing here renders anything. A green run says the database
+refuses what it should refuse; it says nothing about whether the bid button
+sends the amount the server would accept. That is `tests/ui/` and `tests/v2/`.
+
+**Realtime delivery.** The migrations add all four tables to the
+`supabase_realtime` publication and this suite proves the statement *ran*. It
+does not prove a payload arrives, or that it arrives without an email in it —
+the second half is structural (§6: email never leaves the auth schema) and check
+65 asks it of every notification row rather than of a wire capture.

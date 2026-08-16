@@ -144,13 +144,14 @@ suite() {
 suite acceptance 32
 suite closing    26
 suite money      19
+suite sessions   73
 
 # EXPECTED catches a suite that aborts partway; nothing above catches a suite
 # LINE that vanishes. A merge conflict resolved by taking one side can drop a
 # whole `suite X N` call — dozens of assertions disappear and SUITE PASSED still
 # prints. That happened twice in one hour on V1 (#112, #114) and was caught by
 # reading, not by structure. This is the structure.
-EXPECTED_SUITES=3
+EXPECTED_SUITES=4
 if [ "$suites" -ne "$EXPECTED_SUITES" ]; then
   echo
   echo "!! expected $EXPECTED_SUITES suites, only $suites ran — a suite line is missing. Treating as failure."

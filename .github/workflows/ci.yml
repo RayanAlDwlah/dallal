@@ -46,7 +46,7 @@
 # assertion 19 of `tests/bidding-v2/acceptance.sql`, pinned as it shipped and
 # labelled UNRESOLVED. See CLAUDE.md §0.
 #
-# `tests/bidding-v2/` closes it: 77 assertions plus a contention runner, on a
+# `tests/bidding-v2/` closes it: 150 assertions plus a contention runner, on a
 # throwaway postgres:17, credential-free. The thing that made it hard is one
 # file — V2's schema INSERTs storage buckets and creates four `storage.objects`
 # policies at TOP LEVEL, so a bare container aborts at `core_schema.sql:496` and
@@ -60,21 +60,34 @@
 # empty, in push order, before an assertion runs.
 #
 # ---------------------------------------------------------------------------
-# THE HOLE THAT IS STILL OPEN, NAMED BEFORE ANYONE HAS TO FIND IT
+# THE SECOND BIDDING OPERATION — THIS PARAGRAPH USED TO NAME A HOLE
 #
-# `tests/bidding-v2/` covers `place_bid` — the classic auction path. It does NOT
-# cover `place_lot_bid`, the SECOND bidding operation, shipped with live
-# sessions in `20260815200000_sessions.sql` and amended by
-# `20260816000000_v2_open_ended_lots.sql`. It is not a variant: it is a
-# 110-line function with its own row lock, its own anti-snipe window, its own
-# `too_low` comparison, an entry-approval gate the auction path has no analogue
-# for, and — since V2.1 — a NULL `end_time` branch for open-ended lots
-# («بدون مدة»), where `end_time is not null` guards every clock comparison. A
-# missing null-guard there is a crash on the demo's headline feature.
+# It read: "`tests/bidding-v2/` covers `place_bid`. It does NOT cover
+# `place_lot_bid` … the newest bidding code in the tree and the least proven.
+# Do not read the green `database` job as covering it." That was true for a few
+# hours on 2026-08-16 and is kept in outline for the same reason as the
+# paragraph above it.
 #
-# It is the newest bidding code in the tree and the least proven. The runner,
-# the shim and the fixtures below already support it; what is missing is the
-# assertions. Do not read the green `database` job as covering it.
+# `tests/bidding-v2/sessions.sql` closes it: 73 assertions over
+# `place_lot_bid`, `open_next_lot`, `advance_session`, `pause`/`resume`,
+# `end_session` and `join_session`/`approve_entry`. Three of the things it
+# proves have no analogue on the auction path at all —
+#
+#   * the ENTRY GATE. `session_entries.approved` gates BIDDING and never
+#     watching, and it is checked AFTER the row lock, which puts it in the same
+#     class as `too_low` for §5's "a rejected bid never extends" rule.
+#   * the SESSION state above the lot: scheduled / live / ended / paused. A
+#     paused hall refuses bids EXPLICITLY, because its open lot's `end_time` is
+#     still its old future value and the clock alone would accept them.
+#   * a NULL `end_time`, added by V2.1 for open-ended lots («بدون مدة») on
+#     2026-08-16. Every clock comparison is now guarded by `end_time is not
+#     null`, and a missing guard fails three different ways: `place_lot_bid`
+#     reads the null as expired and refuses the feature's every bid;
+#     `open_next_lot` compares a 15-second window against an end that does not
+#     exist; and `advance_session` LOOPS FOREVER — it is refused with
+#     `lot_still_running`, changes nothing, and reads the same row again. That
+#     last one hangs rather than fails, which is why `sessions.sql` sets a
+#     `statement_timeout` at the top of the file.
 #
 # ---------------------------------------------------------------------------
 # THE SHAPE — two jobs
@@ -252,7 +265,7 @@ jobs:
   # the same thing here.
   # =========================================================================
   database:
-    name: database — migrations, place_bid, closing, money, contention
+    name: database — migrations, both bid paths, closing, money, contention
     runs-on: ubuntu-latest
     steps:
       - uses: actions/checkout@v4
@@ -262,5 +275,5 @@ jobs:
       # ten will pass a short run and reach production. CI has the minute; a
       # developer waiting on a local run does not, which is why the default is
       # lower and the argument exists.
-      - name: bidding-v2 — 32 + 26 + 19 assertions, then 40 contended rounds
+      - name: bidding-v2 — 32 + 26 + 19 + 73 assertions, then 40 contended rounds
         run: ./tests/bidding-v2/run.sh 40 8

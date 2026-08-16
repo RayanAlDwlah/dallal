@@ -93,6 +93,110 @@ begin
   return r;
 end $$;
 
+-- ---------------------------------------------------------------------------
+-- The session path. Same convention, same reasons — see `sessions.sql`.
+--
+-- Sessions carry NO publish guard (auctions do), so a status is written
+-- directly here. That is setup, never an assertion: nothing in `sessions.sql`
+-- claims a session reached `live` through the product, and the two blocks that
+-- DO exercise the product's own transitions — `open_next_lot`, `host_next_lot`,
+-- `advance_session`, `end_session` — build their state with these and then call
+-- the real function.
+-- ---------------------------------------------------------------------------
+
+create or replace function t_session(
+  p_status     text default 'live',
+  p_entry_mode text default 'deposit',
+  p_start      timestamptz default now() - interval '1 minute',
+  p_host       uuid default '11111111-1111-1111-1111-111111111111'
+) returns uuid language plpgsql as $$
+declare v_id uuid;
+begin
+  insert into public.sessions
+    (host_id, title, description, city, start_time, deposit, entry_mode, status)
+  values
+    (p_host, 'جلسة اختبار',
+     'وصف طويل بما يكفي لتجاوز الحد الأدنى البالغ عشرين حرفًا في القيد.',
+     'الرياض', p_start, '500.00'::public.sar_amount, p_entry_mode, p_status)
+  returning id into v_id;
+  return v_id;
+end $$;
+
+-- One lot, at the next free position.
+--
+-- `p_duration => null` is V2.1's OPEN-ENDED lot («بدون مدة»), and the end_time
+-- this computes is the one `open_next_lot` computes: `now() + duration` for a
+-- timed lot, and NULL for an open-ended one, because `make_interval(secs =>
+-- null)` is null and `now() + null` is null. A live lot with a null end_time is
+-- therefore a REAL state the product reaches, not a shape invented here — which
+-- is the whole reason the null-guard branch exists to be tested.
+create or replace function t_lot(
+  p_session  uuid,
+  p_start    text default '100.00',
+  p_inc      text default '10',
+  p_duration integer default 600,
+  p_status   text default 'live',
+  p_end      timestamptz default null
+) returns uuid language plpgsql as $$
+declare v_id uuid; v_pos integer; v_end timestamptz;
+begin
+  select coalesce(max(position), 0) + 1 into v_pos
+  from public.session_lots where session_id = p_session;
+
+  if p_end is not null then
+    v_end := p_end;
+  elsif p_status = 'live' and p_duration is not null then
+    v_end := now() + make_interval(secs => p_duration);
+  else
+    v_end := null;
+  end if;
+
+  insert into public.session_lots
+    (session_id, position, title, description, category_id, images,
+     starting_price, bid_increment, duration_seconds, status, end_time)
+  values
+    (p_session, v_pos, 'قطعة اختبار', 'وصف القطعة في جلسة الاختبار.',
+     (select id from public.categories order by id limit 1),
+     array['11111111-1111-1111-1111-111111111111/a.jpg'],
+     p_start::public.sar_amount, p_inc::public.sar_increment,
+     p_duration, p_status, v_end)
+  returning id into v_id;
+  return v_id;
+end $$;
+
+-- Point a session at its open lot, the way `open_next_lot` would have. Setup
+-- only — the blocks that test `open_next_lot` itself still call it.
+create or replace function t_current(s uuid, l uuid) returns void
+language sql as $$
+  update public.sessions set current_lot_id = l where id = s;
+$$;
+
+-- Move a lot's end_time without going through place_lot_bid — same reasoning as
+-- t_expire() above, and the same warning: the mechanism under test must never
+-- be the mechanism that sets up the test.
+create or replace function t_lot_end(l uuid, p_end timestamptz) returns void
+language sql as $$
+  update public.session_lots set end_time = p_end where id = l;
+$$;
+
+-- A seat in the hall. `approved` is what gates BIDDING; watching is never
+-- gated. `t_entry(s, u, false)` is the invite-only case before the host acts.
+create or replace function t_entry(s uuid, u uuid, ok boolean default true) returns void
+language sql as $$
+  insert into public.session_entries (session_id, user_id, deposit_paid, approved)
+  values (s, u, ok, ok)
+  on conflict (session_id, user_id) do update set approved = excluded.approved;
+$$;
+
+create or replace function t_lot_bid(l uuid, who uuid, amount text) returns jsonb
+language plpgsql as $$
+declare r jsonb;
+begin
+  perform t_login(who);
+  select public.place_lot_bid(l, amount) into r;
+  return r;
+end $$;
+
 -- The assertion primitive. Prints exactly one PASS or FAIL line per call, and
 -- the run.sh harness counts those lines against an EXPECTED total — so a DO
 -- block that aborts partway is caught by the count rather than reported as a
