@@ -2050,7 +2050,15 @@ if (!section) {
       "INT-08 pins the increment inside place_bid's lock instead":
         /v_a\.current_price \+ v_a\.bid_increment/.test(INT08),
       // the record — the only reason the two sides above may coexist
-      "CLAUDE.md §0 states it as an open contradiction": /is an open\ncontradiction and is written here as one/.test(CLAUDE),
+      // The anchor moved on 2026-08-16 and the move is worth a line. It used to
+      // match §0's summary sentence, "…is an open contradiction and is written
+      // here as one" — which had to be rewritten when §0 grew from two §5
+      // divergences to four. A summary sentence counting its own items is a bad
+      // anchor: it changes for reasons that have nothing to do with the fact
+      // being pinned. This matches the item's own claim instead, which only
+      // changes when the claim does.
+      "CLAUDE.md §0 states it as an open contradiction":
+        /This has not been decided by anyone, and no session may settle it/.test(CLAUDE),
       "CLAUDE.md §0 leaves both ways out unchosen": /Two ways out/.test(CLAUDE),
       "S0-11 §7 records that the predicted day arrived": /The day the notice above predicted arrived/.test(S011),
     },

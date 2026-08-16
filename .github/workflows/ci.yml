@@ -27,38 +27,63 @@
 # deleted files are GONE rather than commented out.
 #
 # ---------------------------------------------------------------------------
-# THE REGRESSION THIS FILE IS NOT ALLOWED TO HIDE
+# THE REGRESSION THIS FILE CARRIED FOR ONE DAY — AND HOW IT CLOSED
 #
-# **There is no `database` job any more, and V2 has no database suite at all.**
+# Between 2026-08-15 and 2026-08-16 this paragraph read: **"There is no
+# `database` job any more, and V2 has no database suite at all."** It is kept in
+# outline because the hole it described is the most expensive thing that
+# happened on this branch, and because a closed hole with no record of having
+# been open teaches nobody anything.
 #
-# On `main` that job started a throwaway postgres:17 and ran three SQL suites,
-# and the bidding one is the suite that proved the extension cap, the lock
-# ordering, the `sar_amount` domain and the concurrency behaviour — the four
-# properties CLAUDE.md §5 calls non-negotiable. V2 rewrote `place_bid` (D-01's
-# server-side increment, `supabase/migrations/20260815100000_core_schema.sql`)
-# and the suite that would have checked the rewrite was deleted with the tree it
-# tested. **Nothing mechanical is watching the bid operation on this branch.**
+# V2 rewrote `place_bid` — D-01's server-side increment, in
+# `supabase/migrations/20260815100000_core_schema.sql` — in the same window that
+# deleted `tests/bidding/`, the suite proving the extension cap, the lock
+# ordering, the `sar_amount` domain and the concurrency behaviour. For a day the
+# shipped bid operation was held up by nothing but the text of a migration, and
+# `D-01` §4's required assertion ("the server accepts an amount that is NOT a
+# multiple of the increment") had no suite to ship in — so the contradiction
+# between `place_bid` and `BR-32` reached production unnoticed. It is now
+# assertion 19 of `tests/bidding-v2/acceptance.sql`, pinned as it shipped and
+# labelled UNRESOLVED. See CLAUDE.md §0.
 #
-# That is a real loss and it is stated here rather than left to be discovered.
-# CLAUDE.md §0 records `tests/bidding-v2/` as owed work; this is the other half
-# of that entry.
+# `tests/bidding-v2/` closes it: 77 assertions plus a contention runner, on a
+# throwaway postgres:17, credential-free. The thing that made it hard is one
+# file — V2's schema INSERTs storage buckets and creates four `storage.objects`
+# policies at TOP LEVEL, so a bare container aborts at `core_schema.sql:496` and
+# nothing after it exists. `tests/bidding-v2/lib/supabase-shim.sql` mirrors
+# `auth` and `storage` at the fidelity the assertions read.
 #
-# What the next session needs to know before writing it, so it is not
-# re-derived: the V2 schema cannot be applied to a bare postgres:17 the way V1's
-# could. `core_schema.sql` references `auth.users`, `auth.uid()`,
-# `storage.buckets`, `storage.objects`, `storage.foldername()` and the
-# `supabase_realtime` publication. A ~40-line stub migration creating those
-# ahead of the real ones is what makes the whole V2 schema applicable in a
-# container — and applying it at all is already a test, because a syntax error
-# or an unsatisfiable constraint in a migration currently reaches production
-# unchecked.
+# Applying the migrations is itself the first test, and that half was never
+# covered even on V1's job: `supabase db push` does not re-apply what a project
+# already has, so a syntax error or an unsatisfiable constraint in a migration
+# reaches production unchecked. The `database` job below applies all six from
+# empty, in push order, before an assertion runs.
 #
 # ---------------------------------------------------------------------------
-# THE SHAPE — one job now, not two
+# THE HOLE THAT IS STILL OPEN, NAMED BEFORE ANYONE HAS TO FIND IT
 #
-# `static` costs seconds and needs no Docker, so it runs on every push of every
-# branch and is ordered cheapest-first: a money or RTL violation should be on
-# screen before the toolchain has warmed up.
+# `tests/bidding-v2/` covers `place_bid` — the classic auction path. It does NOT
+# cover `place_lot_bid`, the SECOND bidding operation, shipped with live
+# sessions in `20260815200000_sessions.sql` and amended by
+# `20260816000000_v2_open_ended_lots.sql`. It is not a variant: it is a
+# 110-line function with its own row lock, its own anti-snipe window, its own
+# `too_low` comparison, an entry-approval gate the auction path has no analogue
+# for, and — since V2.1 — a NULL `end_time` branch for open-ended lots
+# («بدون مدة»), where `end_time is not null` guards every clock comparison. A
+# missing null-guard there is a crash on the demo's headline feature.
+#
+# It is the newest bidding code in the tree and the least proven. The runner,
+# the shim and the fixtures below already support it; what is missing is the
+# assertions. Do not read the green `database` job as covering it.
+#
+# ---------------------------------------------------------------------------
+# THE SHAPE — two jobs
+#
+# `static` costs seconds and needs no Docker, so it runs first and is ordered
+# cheapest-first: a money or RTL violation should be on screen before the
+# toolchain has warmed up. `database` costs a minute and runs in parallel with
+# it, not after — a bidding defect and a lint error are independent, and
+# gating one behind the other only delays the more important of the two.
 #
 # Every suite here is CREDENTIAL-FREE by construction. That is not a
 # coincidence — this repository is PUBLIC (CLAUDE.md §6), and a workflow secret
@@ -210,3 +235,32 @@ jobs:
       # step is meant to prove, not a gap in it.
       - name: build (deliberately with no credentials)
         run: npm run build
+
+  # =========================================================================
+  # database — the committed migrations, applied from empty, then exercised.
+  #
+  # Runs in PARALLEL with `static`; it needs none of that job's output.
+  #
+  # No Supabase account, no network, no shared database, no credentials — the
+  # locking and constraint semantics under test are properties of the
+  # PostgreSQL engine, not of our hosting. Anyone on the team, including a
+  # Claude session with no credentials, can reproduce a red run locally with
+  # the same command.
+  #
+  # Docker is preinstalled on ubuntu-latest and postgres:17 is the same image
+  # the runner pulls locally, so "passes on my machine" and "passes in CI" mean
+  # the same thing here.
+  # =========================================================================
+  database:
+    name: database — migrations, place_bid, closing, money, contention
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+
+      # The rounds are raised from the local default of 8. Contention is a
+      # probabilistic instrument: a lost update that shows up in one round of
+      # ten will pass a short run and reach production. CI has the minute; a
+      # developer waiting on a local run does not, which is why the default is
+      # lower and the argument exists.
+      - name: bidding-v2 — 32 + 26 + 19 assertions, then 40 contended rounds
+        run: ./tests/bidding-v2/run.sh 40 8

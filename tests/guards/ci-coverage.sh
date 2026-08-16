@@ -101,10 +101,14 @@ WORKFLOW=".github/workflows/ci.yml"
 # three are deferred work rather than dead weight.
 #
 # Do not read an allowlist entry as "nothing is missing." Suites that do not
-# exist at all are a different question again, and the largest of them — a V2
-# database suite for `place_bid` — is written up in the header of
-# .github/workflows/ci.yml rather than here, because an allowlist can only name
-# files it can stat.
+# exist at all are a different question again, and an allowlist can only name
+# files it can stat. The largest of those was a V2 database suite for
+# `place_bid`; it was written on 2026-08-16 as tests/bidding-v2/ and is wired
+# into the `database` job, so this script now sees it as a file rather than as
+# a paragraph. The next one down is a suite for `place_lot_bid` — live-session
+# bidding shipped in V2.1 with the same lock, the same anti-snipe window and no
+# assertions at all — and it is written up in the header of
+# .github/workflows/ci.yml for the same reason: it has no path to allow yet.
 # ---------------------------------------------------------------------------
 ALLOWLIST="
 tests/auction/create-form-recovery.check.mjs — compiles V1's app/auctions/new/create-auction-form.tsx, which V2 replaced with components/auction/create-wizard.tsx; the File-retention property still applies and the AST anchors do not

@@ -20,8 +20,9 @@ diverges from what those sections describe, so that a future session neither "fi
 back to a stale rule nor assumes a rule was quietly dropped. Each item below was measured
 against the shipped tree on 2026-08-16, not remembered.
 
-**§5 — bidding.** Two divergences. The second is deliberate. **The first is an open
-contradiction and is written here as one — do not read it as a decision.**
+**§5 — bidding.** Four divergences. The second is deliberate. **The first and third are open
+— written here as findings, not as decisions — and the fourth is a gap in coverage, not in
+behaviour.**
 
 1. **A seller-chosen `bid_increment` exists** (`D-01`), and the shipped server **enforces
    it as a minimum raise**. `place_bid` computes
@@ -43,8 +44,17 @@ contradiction and is written here as one — do not read it as a decision.**
    `D-01` §3 named this exact regression in advance, and `D-01` §4 required the assertion
    that would have caught it — *"the server accepts an amount that is NOT a multiple of the
    increment"* — to ship **in the same PR as the column**. It never shipped, because the
-   database suite was deleted along with V1 (see `.github/workflows/ci.yml`'s header).
-   Nothing mechanical has been watching `BR-32` since.
+   database suite was deleted along with V1, and nothing mechanical watched `BR-32` between
+   2026-08-15 and 2026-08-16.
+
+   **It is watched now, and it is pinned the way it shipped, not the way the documents ask
+   for.** `tests/bidding-v2/acceptance.sql` assertion 19 asserts that `place_bid` REJECTS
+   `current price + 0.01`, labelled `UNRESOLVED`. Written the other way round it would turn
+   the suite red for reporting the truth and someone would "fix" the suite. It goes red in
+   **both** directions on purpose: resolve it way (a) below and it fails, which is the
+   moment somebody has to state that the decision was made; resolve it way (b) and it keeps
+   passing, correctly. The only state in which that assertion lies is the one where somebody
+   changed the server and told nobody.
 
    Two ways out, and the difference between them is a **product decision** that belongs to
    the owner under `TEAM.md` rule 16:
@@ -69,16 +79,38 @@ contradiction and is written here as one — do not read it as a decision.**
    listing and a live bid. What §5 actually forbids — a *cancel* and an *edit after
    bidding* — is still absent.
 
-The rest of §5 is intact **in the schema** — the anti-snipe shape (final 15 s → +30 s), the
-`CHECK`-capped 20 extensions, forward-only `end_time` moved only inside `place_bid`,
-server-clock eligibility via `clock_timestamp()`, and history ordered by `bids.id` are all
-present in `core_schema.sql`, read there on 2026-08-16.
+The rest of §5 is intact — the anti-snipe shape (final 15 s → +30 s), the `CHECK`-capped 20
+extensions, server-clock eligibility via `clock_timestamp()`, and history ordered by
+`bids.id`. Until 2026-08-16 that sentence read "intact **in the schema**", meaning it had
+been read in `core_schema.sql` and asserted nowhere. **`tests/bidding-v2/` now proves it**:
+77 assertions and a contention runner on a throwaway `postgres:17`, credential-free, wired
+into CI's `database` job. Applying the six committed migrations from empty is itself the
+first test — `supabase db push` does not re-apply what a project already has, so a broken
+migration reached production unchecked before this.
 
-**Read "intact in the schema" exactly that literally: no test asserts any of it.** V1's
-`tests/bidding/` proved all five and was deleted with the V1 tree; V2 has **no database
-suite at all**. Every one of those five properties is currently held up by nothing but the
-text of the migration. That is the largest known hole in this tree and it is written up,
-with what the next session needs to close it, in the header of `.github/workflows/ci.yml`.
+3. **One of those five is NOT intact, and the suite says so instead of asserting it.** §5
+   requires `end_time` to move *"forward only, in 30-second quanta, only inside `place_bid`,
+   and only together with `extension_count + 1`. Every other shape raises."* On V1 a trigger
+   in `20260814000000_bid15_closing_and_extension.sql` made that true. **`core_schema.sql`
+   carries no such trigger.** What protects `end_time` today is the RLS policy `owners
+   update own drafts` — a *permission* boundary, not a shape invariant, and permission
+   boundaries do not constrain `SECURITY DEFINER` code, which is what every RPC in this
+   schema is. `closing.sql` 24–25 assert the RLS half (a client gets 0 rows, not an error);
+   `closing.sql` 26 is a **FINDING**, asserting what is true — a privileged write moves
+   `end_time` backwards unopposed — rather than what §5 says should be. It is a passing
+   assertion documenting a gap; the day someone adds the trigger it goes red, which is the
+   correct moment to delete it. **Raised with the owner on 2026-08-16.** Do not silently
+   "fix" either side.
+
+4. **`place_lot_bid` is still unproven, and it is now the largest known hole.** Live-session
+   bidding shipped in V2.1 with its own row lock, its own anti-snipe window, its own
+   `too_low`, an entry-approval gate the auction path has no analogue for, and — since
+   `20260816000000_v2_open_ended_lots.sql` — a `NULL end_time` branch for open-ended lots
+   («بدون مدة») where `end_time is not null` guards every clock comparison. Newest bidding
+   code in the tree, least proven. `tests/bidding-v2/` covers `place_bid` only; its runner,
+   shim and fixtures already support the session path and only the assertions are missing.
+   Written up in the header of `.github/workflows/ci.yml`. **Do not read the green
+   `database` job as covering it.**
 
 **§5's pause amendment is implemented — on sessions.** `sessions.paused_at` is the second
 door on `end_time` the owner described: a paused lot's remaining time is preserved and
@@ -460,13 +492,20 @@ migration:
 | job | cost | what it runs |
 |---|---|---|
 | `static` | seconds, no Docker | the three guard scripts, the V2 board check, **the governance workflow check**, INT-06, INT-08, `lint`, `typecheck`, `build` |
-| ~~`database`~~ | — | **GONE as of 2026-08-16.** It ran `tests/auth/run.sh`, `tests/auction/run.sh` and `tests/bidding/run.sh`, all three deleted with V1. There is no database job and no database suite. The two-job independence argued for above no longer buys anything, because there is only one job. |
+| `database` | ~a minute, Docker | `tests/bidding-v2/run.sh 40 8` — the six committed migrations applied **from empty**, then 77 assertions over `place_bid`, the anti-snipe cap, `finalize_auction` and the money domains, then 40 rounds of 8 simultaneous bidders |
 
-The paragraph above this table used to be true of both jobs and is now true of one. **The
-`database` row is left struck through rather than deleted**, so that this table cannot be
-read as "CI covers the schema" by someone who never knew a second job existed. What is not
-covered is in `.github/workflows/ci.yml`'s header, written as a regression rather than as a
-gap.
+**This row was struck through for one day** — between the V2 ship on 2026-08-15 and
+2026-08-16 there was no `database` job and no database suite, because the V1 job ran
+`tests/auth/`, `tests/auction/` and `tests/bidding/`, all three deleted with V1. It is
+recorded here rather than quietly replaced: that gap is what let §0's `bid_increment`
+contradiction reach production, and a closed hole with no record of having been open
+teaches nobody anything.
+
+The job needs **no credentials** — everything it proves is a property of the PostgreSQL
+engine and of the committed migration files, not of our hosting, so a laptop and CI mean
+the same thing. What it still does **not** cover is `place_lot_bid`; see §0 item 4 and
+`.github/workflows/ci.yml`'s header, written as an open hole rather than left to be
+discovered.
 
 Three things in `tests/guards/` are new and each answers a different question:
 
