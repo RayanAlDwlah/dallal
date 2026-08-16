@@ -1,0 +1,142 @@
+<!doctype html>
+<!--
+  دلال — تأكيد الحساب.  Supabase: Authentication → Emails → Confirm signup
+  Subject:  أكّد حسابك في دلال
+
+  Variables Supabase substitutes:  {{ .ConfirmationURL }}  {{ .Email }}  {{ .SiteURL }}
+
+  ── WHY THIS FILE LOOKS LIKE 2005 ────────────────────────────────────────────
+  Tables, inline styles, no flexbox, no grid, no web fonts. That is not
+  carelessness — Outlook renders with Word's engine, Gmail strips most of a
+  <style> block, and a @font-face never loads. Everything the layout depends on
+  is an attribute or an inline style, and the font stack falls back to fonts
+  that already exist on the device. The app's own CSS is irrelevant here; an
+  email carries its own or it carries nothing.
+
+  RTL (CLAUDE.md §3): dir="rtl" is on <html>, on <body>, and on every table,
+  because a client that drops one usually keeps another. Digits stay Western.
+-->
+<html dir="rtl" lang="ar" xmlns="http://www.w3.org/1999/xhtml">
+  <head>
+    <meta charset="utf-8" />
+    <meta name="viewport" content="width=device-width, initial-scale=1" />
+    <meta name="color-scheme" content="dark" />
+    <meta name="supported-color-schemes" content="dark" />
+    <title>أكّد حسابك في دلال</title>
+    <!--[if mso]>
+      <style>
+        body, table, td, a { font-family: Tahoma, Arial, sans-serif !important; }
+      </style>
+    <![endif]-->
+    <style>
+      /* The ONLY job of this block is the narrow viewport. Everything that
+         matters is inline, because this block may never arrive. */
+      @media only screen and (max-width: 600px) {
+        .dl-card { padding: 28px 22px !important; }
+        .dl-title { font-size: 22px !important; }
+        .dl-btn { display: block !important; width: 100% !important; }
+      }
+    </style>
+  </head>
+
+  <body
+    dir="rtl"
+    style="margin:0; padding:0; background-color:#07090d; color:#e9edf5;
+           font-family:'IBM Plex Sans Arabic','Segoe UI',Tahoma,Arial,sans-serif;
+           -webkit-text-size-adjust:100%;"
+  >
+    <!-- preheader: the grey line the inbox shows next to the subject. Hidden in the body. -->
+    <div style="display:none; max-height:0; overflow:hidden; opacity:0; color:transparent;">
+      رابط التأكيد صالح لمدة ساعة واحدة.
+    </div>
+
+    <table role="presentation" dir="rtl" width="100%" cellpadding="0" cellspacing="0" border="0"
+           bgcolor="#07090d" style="background-color:#07090d; margin:0; padding:0;">
+      <tr>
+        <td align="center" style="padding:32px 16px;">
+
+          <table role="presentation" dir="rtl" width="600" cellpadding="0" cellspacing="0" border="0"
+                 style="width:100%; max-width:600px;">
+
+            <!-- wordmark -->
+            <tr>
+              <td align="center" style="padding:0 0 22px;">
+                <span style="font-family:Rubik,'Segoe UI',Tahoma,Arial,sans-serif;
+                             font-size:27px; font-weight:700; color:#f5b942;
+                             letter-spacing:-0.5px;">دلال</span>
+              </td>
+            </tr>
+
+            <!-- card -->
+            <tr>
+              <td class="dl-card" bgcolor="#0f1219"
+                  style="background-color:#0f1219; border:1px solid rgba(255,255,255,0.08);
+                         border-radius:16px; padding:38px 34px;">
+
+                <h1 class="dl-title" style="margin:0 0 14px; font-size:25px; line-height:1.4;
+                                            font-weight:700; color:#e9edf5; text-align:right;">
+                  أهلاً بك في دلال 👋
+                </h1>
+
+                <p style="margin:0 0 10px; font-size:15.5px; line-height:1.9;
+                          color:#9aa4b8; text-align:right;">
+                  بقيت خطوة وحدة وحسابك يصير جاهز. اضغط الزر تحت عشان نأكّد بريدك
+                  وتقدر تزايد وتعرض قطعك.
+                </p>
+
+                <!-- button. A table, not a <div> — Outlook ignores padding on an inline <a>. -->
+                <table role="presentation" dir="rtl" cellpadding="0" cellspacing="0" border="0"
+                       style="margin:30px 0 8px;">
+                  <tr>
+                    <td align="center" bgcolor="#f5b942"
+                        style="background-color:#f5b942; border-radius:12px;">
+                      <a class="dl-btn" href="{{ .ConfirmationURL }}"
+                         style="display:inline-block; padding:15px 42px; font-size:16px;
+                                font-weight:700; color:#1a1204; text-decoration:none;
+                                font-family:'IBM Plex Sans Arabic','Segoe UI',Tahoma,Arial,sans-serif;">
+                        أكّد حسابي
+                      </a>
+                    </td>
+                  </tr>
+                </table>
+
+                <p style="margin:22px 0 0; font-size:13px; line-height:1.8;
+                          color:#5c6579; text-align:right;">
+                  الرابط صالح لمدة ساعة واحدة. لو ما ضبط الزر، انسخ العنوان هذا في المتصفح:
+                </p>
+                <!-- dir="ltr" on the URL: an RTL container flips a Latin URL's punctuation
+                     and the reader copies a broken link. The isolate is the fix. -->
+                <p dir="ltr" style="margin:8px 0 0; font-size:12px; line-height:1.7;
+                                    color:#2dd4bf; word-break:break-all; text-align:left;
+                                    font-family:Consolas,Menlo,monospace;">
+                  {{ .ConfirmationURL }}
+                </p>
+
+                <hr style="border:0; border-top:1px solid rgba(255,255,255,0.08); margin:26px 0 0;" />
+
+                <p style="margin:20px 0 0; font-size:13px; line-height:1.8;
+                          color:#5c6579; text-align:right;">
+                  ما سجّلت في دلال؟ تجاهل الرسالة — ما راح يصير شي، والحساب ما ينفتح
+                  بدون هذي الضغطة.
+                </p>
+              </td>
+            </tr>
+
+            <!-- footer -->
+            <tr>
+              <td align="center" style="padding:24px 12px 0;">
+                <p style="margin:0 0 6px; font-size:12px; line-height:1.8; color:#5c6579;">
+                  أُرسلت إلى <span dir="ltr">{{ .Email }}</span>
+                </p>
+                <p style="margin:0; font-size:12px; line-height:1.8; color:#5c6579;">
+                  دلال منصة عرض توضيحية — المبالغ بالريال محاكاة، ولا تنتقل أي أموال.
+                </p>
+              </td>
+            </tr>
+
+          </table>
+        </td>
+      </tr>
+    </table>
+  </body>
+</html>

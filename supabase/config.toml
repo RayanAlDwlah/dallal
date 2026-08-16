@@ -233,15 +233,56 @@ otp_length = 6
 # Number of seconds before the email OTP expires (defaults to 1 hour).
 otp_expiry = 3600
 
-# Use a production-ready SMTP server
+# Use a production-ready SMTP server.
+#
+# Dalal sends through Brevo (account "twuaiq"). The values below are the real
+# ones, verified against app.brevo.com on 2026-08-16 — NOT the SendGrid example
+# this block used to carry. Left commented because `supabase start` runs against
+# the local Inbucket at [local_smtp] and does not need a relay.
+#
+# `pass` is written as env(...) and NEVER as a literal: this repository is public
+# (CLAUDE.md §6). Export BREVO_SMTP_KEY in your shell before `supabase start` if
+# you uncomment this. The key itself is generated in Brevo under
+# Settings → SMTP & API → SMTP, and lives in the Supabase dashboard and in a
+# password manager — nowhere in this tree.
+#
+# `user` is the Brevo SMTP login (a b…@smtp-brevo.com address, not the sender).
+# Deliberately left as a placeholder here rather than committed to a public repo.
+#
 # [auth.email.smtp]
 # enabled = true
-# host = "smtp.sendgrid.net"
+# host = "smtp-relay.brevo.com"
 # port = 587
-# user = "apikey"
-# pass = "env(SENDGRID_API_KEY)"
-# admin_email = "admin@email.com"
-# sender_name = "Admin"
+# user = "env(BREVO_SMTP_LOGIN)"
+# pass = "env(BREVO_SMTP_KEY)"
+# admin_email = "rayanaldwlah@gmail.com"   # the verified Brevo sender
+# sender_name = "دلال"
+
+# The five Arabic templates live in supabase/templates/ and are installed through
+# the hosted dashboard (Authentication → Emails → Templates), which is what
+# production actually reads. The blocks below apply to `supabase start` only.
+#
+# NOTE before uncommenting: Supabase's own generated comments disagree about what
+# content_path is relative to — the invite example said "./supabase/templates/…"
+# and the notification example said "./templates/…", in the same file. Whichever
+# is right, find out by running `supabase start` and reading the mail, not by
+# assuming; a wrong path fails quietly and you ship the English default.
+#
+# [auth.email.template.confirmation]
+# subject = "أكّد حسابك في دلال"
+# content_path = "./supabase/templates/confirm-signup.html"
+# [auth.email.template.recovery]
+# subject = "إعادة تعيين كلمة المرور — دلال"
+# content_path = "./supabase/templates/reset-password.html"
+# [auth.email.template.magic_link]
+# subject = "رابط دخولك إلى دلال"
+# content_path = "./supabase/templates/magic-link.html"
+# [auth.email.template.email_change]
+# subject = "أكّد تغيير بريدك — دلال"
+# content_path = "./supabase/templates/change-email.html"
+# [auth.email.template.reauthentication]
+# subject = "رمز التحقق: {{ .Token }}"
+# content_path = "./supabase/templates/reauthentication.html"
 
 # Uncomment to customize email template
 # [auth.email.template.invite]
